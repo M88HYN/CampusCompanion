@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { Plus, Play, Clock, CheckCircle2, AlertCircle, Star, BookMarked, Zap, Trophy, Target, RotateCw } from "lucide-react";
+import { Plus, Play, Clock, CheckCircle2, AlertCircle, Star, BookMarked, Zap, Trophy, Target, RotateCw, Loader } from "lucide-react";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -8,6 +9,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { getQueryFn } from "@/lib/queryClient";
 import {
   Select,
   SelectContent,
@@ -25,12 +27,17 @@ interface Quiz {
   id: string;
   title: string;
   subject: string;
-  questions: number;
-  timeLimit: number;
-  status: QuizStatus;
+  description?: string;
+  mode: "practice" | "exam";
+  timeLimit?: number | null;
+  passingScore?: number | null;
+  questionCount: number;
+  attemptCount: number;
+  bestScore?: number | null;
+  status?: QuizStatus;
   score?: number;
   difficulty?: Difficulty;
-  questionTypes: QuestionType[];
+  questionTypes?: QuestionType[];
 }
 
 interface Question {
