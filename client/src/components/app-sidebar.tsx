@@ -54,7 +54,7 @@ export function AppSidebar({ userRole = "student" }: AppSidebarProps) {
       icon: GraduationCap,
     },
     {
-      title: "Research",
+      title: "Insight Scout",
       url: "/research",
       icon: Sparkles,
     },
