@@ -72,57 +72,41 @@ export default function Dashboard({ userRole = "student" }: DashboardProps) {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card className="border-0 bg-gradient-to-br from-orange-500 to-red-500 text-white">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Flame className="h-5 w-5" />
-                  <CardTitle className="text-lg text-white">Study Streak</CardTitle>
-                </div>
-                <div className="text-3xl font-bold">7</div>
-              </div>
-              <CardDescription className="text-white/80">days in a row</CardDescription>
-            </CardHeader>
-          </Card>
+          <div className="bg-gradient-to-br from-orange-500 to-red-500 rounded-lg p-4 text-white">
+            <div className="flex items-center gap-3 mb-3">
+              <Flame className="h-5 w-5 opacity-80" />
+              <span className="text-sm font-medium opacity-90">Study Streak</span>
+            </div>
+            <div className="text-4xl font-bold">7</div>
+            <p className="text-xs opacity-70 mt-1">days</p>
+          </div>
 
-          <Card className="border-0 bg-gradient-to-br from-blue-500 to-cyan-500 text-white">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Calendar className="h-5 w-5" />
-                  <CardTitle className="text-lg text-white">Due Today</CardTitle>
-                </div>
-                <div className="text-3xl font-bold">23</div>
-              </div>
-              <CardDescription className="text-white/80">flashcards to review</CardDescription>
-            </CardHeader>
-          </Card>
+          <div className="bg-gradient-to-br from-blue-500 to-cyan-500 rounded-lg p-4 text-white">
+            <div className="flex items-center gap-3 mb-3">
+              <Calendar className="h-5 w-5 opacity-80" />
+              <span className="text-sm font-medium opacity-90">Due Today</span>
+            </div>
+            <div className="text-4xl font-bold">23</div>
+            <p className="text-xs opacity-70 mt-1">cards</p>
+          </div>
 
-          <Card className="border-0 bg-gradient-to-br from-green-500 to-emerald-500 text-white">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Target className="h-5 w-5" />
-                  <CardTitle className="text-lg text-white">Accuracy</CardTitle>
-                </div>
-                <div className="text-3xl font-bold">87%</div>
-              </div>
-              <CardDescription className="text-white/80">this week average</CardDescription>
-            </CardHeader>
-          </Card>
+          <div className="bg-gradient-to-br from-green-500 to-emerald-500 rounded-lg p-4 text-white">
+            <div className="flex items-center gap-3 mb-3">
+              <Target className="h-5 w-5 opacity-80" />
+              <span className="text-sm font-medium opacity-90">Accuracy</span>
+            </div>
+            <div className="text-4xl font-bold">87%</div>
+            <p className="text-xs opacity-70 mt-1">this week</p>
+          </div>
 
-          <Card className="border-0 bg-gradient-to-br from-purple-500 to-pink-500 text-white">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Clock className="h-5 w-5" />
-                  <CardTitle className="text-lg text-white">Study Time</CardTitle>
-                </div>
-                <div className="text-3xl font-bold">12h</div>
-              </div>
-              <CardDescription className="text-white/80">30m this week</CardDescription>
-            </CardHeader>
-          </Card>
+          <div className="bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg p-4 text-white">
+            <div className="flex items-center gap-3 mb-3">
+              <Clock className="h-5 w-5 opacity-80" />
+              <span className="text-sm font-medium opacity-90">Study Time</span>
+            </div>
+            <div className="text-4xl font-bold">12h</div>
+            <p className="text-xs opacity-70 mt-1">this week</p>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
