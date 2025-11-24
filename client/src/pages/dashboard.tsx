@@ -16,24 +16,24 @@ export default function Dashboard({ userRole = "student" }: DashboardProps) {
       title: "Notes",
       description: "12 notebooks",
       icon: BookOpen,
-      color: "text-blue-600",
-      bgColor: "bg-blue-50 dark:bg-blue-950",
+      color: "text-white",
+      bgGradient: "bg-gradient-to-br from-blue-500 to-blue-600",
       href: "/notes",
     },
     {
       title: "Quizzes",
       description: "5 active quizzes",
       icon: BrainCircuit,
-      color: "text-purple-600",
-      bgColor: "bg-purple-50 dark:bg-purple-950",
+      color: "text-white",
+      bgGradient: "bg-gradient-to-br from-purple-500 to-purple-600",
       href: "/quizzes",
     },
     {
       title: "Flashcards",
       description: "8 decks • 23 due today",
       icon: GraduationCap,
-      color: "text-green-600",
-      bgColor: "bg-green-50 dark:bg-green-950",
+      color: "text-white",
+      bgGradient: "bg-gradient-to-br from-green-500 to-green-600",
       href: "/flashcards",
       urgent: true,
     },
@@ -41,8 +41,8 @@ export default function Dashboard({ userRole = "student" }: DashboardProps) {
       title: "Insight Scout",
       description: "Research & Sources",
       icon: Sparkles,
-      color: "text-amber-600",
-      bgColor: "bg-amber-50 dark:bg-amber-950",
+      color: "text-white",
+      bgGradient: "bg-gradient-to-br from-orange-500 to-orange-600",
       href: "/research",
     },
   ];
@@ -71,55 +71,55 @@ export default function Dashboard({ userRole = "student" }: DashboardProps) {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card className="border-primary/50 bg-gradient-to-br from-primary/5 to-transparent">
+          <Card className="border-0 bg-gradient-to-br from-orange-500 to-red-500 text-white">
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Flame className="h-5 w-5 text-orange-600" />
-                  <CardTitle className="text-lg">Study Streak</CardTitle>
+                  <Flame className="h-5 w-5" />
+                  <CardTitle className="text-lg text-white">Study Streak</CardTitle>
                 </div>
-                <div className="text-3xl font-bold text-primary">7</div>
+                <div className="text-3xl font-bold">7</div>
               </div>
-              <CardDescription>days in a row</CardDescription>
+              <CardDescription className="text-white/80">days in a row</CardDescription>
             </CardHeader>
           </Card>
 
-          <Card>
+          <Card className="border-0 bg-gradient-to-br from-blue-500 to-cyan-500 text-white">
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Calendar className="h-5 w-5 text-blue-600" />
-                  <CardTitle className="text-lg">Due Today</CardTitle>
+                  <Calendar className="h-5 w-5" />
+                  <CardTitle className="text-lg text-white">Due Today</CardTitle>
                 </div>
-                <div className="text-3xl font-bold text-blue-600">23</div>
+                <div className="text-3xl font-bold">23</div>
               </div>
-              <CardDescription>flashcards to review</CardDescription>
+              <CardDescription className="text-white/80">flashcards to review</CardDescription>
             </CardHeader>
           </Card>
 
-          <Card>
+          <Card className="border-0 bg-gradient-to-br from-green-500 to-emerald-500 text-white">
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Target className="h-5 w-5 text-green-600" />
-                  <CardTitle className="text-lg">Accuracy</CardTitle>
+                  <Target className="h-5 w-5" />
+                  <CardTitle className="text-lg text-white">Accuracy</CardTitle>
                 </div>
-                <div className="text-3xl font-bold text-green-600">87%</div>
+                <div className="text-3xl font-bold">87%</div>
               </div>
-              <CardDescription>this week average</CardDescription>
+              <CardDescription className="text-white/80">this week average</CardDescription>
             </CardHeader>
           </Card>
 
-          <Card>
+          <Card className="border-0 bg-gradient-to-br from-purple-500 to-pink-500 text-white">
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Clock className="h-5 w-5 text-purple-600" />
-                  <CardTitle className="text-lg">Study Time</CardTitle>
+                  <Clock className="h-5 w-5" />
+                  <CardTitle className="text-lg text-white">Study Time</CardTitle>
                 </div>
-                <div className="text-3xl font-bold text-purple-600">12h</div>
+                <div className="text-3xl font-bold">12h</div>
               </div>
-              <CardDescription>30m this week</CardDescription>
+              <CardDescription className="text-white/80">30m this week</CardDescription>
             </CardHeader>
           </Card>
         </div>
@@ -128,26 +128,26 @@ export default function Dashboard({ userRole = "student" }: DashboardProps) {
           {features.map((feature) => (
             <Card
               key={feature.title}
-              className="hover-elevate cursor-pointer transition-all relative"
+              className={`hover-elevate cursor-pointer transition-all relative border-0 ${feature.bgGradient} text-white overflow-hidden`}
               data-testid={`card-${feature.title.toLowerCase()}`}
             >
               {feature.urgent && (
-                <Badge variant="destructive" className="absolute top-3 right-3 text-xs">
+                <Badge variant="destructive" className="absolute top-3 right-3 text-xs bg-red-600">
                   Due
                 </Badge>
               )}
               <CardHeader className="pb-3">
-                <div className={`w-12 h-12 rounded-md ${feature.bgColor} flex items-center justify-center mb-3`}>
+                <div className="w-12 h-12 rounded-lg bg-white/20 backdrop-blur-sm flex items-center justify-center mb-3">
                   <feature.icon className={`h-6 w-6 ${feature.color}`} />
                 </div>
-                <CardTitle className="text-xl">{feature.title}</CardTitle>
-                <CardDescription>{feature.description}</CardDescription>
+                <CardTitle className="text-xl text-white">{feature.title}</CardTitle>
+                <CardDescription className="text-white/80">{feature.description}</CardDescription>
               </CardHeader>
               <CardContent>
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="w-full"
+                  className="w-full bg-white/20 hover:bg-white/30 text-white border-0"
                   data-testid={`button-open-${feature.title.toLowerCase().replace(/\s/g, "-")}`}
                   onClick={() => console.log(`Navigate to ${feature.href}`)}
                 >

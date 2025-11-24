@@ -1,219 +1,286 @@
-# Educational App Design Guidelines
+# StudyMate Design Guidelines
 
 ## Design Approach
 
-**Selected Approach: Productivity System Hybrid**
-Drawing inspiration from Notion's organizational clarity and Linear's modern minimalism, combined with education-specific patterns from platforms like Quizlet and Google Classroom.
+**Selected Approach: Vibrant Productivity System**
+Combining Duolingo's playful energy with Notion's organizational clarity and Linear's modern minimalism. Every feature has a distinct color personality to create an engaging, motivating study environment.
 
 **Core Principles:**
-- Information clarity over visual decoration
-- Efficient navigation between features
-- Distraction-free learning environment
-- Clear role-based visual hierarchy
+- Vibrant colors drive feature recognition and engagement
+- Gradients and color add energy without compromising clarity
+- Each tool has a unique color identity
+- Celebratory visual feedback reinforces progress
+
+---
+
+## Color System
+
+**Feature Color Identities:**
+- **Notes:** Bright Blue (#3B82F6 to #1D4ED8 gradient)
+- **Quizzes:** Vibrant Purple (#A855F7 to #7C3AED gradient)
+- **Flashcards:** Fresh Green (#10B981 to #059669 gradient)
+- **Insight Scout:** Warm Orange (#F97316 to #EA580C gradient)
+
+**UI Palette:**
+- Primary Actions: Vibrant gradients matching feature context
+- Success States: Bright Green (#22C55E)
+- Warning/Focus: Sunny Yellow (#FACC15)
+- Error States: Energetic Red (#EF4444)
+- Neutral Backgrounds: Soft Grays (#F9FAFB, #F3F4F6)
+- Text: Deep Charcoal (#1F2937) and Medium Gray (#6B7280)
+
+**Gradient Applications:**
+- Dashboard stat cards backgrounds
+- Feature module card headers
+- Progress indicators and badges
+- Button backgrounds for primary actions
+- Section dividers and accents
 
 ---
 
 ## Typography
 
 **Font Stack:**
-- Primary: Inter (via Google Fonts CDN)
-- Monospace: JetBrains Mono (for code snippets in notes)
+- Primary: Inter (Google Fonts CDN)
+- Monospace: JetBrains Mono (code snippets)
 
 **Hierarchy:**
-- Page Titles: text-3xl md:text-4xl font-bold
-- Section Headers: text-2xl font-semibold
+- Hero/Page Titles: text-4xl md:text-5xl font-bold with gradient text
+- Section Headers: text-2xl md:text-3xl font-semibold
 - Card Titles: text-xl font-semibold
 - Body Text: text-base leading-relaxed
-- Secondary Text: text-sm text-gray-600
-- Captions/Meta: text-xs
+- Secondary: text-sm
+- Captions: text-xs font-medium
 
 ---
 
 ## Layout System
 
-**Spacing Primitives:** Use Tailwind units of 2, 4, 6, 8, 12, and 16
-- Tight spacing: gap-2, p-2
-- Standard spacing: gap-4, p-4, m-4
-- Section spacing: py-8, py-12
-- Large gaps: gap-8, mb-12
+**Spacing:** Tailwind units of 2, 4, 6, 8, 12, 16
+- Compact: gap-2, p-2
+- Standard: gap-4, p-4
+- Generous: gap-6, p-6
+- Section: py-12, py-16
 
 **Grid Structure:**
-- Dashboard: 12-column grid with sidebar (w-64) + main content area
+- Dashboard: Fixed sidebar (w-64) + main content (flex-1)
 - Feature cards: grid-cols-1 md:grid-cols-2 lg:grid-cols-4
-- Content areas: max-w-5xl mx-auto for optimal reading
+- Content: max-w-6xl mx-auto
 
 ---
 
 ## Component Library
 
 ### Navigation
-**Sidebar Navigation (Primary):**
-- Fixed left sidebar (w-64) with app logo at top
-- Icon + label navigation items with active state indicators
-- Grouped sections: Learning Tools (Notes, Quizzes, Flashcards, Research), Settings, Profile
-- Role badge displayed below user avatar
-- Collapsible on mobile (hamburger menu)
+
+**Sidebar:**
+- Gradient background (subtle, feature-color inspired)
+- Logo at top with colorful accent
+- Navigation items with colored icons (match feature identity)
+- Active state: vibrant highlight with gradient pill background
+- User section: avatar with colored role badge, gradient border
+- Hover states: subtle color glow
 
 **Top Bar:**
-- Search bar (w-full max-w-md) with icon - prominent placement
-- Quick actions: Create Note, New Quiz, Add Flashcard buttons (icon buttons)
-- User profile dropdown (right-aligned) with role indicator
-- Notification bell icon
+- White background with subtle shadow
+- Search bar with colored focus ring (context-aware)
+- Quick action buttons: colored icon buttons with matching backgrounds
+- Notification bell with bright badge count
+- Profile dropdown trigger with gradient border
 
-### Dashboard Cards
+### Dashboard
+
+**Hero Section:**
+- Large gradient background panel (multi-color, energetic)
+- Welcome message: large, bold text with name
+- Motivational tagline
+- Current streak display with flame icon and bright badge
+- Quick stats row: colorful pill badges showing active items
+
 **Feature Module Cards:**
-- Elevated cards (shadow-md) with hover lift effect (shadow-lg)
-- Icon header (top-left) with feature name
-- Quick stats display (e.g., "12 notes", "5 active quizzes")
-- Primary action button (bottom)
-- 4-column grid on desktop, stack on mobile
+- Vibrant gradient headers matching feature identity
+- White body with generous padding
+- Large icon (colored, matching gradient)
+- Feature name and quick stats
+- Count displays in colored circular badges
+- Primary CTA button with gradient fill
+- Hover: lift with enhanced shadow, slight scale
+- Grid layout: 4 columns desktop, 2 tablet, 1 mobile
 
-**Recent Activity Feed:**
-- Timeline-style list with activity icons
-- Timestamp on right
-- Clickable items with hover state
-- Maximum 10 items with "View All" link
+**Progress Dashboard:**
+- Colorful circular progress rings for each feature
+- Percentage in center with gradient text
+- XP points display with star icons
+- Recent achievements as colorful badge chips
+- Weekly activity heatmap with gradient intensity
 
 ### Notes Interface
-**Editor Layout:**
-- Two-pane layout: Folder tree (w-1/4) + Editor (w-3/4)
-- Rich text toolbar (sticky top position)
-- Document title input (text-2xl font-bold, borderless)
-- Auto-save indicator (top-right)
-- Tag chips below title (rounded-full badges)
 
-**Folder Tree:**
-- Nested indentation (pl-4 per level)
-- Folder icons with expand/collapse arrows
-- Drag-and-drop visual indicators
-- Search/filter input at top
+**Layout:**
+- Sidebar folder tree (w-1/4) with blue gradient accents
+- Main editor (w-3/4) with toolbar
+- Gradient toolbar background (blue theme)
+- Colored tag chips (multiple colors for categories)
+- Auto-save indicator: green badge with pulse animation
+
+**Editor Elements:**
+- Title input: large, borderless, focused gradient underline
+- Rich text controls: colored icon buttons
+- Folder icons: blue tinted with hover glow
+- Active folder: blue gradient background
 
 ### Quiz System
-**Quiz Creator:**
-- Multi-step form with progress indicator at top
-- Question type selector (card-based selection)
-- Add Question button (prominent, bottom-right floating)
-- Preview pane on right side (desktop only)
 
-**Quiz Taking Interface:**
-- Clean, centered layout (max-w-3xl)
-- Large question text (text-xl)
-- Answer options as full-width buttons with selection states
-- Progress bar at top showing question number
-- Timer display (if timed quiz) in top-right
-- Navigation: Previous/Next buttons bottom corners
+**Creator Interface:**
+- Purple gradient header with progress stepper
+- Question type cards: colorful icons with purple accents
+- Add question FAB: vibrant purple gradient, bottom-right
+- Preview pane: purple border accent
+
+**Quiz Taking:**
+- Purple gradient progress bar (animated)
+- Question card: elevated with purple shadow
+- Answer buttons: outlined with purple, filled on select
+- Timer: orange gradient badge (top-right)
+- Correct answers: green glow animation
+- Incorrect: red shake with accent
 
 ### Flashcard System
-**Card Deck View:**
-- Grid of deck cards (grid-cols-2 lg:grid-cols-3)
-- Each deck shows: title, card count, progress ring, last studied date
-- Create Deck button (prominent, top-right)
+
+**Deck Grid:**
+- Cards with green gradient headers
+- Progress rings in green shades
+- Card count badges: bright green
+- Last studied timestamp
+- Create deck button: green gradient FAB
 
 **Study Mode:**
-- Large centered card (perspective flip animation on click)
-- Front/back clearly labeled
-- Difficulty rating buttons below card (Easy, Medium, Hard)
-- Session progress indicator at top
-- Keyboard shortcuts hint (bottom)
+- Large centered card with green border glow
+- Flip animation reveals gradient back
+- Difficulty buttons: green gradient variants (light to dark)
+- Session progress: green gradient bar
+- Keyboard hints: green badge chips
 
-### Research Assistant
+### Insight Scout (Research Assistant)
+
 **Chat Interface:**
-- Full-height layout with message thread
-- User messages: right-aligned, distinct styling
-- AI responses: left-aligned with avatar
-- Input box: bottom-fixed with send button
-- Source citations as expandable chips below AI responses
-- Export conversation button (top-right)
+- Orange gradient header with AI avatar
+- User messages: blue gradient bubbles (right-aligned)
+- AI responses: orange gradient bubbles (left-aligned)
+- Source citation chips: orange outlined badges
+- Input box: orange focus ring
+- Send button: orange gradient
 
-### Role-Based Visual Indicators
-**Student View:**
-- Standard access to all learning tools
-- "Student" badge in subtle styling
+**Visual Elements:**
+- Thinking indicator: orange pulsing dots
+- Export button: orange gradient
+- Clear conversation: subtle orange ghost button
 
-**Instructor View:**
-- Additional "Create Quiz for Class" and "View Student Progress" cards on dashboard
-- "Instructor" badge with accent styling
-- Access to analytics panels
+### Role Indicators
 
-**Admin View:**
-- Full user management card on dashboard
-- "Admin" badge with distinct styling
-- System settings access
+**Student:** Blue gradient badge, standard access
+**Instructor:** Purple gradient badge, class management cards visible
+**Admin:** Orange gradient badge, system settings accessible
 
 ---
 
 ## Forms & Inputs
+
 **Text Inputs:**
-- Border style with focus ring
-- Consistent height (h-10)
-- Label above input (font-medium, text-sm)
-- Helper text below (text-xs)
+- Border with colored focus ring (context-aware)
+- Height: h-11
+- Labels: font-medium with gradient text option
+- Helper text: colored when active
 
 **Buttons:**
-- Primary: solid fill, font-medium, px-6 py-2.5, rounded-lg
-- Secondary: outline style with hover fill
-- Icon buttons: square (w-10 h-10), rounded-lg
-- Disabled state: reduced opacity
+- Primary: gradient backgrounds matching context
+- Secondary: colored outline with gradient hover
+- Icon buttons: colored backgrounds, circular or square
+- Disabled: desaturated gradient, reduced opacity
 
-**Select Dropdowns:**
-- Match text input styling
-- Chevron icon indicator
-- Max height with scroll for long lists
+**Selects:**
+- Matching input styling
+- Colored dropdown indicators
+- Gradient hover on options
 
 ---
 
 ## Data Display
-**Tables (Analytics/Admin):**
-- Striped rows for readability
-- Sortable column headers with sort indicators
-- Action buttons in right column
-- Sticky header on scroll
-- Pagination controls at bottom
+
+**Tables:**
+- Colored header row (gradient)
+- Striped rows with tinted alternates
+- Action buttons: colored icons
+- Sort indicators: matching theme
 
 **Statistics Cards:**
-- Large number display (text-3xl font-bold)
-- Label below (text-sm)
-- Optional icon or trend indicator
-- Minimal padding for density
+- Gradient backgrounds
+- White or colored text (high contrast)
+- Large numbers with gradient effect
+- Icons with glow
 
 ---
 
 ## Icons
-**Library:** Heroicons (via CDN)
-- Outline style for navigation and general use
-- Solid style for active states and emphasis
-- Consistent sizing: w-5 h-5 for nav, w-6 h-6 for features
+
+**Library:** Heroicons (CDN)
+- Colored fills matching feature context
+- Outline for secondary, solid for active
+- Sizes: w-5 h-5 (nav), w-6 h-6 (features), w-8 h-8 (heroes)
 
 ---
 
 ## Images
-No hero images required for this productivity-focused application. Focus remains on functional interface elements and efficient layouts.
+
+**Dashboard Hero:**
+- Abstract gradient illustration or geometric pattern
+- Positioned top of dashboard, full-width
+- Height: 240px desktop, 180px mobile
+- Overlay: semi-transparent gradient for text readability
+
+**Feature Cards:**
+- Small decorative icons or abstract shapes (SVG)
+- Colored to match feature identity
+- Background patterns: subtle gradients or geometric shapes
+
+---
+
+## Animations
+
+**Micro-interactions:**
+- Button hover: slight lift with enhanced glow
+- Card hover: scale(1.02) with gradient shadow
+- Progress bars: animated gradient flow
+- Success states: confetti burst or sparkle effect
+- Badge pulses on new achievements
 
 ---
 
 ## Accessibility
-- Keyboard navigation support across all features
-- ARIA labels on all interactive elements
-- Focus indicators with sufficient contrast
-- Screen reader announcements for state changes
-- Skip navigation links
-- Consistent tab order throughout application
+
+- High contrast ratios maintained despite vibrant colors
+- Focus indicators: thick colored rings
+- Keyboard navigation with visible colored focus states
+- ARIA labels on all colorful elements
+- Screen reader announcements for progress updates
+- Reduced motion option available
 
 ---
 
 ## Responsive Behavior
-**Mobile (< 768px):**
-- Sidebar collapses to hamburger menu
-- Dashboard cards stack single-column
-- Two-pane layouts become tabbed views
-- Reduced padding/spacing (halve desktop values)
 
-**Tablet (768px - 1024px):**
-- Sidebar visible but narrower
-- 2-column card grids
-- Maintained two-pane layouts
+**Mobile (<768px):**
+- Sidebar collapses, hamburger with gradient icon
+- Single column card stacks
+- Reduced gradient complexity for performance
+- Smaller padding (p-4 instead of p-8)
 
-**Desktop (> 1024px):**
-- Full sidebar navigation
+**Tablet (768-1024px):**
+- Visible sidebar, narrower
+- 2-column grids
+- Maintained gradients
+
+**Desktop (>1024px):**
+- Full sidebar with rich gradients
 - 4-column feature grids
-- Optimal spacing and multi-column layouts
+- Enhanced hover states and animations
