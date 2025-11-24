@@ -6,6 +6,7 @@ import {
   Settings,
   Sparkles,
   Users,
+  Zap,
 } from "lucide-react";
 import {
   Sidebar,
@@ -87,17 +88,22 @@ export function AppSidebar({ userRole = "student" }: AppSidebarProps) {
 
   return (
     <Sidebar>
-      <SidebarHeader className="p-4">
-        <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary text-primary-foreground">
-            <GraduationCap className="h-5 w-5" />
+      <SidebarHeader className="p-4 bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-950 dark:to-blue-950 border-b-2 border-purple-200 dark:border-purple-800">
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-purple-500 to-violet-600 text-white shadow-lg">
+            <Zap className="h-6 w-6" />
           </div>
-          <span className="text-lg font-semibold">EduHub</span>
+          <div className="flex flex-col">
+            <span className="text-lg font-bold bg-gradient-to-r from-purple-600 to-violet-600 dark:from-purple-400 dark:to-violet-400 bg-clip-text text-transparent">
+              StudyMate
+            </span>
+            <span className="text-xs text-purple-600 dark:text-purple-400 font-medium">Study Smart</span>
+          </div>
         </div>
       </SidebarHeader>
-      <SidebarContent>
+      <SidebarContent className="bg-gradient-to-b from-slate-50 to-white dark:from-slate-950 dark:to-slate-900">
         <SidebarGroup>
-          <SidebarGroupLabel>Learning Tools</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-purple-700 dark:text-purple-300 font-bold">Learning Tools</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {learningTools.map((item) => (
@@ -119,7 +125,7 @@ export function AppSidebar({ userRole = "student" }: AppSidebarProps) {
         </SidebarGroup>
 
         <SidebarGroup>
-          <SidebarGroupLabel>System</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-purple-700 dark:text-purple-300 font-bold">System</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {adminTools
@@ -142,22 +148,27 @@ export function AppSidebar({ userRole = "student" }: AppSidebarProps) {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter className="p-4">
-        <div className="flex items-center gap-3">
-          <Avatar>
-            <AvatarFallback>JD</AvatarFallback>
+      <SidebarFooter className="p-4 border-t-2 border-purple-200 dark:border-purple-800 bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-950 dark:to-blue-950">
+        <a href="/settings" className="flex items-center gap-3 hover:opacity-80 transition-opacity cursor-pointer">
+          <Avatar className="border-2 border-purple-300 dark:border-purple-700">
+            <AvatarFallback className="bg-gradient-to-br from-purple-500 to-violet-600 text-white font-bold">JD</AvatarFallback>
           </Avatar>
           <div className="flex flex-col flex-1 min-w-0">
-            <span className="text-sm font-medium truncate">John Doe</span>
+            <span className="text-sm font-semibold text-slate-900 dark:text-white truncate">John Doe</span>
             <Badge
-              variant={getRoleBadgeVariant(userRole)}
-              className="w-fit text-xs"
+              className={`w-fit text-xs border-0 ${
+                userRole === "admin"
+                  ? "bg-gradient-to-r from-orange-500 to-red-600 text-white"
+                  : userRole === "instructor"
+                  ? "bg-gradient-to-r from-purple-500 to-violet-600 text-white"
+                  : "bg-gradient-to-r from-blue-500 to-cyan-600 text-white"
+              }`}
               data-testid={`badge-role-${userRole}`}
             >
               {userRole.charAt(0).toUpperCase() + userRole.slice(1)}
             </Badge>
           </div>
-        </div>
+        </a>
       </SidebarFooter>
     </Sidebar>
   );
