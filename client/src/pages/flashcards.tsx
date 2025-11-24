@@ -216,52 +216,52 @@ export default function Flashcards() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card className="border-blue-500/50 bg-blue-50/50 dark:bg-blue-950/20">
+          <Card className="border-0 bg-gradient-to-br from-blue-500 to-cyan-500 text-white">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-lg">Due Today</CardTitle>
-                <Calendar className="h-5 w-5 text-blue-600" />
+                <CardTitle className="text-lg text-white">Due Today</CardTitle>
+                <Calendar className="h-5 w-5" />
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-4xl font-bold text-blue-600">
+              <div className="text-4xl font-bold">
                 {decks.reduce((sum, deck) => sum + deck.dueToday, 0)}
               </div>
-              <p className="text-sm text-muted-foreground mt-1">cards to review</p>
+              <p className="text-sm text-white/80 mt-1">cards to review</p>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="border-0 bg-gradient-to-br from-purple-500 to-pink-500 text-white">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-lg">Total Cards</CardTitle>
-                <TrendingUp className="h-5 w-5 text-purple-600" />
+                <CardTitle className="text-lg text-white">Total Cards</CardTitle>
+                <TrendingUp className="h-5 w-5" />
               </div>
             </CardHeader>
             <CardContent>
               <div className="text-4xl font-bold">
                 {decks.reduce((sum, deck) => sum + deck.cards, 0)}
               </div>
-              <p className="text-sm text-muted-foreground mt-1">across all decks</p>
+              <p className="text-sm text-white/80 mt-1">across all decks</p>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="border-0 bg-gradient-to-br from-green-500 to-emerald-500 text-white">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-lg">Mastery Rate</CardTitle>
-                <RotateCw className="h-5 w-5 text-green-600" />
+                <CardTitle className="text-lg text-white">Mastery Rate</CardTitle>
+                <RotateCw className="h-5 w-5" />
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-4xl font-bold text-green-600">
+              <div className="text-4xl font-bold">
                 {Math.round(
                   (decks.reduce((sum, deck) => sum + deck.mastered, 0) /
                     decks.reduce((sum, deck) => sum + deck.cards, 0)) *
                     100
                 )}%
               </div>
-              <p className="text-sm text-muted-foreground mt-1">cards mastered</p>
+              <p className="text-sm text-white/80 mt-1">cards mastered</p>
             </CardContent>
           </Card>
         </div>
@@ -274,14 +274,14 @@ export default function Flashcards() {
             return (
               <Card
                 key={deck.id}
-                className={`hover-elevate ${hasDueCards ? "border-primary/50" : ""}`}
+                className={`hover-elevate ${hasDueCards ? "border-2 border-green-500" : ""}`}
                 data-testid={`card-deck-${deck.id}`}
               >
                 <CardHeader>
                   <div className="flex items-start justify-between mb-2">
-                    <Badge variant="outline">{deck.subject}</Badge>
+                    <Badge variant="outline" className="border-green-500 text-green-700 dark:text-green-400">{deck.subject}</Badge>
                     {hasDueCards && (
-                      <Badge variant="default" className="bg-primary">
+                      <Badge className="bg-gradient-to-r from-green-500 to-emerald-500 text-white border-0">
                         {deck.dueToday} due
                       </Badge>
                     )}

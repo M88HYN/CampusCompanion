@@ -177,13 +177,13 @@ export default function Quizzes() {
                 const isCorrect = userAnswer?.correct;
 
                 return (
-                  <div key={question.id} className="border rounded-md p-4 space-y-3">
+                  <div key={question.id} className={`border-2 rounded-lg p-4 space-y-3 ${isCorrect ? 'border-green-400 bg-green-50 dark:bg-green-950/20' : 'border-red-400 bg-red-50 dark:bg-red-950/20'}`}>
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex items-start gap-3 flex-1">
                         {isCorrect ? (
-                          <CheckCircle2 className="h-5 w-5 text-green-600 shrink-0 mt-0.5" />
+                          <CheckCircle2 className="h-6 w-6 text-green-600 shrink-0 mt-0.5" />
                         ) : (
-                          <AlertCircle className="h-5 w-5 text-red-600 shrink-0 mt-0.5" />
+                          <AlertCircle className="h-6 w-6 text-red-600 shrink-0 mt-0.5" />
                         )}
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-2">
@@ -211,9 +211,9 @@ export default function Quizzes() {
                             </div>
                           )}
 
-                          <div className="mt-3 p-3 bg-muted/50 rounded-md text-sm">
-                            <div className="font-medium mb-1">Explanation:</div>
-                            <p className="text-muted-foreground">{question.explanation}</p>
+                          <div className="mt-3 p-3 bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-950/30 dark:to-purple-950/30 rounded-lg text-sm border-l-4 border-blue-500">
+                            <div className="font-medium mb-1 text-blue-700 dark:text-blue-400">Explanation:</div>
+                            <p className="text-foreground">{question.explanation}</p>
                           </div>
 
                           {question.markScheme && (
