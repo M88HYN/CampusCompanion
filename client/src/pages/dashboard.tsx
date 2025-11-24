@@ -1,7 +1,8 @@
-import { BookOpen, BrainCircuit, GraduationCap, Sparkles, Clock, TrendingUp } from "lucide-react";
+import { BookOpen, BrainCircuit, GraduationCap, Sparkles, Clock, TrendingUp, Flame, Target, Calendar } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 
 type UserRole = "student" | "instructor" | "admin";
 
@@ -29,15 +30,16 @@ export default function Dashboard({ userRole = "student" }: DashboardProps) {
     },
     {
       title: "Flashcards",
-      description: "8 decks",
+      description: "8 decks • 23 due today",
       icon: GraduationCap,
       color: "text-green-600",
       bgColor: "bg-green-50 dark:bg-green-950",
       href: "/flashcards",
+      urgent: true,
     },
     {
-      title: "Research",
-      description: "AI Assistant",
+      title: "Insight Scout",
+      description: "Research & Sources",
       icon: Sparkles,
       color: "text-amber-600",
       bgColor: "bg-amber-50 dark:bg-amber-950",
@@ -46,10 +48,16 @@ export default function Dashboard({ userRole = "student" }: DashboardProps) {
   ];
 
   const recentActivity = [
-    { action: "Studied", item: "Biology Flashcards", time: "2 hours ago" },
-    { action: "Completed", item: "Math Quiz Chapter 3", time: "5 hours ago" },
+    { action: "Studied", item: "Biology Flashcards", time: "2 hours ago", accuracy: 87 },
+    { action: "Completed", item: "Math Quiz Chapter 3", time: "5 hours ago", accuracy: 92 },
     { action: "Created", item: "Physics Notes", time: "Yesterday" },
     { action: "Researched", item: "Quantum Mechanics", time: "2 days ago" },
+  ];
+
+  const topicProgress = [
+    { topic: "React Hooks", accuracy: 92, cards: 24, due: 5 },
+    { topic: "Calculus", accuracy: 78, cards: 35, due: 12 },
+    { topic: "Physics", accuracy: 85, cards: 28, due: 6 },
   ];
 
   return (
@@ -63,12 +71,71 @@ export default function Dashboard({ userRole = "student" }: DashboardProps) {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Card className="border-primary/50 bg-gradient-to-br from-primary/5 to-transparent">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Flame className="h-5 w-5 text-orange-600" />
+                  <CardTitle className="text-lg">Study Streak</CardTitle>
+                </div>
+                <div className="text-3xl font-bold text-primary">7</div>
+              </div>
+              <CardDescription>days in a row</CardDescription>
+            </CardHeader>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Calendar className="h-5 w-5 text-blue-600" />
+                  <CardTitle className="text-lg">Due Today</CardTitle>
+                </div>
+                <div className="text-3xl font-bold text-blue-600">23</div>
+              </div>
+              <CardDescription>flashcards to review</CardDescription>
+            </CardHeader>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Target className="h-5 w-5 text-green-600" />
+                  <CardTitle className="text-lg">Accuracy</CardTitle>
+                </div>
+                <div className="text-3xl font-bold text-green-600">87%</div>
+              </div>
+              <CardDescription>this week average</CardDescription>
+            </CardHeader>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Clock className="h-5 w-5 text-purple-600" />
+                  <CardTitle className="text-lg">Study Time</CardTitle>
+                </div>
+                <div className="text-3xl font-bold text-purple-600">12h</div>
+              </div>
+              <CardDescription>30m this week</CardDescription>
+            </CardHeader>
+          </Card>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {features.map((feature) => (
             <Card
               key={feature.title}
-              className="hover-elevate cursor-pointer transition-all"
+              className="hover-elevate cursor-pointer transition-all relative"
               data-testid={`card-${feature.title.toLowerCase()}`}
             >
+              {feature.urgent && (
+                <Badge variant="destructive" className="absolute top-3 right-3 text-xs">
+                  Due
+                </Badge>
+              )}
               <CardHeader className="pb-3">
                 <div className={`w-12 h-12 rounded-md ${feature.bgColor} flex items-center justify-center mb-3`}>
                   <feature.icon className={`h-6 w-6 ${feature.color}`} />
@@ -81,7 +148,7 @@ export default function Dashboard({ userRole = "student" }: DashboardProps) {
                   variant="ghost"
                   size="sm"
                   className="w-full"
-                  data-testid={`button-open-${feature.title.toLowerCase()}`}
+                  data-testid={`button-open-${feature.title.toLowerCase().replace(/\s/g, "-")}`}
                   onClick={() => console.log(`Navigate to ${feature.href}`)}
                 >
                   Open
@@ -91,8 +158,8 @@ export default function Dashboard({ userRole = "student" }: DashboardProps) {
           ))}
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <Card className="lg:col-span-2">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Clock className="h-5 w-5" />
@@ -107,11 +174,16 @@ export default function Dashboard({ userRole = "student" }: DashboardProps) {
                     className="flex items-start gap-4 pb-4 border-b last:border-0 last:pb-0"
                     data-testid={`activity-${index}`}
                   >
-                    <div className="w-2 h-2 rounded-full bg-primary mt-2" />
+                    <div className="w-2 h-2 rounded-full bg-primary mt-2 shrink-0" />
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium">
-                        {activity.action} <span className="text-muted-foreground">{activity.item}</span>
-                      </p>
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="text-sm font-medium">
+                          {activity.action} <span className="text-muted-foreground">{activity.item}</span>
+                        </p>
+                        {activity.accuracy && (
+                          <Badge variant="secondary" className="shrink-0">{activity.accuracy}%</Badge>
+                        )}
+                      </div>
                       <p className="text-xs text-muted-foreground mt-1">{activity.time}</p>
                     </div>
                   </div>
@@ -124,37 +196,27 @@ export default function Dashboard({ userRole = "student" }: DashboardProps) {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <TrendingUp className="h-5 w-5" />
-                Study Stats
+                Topic Coverage
               </CardTitle>
+              <CardDescription>Your progress by subject</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div>
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-sm text-muted-foreground">This Week</span>
-                  <Badge variant="secondary">12h 30m</Badge>
+              {topicProgress.map((topic, index) => (
+                <div key={index} className="space-y-2">
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="font-medium">{topic.topic}</span>
+                    <div className="flex items-center gap-3">
+                      {topic.due > 0 && (
+                        <Badge variant="outline" className="text-xs">
+                          {topic.due} due
+                        </Badge>
+                      )}
+                      <span className="text-muted-foreground">{topic.accuracy}%</span>
+                    </div>
+                  </div>
+                  <Progress value={topic.accuracy} className="h-2" />
                 </div>
-                <div className="h-2 bg-muted rounded-full overflow-hidden">
-                  <div className="h-full bg-primary w-3/4" />
-                </div>
-              </div>
-              <div>
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-sm text-muted-foreground">Quizzes Completed</span>
-                  <Badge variant="secondary">8/10</Badge>
-                </div>
-                <div className="h-2 bg-muted rounded-full overflow-hidden">
-                  <div className="h-full bg-green-600 w-4/5" />
-                </div>
-              </div>
-              <div>
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-sm text-muted-foreground">Cards Reviewed</span>
-                  <Badge variant="secondary">124</Badge>
-                </div>
-                <div className="h-2 bg-muted rounded-full overflow-hidden">
-                  <div className="h-full bg-purple-600 w-2/3" />
-                </div>
-              </div>
+              ))}
             </CardContent>
           </Card>
         </div>
