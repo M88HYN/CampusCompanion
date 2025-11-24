@@ -1,13 +1,473 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
+import {
+  insertNoteSchema, insertNoteBlockSchema,
+  insertDeckSchema, insertCardSchema,
+  insertQuizSchema, insertQuizQuestionSchema, insertQuizOptionSchema,
+  insertQuizAttemptSchema, insertQuizResponseSchema
+} from "@shared/schema";
+import { z } from "zod";
+
+// For demo purposes - in production you'd use proper authentication
+const DEMO_USER_ID = "demo-user";
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // put application routes here
-  // prefix all routes with /api
+  
+  // ==================== NOTES API ====================
+  
+  app.get("/api/notes", async (req, res) => {
+    try {
+      const notes = await storage.getNotes(DEMO_USER_ID);
+      res.json(notes);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch notes" });
+    }
+  });
 
-  // use storage to perform CRUD operations on the storage interface
-  // e.g. storage.insertUser(user) or storage.getUserByUsername(username)
+  app.get("/api/notes/:id", async (req, res) => {
+    try {
+      const note = await storage.getNote(req.params.id);
+      if (!note) {
+        return res.status(404).json({ error: "Note not found" });
+      }
+      const blocks = await storage.getNoteBlocks(req.params.id);
+      res.json({ ...note, blocks });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch note" });
+    }
+  });
+
+  app.post("/api/notes", async (req, res) => {
+    try {
+      const noteData = insertNoteSchema.parse({ ...req.body, userId: DEMO_USER_ID });
+      const note = await storage.createNote(noteData);
+      
+      if (req.body.blocks && Array.isArray(req.body.blocks)) {
+        const blocks = req.body.blocks.map((block: any, index: number) => ({
+          noteId: note.id,
+          type: block.type,
+          content: block.content,
+          order: index,
+        }));
+        await storage.createNoteBlocks(blocks);
+      }
+      
+      res.status(201).json(note);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: error.errors });
+      }
+      res.status(500).json({ error: "Failed to create note" });
+    }
+  });
+
+  app.patch("/api/notes/:id", async (req, res) => {
+    try {
+      const note = await storage.updateNote(req.params.id, req.body);
+      if (!note) {
+        return res.status(404).json({ error: "Note not found" });
+      }
+      res.json(note);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update note" });
+    }
+  });
+
+  app.delete("/api/notes/:id", async (req, res) => {
+    try {
+      await storage.deleteNote(req.params.id);
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete note" });
+    }
+  });
+
+  // ==================== FLASHCARDS API ====================
+
+  app.get("/api/decks", async (req, res) => {
+    try {
+      const decks = await storage.getDecks(DEMO_USER_ID);
+      
+      // Enrich with card counts
+      const enrichedDecks = await Promise.all(
+        decks.map(async (deck) => {
+          const cards = await storage.getCards(deck.id);
+          const now = new Date();
+          const dueToday = cards.filter(c => new Date(c.dueAt) <= now).length;
+          const mastered = cards.filter(c => c.status === "mastered").length;
+          
+          return {
+            ...deck,
+            cards: cards.length,
+            dueToday,
+            mastered,
+          };
+        })
+      );
+      
+      res.json(enrichedDecks);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch decks" });
+    }
+  });
+
+  app.get("/api/decks/:id", async (req, res) => {
+    try {
+      const deck = await storage.getDeck(req.params.id);
+      if (!deck) {
+        return res.status(404).json({ error: "Deck not found" });
+      }
+      const cards = await storage.getCards(req.params.id);
+      res.json({ ...deck, cards });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch deck" });
+    }
+  });
+
+  app.post("/api/decks", async (req, res) => {
+    try {
+      const deckData = insertDeckSchema.parse({ ...req.body, userId: DEMO_USER_ID });
+      const deck = await storage.createDeck(deckData);
+      res.status(201).json(deck);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: error.errors });
+      }
+      res.status(500).json({ error: "Failed to create deck" });
+    }
+  });
+
+  app.delete("/api/decks/:id", async (req, res) => {
+    try {
+      await storage.deleteDeck(req.params.id);
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete deck" });
+    }
+  });
+
+  app.post("/api/cards", async (req, res) => {
+    try {
+      const cardData = insertCardSchema.parse(req.body);
+      const card = await storage.createCard(cardData);
+      res.status(201).json(card);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: error.errors });
+      }
+      res.status(500).json({ error: "Failed to create card" });
+    }
+  });
+
+  app.get("/api/cards/due", async (req, res) => {
+    try {
+      const dueCards = await storage.getDueCards(DEMO_USER_ID);
+      res.json(dueCards);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch due cards" });
+    }
+  });
+
+  app.post("/api/cards/:id/review", async (req, res) => {
+    try {
+      const { quality } = req.body;
+      if (typeof quality !== "number" || quality < 0 || quality > 5) {
+        return res.status(400).json({ error: "Quality must be between 0 and 5" });
+      }
+      const card = await storage.reviewCard(req.params.id, quality);
+      res.json(card);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to review card" });
+    }
+  });
+
+  app.delete("/api/cards/:id", async (req, res) => {
+    try {
+      await storage.deleteCard(req.params.id);
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete card" });
+    }
+  });
+
+  // ==================== QUIZZES API ====================
+
+  app.get("/api/quizzes", async (req, res) => {
+    try {
+      const quizzes = await storage.getQuizzes(DEMO_USER_ID);
+      
+      // Enrich with question counts and attempt stats
+      const enrichedQuizzes = await Promise.all(
+        quizzes.map(async (quiz) => {
+          const questions = await storage.getQuizQuestions(quiz.id);
+          const attempts = await storage.getQuizAttempts(quiz.id, DEMO_USER_ID);
+          const completedAttempts = attempts.filter(a => a.completedAt);
+          const bestScore = completedAttempts.length > 0
+            ? Math.max(...completedAttempts.map(a => a.score || 0))
+            : null;
+          
+          return {
+            ...quiz,
+            questionCount: questions.length,
+            attemptCount: attempts.length,
+            bestScore,
+          };
+        })
+      );
+      
+      res.json(enrichedQuizzes);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch quizzes" });
+    }
+  });
+
+  app.get("/api/quizzes/:id", async (req, res) => {
+    try {
+      const quiz = await storage.getQuiz(req.params.id);
+      if (!quiz) {
+        return res.status(404).json({ error: "Quiz not found" });
+      }
+      
+      const questions = await storage.getQuizQuestions(req.params.id);
+      const questionsWithOptions = await Promise.all(
+        questions.map(async (question) => {
+          if (question.type === "mcq") {
+            const options = await storage.getQuizOptions(question.id);
+            return { ...question, options };
+          }
+          return question;
+        })
+      );
+      
+      res.json({ ...quiz, questions: questionsWithOptions });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch quiz" });
+    }
+  });
+
+  app.post("/api/quizzes", async (req, res) => {
+    try {
+      const { questions, ...quizData } = req.body;
+      const quiz = await storage.createQuiz(insertQuizSchema.parse({ ...quizData, userId: DEMO_USER_ID }));
+      
+      if (questions && Array.isArray(questions)) {
+        for (let i = 0; i < questions.length; i++) {
+          const { options, ...questionData } = questions[i];
+          const question = await storage.createQuizQuestion({
+            ...questionData,
+            quizId: quiz.id,
+            order: i,
+          });
+          
+          if (options && Array.isArray(options)) {
+            for (let j = 0; j < options.length; j++) {
+              await storage.createQuizOption({
+                ...options[j],
+                questionId: question.id,
+                order: j,
+              });
+            }
+          }
+        }
+      }
+      
+      res.status(201).json(quiz);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: error.errors });
+      }
+      res.status(500).json({ error: "Failed to create quiz" });
+    }
+  });
+
+  app.delete("/api/quizzes/:id", async (req, res) => {
+    try {
+      await storage.deleteQuiz(req.params.id);
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete quiz" });
+    }
+  });
+
+  // ==================== QUIZ ATTEMPTS API ====================
+
+  app.post("/api/quizzes/:quizId/attempts", async (req, res) => {
+    try {
+      const quiz = await storage.getQuiz(req.params.quizId);
+      if (!quiz) {
+        return res.status(404).json({ error: "Quiz not found" });
+      }
+      
+      const attempt = await storage.createQuizAttempt({
+        quizId: req.params.quizId,
+        userId: DEMO_USER_ID,
+        mode: req.body.mode || quiz.mode,
+      });
+      
+      res.status(201).json(attempt);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create attempt" });
+    }
+  });
+
+  app.get("/api/quizzes/:quizId/attempts", async (req, res) => {
+    try {
+      const attempts = await storage.getQuizAttempts(req.params.quizId, DEMO_USER_ID);
+      res.json(attempts);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch attempts" });
+    }
+  });
+
+  app.get("/api/attempts/:attemptId", async (req, res) => {
+    try {
+      const attempt = await storage.getQuizAttempt(req.params.attemptId);
+      if (!attempt) {
+        return res.status(404).json({ error: "Attempt not found" });
+      }
+      
+      const responses = await storage.getQuizResponses(req.params.attemptId);
+      res.json({ ...attempt, responses });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch attempt" });
+    }
+  });
+
+  app.post("/api/attempts/:attemptId/submit", async (req, res) => {
+    try {
+      const { responses, timeSpent } = req.body;
+      const attempt = await storage.getQuizAttempt(req.params.attemptId);
+      
+      if (!attempt) {
+        return res.status(404).json({ error: "Attempt not found" });
+      }
+      
+      if (attempt.completedAt) {
+        return res.status(400).json({ error: "Attempt already completed" });
+      }
+      
+      // Check for existing responses to prevent duplicates
+      const existingResponses = await storage.getQuizResponses(req.params.attemptId);
+      if (existingResponses.length > 0) {
+        return res.status(400).json({ error: "Responses already submitted" });
+      }
+      
+      const questions = await storage.getQuizQuestions(attempt.quizId);
+      let totalMarks = 0;
+      let earnedMarks = 0;
+      const createdResponses = [];
+      
+      // Process each response
+      for (const response of responses) {
+        const question = questions.find(q => q.id === response.questionId);
+        if (!question) continue;
+        
+        totalMarks += question.marks;
+        let isCorrect = false;
+        let marksAwarded = 0;
+        
+        if (question.type === "mcq") {
+          const options = await storage.getQuizOptions(question.id);
+          const correctOption = options.find(o => o.isCorrect);
+          isCorrect = response.selectedOptionId === correctOption?.id;
+          marksAwarded = isCorrect ? question.marks : 0;
+        } else {
+          // For SAQ/LAQ, auto-mark if exact match (in real app, use AI grading)
+          const userAnswer = (response.textAnswer || "").trim().toLowerCase();
+          const correctAnswer = (question.correctAnswer || "").trim().toLowerCase();
+          isCorrect = userAnswer === correctAnswer;
+          marksAwarded = isCorrect ? question.marks : 0;
+        }
+        
+        earnedMarks += marksAwarded;
+        
+        const createdResponse = await storage.createQuizResponse({
+          attemptId: req.params.attemptId,
+          questionId: response.questionId,
+          selectedOptionId: response.selectedOptionId,
+          textAnswer: response.textAnswer,
+          isCorrect,
+          marksAwarded,
+          feedback: isCorrect ? "Correct!" : question.explanation || "Incorrect",
+        });
+        
+        createdResponses.push(createdResponse);
+      }
+      
+      const score = totalMarks > 0 ? Math.round((earnedMarks / totalMarks) * 100) : 0;
+      const completedAttempt = await storage.completeQuizAttempt(
+        req.params.attemptId,
+        score,
+        earnedMarks,
+        totalMarks,
+        timeSpent || 0
+      );
+      
+      res.json({ ...completedAttempt, responses: createdResponses });
+    } catch (error) {
+      console.error("Submit error:", error);
+      res.status(500).json({ error: "Failed to submit attempt" });
+    }
+  });
+
+  // ==================== INTEGRATION ENDPOINTS ====================
+
+  app.post("/api/flashcards/from-response", async (req, res) => {
+    try {
+      const { responseId, deckId } = req.body;
+      if (!responseId || !deckId) {
+        return res.status(400).json({ error: "responseId and deckId are required" });
+      }
+      
+      const result = await storage.convertResponseToFlashcard(responseId, deckId);
+      res.status(201).json(result);
+    } catch (error) {
+      console.error("Flashcard conversion error:", error);
+      res.status(500).json({ error: "Failed to convert to flashcard" });
+    }
+  });
+
+  app.get("/api/quizzes/:quizId/analytics", async (req, res) => {
+    try {
+      const analytics = await storage.getQuizAnalytics(req.params.quizId);
+      res.json(analytics);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch analytics" });
+    }
+  });
+
+  app.get("/api/dashboard/stats", async (req, res) => {
+    try {
+      const [notes, decks, quizzes, dueCards] = await Promise.all([
+        storage.getNotes(DEMO_USER_ID),
+        storage.getDecks(DEMO_USER_ID),
+        storage.getQuizzes(DEMO_USER_ID),
+        storage.getDueCards(DEMO_USER_ID),
+      ]);
+      
+      // Calculate accuracy from quiz attempts
+      const allAttempts = await Promise.all(
+        quizzes.map(q => storage.getQuizAttempts(q.id, DEMO_USER_ID))
+      );
+      const completedAttempts = allAttempts.flat().filter(a => a.completedAt && a.score !== null);
+      const averageAccuracy = completedAttempts.length > 0
+        ? Math.round(completedAttempts.reduce((sum, a) => sum + (a.score || 0), 0) / completedAttempts.length)
+        : 0;
+      
+      res.json({
+        noteCount: notes.length,
+        deckCount: decks.length,
+        quizCount: quizzes.length,
+        dueCardsCount: dueCards.length,
+        averageAccuracy,
+        studyStreak: 7, // Mock data - would track in DB
+        weeklyStudyTime: "12h 30m", // Mock data
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch dashboard stats" });
+    }
+  });
 
   const httpServer = createServer(app);
 
