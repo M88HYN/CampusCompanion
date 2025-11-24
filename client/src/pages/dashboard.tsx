@@ -1,4 +1,5 @@
 import { BookOpen, BrainCircuit, GraduationCap, Sparkles, Clock, TrendingUp, Flame, Target, Calendar } from "lucide-react";
+import { Link } from "wouter";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -144,15 +145,17 @@ export default function Dashboard({ userRole = "student" }: DashboardProps) {
                 <CardDescription className="text-white/80">{feature.description}</CardDescription>
               </CardHeader>
               <CardContent>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="w-full bg-white/20 hover:bg-white/30 text-white border-0"
-                  data-testid={`button-open-${feature.title.toLowerCase().replace(/\s/g, "-")}`}
-                  onClick={() => console.log(`Navigate to ${feature.href}`)}
-                >
-                  Open
-                </Button>
+                <Link href={feature.href}>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="w-full bg-white/20 hover:bg-white/30 text-white border-0"
+                    data-testid={`button-open-${feature.title.toLowerCase().replace(/\s/g, "-")}`}
+                    asChild
+                  >
+                    <span>Open</span>
+                  </Button>
+                </Link>
               </CardContent>
             </Card>
           ))}
