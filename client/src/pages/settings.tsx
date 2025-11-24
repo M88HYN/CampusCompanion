@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { User, Mail, Lock, Bell, Eye, EyeOff, Save, LogOut, Shield, Globe } from "lucide-react";
+import { User, Mail, Lock, Bell, Eye, EyeOff, Save, LogOut, Shield, Globe, Sparkles, Zap } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/select";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
-type SettingsTab = "account" | "privacy" | "notifications" | "security";
+type SettingsTab = "account" | "privacy" | "notifications" | "security" | "insight-scout";
 
 export default function Settings() {
   const [activeTab, setActiveTab] = useState<SettingsTab>("account");
@@ -36,6 +36,23 @@ export default function Settings() {
     newFeatures: false,
     marketing: false,
   });
+  const [insightScoutSettings, setInsightScoutSettings] = useState({
+    aiModel: "gpt-4",
+    searchDepth: "comprehensive",
+    citationFormat: "apa",
+    responseTone: "academic",
+    includeExamples: true,
+    includeSources: true,
+    maxResults: "10",
+    queryHistory: true,
+    autoSave: true,
+    researchSummary: true,
+    citationStyle: "apa",
+    webSearch: true,
+    academicDatabases: true,
+    enhancedAnalysis: true,
+    multiLanguageSupport: false,
+  });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -50,11 +67,16 @@ export default function Settings() {
     setNotifications(prev => ({ ...prev, [key]: !prev[key] }));
   };
 
+  const handleInsightScoutChange = (key: keyof typeof insightScoutSettings, value: any) => {
+    setInsightScoutSettings(prev => ({ ...prev, [key]: value }));
+  };
+
   const tabs = [
     { id: "account" as SettingsTab, label: "Account", icon: User },
     { id: "privacy" as SettingsTab, label: "Privacy", icon: Shield },
     { id: "notifications" as SettingsTab, label: "Notifications", icon: Bell },
     { id: "security" as SettingsTab, label: "Security", icon: Lock },
+    { id: "insight-scout" as SettingsTab, label: "Insight Scout", icon: Sparkles },
   ];
 
   return (
@@ -477,6 +499,269 @@ export default function Settings() {
                     </Button>
                   </CardContent>
                 </Card>
+              </div>
+            )}
+
+            {/* Insight Scout Settings */}
+            {activeTab === "insight-scout" && (
+              <div className="space-y-6">
+                {/* AI Model Configuration */}
+                <Card className="border-2 border-orange-200 dark:border-orange-800">
+                  <CardHeader className="bg-gradient-to-r from-orange-100 to-yellow-100 dark:from-orange-900 dark:to-yellow-900">
+                    <CardTitle className="flex items-center gap-2">
+                      <Zap className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+                      AI Model Configuration
+                    </CardTitle>
+                    <CardDescription>Choose your AI model and performance settings</CardDescription>
+                  </CardHeader>
+                  <CardContent className="pt-6 space-y-6">
+                    <div className="space-y-2">
+                      <Label htmlFor="ai-model" className="font-semibold">AI Model</Label>
+                      <Select value={insightScoutSettings.aiModel} onValueChange={(value) => handleInsightScoutChange("aiModel", value)}>
+                        <SelectTrigger className="border-2 border-orange-200 dark:border-orange-800" data-testid="select-ai-model">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="gpt-4">GPT-4 (Most Powerful)</SelectItem>
+                          <SelectItem value="gpt-4-turbo">GPT-4 Turbo (Fast & Powerful)</SelectItem>
+                          <SelectItem value="gpt-3.5">GPT-3.5 Turbo (Fast)</SelectItem>
+                          <SelectItem value="claude-3">Claude 3 (Alternative)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-muted-foreground">GPT-4 provides the most accurate results but uses more credits</p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="search-depth" className="font-semibold">Search Depth</Label>
+                      <Select value={insightScoutSettings.searchDepth} onValueChange={(value) => handleInsightScoutChange("searchDepth", value)}>
+                        <SelectTrigger className="border-2 border-orange-200 dark:border-orange-800" data-testid="select-search-depth">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="quick">Quick (1-2 sources)</SelectItem>
+                          <SelectItem value="standard">Standard (3-5 sources)</SelectItem>
+                          <SelectItem value="comprehensive">Comprehensive (6-10 sources)</SelectItem>
+                          <SelectItem value="exhaustive">Exhaustive (10+ sources)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-muted-foreground">Deeper searches provide more thorough research but take longer</p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="max-results" className="font-semibold">Maximum Results Per Query</Label>
+                      <Select value={insightScoutSettings.maxResults} onValueChange={(value) => handleInsightScoutChange("maxResults", value)}>
+                        <SelectTrigger className="border-2 border-orange-200 dark:border-orange-800" data-testid="select-max-results">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="5">5 Results</SelectItem>
+                          <SelectItem value="10">10 Results</SelectItem>
+                          <SelectItem value="20">20 Results</SelectItem>
+                          <SelectItem value="50">50 Results</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Research Preferences */}
+                <Card className="border-2 border-orange-200 dark:border-orange-800">
+                  <CardHeader className="bg-gradient-to-r from-orange-100 to-yellow-100 dark:from-orange-900 dark:to-yellow-900">
+                    <CardTitle>Research Preferences</CardTitle>
+                    <CardDescription>Customize how Insight Scout delivers research</CardDescription>
+                  </CardHeader>
+                  <CardContent className="pt-6 space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="response-tone" className="font-semibold">Response Tone</Label>
+                      <Select value={insightScoutSettings.responseTone} onValueChange={(value) => handleInsightScoutChange("responseTone", value)}>
+                        <SelectTrigger className="border-2 border-orange-200 dark:border-orange-800" data-testid="select-response-tone">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="academic">Academic (Formal & Professional)</SelectItem>
+                          <SelectItem value="conversational">Conversational (Friendly & Casual)</SelectItem>
+                          <SelectItem value="technical">Technical (In-depth & Precise)</SelectItem>
+                          <SelectItem value="simplified">Simplified (Easy to Understand)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="citation-format" className="font-semibold">Citation Format</Label>
+                      <Select value={insightScoutSettings.citationFormat} onValueChange={(value) => handleInsightScoutChange("citationFormat", value)}>
+                        <SelectTrigger className="border-2 border-orange-200 dark:border-orange-800" data-testid="select-citation-format">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="apa">APA (American Psychological Association)</SelectItem>
+                          <SelectItem value="mla">MLA (Modern Language Association)</SelectItem>
+                          <SelectItem value="chicago">Chicago/Turabian</SelectItem>
+                          <SelectItem value="harvard">Harvard</SelectItem>
+                          <SelectItem value="ieee">IEEE</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="flex items-center justify-between p-4 border-2 border-slate-200 dark:border-slate-700 rounded-lg">
+                      <div>
+                        <p className="font-semibold">Include Examples</p>
+                        <p className="text-sm text-muted-foreground">Add real-world examples to explanations</p>
+                      </div>
+                      <Switch
+                        checked={insightScoutSettings.includeExamples}
+                        onCheckedChange={(value) => handleInsightScoutChange("includeExamples", value)}
+                        data-testid="switch-include-examples"
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between p-4 border-2 border-slate-200 dark:border-slate-700 rounded-lg">
+                      <div>
+                        <p className="font-semibold">Include Sources</p>
+                        <p className="text-sm text-muted-foreground">Display source citations and references</p>
+                      </div>
+                      <Switch
+                        checked={insightScoutSettings.includeSources}
+                        onCheckedChange={(value) => handleInsightScoutChange("includeSources", value)}
+                        data-testid="switch-include-sources"
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between p-4 border-2 border-slate-200 dark:border-slate-700 rounded-lg">
+                      <div>
+                        <p className="font-semibold">Research Summary</p>
+                        <p className="text-sm text-muted-foreground">Auto-generate summary of findings</p>
+                      </div>
+                      <Switch
+                        checked={insightScoutSettings.researchSummary}
+                        onCheckedChange={(value) => handleInsightScoutChange("researchSummary", value)}
+                        data-testid="switch-research-summary"
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Data Sources */}
+                <Card className="border-2 border-orange-200 dark:border-orange-800">
+                  <CardHeader className="bg-gradient-to-r from-orange-100 to-yellow-100 dark:from-orange-900 dark:to-yellow-900">
+                    <CardTitle>Data Sources</CardTitle>
+                    <CardDescription>Choose which sources to search</CardDescription>
+                  </CardHeader>
+                  <CardContent className="pt-6 space-y-4">
+                    <div className="flex items-center justify-between p-4 border-2 border-blue-200 dark:border-blue-800 rounded-lg bg-blue-50 dark:bg-blue-950">
+                      <div>
+                        <p className="font-semibold text-blue-900 dark:text-blue-100">Web Search</p>
+                        <p className="text-sm text-blue-700 dark:text-blue-300">General web search results</p>
+                      </div>
+                      <Switch
+                        checked={insightScoutSettings.webSearch}
+                        onCheckedChange={(value) => handleInsightScoutChange("webSearch", value)}
+                        data-testid="switch-web-search"
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between p-4 border-2 border-purple-200 dark:border-purple-800 rounded-lg bg-purple-50 dark:bg-purple-950">
+                      <div>
+                        <p className="font-semibold text-purple-900 dark:text-purple-100">Academic Databases</p>
+                        <p className="text-sm text-purple-700 dark:text-purple-300">Access to academic journals and papers</p>
+                      </div>
+                      <Switch
+                        checked={insightScoutSettings.academicDatabases}
+                        onCheckedChange={(value) => handleInsightScoutChange("academicDatabases", value)}
+                        data-testid="switch-academic-databases"
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between p-4 border-2 border-slate-200 dark:border-slate-700 rounded-lg">
+                      <div>
+                        <p className="font-semibold">Multi-language Support</p>
+                        <p className="text-sm text-muted-foreground">Search across multiple languages</p>
+                      </div>
+                      <Switch
+                        checked={insightScoutSettings.multiLanguageSupport}
+                        onCheckedChange={(value) => handleInsightScoutChange("multiLanguageSupport", value)}
+                        data-testid="switch-multi-language"
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Advanced Features */}
+                <Card className="border-2 border-orange-200 dark:border-orange-800">
+                  <CardHeader className="bg-gradient-to-r from-orange-100 to-yellow-100 dark:from-orange-900 dark:to-yellow-900">
+                    <CardTitle>Advanced Features</CardTitle>
+                    <CardDescription>Enable premium research capabilities</CardDescription>
+                  </CardHeader>
+                  <CardContent className="pt-6 space-y-4">
+                    <div className="flex items-center justify-between p-4 border-2 border-slate-200 dark:border-slate-700 rounded-lg">
+                      <div>
+                        <p className="font-semibold">Enhanced Analysis</p>
+                        <p className="text-sm text-muted-foreground">AI-powered analysis and insights</p>
+                      </div>
+                      <Switch
+                        checked={insightScoutSettings.enhancedAnalysis}
+                        onCheckedChange={(value) => handleInsightScoutChange("enhancedAnalysis", value)}
+                        data-testid="switch-enhanced-analysis"
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between p-4 border-2 border-slate-200 dark:border-slate-700 rounded-lg">
+                      <div>
+                        <p className="font-semibold">Query History</p>
+                        <p className="text-sm text-muted-foreground">Save and revisit past searches</p>
+                      </div>
+                      <Switch
+                        checked={insightScoutSettings.queryHistory}
+                        onCheckedChange={(value) => handleInsightScoutChange("queryHistory", value)}
+                        data-testid="switch-query-history"
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between p-4 border-2 border-slate-200 dark:border-slate-700 rounded-lg">
+                      <div>
+                        <p className="font-semibold">Auto-Save Conversations</p>
+                        <p className="text-sm text-muted-foreground">Automatically save all research sessions</p>
+                      </div>
+                      <Switch
+                        checked={insightScoutSettings.autoSave}
+                        onCheckedChange={(value) => handleInsightScoutChange("autoSave", value)}
+                        data-testid="switch-auto-save"
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Usage Statistics */}
+                <Card className="border-2 border-orange-200 dark:border-orange-800">
+                  <CardHeader className="bg-gradient-to-r from-orange-100 to-yellow-100 dark:from-orange-900 dark:to-yellow-900">
+                    <CardTitle>Usage Statistics</CardTitle>
+                    <CardDescription>Your Insight Scout usage this month</CardDescription>
+                  </CardHeader>
+                  <CardContent className="pt-6">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="p-4 bg-gradient-to-br from-orange-50 to-yellow-50 dark:from-orange-950 dark:to-yellow-950 rounded-lg border-2 border-orange-200 dark:border-orange-800">
+                        <p className="text-sm text-muted-foreground font-medium">Queries Used</p>
+                        <p className="text-3xl font-bold text-orange-600 dark:text-orange-400 mt-2">24 / 100</p>
+                        <p className="text-xs text-muted-foreground mt-1">76 queries remaining</p>
+                      </div>
+                      <div className="p-4 bg-gradient-to-br from-orange-50 to-yellow-50 dark:from-orange-950 dark:to-yellow-950 rounded-lg border-2 border-orange-200 dark:border-orange-800">
+                        <p className="text-sm text-muted-foreground font-medium">Total Searches</p>
+                        <p className="text-3xl font-bold text-orange-600 dark:text-orange-400 mt-2">156</p>
+                        <p className="text-xs text-muted-foreground mt-1">All time</p>
+                      </div>
+                      <div className="p-4 bg-gradient-to-br from-orange-50 to-yellow-50 dark:from-orange-950 dark:to-yellow-950 rounded-lg border-2 border-orange-200 dark:border-orange-800">
+                        <p className="text-sm text-muted-foreground font-medium">Avg. Response Time</p>
+                        <p className="text-3xl font-bold text-orange-600 dark:text-orange-400 mt-2">2.4s</p>
+                        <p className="text-xs text-muted-foreground mt-1">Per query</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Save Settings */}
+                <Button className="w-full bg-gradient-to-r from-orange-500 to-yellow-600 hover:from-orange-600 hover:to-yellow-700 text-white" data-testid="button-save-insight-scout">
+                  <Save className="h-4 w-4 mr-2" />
+                  Save Insight Scout Settings
+                </Button>
               </div>
             )}
           </div>
