@@ -7,6 +7,7 @@ import {
   Sparkles,
   Users,
   Zap,
+  Lightbulb,
 } from "lucide-react";
 import {
   Sidebar,
@@ -58,6 +59,11 @@ export function AppSidebar({ userRole = "student" }: AppSidebarProps) {
       title: "Insight Scout",
       url: "/research",
       icon: Sparkles,
+    },
+    {
+      title: "Revision Help",
+      url: "/revision",
+      icon: Lightbulb,
     },
   ];
 

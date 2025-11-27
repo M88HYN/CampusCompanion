@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { BookOpen, BrainCircuit, GraduationCap, Sparkles, Clock, TrendingUp, Flame, Target, Calendar, Edit2, Save, X } from "lucide-react";
+import { BookOpen, BrainCircuit, GraduationCap, Sparkles, Clock, TrendingUp, Flame, Target, Calendar, Edit2, Save, X, Lightbulb } from "lucide-react";
 import { Link } from "wouter";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -52,6 +52,14 @@ export default function Dashboard({ userRole = "student" }: DashboardProps) {
       color: "text-white",
       bgGradient: "bg-gradient-to-br from-orange-500 to-orange-600",
       href: "/research",
+    },
+    {
+      title: "Revision Help",
+      description: "Pomodoro, Kanban & Whiteboard",
+      icon: Lightbulb,
+      color: "text-white",
+      bgGradient: "bg-gradient-to-br from-yellow-500 to-amber-600",
+      href: "/revision",
     },
   ];
 
