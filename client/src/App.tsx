@@ -12,6 +12,7 @@ import Notes from "@/pages/notes";
 import Quizzes from "@/pages/quizzes";
 import Flashcards from "@/pages/flashcards";
 import Research from "@/pages/research";
+import Revision from "@/pages/revision";
 import Settings from "@/pages/settings";
 import NotFound from "@/pages/not-found";
 
@@ -23,6 +24,7 @@ function Router() {
       <Route path="/quizzes" component={() => <Quizzes />} />
       <Route path="/flashcards" component={() => <Flashcards />} />
       <Route path="/research" component={() => <Research />} />
+      <Route path="/revision" component={() => <Revision />} />
       <Route path="/settings" component={() => <Settings />} />
       <Route component={NotFound} />
     </Switch>
