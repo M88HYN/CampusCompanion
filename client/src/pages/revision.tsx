@@ -14,12 +14,6 @@ interface Task {
   status: "todo" | "in-progress" | "done";
 }
 
-interface Note {
-  id: string;
-  category: string;
-  content: string;
-}
-
 interface SessionStat {
   date: string;
   sessions: number;
@@ -38,12 +32,6 @@ export default function Revision() {
   ]);
   const [whiteboard, setWhiteboard] = useState("");
   const [newTask, setNewTask] = useState("");
-  const [notes, setNotes] = useState<Note[]>([
-    { id: "1", category: "Math", content: "Remember: chain rule for derivatives" },
-    { id: "2", category: "Biology", content: "Mitochondria: powerhouse of cell" },
-  ]);
-  const [newNoteContent, setNewNoteContent] = useState("");
-  const [newNoteCategory, setNewNoteCategory] = useState("General");
   const [sessionStats] = useState<SessionStat[]>([
     { date: "Today", sessions: 3, totalMinutes: 75 },
     { date: "Yesterday", sessions: 5, totalMinutes: 125 },
@@ -107,11 +95,10 @@ export default function Revision() {
         </div>
 
         <Tabs defaultValue="pomodoro" className="w-full">
-          <TabsList className="grid w-full grid-cols-5 gap-1 bg-white dark:bg-slate-900 border-2 border-amber-200 dark:border-amber-800 p-1">
+          <TabsList className="grid w-full grid-cols-4 gap-1 bg-white dark:bg-slate-900 border-2 border-amber-200 dark:border-amber-800 p-1">
             <TabsTrigger value="pomodoro" className="text-xs sm:text-sm">Pomodoro</TabsTrigger>
             <TabsTrigger value="kanban" className="text-xs sm:text-sm">Kanban</TabsTrigger>
             <TabsTrigger value="whiteboard" className="text-xs sm:text-sm">Whiteboard</TabsTrigger>
-            <TabsTrigger value="notes" className="text-xs sm:text-sm">Notes</TabsTrigger>
             <TabsTrigger value="stats" className="text-xs sm:text-sm">Stats</TabsTrigger>
           </TabsList>
 
@@ -297,69 +284,6 @@ export default function Revision() {
                   >
                     Clear
                   </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="notes" className="space-y-6">
-            <Card className="border-2 border-green-200 dark:border-green-800 shadow-lg">
-              <CardHeader className="bg-gradient-to-r from-green-100 to-emerald-100 dark:from-green-900 dark:to-emerald-900">
-                <CardTitle>Quick Notes</CardTitle>
-                <CardDescription>Capture key insights and important facts</CardDescription>
-              </CardHeader>
-              <CardContent className="pt-6">
-                <div className="flex gap-3 mb-6">
-                  <Input
-                    placeholder="Category (e.g., Math, Biology)"
-                    value={newNoteCategory}
-                    onChange={(e) => setNewNoteCategory(e.target.value)}
-                    className="flex-shrink-0 w-32 border-2 border-green-200 dark:border-green-800"
-                    data-testid="input-note-category"
-                  />
-                  <Textarea
-                    placeholder="Write a quick note..."
-                    value={newNoteContent}
-                    onChange={(e) => setNewNoteContent(e.target.value)}
-                    className="border-2 border-green-200 dark:border-green-800 focus:border-green-500 dark:focus:border-green-400 min-h-16"
-                    data-testid="textarea-new-note"
-                  />
-                  <Button
-                    onClick={() => {
-                      if (newNoteContent.trim()) {
-                        setNotes([...notes, { id: String(Date.now()), category: newNoteCategory, content: newNoteContent }]);
-                        setNewNoteContent("");
-                      }
-                    }}
-                    className="bg-green-500 hover:bg-green-600 text-white flex-shrink-0 h-16"
-                    data-testid="button-add-note"
-                  >
-                    <Plus className="h-5 w-5" />
-                  </Button>
-                </div>
-
-                <div className="space-y-3">
-                  {notes.map((note) => (
-                    <div
-                      key={note.id}
-                      className="bg-green-50 dark:bg-green-950 p-4 rounded-lg border-l-4 border-green-500 flex justify-between items-start group hover-elevate"
-                      data-testid={`note-${note.id}`}
-                    >
-                      <div className="flex-1">
-                        <Badge className="bg-green-500 text-white mb-2" data-testid={`badge-category-${note.id}`}>
-                          {note.category}
-                        </Badge>
-                        <p className="text-sm font-medium text-foreground">{note.content}</p>
-                      </div>
-                      <button
-                        onClick={() => setNotes(notes.filter((n) => n.id !== note.id))}
-                        className="opacity-0 group-hover:opacity-100 transition-opacity"
-                        data-testid={`button-delete-note-${note.id}`}
-                      >
-                        <Trash2 className="h-4 w-4 text-red-500 hover:text-red-600" />
-                      </button>
-                    </div>
-                  ))}
                 </div>
               </CardContent>
             </Card>
