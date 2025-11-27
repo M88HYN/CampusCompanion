@@ -1,9 +1,11 @@
-import { BookOpen, BrainCircuit, GraduationCap, Sparkles, Clock, TrendingUp, Flame, Target, Calendar } from "lucide-react";
+import { useState } from "react";
+import { BookOpen, BrainCircuit, GraduationCap, Sparkles, Clock, TrendingUp, Flame, Target, Calendar, Edit2, Save, X } from "lucide-react";
 import { Link } from "wouter";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Input } from "@/components/ui/input";
 
 type UserRole = "student" | "instructor" | "admin";
 
@@ -12,6 +14,11 @@ interface DashboardProps {
 }
 
 export default function Dashboard({ userRole = "student" }: DashboardProps) {
+  const [userName, setUserName] = useState("John");
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [tempName, setTempName] = useState(userName);
+  const [studyGoal, setStudyGoal] = useState("");
+  const [todayStudyTime, setTodayStudyTime] = useState(0);
   const features = [
     {
       title: "Notes",
@@ -61,11 +68,87 @@ export default function Dashboard({ userRole = "student" }: DashboardProps) {
     { topic: "Physics", accuracy: 85, cards: 28, due: 6 },
   ];
 
+  const handleSaveName = () => {
+    setUserName(tempName);
+    setIsEditingName(false);
+  };
+
+  const handleCancelName = () => {
+    setTempName(userName);
+    setIsEditingName(false);
+  };
+
   return (
     <div className="flex-1 overflow-auto">
       <div className="max-w-7xl mx-auto p-6 space-y-6">
+        <div className="flex items-center justify-between">
+          <div className="flex-1">
+            {isEditingName ? (
+              <div className="flex items-center gap-3 mb-4">
+                <Input
+                  value={tempName}
+                  onChange={(e) => setTempName(e.target.value)}
+                  className="max-w-xs text-2xl font-bold h-10"
+                  data-testid="input-edit-name"
+                  autoFocus
+                />
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={handleSaveName}
+                  data-testid="button-save-name"
+                >
+                  <Save className="h-4 w-4" />
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={handleCancelName}
+                  data-testid="button-cancel-name"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-3 mb-4">
+                <h1 className="text-3xl md:text-4xl font-bold">Welcome back, {userName}!</h1>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setIsEditingName(true)}
+                  data-testid="button-edit-name"
+                >
+                  <Edit2 className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="flex items-center gap-4">
+          <Input
+            type="number"
+            placeholder="What's your study goal today? (minutes)"
+            value={studyGoal}
+            onChange={(e) => setStudyGoal(e.target.value)}
+            className="max-w-xs"
+            data-testid="input-study-goal"
+          />
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">Today's study time:</span>
+            <Input
+              type="number"
+              placeholder="0"
+              value={todayStudyTime}
+              onChange={(e) => setTodayStudyTime(Number(e.target.value))}
+              className="max-w-20"
+              data-testid="input-today-study-time"
+            />
+            <span className="text-sm text-muted-foreground">min</span>
+          </div>
+        </div>
+
         <div>
-          <h1 className="text-3xl md:text-4xl font-bold">Welcome back, John!</h1>
           <p className="text-muted-foreground mt-2">
             Here's what's happening with your studies today
           </p>
