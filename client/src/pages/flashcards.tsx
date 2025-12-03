@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Play, RotateCw, Calendar, TrendingUp, Upload, X, Edit2, Trash2, Eye, EyeOff, Tags } from "lucide-react";
+import { Plus, Play, RotateCw, Calendar, TrendingUp, Upload, X, Edit2, Trash2, Eye, EyeOff, Tags, Settings } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -62,6 +62,16 @@ export default function Flashcards() {
 
   const [bulkImportText, setBulkImportText] = useState("");
   const [showPreview, setShowPreview] = useState(false);
+  const [showStudySettings, setShowStudySettings] = useState(false);
+  
+  // Study preferences
+  const [studyPreferences, setStudyPreferences] = useState({
+    shuffleCards: true,
+    answerDelay: "3" as "0" | "3" | "5" | "10",
+    autoAdvance: false,
+    autoAdvanceDelay: "3",
+    showProgress: true,
+  });
 
   const decks: Deck[] = [
     {
@@ -196,6 +206,108 @@ export default function Flashcards() {
               From Quiz Mistakes
             </Button>
           </div>
+
+          {/* Study Preferences */}
+          <Card className="border-2 border-green-300 dark:border-green-700">
+            <CardHeader className="bg-gradient-to-r from-green-100 to-emerald-100 dark:from-green-900 dark:to-emerald-900 cursor-pointer" onClick={() => setShowStudySettings(!showStudySettings)}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Settings className="h-5 w-5" />
+                  <CardTitle>Study Mode Preferences</CardTitle>
+                </div>
+                <Badge variant="outline" className="text-xs">Customize your learning</Badge>
+              </div>
+            </CardHeader>
+            {showStudySettings && (
+              <CardContent className="pt-6 space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-3">
+                    <label className="flex items-center justify-between p-3 bg-green-50 dark:bg-green-950 rounded-lg border border-green-200 dark:border-green-800 cursor-pointer hover-elevate">
+                      <div>
+                        <p className="font-semibold text-sm">Shuffle Cards</p>
+                        <p className="text-xs text-muted-foreground">Randomize card order during study</p>
+                      </div>
+                      <Switch
+                        checked={studyPreferences.shuffleCards}
+                        onCheckedChange={(checked) => 
+                          setStudyPreferences({...studyPreferences, shuffleCards: checked})
+                        }
+                        data-testid="switch-shuffle-cards"
+                      />
+                    </label>
+                  </div>
+
+                  <div className="space-y-3">
+                    <label className="block">
+                      <p className="font-semibold text-sm mb-2">Answer Reveal Delay</p>
+                      <Select 
+                        value={studyPreferences.answerDelay} 
+                        onValueChange={(value) => 
+                          setStudyPreferences({...studyPreferences, answerDelay: value as any})
+                        }
+                      >
+                        <SelectTrigger className="border-green-300 dark:border-green-700" data-testid="select-answer-delay">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="0">Instant</SelectItem>
+                          <SelectItem value="3">3 seconds</SelectItem>
+                          <SelectItem value="5">5 seconds</SelectItem>
+                          <SelectItem value="10">10 seconds</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-muted-foreground mt-1">Delay before showing answer (forces thinking time)</p>
+                    </label>
+                  </div>
+
+                  <div className="space-y-3">
+                    <label className="flex items-center justify-between p-3 bg-green-50 dark:bg-green-950 rounded-lg border border-green-200 dark:border-green-800 cursor-pointer hover-elevate">
+                      <div>
+                        <p className="font-semibold text-sm">Auto-Advance Cards</p>
+                        <p className="text-xs text-muted-foreground">Move to next card automatically</p>
+                      </div>
+                      <Switch
+                        checked={studyPreferences.autoAdvance}
+                        onCheckedChange={(checked) => 
+                          setStudyPreferences({...studyPreferences, autoAdvance: checked})
+                        }
+                        data-testid="switch-auto-advance"
+                      />
+                    </label>
+                  </div>
+
+                  <div className="space-y-3">
+                    <label className="block">
+                      <p className="font-semibold text-sm mb-2">Auto-Advance Delay</p>
+                      <Select 
+                        value={studyPreferences.autoAdvanceDelay}
+                        onValueChange={(value) => 
+                          setStudyPreferences({...studyPreferences, autoAdvanceDelay: value})
+                        }
+                        disabled={!studyPreferences.autoAdvance}
+                      >
+                        <SelectTrigger className="border-green-300 dark:border-green-700" data-testid="select-auto-advance-delay">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="3">3 seconds</SelectItem>
+                          <SelectItem value="5">5 seconds</SelectItem>
+                          <SelectItem value="8">8 seconds</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-muted-foreground mt-1">Wait time before moving to next card</p>
+                    </label>
+                  </div>
+                </div>
+
+                <div className="bg-green-100 dark:bg-green-900 p-3 rounded-lg border border-green-300 dark:border-green-700">
+                  <p className="text-xs text-green-800 dark:text-green-200">
+                    💡 Tip: Enable "Shuffle" and longer answer delays to improve retention and reduce memorization of card order.
+                  </p>
+                </div>
+              </CardContent>
+            )}
+          </Card>
 
           {/* Decks Grid */}
           <div>
