@@ -7,11 +7,16 @@ export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   username: text("username").notNull().unique(),
   password: text("password").notNull(),
+  role: text("role").notNull().default("student"), // "student", "instructor"
+  displayName: text("display_name"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   password: true,
+  role: true,
+  displayName: true,
 });
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -109,9 +114,11 @@ export const quizzes = pgTable("quizzes", {
   title: text("title").notNull(),
   subject: text("subject"),
   description: text("description"),
-  mode: text("mode").notNull().default("practice"), // "practice", "exam"
+  mode: text("mode").notNull().default("practice"), // "practice", "exam", "adaptive"
   timeLimit: integer("time_limit"), // minutes, null for practice mode
   passingScore: integer("passing_score"), // percentage
+  isPublished: boolean("is_published").notNull().default(false),
+  isAdaptive: boolean("is_adaptive").notNull().default(false),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
@@ -125,6 +132,8 @@ export const quizQuestions = pgTable("quiz_questions", {
   explanation: text("explanation"),
   markScheme: text("mark_scheme"),
   order: integer("order").notNull(),
+  tags: text("tags").array(), // topic tags for categorization
+  estimatedTime: integer("estimated_time"), // seconds
   // For SAQ/LAQ
   correctAnswer: text("correct_answer"),
   // Integration
@@ -143,13 +152,17 @@ export const quizAttempts = pgTable("quiz_attempts", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   quizId: varchar("quiz_id").notNull(),
   userId: varchar("user_id").notNull(),
-  mode: text("mode").notNull(), // "practice", "exam"
+  mode: text("mode").notNull(), // "practice", "exam", "adaptive", "spaced"
   startedAt: timestamp("started_at").notNull().defaultNow(),
   completedAt: timestamp("completed_at"),
   score: integer("score"), // percentage
   totalMarks: integer("total_marks"),
   earnedMarks: integer("earned_marks"),
   timeSpent: integer("time_spent"), // seconds
+  currentQuestionIndex: integer("current_question_index").default(0),
+  currentDifficulty: integer("current_difficulty").default(3), // for adaptive mode
+  difficultyPath: text("difficulty_path"), // JSON array of difficulty changes
+  status: text("status").notNull().default("in_progress"), // "in_progress", "completed", "abandoned"
 });
 
 export const quizResponses = pgTable("quiz_responses", {
@@ -163,9 +176,29 @@ export const quizResponses = pgTable("quiz_responses", {
   isCorrect: boolean("is_correct"),
   marksAwarded: integer("marks_awarded"),
   feedback: text("feedback"),
+  responseTime: integer("response_time"), // seconds to answer
+  confidenceLevel: integer("confidence_level"), // 1-5 user confidence rating
   convertedToFlashcard: boolean("converted_to_flashcard").notNull().default(false),
   flashcardId: varchar("flashcard_id"),
   answeredAt: timestamp("answered_at").notNull().defaultNow(),
+});
+
+// User question stats for adaptive engine and spaced repetition
+export const userQuestionStats = pgTable("user_question_stats", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull(),
+  questionId: varchar("question_id").notNull(),
+  timesAnswered: integer("times_answered").notNull().default(0),
+  timesCorrect: integer("times_correct").notNull().default(0),
+  averageResponseTime: real("average_response_time"), // seconds
+  lastAnsweredAt: timestamp("last_answered_at"),
+  streak: integer("streak").notNull().default(0), // consecutive correct answers
+  // Spaced repetition fields (SM-2 algorithm)
+  easeFactor: real("ease_factor").notNull().default(2.5),
+  interval: integer("interval").notNull().default(0), // days
+  repetitions: integer("repetitions").notNull().default(0),
+  nextReviewAt: timestamp("next_review_at"),
+  status: text("status").notNull().default("new"), // "new", "learning", "reviewing", "mastered"
 });
 
 export const insertQuizSchema = createInsertSchema(quizzes).omit({
@@ -192,6 +225,17 @@ export const insertQuizResponseSchema = createInsertSchema(quizResponses).omit({
   convertedToFlashcard: true,
 });
 
+export const insertUserQuestionStatsSchema = createInsertSchema(userQuestionStats).omit({
+  id: true,
+  timesAnswered: true,
+  timesCorrect: true,
+  streak: true,
+  easeFactor: true,
+  interval: true,
+  repetitions: true,
+  status: true,
+});
+
 export type Quiz = typeof quizzes.$inferSelect;
 export type InsertQuiz = z.infer<typeof insertQuizSchema>;
 export type QuizQuestion = typeof quizQuestions.$inferSelect;
@@ -202,3 +246,5 @@ export type QuizAttempt = typeof quizAttempts.$inferSelect;
 export type InsertQuizAttempt = z.infer<typeof insertQuizAttemptSchema>;
 export type QuizResponse = typeof quizResponses.$inferSelect;
 export type InsertQuizResponse = z.infer<typeof insertQuizResponseSchema>;
+export type UserQuestionStats = typeof userQuestionStats.$inferSelect;
+export type InsertUserQuestionStats = z.infer<typeof insertUserQuestionStatsSchema>;
