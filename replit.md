@@ -40,6 +40,31 @@ The backend follows a clean separation with routes defined in `server/routes.ts`
 - **API Request Pattern**: Centralized `apiRequest` function with React Query integration
 - **Component Architecture**: Feature pages in `pages/`, reusable UI components in `components/ui/`, with example wrappers in `components/examples/`
 
+## Quiz System Features (Updated Jan 2026)
+
+### Core Quiz Features
+1. **Adaptive Quiz Engine**: Adjusts difficulty in real-time based on performance (±1 level per question)
+2. **Quiz Analytics Dashboard**: Tracks scores, accuracy, attempts, and time statistics
+3. **Instant Feedback**: Shows correct/incorrect immediately after each answer with explanations
+4. **Spaced Repetition Review**: Resurfaces incorrectly answered questions using SM-2 algorithm
+5. **Multiple Quiz Modes**: Practice mode (with feedback) and Exam mode (no feedback until end)
+
+### Adaptive Quiz Implementation
+- Starts at difficulty level 3 (medium)
+- Increases difficulty by 1 for correct answers (max 5)
+- Decreases difficulty by 1 for incorrect answers (min 1)
+- Completes after 10 questions
+- Only filters questions answered in current attempt (allows retakes)
+- Backend returns questions with options included for efficiency
+
+### Quiz API Endpoints
+- `POST /api/quizzes/:quizId/adaptive-attempt` - Start adaptive quiz session
+- `POST /api/attempts/:attemptId/adaptive-answer` - Submit adaptive answer with feedback
+- `POST /api/attempts/:attemptId/answer` - Submit answer with instant feedback
+- `POST /api/attempts/:attemptId/submit` - Finalize quiz attempt
+- `GET /api/user/analytics` - Get user's quiz performance analytics
+- `GET /api/spaced-review/due` - Get questions due for spaced review
+
 ## External Dependencies
 
 ### Database
