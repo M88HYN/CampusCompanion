@@ -469,6 +469,302 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ==================== USER ANALYTICS ====================
+
+  app.get("/api/user/analytics", async (req, res) => {
+    try {
+      const analytics = await storage.getUserAnalytics(DEMO_USER_ID);
+      res.json(analytics);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch user analytics" });
+    }
+  });
+
+  // ==================== SPACED REPETITION ====================
+
+  app.get("/api/spaced-review/due", async (req, res) => {
+    try {
+      const limit = parseInt(req.query.limit as string) || 20;
+      const dueQuestions = await storage.getDueQuestionsForReview(DEMO_USER_ID, limit);
+      
+      // Get the actual questions for each stat
+      const questionsWithDetails = await Promise.all(
+        dueQuestions.map(async (stat) => {
+          const questions = await storage.getQuizQuestions(stat.questionId);
+          // Find the question in all quizzes
+          const allQuizzes = await storage.getAllQuizzes();
+          for (const quiz of allQuizzes) {
+            const quizQuestions = await storage.getQuizQuestions(quiz.id);
+            const question = quizQuestions.find(q => q.id === stat.questionId);
+            if (question) {
+              const options = question.type === "mcq" 
+                ? await storage.getQuizOptions(question.id) 
+                : [];
+              return {
+                ...stat,
+                question: { ...question, options },
+                quizTitle: quiz.title,
+              };
+            }
+          }
+          return { ...stat, question: null };
+        })
+      );
+      
+      res.json(questionsWithDetails.filter(q => q.question !== null));
+    } catch (error) {
+      console.error("Spaced review error:", error);
+      res.status(500).json({ error: "Failed to fetch due questions" });
+    }
+  });
+
+  app.post("/api/spaced-review/:statsId/review", async (req, res) => {
+    try {
+      const { quality } = req.body;
+      if (typeof quality !== "number" || quality < 0 || quality > 5) {
+        return res.status(400).json({ error: "Quality must be between 0 and 5" });
+      }
+      const stats = await storage.updateSpacedRepetition(req.params.statsId, quality);
+      res.json(stats);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update spaced repetition" });
+    }
+  });
+
+  // ==================== ADAPTIVE QUIZ ====================
+
+  app.post("/api/quizzes/:quizId/adaptive-attempt", async (req, res) => {
+    try {
+      const quiz = await storage.getQuiz(req.params.quizId);
+      if (!quiz) {
+        return res.status(404).json({ error: "Quiz not found" });
+      }
+      
+      const attempt = await storage.createQuizAttempt({
+        quizId: req.params.quizId,
+        userId: DEMO_USER_ID,
+        mode: "adaptive",
+        currentQuestionIndex: 0,
+        currentDifficulty: 3, // Start at medium difficulty
+        difficultyPath: JSON.stringify([3]),
+        status: "in_progress",
+      });
+      
+      // Get first question at medium difficulty
+      const firstQuestion = await storage.getNextAdaptiveQuestion(req.params.quizId, DEMO_USER_ID, 3);
+      
+      res.status(201).json({ 
+        attempt,
+        currentQuestion: firstQuestion,
+        questionNumber: 1,
+      });
+    } catch (error) {
+      console.error("Adaptive attempt error:", error);
+      res.status(500).json({ error: "Failed to start adaptive quiz" });
+    }
+  });
+
+  app.post("/api/attempts/:attemptId/adaptive-answer", async (req, res) => {
+    try {
+      const { questionId, selectedOptionId, textAnswer, responseTime } = req.body;
+      const attempt = await storage.getQuizAttempt(req.params.attemptId);
+      
+      if (!attempt) {
+        return res.status(404).json({ error: "Attempt not found" });
+      }
+      
+      if (attempt.status === "completed") {
+        return res.status(400).json({ error: "Quiz already completed" });
+      }
+      
+      // Get question and check answer
+      const questions = await storage.getQuizQuestions(attempt.quizId);
+      const question = questions.find(q => q.id === questionId);
+      if (!question) {
+        return res.status(404).json({ error: "Question not found" });
+      }
+      
+      let isCorrect = false;
+      if (question.type === "mcq") {
+        const options = await storage.getQuizOptions(question.id);
+        const correctOption = options.find(o => o.isCorrect);
+        isCorrect = selectedOptionId === correctOption?.id;
+      } else {
+        const userAnswer = (textAnswer || "").trim().toLowerCase();
+        const correctAnswer = (question.correctAnswer || "").trim().toLowerCase();
+        isCorrect = userAnswer === correctAnswer;
+      }
+      
+      // Create response
+      const response = await storage.createQuizResponse({
+        attemptId: req.params.attemptId,
+        questionId,
+        selectedOptionId,
+        textAnswer,
+        isCorrect,
+        marksAwarded: isCorrect ? question.marks : 0,
+        feedback: isCorrect ? "Correct!" : question.explanation || "Incorrect",
+        responseTime,
+      });
+      
+      // Update user question stats for spaced repetition
+      await storage.upsertUserQuestionStats(DEMO_USER_ID, questionId, isCorrect, responseTime || 0);
+      
+      // Adjust difficulty based on answer
+      const currentDifficulty = attempt.currentDifficulty || 3;
+      let newDifficulty = currentDifficulty;
+      
+      if (isCorrect) {
+        newDifficulty = Math.min(5, currentDifficulty + 1);
+      } else {
+        newDifficulty = Math.max(1, currentDifficulty - 1);
+      }
+      
+      const difficultyPath = JSON.parse(attempt.difficultyPath || "[]");
+      difficultyPath.push(newDifficulty);
+      
+      const newQuestionIndex = (attempt.currentQuestionIndex || 0) + 1;
+      
+      // Check if quiz is complete (e.g., after 10 questions)
+      const maxQuestions = 10;
+      const responses = await storage.getQuizResponses(req.params.attemptId);
+      
+      if (responses.length >= maxQuestions) {
+        // Complete the quiz
+        const correctCount = responses.filter(r => r.isCorrect).length;
+        const score = Math.round((correctCount / responses.length) * 100);
+        
+        await storage.updateQuizAttempt(req.params.attemptId, {
+          completedAt: new Date(),
+          status: "completed",
+          score,
+          earnedMarks: correctCount,
+          totalMarks: responses.length,
+          currentDifficulty: newDifficulty,
+          difficultyPath: JSON.stringify(difficultyPath),
+        });
+        
+        return res.json({
+          response,
+          isCorrect,
+          explanation: question.explanation,
+          completed: true,
+          score,
+          totalQuestions: responses.length,
+          correctAnswers: correctCount,
+        });
+      }
+      
+      // Get next question
+      const nextQuestion = await storage.getNextAdaptiveQuestion(
+        attempt.quizId, 
+        DEMO_USER_ID, 
+        newDifficulty
+      );
+      
+      // Update attempt
+      await storage.updateQuizAttempt(req.params.attemptId, {
+        currentQuestionIndex: newQuestionIndex,
+        currentDifficulty: newDifficulty,
+        difficultyPath: JSON.stringify(difficultyPath),
+      });
+      
+      // Get options for MCQ
+      let nextQuestionWithOptions: any = nextQuestion;
+      if (nextQuestion && nextQuestion.type === "mcq") {
+        const options = await storage.getQuizOptions(nextQuestion.id);
+        nextQuestionWithOptions = { ...nextQuestion, options };
+      }
+      
+      res.json({
+        response,
+        isCorrect,
+        explanation: question.explanation,
+        completed: false,
+        nextQuestion: nextQuestionWithOptions,
+        questionNumber: newQuestionIndex + 1,
+        currentDifficulty: newDifficulty,
+      });
+    } catch (error) {
+      console.error("Adaptive answer error:", error);
+      res.status(500).json({ error: "Failed to process answer" });
+    }
+  });
+
+  // ==================== SINGLE QUESTION ANSWER (for instant feedback) ====================
+
+  app.post("/api/attempts/:attemptId/answer", async (req, res) => {
+    try {
+      const { questionId, selectedOptionId, textAnswer, responseTime } = req.body;
+      const attempt = await storage.getQuizAttempt(req.params.attemptId);
+      
+      if (!attempt) {
+        return res.status(404).json({ error: "Attempt not found" });
+      }
+      
+      // Get question
+      const questions = await storage.getQuizQuestions(attempt.quizId);
+      const question = questions.find(q => q.id === questionId);
+      if (!question) {
+        return res.status(404).json({ error: "Question not found" });
+      }
+      
+      // Check if already answered
+      const existingResponses = await storage.getQuizResponses(req.params.attemptId);
+      const alreadyAnswered = existingResponses.find(r => r.questionId === questionId);
+      if (alreadyAnswered) {
+        return res.json({
+          response: alreadyAnswered,
+          isCorrect: alreadyAnswered.isCorrect,
+          explanation: question.explanation,
+          alreadyAnswered: true,
+        });
+      }
+      
+      // Check answer
+      let isCorrect = false;
+      let correctAnswer: string | null = null;
+      
+      if (question.type === "mcq") {
+        const options = await storage.getQuizOptions(question.id);
+        const correctOption = options.find(o => o.isCorrect);
+        isCorrect = selectedOptionId === correctOption?.id;
+        correctAnswer = correctOption?.id || null;
+      } else {
+        const userAnswer = (textAnswer || "").trim().toLowerCase();
+        const storedCorrectAnswer = (question.correctAnswer || "").trim().toLowerCase();
+        isCorrect = userAnswer === storedCorrectAnswer;
+        correctAnswer = question.correctAnswer;
+      }
+      
+      // Create response
+      const response = await storage.createQuizResponse({
+        attemptId: req.params.attemptId,
+        questionId,
+        selectedOptionId,
+        textAnswer,
+        isCorrect,
+        marksAwarded: isCorrect ? question.marks : 0,
+        feedback: isCorrect ? "Correct!" : question.explanation || "Incorrect",
+        responseTime,
+      });
+      
+      // Update user question stats
+      await storage.upsertUserQuestionStats(DEMO_USER_ID, questionId, isCorrect, responseTime || 0);
+      
+      res.json({
+        response,
+        isCorrect,
+        explanation: question.explanation,
+        correctAnswer,
+        alreadyAnswered: false,
+      });
+    } catch (error) {
+      console.error("Answer error:", error);
+      res.status(500).json({ error: "Failed to process answer" });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;

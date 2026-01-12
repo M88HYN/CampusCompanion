@@ -9,11 +9,12 @@ import {
   type QuizOption, type InsertQuizOption,
   type QuizAttempt, type InsertQuizAttempt,
   type QuizResponse, type InsertQuizResponse,
+  type UserQuestionStats, type InsertUserQuestionStats,
   users, notes, noteBlocks, decks, cards,
-  quizzes, quizQuestions, quizOptions, quizAttempts, quizResponses
+  quizzes, quizQuestions, quizOptions, quizAttempts, quizResponses, userQuestionStats
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, desc, lt, sql } from "drizzle-orm";
+import { eq, and, desc, lt, sql, or, lte, asc, inArray } from "drizzle-orm";
 
 export interface IStorage {
   // Users
@@ -71,6 +72,31 @@ export interface IStorage {
     averageScore: number;
     averageTimeSpent: number;
     accuracyByDifficulty: Record<number, number>;
+  }>;
+
+  // User Question Stats (for adaptive engine and spaced repetition)
+  getUserQuestionStats(userId: string, questionId: string): Promise<UserQuestionStats | undefined>;
+  upsertUserQuestionStats(userId: string, questionId: string, isCorrect: boolean, responseTime: number): Promise<UserQuestionStats>;
+  getDueQuestionsForReview(userId: string, limit?: number): Promise<UserQuestionStats[]>;
+  updateSpacedRepetition(statsId: string, quality: number): Promise<UserQuestionStats>;
+  
+  // Adaptive Engine
+  getNextAdaptiveQuestion(quizId: string, userId: string, currentDifficulty: number): Promise<QuizQuestion | undefined>;
+  getQuestionsByDifficulty(quizId: string, difficulty: number, excludeIds?: string[]): Promise<QuizQuestion[]>;
+  
+  // Quiz Attempt Updates
+  updateQuizAttempt(id: string, updates: Partial<QuizAttempt>): Promise<QuizAttempt | undefined>;
+  getAllQuizzes(): Promise<Quiz[]>;
+  
+  // Analytics
+  getUserAnalytics(userId: string): Promise<{
+    totalQuizzesTaken: number;
+    totalQuestionsAnswered: number;
+    overallAccuracy: number;
+    averageTimePerQuestion: number;
+    strengthsByTopic: Record<string, number>;
+    weaknessesByTopic: Record<string, number>;
+    recentActivity: { date: string; score: number }[];
   }>;
 }
 
@@ -442,6 +468,272 @@ export class DatabaseStorage implements IStorage {
       averageScore: Math.round(averageScore),
       averageTimeSpent: Math.round(averageTimeSpent),
       accuracyByDifficulty,
+    };
+  }
+
+  // ==================== USER QUESTION STATS ====================
+
+  async getUserQuestionStats(userId: string, questionId: string): Promise<UserQuestionStats | undefined> {
+    const [stats] = await db
+      .select()
+      .from(userQuestionStats)
+      .where(and(eq(userQuestionStats.userId, userId), eq(userQuestionStats.questionId, questionId)));
+    return stats || undefined;
+  }
+
+  async upsertUserQuestionStats(userId: string, questionId: string, isCorrect: boolean, responseTime: number): Promise<UserQuestionStats> {
+    const existing = await this.getUserQuestionStats(userId, questionId);
+    
+    if (existing) {
+      const newTimesAnswered = existing.timesAnswered + 1;
+      const newTimesCorrect = existing.timesCorrect + (isCorrect ? 1 : 0);
+      const newStreak = isCorrect ? existing.streak + 1 : 0;
+      const newAvgTime = ((existing.averageResponseTime || 0) * existing.timesAnswered + responseTime) / newTimesAnswered;
+      
+      const [updated] = await db
+        .update(userQuestionStats)
+        .set({
+          timesAnswered: newTimesAnswered,
+          timesCorrect: newTimesCorrect,
+          streak: newStreak,
+          averageResponseTime: newAvgTime,
+          lastAnsweredAt: new Date(),
+        })
+        .where(eq(userQuestionStats.id, existing.id))
+        .returning();
+      return updated;
+    } else {
+      const [created] = await db
+        .insert(userQuestionStats)
+        .values({
+          userId,
+          questionId,
+          timesAnswered: 1,
+          timesCorrect: isCorrect ? 1 : 0,
+          averageResponseTime: responseTime,
+          lastAnsweredAt: new Date(),
+          streak: isCorrect ? 1 : 0,
+          nextReviewAt: new Date(),
+        })
+        .returning();
+      return created;
+    }
+  }
+
+  async getDueQuestionsForReview(userId: string, limit: number = 20): Promise<UserQuestionStats[]> {
+    return await db
+      .select()
+      .from(userQuestionStats)
+      .where(
+        and(
+          eq(userQuestionStats.userId, userId),
+          or(
+            lte(userQuestionStats.nextReviewAt, new Date()),
+            sql`${userQuestionStats.nextReviewAt} IS NULL`
+          )
+        )
+      )
+      .orderBy(asc(userQuestionStats.nextReviewAt))
+      .limit(limit);
+  }
+
+  async updateSpacedRepetition(statsId: string, quality: number): Promise<UserQuestionStats> {
+    const [stats] = await db.select().from(userQuestionStats).where(eq(userQuestionStats.id, statsId));
+    if (!stats) throw new Error("Stats not found");
+
+    let { easeFactor, interval, repetitions } = stats;
+    
+    // SM-2 Algorithm
+    if (quality >= 3) {
+      if (repetitions === 0) {
+        interval = 1;
+      } else if (repetitions === 1) {
+        interval = 6;
+      } else {
+        interval = Math.round(interval * easeFactor);
+      }
+      repetitions += 1;
+      easeFactor = easeFactor + (0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02));
+    } else {
+      repetitions = 0;
+      interval = 1;
+    }
+
+    easeFactor = Math.max(1.3, easeFactor);
+    
+    const nextReviewAt = new Date();
+    nextReviewAt.setDate(nextReviewAt.getDate() + interval);
+
+    const status = 
+      repetitions === 0 ? "learning" :
+      repetitions < 3 ? "reviewing" :
+      "mastered";
+
+    const [updated] = await db
+      .update(userQuestionStats)
+      .set({
+        easeFactor,
+        interval,
+        repetitions,
+        nextReviewAt,
+        status,
+      })
+      .where(eq(userQuestionStats.id, statsId))
+      .returning();
+
+    return updated;
+  }
+
+  // ==================== ADAPTIVE ENGINE ====================
+
+  async getNextAdaptiveQuestion(quizId: string, userId: string, currentDifficulty: number): Promise<QuizQuestion | undefined> {
+    // Get all questions for this quiz
+    const allQuestions = await this.getQuizQuestions(quizId);
+    if (allQuestions.length === 0) return undefined;
+
+    // Get user's answered questions for this quiz
+    const attempts = await db
+      .select()
+      .from(quizAttempts)
+      .where(and(eq(quizAttempts.quizId, quizId), eq(quizAttempts.userId, userId)));
+    
+    const answeredQuestionIds = new Set<string>();
+    for (const attempt of attempts) {
+      const responses = await this.getQuizResponses(attempt.id);
+      responses.forEach(r => answeredQuestionIds.add(r.questionId));
+    }
+
+    // Filter to unanswered questions at current difficulty (or nearby)
+    const targetDifficulties = [currentDifficulty, currentDifficulty - 1, currentDifficulty + 1]
+      .filter(d => d >= 1 && d <= 5);
+    
+    for (const difficulty of targetDifficulties) {
+      const candidates = allQuestions.filter(
+        q => q.difficulty === difficulty && !answeredQuestionIds.has(q.id)
+      );
+      if (candidates.length > 0) {
+        return candidates[Math.floor(Math.random() * candidates.length)];
+      }
+    }
+
+    // If no matching difficulty, return any unanswered question
+    const remaining = allQuestions.filter(q => !answeredQuestionIds.has(q.id));
+    if (remaining.length > 0) {
+      return remaining[Math.floor(Math.random() * remaining.length)];
+    }
+
+    return undefined;
+  }
+
+  async getQuestionsByDifficulty(quizId: string, difficulty: number, excludeIds: string[] = []): Promise<QuizQuestion[]> {
+    const questions = await db
+      .select()
+      .from(quizQuestions)
+      .where(and(eq(quizQuestions.quizId, quizId), eq(quizQuestions.difficulty, difficulty)));
+    
+    return questions.filter(q => !excludeIds.includes(q.id));
+  }
+
+  // ==================== QUIZ ATTEMPT UPDATES ====================
+
+  async updateQuizAttempt(id: string, updates: Partial<QuizAttempt>): Promise<QuizAttempt | undefined> {
+    const [updated] = await db
+      .update(quizAttempts)
+      .set(updates)
+      .where(eq(quizAttempts.id, id))
+      .returning();
+    return updated || undefined;
+  }
+
+  async getAllQuizzes(): Promise<Quiz[]> {
+    return await db.select().from(quizzes).orderBy(desc(quizzes.createdAt));
+  }
+
+  // ==================== USER ANALYTICS ====================
+
+  async getUserAnalytics(userId: string): Promise<{
+    totalQuizzesTaken: number;
+    totalQuestionsAnswered: number;
+    overallAccuracy: number;
+    averageTimePerQuestion: number;
+    strengthsByTopic: Record<string, number>;
+    weaknessesByTopic: Record<string, number>;
+    recentActivity: { date: string; score: number }[];
+  }> {
+    // Get all user's quiz attempts
+    const attempts = await db
+      .select()
+      .from(quizAttempts)
+      .where(and(eq(quizAttempts.userId, userId), sql`${quizAttempts.completedAt} IS NOT NULL`))
+      .orderBy(desc(quizAttempts.completedAt));
+
+    if (attempts.length === 0) {
+      return {
+        totalQuizzesTaken: 0,
+        totalQuestionsAnswered: 0,
+        overallAccuracy: 0,
+        averageTimePerQuestion: 0,
+        strengthsByTopic: {},
+        weaknessesByTopic: {},
+        recentActivity: [],
+      };
+    }
+
+    // Get all responses for these attempts
+    let totalCorrect = 0;
+    let totalQuestions = 0;
+    let totalTime = 0;
+    const topicAccuracy: Record<string, { correct: number; total: number }> = {};
+
+    for (const attempt of attempts) {
+      const responses = await this.getQuizResponses(attempt.id);
+      
+      for (const response of responses) {
+        totalQuestions++;
+        if (response.isCorrect) totalCorrect++;
+        totalTime += response.responseTime || 0;
+
+        // Get question for topic analysis
+        const [question] = await db.select().from(quizQuestions).where(eq(quizQuestions.id, response.questionId));
+        if (question?.tags) {
+          for (const tag of question.tags) {
+            if (!topicAccuracy[tag]) {
+              topicAccuracy[tag] = { correct: 0, total: 0 };
+            }
+            topicAccuracy[tag].total++;
+            if (response.isCorrect) topicAccuracy[tag].correct++;
+          }
+        }
+      }
+    }
+
+    // Calculate strengths and weaknesses
+    const strengthsByTopic: Record<string, number> = {};
+    const weaknessesByTopic: Record<string, number> = {};
+
+    for (const [topic, stats] of Object.entries(topicAccuracy)) {
+      const accuracy = Math.round((stats.correct / stats.total) * 100);
+      if (accuracy >= 70) {
+        strengthsByTopic[topic] = accuracy;
+      } else {
+        weaknessesByTopic[topic] = accuracy;
+      }
+    }
+
+    // Recent activity (last 10 attempts)
+    const recentActivity = attempts.slice(0, 10).map(a => ({
+      date: a.completedAt?.toISOString().split('T')[0] || '',
+      score: a.score || 0,
+    }));
+
+    return {
+      totalQuizzesTaken: attempts.length,
+      totalQuestionsAnswered: totalQuestions,
+      overallAccuracy: totalQuestions > 0 ? Math.round((totalCorrect / totalQuestions) * 100) : 0,
+      averageTimePerQuestion: totalQuestions > 0 ? Math.round(totalTime / totalQuestions) : 0,
+      strengthsByTopic,
+      weaknessesByTopic,
+      recentActivity,
     };
   }
 }
