@@ -66,12 +66,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.patch("/api/notes/:id", async (req, res) => {
     try {
-      const note = await storage.updateNote(req.params.id, req.body);
+      const { blocks, title, subject, tags } = req.body;
+      const safeNoteData: { title?: string; subject?: string; tags?: string[] } = {};
+      if (title !== undefined) safeNoteData.title = title;
+      if (subject !== undefined) safeNoteData.subject = subject;
+      if (tags !== undefined) safeNoteData.tags = tags;
+      
+      const note = await storage.updateNote(req.params.id, safeNoteData);
       if (!note) {
         return res.status(404).json({ error: "Note not found" });
       }
-      res.json(note);
+      
+      if (blocks && Array.isArray(blocks)) {
+        await storage.deleteNoteBlocks(req.params.id);
+        const newBlocks = blocks.map((block: any, index: number) => ({
+          noteId: req.params.id,
+          type: block.type || "paragraph",
+          content: block.content || "",
+          order: index,
+        }));
+        if (newBlocks.length > 0) {
+          await storage.createNoteBlocks(newBlocks);
+        }
+      }
+      
+      const updatedBlocks = await storage.getNoteBlocks(req.params.id);
+      res.json({ ...note, blocks: updatedBlocks });
     } catch (error) {
+      console.error("Update note error:", error);
       res.status(500).json({ error: "Failed to update note" });
     }
   });
