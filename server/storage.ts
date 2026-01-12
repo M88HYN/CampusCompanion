@@ -31,6 +31,7 @@ export interface IStorage {
   deleteNote(id: string): Promise<void>;
   getNoteBlocks(noteId: string): Promise<NoteBlock[]>;
   createNoteBlocks(blocks: InsertNoteBlock[]): Promise<NoteBlock[]>;
+  deleteNoteBlocks(noteId: string): Promise<void>;
 
   // Flashcards
   getDecks(userId: string): Promise<Deck[]>;
@@ -162,6 +163,10 @@ export class DatabaseStorage implements IStorage {
   async createNoteBlocks(blocks: InsertNoteBlock[]): Promise<NoteBlock[]> {
     if (blocks.length === 0) return [];
     return await db.insert(noteBlocks).values(blocks).returning();
+  }
+
+  async deleteNoteBlocks(noteId: string): Promise<void> {
+    await db.delete(noteBlocks).where(eq(noteBlocks.noteId, noteId));
   }
 
   // ==================== FLASHCARDS ====================
