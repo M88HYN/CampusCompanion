@@ -81,7 +81,7 @@ export interface IStorage {
   updateSpacedRepetition(statsId: string, quality: number): Promise<UserQuestionStats>;
   
   // Adaptive Engine
-  getNextAdaptiveQuestion(quizId: string, userId: string, currentDifficulty: number): Promise<QuizQuestion | undefined>;
+  getNextAdaptiveQuestion(quizId: string, userId: string, currentDifficulty: number, currentAttemptId?: string): Promise<QuizQuestion | undefined>;
   getQuestionsByDifficulty(quizId: string, difficulty: number, excludeIds?: string[]): Promise<QuizQuestion[]>;
   
   // Quiz Attempt Updates
@@ -586,20 +586,15 @@ export class DatabaseStorage implements IStorage {
 
   // ==================== ADAPTIVE ENGINE ====================
 
-  async getNextAdaptiveQuestion(quizId: string, userId: string, currentDifficulty: number): Promise<QuizQuestion | undefined> {
+  async getNextAdaptiveQuestion(quizId: string, userId: string, currentDifficulty: number, currentAttemptId?: string): Promise<QuizQuestion | undefined> {
     // Get all questions for this quiz
     const allQuestions = await this.getQuizQuestions(quizId);
     if (allQuestions.length === 0) return undefined;
 
-    // Get user's answered questions for this quiz
-    const attempts = await db
-      .select()
-      .from(quizAttempts)
-      .where(and(eq(quizAttempts.quizId, quizId), eq(quizAttempts.userId, userId)));
-    
+    // Get answered questions for the current attempt only (not all historical attempts)
     const answeredQuestionIds = new Set<string>();
-    for (const attempt of attempts) {
-      const responses = await this.getQuizResponses(attempt.id);
+    if (currentAttemptId) {
+      const responses = await this.getQuizResponses(currentAttemptId);
       responses.forEach(r => answeredQuestionIds.add(r.questionId));
     }
 

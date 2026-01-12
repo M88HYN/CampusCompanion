@@ -336,7 +336,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/attempts/:attemptId/submit", async (req, res) => {
     try {
-      const { responses, timeSpent } = req.body;
+      const { responses = [], timeSpent } = req.body;
       const attempt = await storage.getQuizAttempt(req.params.attemptId);
       
       if (!attempt) {
@@ -347,52 +347,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Attempt already completed" });
       }
       
-      // Check for existing responses to prevent duplicates
+      // Check for existing responses (from instant feedback mode)
       const existingResponses = await storage.getQuizResponses(req.params.attemptId);
-      if (existingResponses.length > 0) {
-        return res.status(400).json({ error: "Responses already submitted" });
-      }
-      
       const questions = await storage.getQuizQuestions(attempt.quizId);
+      
       let totalMarks = 0;
       let earnedMarks = 0;
-      const createdResponses = [];
+      let finalResponses = existingResponses;
       
-      // Process each response
-      for (const response of responses) {
-        const question = questions.find(q => q.id === response.questionId);
-        if (!question) continue;
-        
-        totalMarks += question.marks;
-        let isCorrect = false;
-        let marksAwarded = 0;
-        
-        if (question.type === "mcq") {
-          const options = await storage.getQuizOptions(question.id);
-          const correctOption = options.find(o => o.isCorrect);
-          isCorrect = response.selectedOptionId === correctOption?.id;
-          marksAwarded = isCorrect ? question.marks : 0;
-        } else {
-          // For SAQ/LAQ, auto-mark if exact match (in real app, use AI grading)
-          const userAnswer = (response.textAnswer || "").trim().toLowerCase();
-          const correctAnswer = (question.correctAnswer || "").trim().toLowerCase();
-          isCorrect = userAnswer === correctAnswer;
-          marksAwarded = isCorrect ? question.marks : 0;
+      // If responses were already submitted via /answer endpoint, use those
+      if (existingResponses.length > 0) {
+        for (const response of existingResponses) {
+          const question = questions.find(q => q.id === response.questionId);
+          if (question) {
+            totalMarks += question.marks;
+            earnedMarks += response.marksAwarded || 0;
+          }
         }
-        
-        earnedMarks += marksAwarded;
-        
-        const createdResponse = await storage.createQuizResponse({
-          attemptId: req.params.attemptId,
-          questionId: response.questionId,
-          selectedOptionId: response.selectedOptionId,
-          textAnswer: response.textAnswer,
-          isCorrect,
-          marksAwarded,
-          feedback: isCorrect ? "Correct!" : question.explanation || "Incorrect",
-        });
-        
-        createdResponses.push(createdResponse);
+      } else if (responses.length > 0) {
+        // Process new responses if none exist yet (batch submit mode)
+        for (const response of responses) {
+          const question = questions.find(q => q.id === response.questionId);
+          if (!question) continue;
+          
+          totalMarks += question.marks;
+          let isCorrect = false;
+          let marksAwarded = 0;
+          
+          if (question.type === "mcq") {
+            const options = await storage.getQuizOptions(question.id);
+            const correctOption = options.find(o => o.isCorrect);
+            isCorrect = response.selectedOptionId === correctOption?.id;
+            marksAwarded = isCorrect ? question.marks : 0;
+          } else {
+            const userAnswer = (response.textAnswer || "").trim().toLowerCase();
+            const correctAnswer = (question.correctAnswer || "").trim().toLowerCase();
+            isCorrect = userAnswer === correctAnswer;
+            marksAwarded = isCorrect ? question.marks : 0;
+          }
+          
+          earnedMarks += marksAwarded;
+          
+          const createdResponse = await storage.createQuizResponse({
+            attemptId: req.params.attemptId,
+            questionId: response.questionId,
+            selectedOptionId: response.selectedOptionId,
+            textAnswer: response.textAnswer,
+            isCorrect,
+            marksAwarded,
+            feedback: isCorrect ? "Correct!" : question.explanation || "Incorrect",
+          });
+          
+          finalResponses.push(createdResponse);
+        }
       }
       
       const score = totalMarks > 0 ? Math.round((earnedMarks / totalMarks) * 100) : 0;
@@ -404,7 +411,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         timeSpent || 0
       );
       
-      res.json({ ...completedAttempt, responses: createdResponses });
+      res.json({ ...completedAttempt, responses: finalResponses });
     } catch (error) {
       console.error("Submit error:", error);
       res.status(500).json({ error: "Failed to submit attempt" });
@@ -550,12 +557,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         status: "in_progress",
       });
       
-      // Get first question at medium difficulty
-      const firstQuestion = await storage.getNextAdaptiveQuestion(req.params.quizId, DEMO_USER_ID, 3);
+      // Get first question at medium difficulty (pass attempt.id to filter within this attempt only)
+      const firstQuestion = await storage.getNextAdaptiveQuestion(req.params.quizId, DEMO_USER_ID, 3, attempt.id);
+      
+      // Include options for MCQ questions
+      let firstQuestionWithOptions: any = firstQuestion;
+      if (firstQuestion && firstQuestion.type === "mcq") {
+        const options = await storage.getQuizOptions(firstQuestion.id);
+        firstQuestionWithOptions = { ...firstQuestion, options };
+      }
       
       res.status(201).json({ 
         attempt,
-        currentQuestion: firstQuestion,
+        currentQuestion: firstQuestionWithOptions,
         questionNumber: 1,
       });
     } catch (error) {
@@ -655,11 +669,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Get next question
+      // Get next question (pass attemptId to filter within current attempt only)
       const nextQuestion = await storage.getNextAdaptiveQuestion(
         attempt.quizId, 
         DEMO_USER_ID, 
-        newDifficulty
+        newDifficulty,
+        req.params.attemptId
       );
       
       // Update attempt
