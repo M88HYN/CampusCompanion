@@ -1,15 +1,14 @@
 import { useState, useEffect } from "react";
-import { Plus, Play, Clock, CheckCircle2, AlertCircle, Star, BookMarked, Zap, Trophy, Target, RotateCw, Loader } from "lucide-react";
+import { Plus, Play, Clock, CheckCircle2, AlertCircle, Star, BookMarked, Zap, Trophy, Target, RotateCw, Loader, Trash2, X } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { getQueryFn } from "@/lib/queryClient";
+import { Input } from "@/components/ui/input";
+import { queryClient } from "@/lib/queryClient";
 import {
   Select,
   SelectContent,
@@ -19,137 +18,233 @@ import {
 } from "@/components/ui/select";
 
 type QuizStatus = "not-started" | "in-progress" | "completed";
-type QuestionType = "MCQ" | "SAQ" | "LAQ";
+type QuestionType = "mcq" | "saq" | "laq";
 type QuizMode = "practice" | "exam";
 type Difficulty = 1 | 2 | 3 | 4 | 5;
 
 interface Quiz {
   id: string;
   title: string;
-  subject: string;
-  description?: string;
-  mode: "practice" | "exam";
+  subject?: string | null;
+  description?: string | null;
+  mode: string;
   timeLimit?: number | null;
   passingScore?: number | null;
   questionCount: number;
   attemptCount: number;
   bestScore?: number | null;
-  status?: QuizStatus;
-  score?: number;
-  difficulty?: Difficulty;
-  questionTypes?: QuestionType[];
+}
+
+interface QuizOption {
+  id: string;
+  text: string;
+  isCorrect: boolean;
+  order: number;
 }
 
 interface Question {
   id: string;
+  quizId: string;
+  type: string;
+  question: string;
+  difficulty: number;
+  marks: number;
+  explanation?: string | null;
+  markScheme?: string | null;
+  correctAnswer?: string | null;
+  options?: QuizOption[];
+  order: number;
+}
+
+interface QuestionFormData {
   type: QuestionType;
   question: string;
-  options?: string[];
-  correct: number | string;
+  options: string[];
+  correctOptionIndex: number;
   explanation: string;
-  markScheme?: string;
   difficulty: Difficulty;
+  correctAnswer: string;
 }
 
 export default function Quizzes() {
-  const [view, setView] = useState<"list" | "taking" | "results">("list");
+  const [view, setView] = useState<"list" | "taking" | "results" | "create">("list");
   const [quizMode, setQuizMode] = useState<QuizMode>("practice");
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<string>("");
   const [textAnswer, setTextAnswer] = useState("");
   const [userAnswers, setUserAnswers] = useState<Array<{questionId: string, answer: string, correct: boolean}>>([]);
-  const [timeLeft, setTimeLeft] = useState(15 * 60); // 15 minutes
+  const [timeLeft, setTimeLeft] = useState(15 * 60);
   const [showFeedback, setShowFeedback] = useState(false);
   const [feedbackCorrect, setFeedbackCorrect] = useState(false);
+  const [selectedQuizId, setSelectedQuizId] = useState<string | null>(null);
+  const [activeQuestions, setActiveQuestions] = useState<Question[]>([]);
 
-  const quizzes: Quiz[] = [
-    {
-      id: "1",
-      title: "React Fundamentals",
-      subject: "Computer Science",
-      questions: 10,
-      timeLimit: 15,
-      status: "completed",
-      score: 85,
-      difficulty: 3,
-      questionTypes: ["MCQ", "SAQ"],
-    },
-    {
-      id: "2",
-      title: "Calculus Chapter 3",
-      subject: "Mathematics",
-      questions: 15,
-      timeLimit: 20,
-      status: "in-progress",
-      difficulty: 4,
-      questionTypes: ["MCQ", "LAQ"],
-    },
-    {
-      id: "3",
-      title: "Physics: Motion",
-      subject: "Physics",
-      questions: 12,
-      timeLimit: 18,
-      status: "not-started",
-      difficulty: 2,
-      questionTypes: ["MCQ", "SAQ", "LAQ"],
-    },
-  ];
+  const [quizForm, setQuizForm] = useState({
+    title: "",
+    subject: "",
+    description: "",
+    mode: "practice" as QuizMode,
+    timeLimit: 15,
+    passingScore: 50,
+  });
 
-  const sampleQuestions: Question[] = [
-    {
-      id: "q1",
-      type: "MCQ",
-      question: "What is the purpose of the useState hook in React?",
-      options: [
-        "To manage component state",
-        "To handle side effects",
-        "To fetch data from APIs",
-        "To optimize performance",
-      ],
-      correct: 0,
-      explanation: "useState is a React Hook that lets you add state to functional components. It returns an array with the current state value and a function to update it.",
-      markScheme: "1 mark for correct answer. Common mistake: confusing with useEffect for side effects.",
-      difficulty: 2,
-    },
-    {
-      id: "q2",
-      type: "SAQ",
-      question: "Explain what props are in React and how they differ from state.",
-      correct: "Props are read-only data passed from parent to child components, while state is mutable data managed within a component.",
-      explanation: "Props (short for properties) are how data flows down the component tree, from parent to child. They're immutable from the child's perspective. State, on the other hand, is local to a component and can be changed, triggering re-renders.",
-      markScheme: "2 marks: 1 for props definition, 1 for state difference. Accept variations mentioning immutability and data flow.",
-      difficulty: 3,
-    },
-    {
-      id: "q3",
-      type: "LAQ",
-      question: "Describe the component lifecycle in React class components and compare it with how useEffect works in functional components.",
-      correct: "Class components have lifecycle methods like componentDidMount, componentDidUpdate, and componentWillUnmount. useEffect in functional components can replicate all these by using dependency arrays.",
-      explanation: "In class components, lifecycle is split into mounting, updating, and unmounting phases. useEffect consolidates this: an empty dependency array mimics componentDidMount, dependencies trigger on updates (like componentDidUpdate), and the cleanup function acts like componentWillUnmount.",
-      markScheme: "4 marks total: 1 for each lifecycle phase mentioned, 1 for useEffect dependency array explanation. Maximum 4 marks.",
-      difficulty: 5,
-    },
-  ];
+  const [questionsForm, setQuestionsForm] = useState<QuestionFormData[]>([{
+    type: "mcq",
+    question: "",
+    options: ["", "", "", ""],
+    correctOptionIndex: 0,
+    explanation: "",
+    difficulty: 3,
+    correctAnswer: ""
+  }]);
 
-  const getDifficultyColor = (difficulty: Difficulty) => {
-    const colors = {
-      1: "text-green-600",
-      2: "text-blue-600",
-      3: "text-yellow-600",
-      4: "text-orange-600",
-      5: "text-red-600",
-    };
-    return colors[difficulty];
+  const { data: quizzes = [], isLoading: isLoadingQuizzes, refetch: refetchQuizzes } = useQuery<Quiz[]>({
+    queryKey: ["/api/quizzes"],
+  });
+
+  const { data: selectedQuizData, isLoading: isLoadingQuiz } = useQuery<{
+    id: string;
+    title: string;
+    subject?: string;
+    timeLimit?: number;
+    questions: Question[];
+  }>({
+    queryKey: ["/api/quizzes", selectedQuizId],
+    enabled: !!selectedQuizId && view === "taking",
+  });
+
+  useEffect(() => {
+    if (selectedQuizData?.questions) {
+      setActiveQuestions(selectedQuizData.questions);
+      if (selectedQuizData.timeLimit) {
+        setTimeLeft(selectedQuizData.timeLimit * 60);
+      }
+    }
+  }, [selectedQuizData]);
+
+  const createQuizMutation = useMutation({
+    mutationFn: async (data: any) => {
+      const response = await fetch("/api/quizzes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (!response.ok) throw new Error("Failed to create quiz");
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/quizzes"] });
+      setView("list");
+      resetForms();
+    }
+  });
+
+  const deleteQuizMutation = useMutation({
+    mutationFn: async (quizId: string) => {
+      const response = await fetch(`/api/quizzes/${quizId}`, {
+        method: "DELETE",
+      });
+      if (!response.ok) throw new Error("Failed to delete quiz");
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/quizzes"] });
+    }
+  });
+
+  const resetForms = () => {
+    setQuizForm({ title: "", subject: "", description: "", mode: "practice", timeLimit: 15, passingScore: 50 });
+    setQuestionsForm([{ type: "mcq", question: "", options: ["", "", "", ""], correctOptionIndex: 0, explanation: "", difficulty: 3, correctAnswer: "" }]);
   };
 
-  const getDifficultyLabel = (difficulty: Difficulty) => {
-    const labels = { 1: "Very Easy", 2: "Easy", 3: "Medium", 4: "Hard", 5: "Very Hard" };
-    return labels[difficulty];
+  const handleCreateQuiz = () => {
+    if (!quizForm.title.trim()) return;
+    
+    const formattedQuestions = questionsForm.filter(q => q.question.trim()).map((q, index) => {
+      if (q.type === "mcq") {
+        return {
+          type: q.type,
+          question: q.question,
+          difficulty: q.difficulty,
+          marks: 1,
+          explanation: q.explanation,
+          order: index,
+          options: q.options.filter(o => o.trim()).map((text, i) => ({
+            text,
+            isCorrect: i === q.correctOptionIndex,
+          }))
+        };
+      } else {
+        return {
+          type: q.type,
+          question: q.question,
+          difficulty: q.difficulty,
+          marks: q.type === "saq" ? 2 : 4,
+          explanation: q.explanation,
+          correctAnswer: q.correctAnswer,
+          order: index,
+        };
+      }
+    });
+
+    createQuizMutation.mutate({
+      ...quizForm,
+      questions: formattedQuestions
+    });
   };
 
+  const addQuestionField = () => {
+    setQuestionsForm([...questionsForm, {
+      type: "mcq",
+      question: "",
+      options: ["", "", "", ""],
+      correctOptionIndex: 0,
+      explanation: "",
+      difficulty: 3,
+      correctAnswer: ""
+    }]);
+  };
+
+  const removeQuestionField = (index: number) => {
+    if (questionsForm.length > 1) {
+      setQuestionsForm(questionsForm.filter((_, i) => i !== index));
+    }
+  };
+
+  const updateQuestionField = (index: number, field: keyof QuestionFormData, value: any) => {
+    const newQuestions = [...questionsForm];
+    (newQuestions[index] as any)[field] = value;
+    setQuestionsForm(newQuestions);
+  };
+
+  const updateOptionField = (questionIndex: number, optionIndex: number, value: string) => {
+    const newQuestions = [...questionsForm];
+    newQuestions[questionIndex].options[optionIndex] = value;
+    setQuestionsForm(newQuestions);
+  };
+
+  const getDifficultyColor = (difficulty: number) => {
+    const colors: Record<number, string> = { 1: "text-green-600", 2: "text-blue-600", 3: "text-yellow-600", 4: "text-orange-600", 5: "text-red-600" };
+    return colors[difficulty] || "text-slate-600";
+  };
+
+  const getDifficultyLabel = (difficulty: number) => {
+    const labels: Record<number, string> = { 1: "Very Easy", 2: "Easy", 3: "Medium", 4: "Hard", 5: "Very Hard" };
+    return labels[difficulty] || "Unknown";
+  };
+
+  const startQuiz = (quizId: string) => {
+    setSelectedQuizId(quizId);
+    setCurrentQuestion(0);
+    setUserAnswers([]);
+    setSelectedAnswer("");
+    setTextAnswer("");
+    setShowFeedback(false);
+    setView("taking");
+  };
+
+  // Results View
   if (view === "results") {
-    const totalQuestions = sampleQuestions.length;
+    const totalQuestions = activeQuestions.length || 1;
     const correctAnswers = userAnswers.filter(a => a.correct).length;
     const score = Math.round((correctAnswers / totalQuestions) * 100);
     
@@ -169,7 +264,6 @@ export default function Quizzes() {
     return (
       <div className="flex-1 overflow-auto bg-gradient-to-b from-purple-50 to-indigo-50 dark:from-purple-950 dark:to-indigo-950">
         <div className="max-w-4xl mx-auto p-6 space-y-6">
-          {/* Celebratory Header */}
           <div className={`bg-gradient-to-r ${scoreColor} rounded-2xl p-8 text-white text-center shadow-lg`}>
             <div className="mb-4 flex justify-center gap-2 animate-bounce">
               <Trophy className="h-8 w-8" />
@@ -178,7 +272,6 @@ export default function Quizzes() {
             <p className="text-lg opacity-90">You scored {correctAnswers} out of {totalQuestions} questions correctly</p>
           </div>
 
-          {/* Score Display */}
           <Card className="border-2 border-purple-200 dark:border-purple-800 shadow-lg">
             <CardContent className="pt-8 text-center">
               <div className="space-y-4">
@@ -196,26 +289,25 @@ export default function Quizzes() {
             </CardContent>
           </Card>
 
-          {/* Stats Grid */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Card className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950 dark:to-green-900 border-green-200 dark:border-green-800">
               <CardContent className="pt-6 text-center">
                 <CheckCircle2 className="h-8 w-8 text-green-600 dark:text-green-400 mx-auto mb-2" />
                 <div className="text-3xl font-bold text-green-700 dark:text-green-300">{correctAnswers}</div>
-                <p className="text-sm text-green-600 dark:text-green-400 font-medium">Correct Answers</p>
+                <p className="text-sm text-green-600 dark:text-green-400 font-medium">Correct</p>
               </CardContent>
             </Card>
             <Card className="bg-gradient-to-br from-red-50 to-red-100 dark:from-red-950 dark:to-red-900 border-red-200 dark:border-red-800">
               <CardContent className="pt-6 text-center">
                 <AlertCircle className="h-8 w-8 text-red-600 dark:text-red-400 mx-auto mb-2" />
                 <div className="text-3xl font-bold text-red-700 dark:text-red-300">{totalQuestions - correctAnswers}</div>
-                <p className="text-sm text-red-600 dark:text-red-400 font-medium">Incorrect Answers</p>
+                <p className="text-sm text-red-600 dark:text-red-400 font-medium">Incorrect</p>
               </CardContent>
             </Card>
             <Card className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900 border-blue-200 dark:border-blue-800">
               <CardContent className="pt-6 text-center">
                 <Zap className="h-8 w-8 text-blue-600 dark:text-blue-400 mx-auto mb-2" />
-                <div className="text-3xl font-bold text-blue-700 dark:text-blue-300">{score >= 75 ? "+" : ""}{correctAnswers * 10}</div>
+                <div className="text-3xl font-bold text-blue-700 dark:text-blue-300">+{correctAnswers * 10}</div>
                 <p className="text-sm text-blue-600 dark:text-blue-400 font-medium">XP Earned</p>
               </CardContent>
             </Card>
@@ -224,71 +316,34 @@ export default function Quizzes() {
           <Card className="border-2 border-purple-200 dark:border-purple-800">
             <CardHeader className="bg-gradient-to-r from-purple-100 to-violet-100 dark:from-purple-900 dark:to-violet-900 rounded-t-lg">
               <CardTitle className="text-2xl">Review Your Answers</CardTitle>
-              <CardDescription>Learn from your mistakes and improve</CardDescription>
+              <CardDescription>Learn from your mistakes</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4 pt-6">
-              {sampleQuestions.map((question, index) => {
+              {activeQuestions.map((question, index) => {
                 const userAnswer = userAnswers[index];
                 const isCorrect = userAnswer?.correct;
 
                 return (
-                  <div key={question.id} className={`border-2 rounded-xl p-4 space-y-3 transition-all ${isCorrect ? 'border-green-400 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30' : 'border-red-400 bg-gradient-to-r from-red-50 to-pink-50 dark:from-red-950/30 dark:to-pink-950/30'}`}>
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex items-start gap-3 flex-1">
-                        {isCorrect ? (
-                          <CheckCircle2 className="h-6 w-6 text-green-600 shrink-0 mt-0.5" />
-                        ) : (
-                          <AlertCircle className="h-6 w-6 text-red-600 shrink-0 mt-0.5" />
-                        )}
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2">
-                            <span className="font-medium">Question {index + 1}</span>
-                            <Badge variant="outline">{question.type}</Badge>
-                          </div>
-                          <p className="text-sm mb-3">{question.question}</p>
-
-                          {question.type === "MCQ" && question.options && (
-                            <div className="space-y-2 text-sm">
-                              <div className="flex items-center gap-2">
-                                <span className="text-muted-foreground">Your answer:</span>
-                                <span className={isCorrect ? "text-green-600 font-medium" : "text-red-600 font-medium"}>
-                                  {question.options[parseInt(userAnswer?.answer || "0")]}
-                                </span>
-                              </div>
-                              {!isCorrect && (
-                                <div className="flex items-center gap-2">
-                                  <span className="text-muted-foreground">Correct answer:</span>
-                                  <span className="text-green-600 font-medium">
-                                    {question.options[question.correct as number]}
-                                  </span>
-                                </div>
-                              )}
-                            </div>
-                          )}
-
-                          <div className="mt-3 p-3 bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-950/30 dark:to-purple-950/30 rounded-lg text-sm border-l-4 border-blue-500">
-                            <div className="font-medium mb-1 text-blue-700 dark:text-blue-400">Explanation:</div>
-                            <p className="text-foreground">{question.explanation}</p>
-                          </div>
-
-                          {question.markScheme && (
-                            <div className="mt-2 text-xs text-muted-foreground">
-                              <span className="font-medium">Mark Scheme:</span> {question.markScheme}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                      {!isCorrect && (
-                        <Button
-                          size="sm"
-                          className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white"
-                          onClick={() => console.log(`Create flashcard from Q${index + 1}`)}
-                          data-testid={`button-create-flashcard-${index}`}
-                        >
-                          <BookMarked className="h-4 w-4 mr-2" />
-                          Create Flashcard
-                        </Button>
+                  <div key={question.id} className={`border-2 rounded-xl p-4 space-y-3 ${isCorrect ? 'border-green-400 bg-green-50 dark:bg-green-950/30' : 'border-red-400 bg-red-50 dark:bg-red-950/30'}`}>
+                    <div className="flex items-start gap-3">
+                      {isCorrect ? (
+                        <CheckCircle2 className="h-6 w-6 text-green-600 shrink-0 mt-0.5" />
+                      ) : (
+                        <AlertCircle className="h-6 w-6 text-red-600 shrink-0 mt-0.5" />
                       )}
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="font-medium">Question {index + 1}</span>
+                          <Badge variant="outline">{question.type.toUpperCase()}</Badge>
+                        </div>
+                        <p className="text-sm mb-3">{question.question}</p>
+                        {question.explanation && (
+                          <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-950/30 rounded-lg text-sm border-l-4 border-blue-500">
+                            <div className="font-medium mb-1 text-blue-700 dark:text-blue-400">Explanation:</div>
+                            <p>{question.explanation}</p>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 );
@@ -302,8 +357,7 @@ export default function Quizzes() {
               className="flex-1 border-2"
               onClick={() => {
                 setView("list");
-                setCurrentQuestion(0);
-                setUserAnswers([]);
+                setSelectedQuizId(null);
               }}
               data-testid="button-back-to-quizzes"
             >
@@ -311,12 +365,7 @@ export default function Quizzes() {
             </Button>
             <Button
               className="flex-1 bg-gradient-to-r from-purple-500 to-violet-600 hover:from-purple-600 hover:to-violet-700 text-white"
-              onClick={() => {
-                setView("taking");
-                setCurrentQuestion(0);
-                setUserAnswers([]);
-                setTimeLeft(15 * 60);
-              }}
+              onClick={() => startQuiz(selectedQuizId!)}
               data-testid="button-retake-quiz"
             >
               <RotateCw className="h-4 w-4 mr-2" />
@@ -328,24 +377,34 @@ export default function Quizzes() {
     );
   }
 
+  // Taking Quiz View
   if (view === "taking") {
-    useEffect(() => {
-      const timer = setInterval(() => {
-        setTimeLeft((prev) => (prev > 0 ? prev - 1 : 0));
-      }, 1000);
-      return () => clearInterval(timer);
-    }, []);
+    if (isLoadingQuiz || activeQuestions.length === 0) {
+      return (
+        <div className="flex-1 flex items-center justify-center bg-gradient-to-b from-purple-50 to-indigo-50 dark:from-purple-950 dark:to-indigo-950">
+          <div className="text-center">
+            <Loader className="h-12 w-12 animate-spin text-purple-600 mx-auto mb-4" />
+            <p className="text-lg font-medium">Loading quiz...</p>
+          </div>
+        </div>
+      );
+    }
 
-    const question = sampleQuestions[currentQuestion];
-    const progress = ((currentQuestion + 1) / sampleQuestions.length) * 100;
+    const question = activeQuestions[currentQuestion];
+    const progress = ((currentQuestion + 1) / activeQuestions.length) * 100;
     const minutes = Math.floor(timeLeft / 60);
     const seconds = timeLeft % 60;
 
     const handleNext = () => {
-      const answer = question.type === "MCQ" ? selectedAnswer : textAnswer;
-      const isCorrect = question.type === "MCQ" 
-        ? parseInt(answer) === question.correct
-        : true;
+      const answer = question.type === "mcq" ? selectedAnswer : textAnswer;
+      let isCorrect = false;
+      
+      if (question.type === "mcq" && question.options) {
+        const correctOption = question.options.find(o => o.isCorrect);
+        isCorrect = selectedAnswer === correctOption?.id;
+      } else {
+        isCorrect = textAnswer.toLowerCase().includes((question.correctAnswer || "").toLowerCase().slice(0, 20));
+      }
 
       setFeedbackCorrect(isCorrect);
       setShowFeedback(true);
@@ -353,7 +412,7 @@ export default function Quizzes() {
       setTimeout(() => {
         setUserAnswers([...userAnswers, { questionId: question.id, answer, correct: isCorrect }]);
 
-        if (currentQuestion < sampleQuestions.length - 1) {
+        if (currentQuestion < activeQuestions.length - 1) {
           setCurrentQuestion(currentQuestion + 1);
           setSelectedAnswer("");
           setTextAnswer("");
@@ -366,7 +425,6 @@ export default function Quizzes() {
 
     return (
       <div className="flex-1 flex flex-col bg-gradient-to-b from-purple-50 to-indigo-50 dark:from-purple-950 dark:to-indigo-950">
-        {/* Header */}
         <div className="border-b-2 border-purple-200 dark:border-purple-800 bg-white dark:bg-slate-900 shadow-sm sticky top-0 z-10">
           <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
             <div className="flex items-center gap-4">
@@ -377,7 +435,7 @@ export default function Quizzes() {
               <div className="text-center">
                 <p className="text-xs text-muted-foreground font-medium">Question</p>
                 <p className="text-lg font-bold text-purple-700 dark:text-purple-300">
-                  {currentQuestion + 1}/{sampleQuestions.length}
+                  {currentQuestion + 1}/{activeQuestions.length}
                 </p>
               </div>
             </div>
@@ -397,14 +455,12 @@ export default function Quizzes() {
           </div>
         </div>
 
-        {/* Content */}
         <div className="flex-1 flex items-center justify-center p-8 overflow-auto">
           <div className="w-full max-w-4xl">
-            {/* Question Card */}
             <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl p-8 mb-6 border-2 border-purple-200 dark:border-purple-800">
               <div className="flex items-center justify-between mb-6">
                 <Badge variant="outline" className="text-purple-700 dark:text-purple-300 border-purple-300 dark:border-purple-700">
-                  {question.type}
+                  {question.type.toUpperCase()}
                 </Badge>
                 <div className="flex items-center gap-2">
                   {[...Array(5)].map((_, i) => (
@@ -424,16 +480,16 @@ export default function Quizzes() {
                 {question.question}
               </h2>
 
-              {question.type === "MCQ" && question.options ? (
+              {question.type === "mcq" && question.options ? (
                 <div className="space-y-4">
                   {question.options.map((option, index) => {
-                    const isSelected = selectedAnswer === String(index);
-                    const isCorrectOption = index === question.correct;
+                    const isSelected = selectedAnswer === option.id;
+                    const isCorrectOption = option.isCorrect;
                     
                     return (
                       <button
-                        key={index}
-                        onClick={() => !showFeedback && setSelectedAnswer(String(index))}
+                        key={option.id}
+                        onClick={() => !showFeedback && setSelectedAnswer(option.id)}
                         disabled={showFeedback}
                         className={`w-full p-5 rounded-xl font-semibold text-lg transition-all duration-300 cursor-pointer text-left border-2 flex items-center gap-3 ${
                           showFeedback && isCorrectOption
@@ -442,7 +498,7 @@ export default function Quizzes() {
                             ? 'border-red-500 bg-red-100 dark:bg-red-950 text-red-900 dark:text-red-100 scale-95 shadow-lg'
                             : isSelected && !showFeedback
                             ? 'border-purple-500 bg-purple-100 dark:bg-purple-950 text-purple-900 dark:text-purple-100 shadow-lg'
-                            : 'border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 hover:border-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900 hover:scale-102'
+                            : 'border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 hover:border-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900'
                         }`}
                         data-testid={`option-${index}`}
                       >
@@ -457,7 +513,7 @@ export default function Quizzes() {
                         }`}>
                           {String.fromCharCode(65 + index)}
                         </div>
-                        <span className="flex-1">{option}</span>
+                        <span className="flex-1">{option.text}</span>
                         {showFeedback && isCorrectOption && <CheckCircle2 className="h-6 w-6 text-green-600" />}
                         {showFeedback && isSelected && !isCorrectOption && <AlertCircle className="h-6 w-6 text-red-600" />}
                       </button>
@@ -470,56 +526,47 @@ export default function Quizzes() {
                   onChange={(e) => setTextAnswer(e.target.value)}
                   disabled={showFeedback}
                   placeholder={
-                    question.type === "SAQ"
+                    question.type === "saq"
                       ? "Write your short answer here (2-3 sentences)..."
                       : "Write your detailed answer here..."
                   }
-                  className={`min-h-40 p-4 rounded-lg font-base border-2 ${question.type === "LAQ" ? "min-h-56" : ""}`}
+                  className={`min-h-40 p-4 rounded-lg font-base border-2 ${question.type === "laq" ? "min-h-56" : ""}`}
                   data-testid="textarea-answer"
                 />
               )}
             </div>
 
-            {/* Feedback Display */}
             {showFeedback && (
-              <div className={`p-6 rounded-xl mb-6 text-center text-lg font-bold text-white animate-bounce ${
+              <div className={`p-6 rounded-xl mb-6 text-center text-lg font-bold text-white ${
                 feedbackCorrect 
                   ? 'bg-gradient-to-r from-green-500 to-emerald-600 shadow-lg' 
                   : 'bg-gradient-to-r from-red-500 to-pink-600 shadow-lg'
               }`}>
-                {feedbackCorrect ? '🎉 Correct!' : '❌ Incorrect, but you\'ll learn!'}
+                {feedbackCorrect ? 'Correct!' : 'Incorrect, but keep learning!'}
               </div>
             )}
 
-            {/* Navigation */}
             <div className="flex justify-between gap-4">
               <Button
                 variant="outline"
                 size="lg"
-                disabled={currentQuestion === 0 || showFeedback}
-                onClick={() => setCurrentQuestion(currentQuestion - 1)}
+                onClick={() => {
+                  setView("list");
+                  setSelectedQuizId(null);
+                }}
                 className="border-2"
-                data-testid="button-previous"
+                data-testid="button-exit-quiz"
               >
-                Previous
+                Exit Quiz
               </Button>
               <Button
                 size="lg"
                 onClick={handleNext}
-                disabled={showFeedback || (question.type === "MCQ" ? !selectedAnswer : !textAnswer.trim())}
-                className="flex-1 bg-gradient-to-r from-purple-500 to-violet-600 hover:from-purple-600 hover:to-violet-700 text-white text-lg font-bold"
+                disabled={showFeedback || (question.type === "mcq" ? !selectedAnswer : !textAnswer.trim())}
+                className="bg-gradient-to-r from-purple-500 to-violet-600 hover:from-purple-600 hover:to-violet-700 text-white px-8"
                 data-testid="button-next"
               >
-                {showFeedback ? (
-                  <>
-                    <Zap className="h-5 w-5 mr-2 animate-spin" />
-                    Next Question...
-                  </>
-                ) : currentQuestion < sampleQuestions.length - 1 ? (
-                  "Next Question"
-                ) : (
-                  "Submit Quiz"
-                )}
+                {currentQuestion === activeQuestions.length - 1 ? "Finish Quiz" : "Next Question"}
               </Button>
             </div>
           </div>
@@ -528,203 +575,386 @@ export default function Quizzes() {
     );
   }
 
+  // Create Quiz View
+  if (view === "create") {
+    return (
+      <div className="flex-1 overflow-auto bg-gradient-to-b from-purple-50 to-indigo-50 dark:from-purple-950 dark:to-indigo-950">
+        <div className="max-w-4xl mx-auto p-6 space-y-6">
+          <div className="bg-gradient-to-r from-purple-500 via-violet-500 to-indigo-600 rounded-2xl p-8 text-white shadow-xl">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-4xl font-bold mb-2">Create New Quiz</h1>
+                <p className="text-lg opacity-90">Build your own custom quiz</p>
+              </div>
+              <Button
+                variant="outline"
+                onClick={() => setView("list")}
+                className="border-white/30 text-white hover:bg-white/20"
+                data-testid="button-cancel-create"
+              >
+                <X className="h-4 w-4 mr-2" />
+                Cancel
+              </Button>
+            </div>
+          </div>
+
+          <Card className="border-2 border-purple-200 dark:border-purple-800">
+            <CardHeader className="bg-gradient-to-r from-purple-100 to-violet-100 dark:from-purple-900 dark:to-violet-900">
+              <CardTitle>Quiz Details</CardTitle>
+              <CardDescription>Set up the basic information for your quiz</CardDescription>
+            </CardHeader>
+            <CardContent className="pt-6 space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="title">Quiz Title *</Label>
+                  <Input
+                    id="title"
+                    placeholder="Enter quiz title"
+                    value={quizForm.title}
+                    onChange={(e) => setQuizForm({...quizForm, title: e.target.value})}
+                    data-testid="input-quiz-title"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="subject">Subject</Label>
+                  <Input
+                    id="subject"
+                    placeholder="e.g., Mathematics, Science"
+                    value={quizForm.subject}
+                    onChange={(e) => setQuizForm({...quizForm, subject: e.target.value})}
+                    data-testid="input-quiz-subject"
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="description">Description</Label>
+                <Textarea
+                  id="description"
+                  placeholder="Describe what this quiz covers..."
+                  value={quizForm.description}
+                  onChange={(e) => setQuizForm({...quizForm, description: e.target.value})}
+                  data-testid="input-quiz-description"
+                />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label>Quiz Mode</Label>
+                  <Select value={quizForm.mode} onValueChange={(v) => setQuizForm({...quizForm, mode: v as QuizMode})}>
+                    <SelectTrigger data-testid="select-quiz-mode">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="practice">Practice</SelectItem>
+                      <SelectItem value="exam">Exam</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="timeLimit">Time Limit (minutes)</Label>
+                  <Input
+                    id="timeLimit"
+                    type="number"
+                    min={1}
+                    max={180}
+                    value={quizForm.timeLimit}
+                    onChange={(e) => setQuizForm({...quizForm, timeLimit: parseInt(e.target.value) || 15})}
+                    data-testid="input-time-limit"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="passingScore">Passing Score (%)</Label>
+                  <Input
+                    id="passingScore"
+                    type="number"
+                    min={0}
+                    max={100}
+                    value={quizForm.passingScore}
+                    onChange={(e) => setQuizForm({...quizForm, passingScore: parseInt(e.target.value) || 50})}
+                    data-testid="input-passing-score"
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-2 border-purple-200 dark:border-purple-800">
+            <CardHeader className="bg-gradient-to-r from-purple-100 to-violet-100 dark:from-purple-900 dark:to-violet-900">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Questions</CardTitle>
+                  <CardDescription>Add your quiz questions</CardDescription>
+                </div>
+                <Badge variant="outline">{questionsForm.length} question(s)</Badge>
+              </div>
+            </CardHeader>
+            <CardContent className="pt-6 space-y-6">
+              {questionsForm.map((q, qIndex) => (
+                <div key={qIndex} className="border-2 border-slate-200 dark:border-slate-700 rounded-xl p-6 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-bold text-lg">Question {qIndex + 1}</h3>
+                    <div className="flex items-center gap-2">
+                      <Select value={q.type} onValueChange={(v) => updateQuestionField(qIndex, 'type', v)}>
+                        <SelectTrigger className="w-32" data-testid={`select-question-type-${qIndex}`}>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="mcq">MCQ</SelectItem>
+                          <SelectItem value="saq">Short Answer</SelectItem>
+                          <SelectItem value="laq">Long Answer</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {questionsForm.length > 1 && (
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={() => removeQuestionField(qIndex)}
+                          className="text-red-600 hover:bg-red-50 dark:hover:bg-red-950"
+                          data-testid={`button-remove-question-${qIndex}`}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Question Text *</Label>
+                    <Textarea
+                      placeholder="Enter your question..."
+                      value={q.question}
+                      onChange={(e) => updateQuestionField(qIndex, 'question', e.target.value)}
+                      data-testid={`input-question-text-${qIndex}`}
+                    />
+                  </div>
+
+                  {q.type === "mcq" && (
+                    <div className="space-y-3">
+                      <Label>Answer Options</Label>
+                      {q.options.map((opt, oIndex) => (
+                        <div key={oIndex} className="flex items-center gap-3">
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold shrink-0 ${
+                            q.correctOptionIndex === oIndex
+                              ? 'bg-green-500 text-white'
+                              : 'bg-slate-200 dark:bg-slate-700'
+                          }`}>
+                            {String.fromCharCode(65 + oIndex)}
+                          </div>
+                          <Input
+                            placeholder={`Option ${String.fromCharCode(65 + oIndex)}`}
+                            value={opt}
+                            onChange={(e) => updateOptionField(qIndex, oIndex, e.target.value)}
+                            data-testid={`input-option-${qIndex}-${oIndex}`}
+                          />
+                          <Button
+                            variant={q.correctOptionIndex === oIndex ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => updateQuestionField(qIndex, 'correctOptionIndex', oIndex)}
+                            className={q.correctOptionIndex === oIndex ? "bg-green-500 hover:bg-green-600" : ""}
+                            data-testid={`button-correct-${qIndex}-${oIndex}`}
+                          >
+                            {q.correctOptionIndex === oIndex ? "Correct" : "Set Correct"}
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {(q.type === "saq" || q.type === "laq") && (
+                    <div className="space-y-2">
+                      <Label>Correct Answer / Key Points</Label>
+                      <Textarea
+                        placeholder="Enter the correct answer or key points for grading..."
+                        value={q.correctAnswer}
+                        onChange={(e) => updateQuestionField(qIndex, 'correctAnswer', e.target.value)}
+                        data-testid={`input-correct-answer-${qIndex}`}
+                      />
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Difficulty</Label>
+                      <Select value={String(q.difficulty)} onValueChange={(v) => updateQuestionField(qIndex, 'difficulty', parseInt(v))}>
+                        <SelectTrigger data-testid={`select-difficulty-${qIndex}`}>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="1">Very Easy</SelectItem>
+                          <SelectItem value="2">Easy</SelectItem>
+                          <SelectItem value="3">Medium</SelectItem>
+                          <SelectItem value="4">Hard</SelectItem>
+                          <SelectItem value="5">Very Hard</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Explanation (shown after answering)</Label>
+                      <Input
+                        placeholder="Explain the correct answer..."
+                        value={q.explanation}
+                        onChange={(e) => updateQuestionField(qIndex, 'explanation', e.target.value)}
+                        data-testid={`input-explanation-${qIndex}`}
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
+
+              <Button
+                variant="outline"
+                onClick={addQuestionField}
+                className="w-full border-2 border-dashed border-purple-300 dark:border-purple-700 text-purple-700 dark:text-purple-300 hover:bg-purple-50 dark:hover:bg-purple-950"
+                data-testid="button-add-question"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Add Another Question
+              </Button>
+            </CardContent>
+          </Card>
+
+          <div className="flex gap-4">
+            <Button
+              variant="outline"
+              className="flex-1 border-2"
+              onClick={() => setView("list")}
+              data-testid="button-cancel"
+            >
+              Cancel
+            </Button>
+            <Button
+              className="flex-1 bg-gradient-to-r from-purple-500 to-violet-600 hover:from-purple-600 hover:to-violet-700 text-white"
+              onClick={handleCreateQuiz}
+              disabled={!quizForm.title.trim() || questionsForm.every(q => !q.question.trim()) || createQuizMutation.isPending}
+              data-testid="button-create-quiz"
+            >
+              {createQuizMutation.isPending ? (
+                <>
+                  <Loader className="h-4 w-4 mr-2 animate-spin" />
+                  Creating...
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 className="h-4 w-4 mr-2" />
+                  Create Quiz
+                </>
+              )}
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // List View (default)
   return (
     <div className="flex-1 overflow-auto bg-gradient-to-b from-purple-50 to-indigo-50 dark:from-purple-950 dark:to-indigo-950">
       <div className="max-w-7xl mx-auto p-6 space-y-8">
-        {/* Hero Header */}
         <div className="bg-gradient-to-r from-purple-500 via-violet-500 to-indigo-600 rounded-2xl p-8 text-white shadow-xl">
           <div className="flex items-start justify-between">
             <div>
               <h1 className="text-4xl md:text-5xl font-bold mb-2">Quizzes</h1>
-              <p className="text-lg opacity-90 max-w-2xl">Challenge yourself with engaging quizzes. Test your knowledge with MCQ, SAQ, and LAQ question formats.</p>
+              <p className="text-lg opacity-90 max-w-2xl">Test your knowledge with interactive quizzes</p>
             </div>
-            <Trophy className="h-12 w-12 opacity-50" />
+            <Button
+              onClick={() => setView("create")}
+              className="bg-white/20 hover:bg-white/30 text-white border-white/30"
+              data-testid="button-create-quiz-hero"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Create Quiz
+            </Button>
           </div>
         </div>
 
-        {/* Controls */}
-        <div className="flex items-center justify-between gap-4 flex-wrap">
-          <Select defaultValue="all">
-            <SelectTrigger className="w-48 bg-white dark:bg-slate-900 border-2 border-purple-200 dark:border-purple-800" data-testid="select-filter-difficulty">
-              <SelectValue placeholder="Filter by Difficulty" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Levels</SelectItem>
-              <SelectItem value="1">Very Easy</SelectItem>
-              <SelectItem value="2">Easy</SelectItem>
-              <SelectItem value="3">Medium</SelectItem>
-              <SelectItem value="4">Hard</SelectItem>
-              <SelectItem value="5">Very Hard</SelectItem>
-            </SelectContent>
-          </Select>
-          <Button className="bg-gradient-to-r from-purple-500 to-violet-600 hover:from-purple-600 hover:to-violet-700 text-white px-6 py-2 h-11" data-testid="button-create-quiz">
-            <Plus className="h-5 w-5 mr-2" />
-            Create Quiz
-          </Button>
-        </div>
-
-        {/* Quiz Tabs */}
-        <Tabs defaultValue="practice" onValueChange={(v) => setQuizMode(v as QuizMode)}>
-          <TabsList className="bg-white dark:bg-slate-900 border-2 border-purple-200 dark:border-purple-800 p-1">
-            <TabsTrigger value="practice" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-violet-600 data-[state=active]:text-white" data-testid="tab-practice">
-              <Play className="h-4 w-4 mr-2" />
-              Practice Mode
-            </TabsTrigger>
-            <TabsTrigger value="exam" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-violet-600 data-[state=active]:text-white" data-testid="tab-exam">
-              <Target className="h-4 w-4 mr-2" />
-              Exam Mode
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="practice" className="mt-8">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {quizzes.map((quiz) => {
-                const statusColors = {
-                  "not-started": "from-blue-500 to-cyan-600",
-                  "in-progress": "from-yellow-500 to-orange-600",
-                  "completed": "from-green-500 to-emerald-600",
-                };
-                const gradient = statusColors[quiz.status];
-
-                return (
-                  <Card 
-                    key={quiz.id} 
-                    className="hover-elevate border-2 border-purple-200 dark:border-purple-800 overflow-hidden transition-all hover:shadow-2xl cursor-pointer" 
-                    data-testid={`card-quiz-${quiz.id}`}
-                  >
-                    {/* Gradient Header */}
-                    <div className={`h-24 bg-gradient-to-br ${gradient} flex items-center justify-center shadow-lg`}>
-                      <Play className="h-10 w-10 text-white opacity-50" />
+        {isLoadingQuizzes ? (
+          <div className="flex items-center justify-center py-12">
+            <Loader className="h-8 w-8 animate-spin text-purple-600" />
+          </div>
+        ) : quizzes.length === 0 ? (
+          <Card className="border-2 border-dashed border-purple-300 dark:border-purple-700">
+            <CardContent className="py-12 text-center">
+              <div className="mx-auto w-16 h-16 rounded-full bg-purple-100 dark:bg-purple-900 flex items-center justify-center mb-4">
+                <BookMarked className="h-8 w-8 text-purple-600" />
+              </div>
+              <h3 className="text-xl font-bold mb-2">No Quizzes Yet</h3>
+              <p className="text-muted-foreground mb-4">Create your first quiz to get started</p>
+              <Button
+                onClick={() => setView("create")}
+                className="bg-gradient-to-r from-purple-500 to-violet-600 hover:from-purple-600 hover:to-violet-700 text-white"
+                data-testid="button-create-first-quiz"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Create Your First Quiz
+              </Button>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {quizzes.map((quiz) => (
+              <Card
+                key={quiz.id}
+                className="border-2 border-purple-200 dark:border-purple-800 hover:shadow-lg transition-shadow"
+                data-testid={`card-quiz-${quiz.id}`}
+              >
+                <CardHeader className="bg-gradient-to-r from-purple-100 to-violet-100 dark:from-purple-900 dark:to-violet-900 rounded-t-lg pb-3">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <CardTitle className="text-lg">{quiz.title}</CardTitle>
+                      <CardDescription className="text-xs">{quiz.subject || "General"}</CardDescription>
                     </div>
-
-                    <CardHeader className="pb-3">
-                      <div className="flex items-start justify-between mb-2">
-                        <Badge className="bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 border-0">
-                          {quiz.subject}
-                        </Badge>
-                        <div className="flex gap-1">
-                          {quiz.questionTypes.map((type) => (
-                            <Badge key={type} className="bg-violet-100 dark:bg-violet-900 text-violet-700 dark:text-violet-300 text-xs border-0">
-                              {type}
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-                      <CardTitle className="text-xl line-clamp-2">{quiz.title}</CardTitle>
-                    </CardHeader>
-
-                    <CardContent className="space-y-4">
-                      {/* Stats */}
-                      <div className="grid grid-cols-2 gap-2 text-sm">
-                        <div className="bg-slate-100 dark:bg-slate-800 p-2 rounded-lg text-center">
-                          <p className="text-muted-foreground text-xs font-medium">Questions</p>
-                          <p className="text-lg font-bold text-purple-600 dark:text-purple-400">{quiz.questions}</p>
-                        </div>
-                        <div className="bg-slate-100 dark:bg-slate-800 p-2 rounded-lg text-center">
-                          <p className="text-muted-foreground text-xs font-medium">Time</p>
-                          <p className="text-lg font-bold text-purple-600 dark:text-purple-400">{quiz.timeLimit}m</p>
-                        </div>
-                      </div>
-
-                      {/* Score if completed */}
-                      {quiz.status === "completed" && quiz.score && (
-                        <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950 dark:to-emerald-950 p-3 rounded-lg">
-                          <p className="text-xs text-green-600 dark:text-green-400 font-medium mb-1">Previous Score</p>
-                          <div className="flex items-center gap-2">
-                            <div className="text-2xl font-bold text-green-700 dark:text-green-300">{quiz.score}%</div>
-                            <Progress value={quiz.score} className="h-2 flex-1" />
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Action Button */}
-                      <Button
-                        className={`w-full font-bold text-base py-2 h-11 ${
-                          quiz.status === "completed"
-                            ? "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
-                            : "bg-gradient-to-r from-purple-500 to-violet-600 hover:from-purple-600 hover:to-violet-700 text-white"
-                        }`}
-                        onClick={() => {
-                          setView("taking");
-                          setQuizMode("practice");
-                          setTimeLeft(quiz.timeLimit * 60);
-                          setCurrentQuestion(0);
-                          setUserAnswers([]);
-                          console.log(`Starting quiz: ${quiz.title}`);
-                        }}
-                        data-testid={`button-start-quiz-${quiz.id}`}
-                      >
-                        <Play className="h-4 w-4 mr-2" />
-                        {quiz.status === "completed" ? "Review" : quiz.status === "in-progress" ? "Continue" : "Start Quiz"}
-                      </Button>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </div>
-          </TabsContent>
-
-          <TabsContent value="exam" className="mt-8">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {quizzes.map((quiz) => (
-                <Card 
-                  key={quiz.id} 
-                  className="hover-elevate border-2 border-amber-200 dark:border-amber-800 overflow-hidden transition-all hover:shadow-2xl cursor-pointer" 
-                  data-testid={`card-quiz-exam-${quiz.id}`}
-                >
-                  {/* Gradient Header for Exam */}
-                  <div className="h-24 bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-lg relative overflow-hidden">
-                    <div className="absolute inset-0 opacity-20">
-                      <Target className="h-10 w-10 text-white m-auto" />
-                    </div>
-                    <Target className="h-10 w-10 text-white opacity-50 relative z-10" />
+                    <Badge variant="outline" className="text-purple-700 dark:text-purple-300 border-purple-300 dark:border-purple-700">
+                      {quiz.mode}
+                    </Badge>
                   </div>
-
-                  <CardHeader className="pb-3">
-                    <div className="flex items-start justify-between mb-2">
-                      <Badge className="bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-300 border-0">
-                        {quiz.subject}
-                      </Badge>
-                      <Badge className="bg-gradient-to-r from-orange-500 to-red-600 text-white border-0">
-                        EXAM
-                      </Badge>
+                </CardHeader>
+                <CardContent className="pt-4 space-y-4">
+                  <div className="grid grid-cols-2 gap-4 text-center">
+                    <div className="bg-slate-100 dark:bg-slate-800 rounded-lg p-3">
+                      <p className="text-2xl font-bold text-purple-700 dark:text-purple-300">{quiz.questionCount}</p>
+                      <p className="text-xs text-muted-foreground">Questions</p>
                     </div>
-                    <CardTitle className="text-xl line-clamp-2">{quiz.title}</CardTitle>
-                  </CardHeader>
-
-                  <CardContent className="space-y-4">
-                    <div className="space-y-2 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground font-medium">{quiz.questions} Questions</span>
-                        <Badge variant="outline" className="border-amber-300 dark:border-amber-700">Hard Limit</Badge>
-                      </div>
-                      <div className="flex items-center gap-2 text-amber-700 dark:text-amber-300 font-semibold bg-amber-50 dark:bg-amber-950 p-2 rounded-lg">
-                        <Clock className="h-4 w-4 flex-shrink-0" />
-                        <span>Timed: {quiz.timeLimit} minutes</span>
-                      </div>
+                    <div className="bg-slate-100 dark:bg-slate-800 rounded-lg p-3">
+                      <p className="text-2xl font-bold text-purple-700 dark:text-purple-300">{quiz.attemptCount}</p>
+                      <p className="text-xs text-muted-foreground">Attempts</p>
                     </div>
-
+                  </div>
+                  {quiz.bestScore !== null && quiz.bestScore !== undefined && (
+                    <div className="flex items-center justify-between p-2 bg-green-50 dark:bg-green-950 rounded-lg">
+                      <span className="text-sm font-medium">Best Score</span>
+                      <Badge className="bg-green-500">{quiz.bestScore}%</Badge>
+                    </div>
+                  )}
+                  {quiz.timeLimit && (
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Clock className="h-4 w-4" />
+                      <span>{quiz.timeLimit} minutes</span>
+                    </div>
+                  )}
+                  <div className="flex gap-2">
                     <Button
-                      className="w-full font-bold text-base py-2 h-11 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white"
-                      onClick={() => {
-                        setView("taking");
-                        setQuizMode("exam");
-                        setTimeLeft(quiz.timeLimit * 60);
-                        setCurrentQuestion(0);
-                        setUserAnswers([]);
-                        console.log(`Starting exam: ${quiz.title}`);
-                      }}
-                      data-testid={`button-start-exam-${quiz.id}`}
+                      className="flex-1 bg-gradient-to-r from-purple-500 to-violet-600 hover:from-purple-600 hover:to-violet-700 text-white"
+                      onClick={() => startQuiz(quiz.id)}
+                      disabled={quiz.questionCount === 0}
+                      data-testid={`button-start-quiz-${quiz.id}`}
                     >
-                      <Target className="h-4 w-4 mr-2" />
-                      Start Exam
+                      <Play className="h-4 w-4 mr-2" />
+                      {quiz.questionCount === 0 ? "No Questions" : "Start Quiz"}
                     </Button>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </TabsContent>
-        </Tabs>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => deleteQuizMutation.mutate(quiz.id)}
+                      className="text-red-600 hover:bg-red-50 dark:hover:bg-red-950"
+                      data-testid={`button-delete-quiz-${quiz.id}`}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
