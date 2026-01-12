@@ -8,6 +8,8 @@ import {
   insertQuizAttemptSchema, insertQuizResponseSchema
 } from "@shared/schema";
 import { z } from "zod";
+import { registerChatRoutes } from "./replit_integrations/chat";
+import { registerInsightScoutRoutes } from "./insight-scout";
 
 // For demo purposes - in production you'd use proper authentication
 const DEMO_USER_ID = "demo-user";
@@ -824,6 +826,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: "Failed to process answer" });
     }
   });
+
+  // Register AI chat and research routes
+  registerChatRoutes(app);
+  registerInsightScoutRoutes(app);
 
   const httpServer = createServer(app);
 

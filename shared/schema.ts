@@ -276,3 +276,6 @@ export type QuizResponse = typeof quizResponses.$inferSelect;
 export type InsertQuizResponse = z.infer<typeof insertQuizResponseSchema>;
 export type UserQuestionStats = typeof userQuestionStats.$inferSelect;
 export type InsertUserQuestionStats = z.infer<typeof insertUserQuestionStatsSchema>;
+
+// Re-export chat models
+export * from "./models/chat";

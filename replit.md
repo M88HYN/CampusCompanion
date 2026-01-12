@@ -65,6 +65,46 @@ The backend follows a clean separation with routes defined in `server/routes.ts`
 - `GET /api/user/analytics` - Get user's quiz performance analytics
 - `GET /api/spaced-review/due` - Get questions due for spaced review
 
+### Sample Quizzes (University-Level CS)
+5 comprehensive quizzes with 10 questions each (difficulty levels 1-5):
+1. **Programming Fundamentals**: Variables, data types, control flow, functions, error handling
+2. **Object-Oriented Programming**: Encapsulation, inheritance, polymorphism, SOLID, UML
+3. **Data Structures & Algorithms**: Arrays, linked lists, trees, sorting, Big-O notation
+4. **Computer Networks**: OSI/TCP-IP models, protocols (TCP, UDP, HTTP), routing, NAT
+5. **Software Engineering**: SDLC, Agile, design patterns, testing, version control
+
+## Insight Scout (AI Research Assistant) - Added Jan 2026
+
+### Overview
+Insight Scout is an intelligent education-focused research feature powered by Replit AI Integrations (OpenAI gpt-5.1). It provides real-time academic explanations, definitions, and summaries for computer science and other educational topics.
+
+### Features
+- **Streaming Responses**: Real-time SSE streaming for immediate feedback
+- **Conversation History**: Persistent chat sessions stored in PostgreSQL
+- **Response Types**: Explanation, Summary, Comparison, Analysis modes
+- **Search Depths**: Quick (brief), Balanced (moderate), Comprehensive (detailed)
+- **Quick Prompts**: Pre-built prompts for common research tasks
+- **Integration Ready**: Can convert research to flashcards or quiz questions
+
+### Insight Scout API Endpoints
+- `GET /api/research/conversations` - List all research conversations
+- `GET /api/research/conversations/:id` - Get conversation with messages
+- `POST /api/research/conversations` - Create new conversation
+- `DELETE /api/research/conversations/:id` - Delete conversation
+- `POST /api/research/query` - Send research query (SSE streaming response)
+- `POST /api/research/create-flashcard` - Convert research to flashcard
+- `POST /api/research/create-quiz-question` - Convert research to quiz question
+
+### Database Tables (Insight Scout)
+- `conversations`: id, title, createdAt
+- `messages`: id, conversationId, role, content, createdAt
+
+### Implementation Notes
+- Uses Replit AI Integrations (no API key required, billed to credits)
+- Environment variables: AI_INTEGRATIONS_OPENAI_BASE_URL, AI_INTEGRATIONS_OPENAI_API_KEY
+- Server routes in `server/insight-scout.ts`
+- Integration utilities in `server/replit_integrations/`
+
 ## External Dependencies
 
 ### Database
