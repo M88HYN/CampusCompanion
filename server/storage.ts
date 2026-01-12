@@ -4,13 +4,14 @@ import {
   type NoteBlock, type InsertNoteBlock,
   type Deck, type InsertDeck,
   type Card, type InsertCard,
+  type CardReview, type InsertCardReview,
   type Quiz, type InsertQuiz,
   type QuizQuestion, type InsertQuizQuestion,
   type QuizOption, type InsertQuizOption,
   type QuizAttempt, type InsertQuizAttempt,
   type QuizResponse, type InsertQuizResponse,
   type UserQuestionStats, type InsertUserQuestionStats,
-  users, notes, noteBlocks, decks, cards,
+  users, notes, noteBlocks, decks, cards, cardReviews,
   quizzes, quizQuestions, quizOptions, quizAttempts, quizResponses, userQuestionStats
 } from "@shared/schema";
 import { db } from "./db";
@@ -35,6 +36,7 @@ export interface IStorage {
   getDecks(userId: string): Promise<Deck[]>;
   getDeck(id: string): Promise<Deck | undefined>;
   createDeck(deck: InsertDeck): Promise<Deck>;
+  updateDeck(id: string, deck: Partial<InsertDeck>): Promise<Deck | undefined>;
   deleteDeck(id: string): Promise<void>;
   getCards(deckId: string): Promise<Card[]>;
   getCard(id: string): Promise<Card | undefined>;
@@ -42,7 +44,9 @@ export interface IStorage {
   updateCard(id: string, card: Partial<Card>): Promise<Card | undefined>;
   deleteCard(id: string): Promise<void>;
   getDueCards(userId: string): Promise<Card[]>;
-  reviewCard(cardId: string, quality: number): Promise<Card>;
+  reviewCard(cardId: string, quality: number, userId: string): Promise<Card>;
+  getCardReviews(cardId: string): Promise<CardReview[]>;
+  getDeckStats(deckId: string): Promise<{ total: number; mastered: number; learning: number; new: number; dueToday: number }>;
 
   // Quizzes
   getQuizzes(userId: string): Promise<Quiz[]>;
@@ -176,6 +180,15 @@ export class DatabaseStorage implements IStorage {
     return created;
   }
 
+  async updateDeck(id: string, deck: Partial<InsertDeck>): Promise<Deck | undefined> {
+    const [updated] = await db
+      .update(decks)
+      .set(deck)
+      .where(eq(decks.id, id))
+      .returning();
+    return updated || undefined;
+  }
+
   async deleteDeck(id: string): Promise<void> {
     await db.delete(cards).where(eq(cards.deckId, id));
     await db.delete(decks).where(eq(decks.id, id));
@@ -228,11 +241,13 @@ export class DatabaseStorage implements IStorage {
       .orderBy(cards.dueAt);
   }
 
-  async reviewCard(cardId: string, quality: number): Promise<Card> {
+  async reviewCard(cardId: string, quality: number, userId: string): Promise<Card> {
     // SM-2 Algorithm implementation
     const card = await this.getCard(cardId);
     if (!card) throw new Error("Card not found");
 
+    const oldEaseFactor = card.easeFactor;
+    const oldInterval = card.interval;
     let { easeFactor, interval, repetitions } = card;
     
     if (quality >= 3) {
@@ -275,7 +290,40 @@ export class DatabaseStorage implements IStorage {
       .where(eq(cards.id, cardId))
       .returning();
 
+    // Record review history
+    await db.insert(cardReviews).values({
+      cardId,
+      userId,
+      quality,
+      intervalBefore: oldInterval,
+      intervalAfter: interval,
+      easeFactorBefore: oldEaseFactor,
+      easeFactorAfter: easeFactor,
+    });
+
     return updated;
+  }
+
+  async getCardReviews(cardId: string): Promise<CardReview[]> {
+    return await db
+      .select()
+      .from(cardReviews)
+      .where(eq(cardReviews.cardId, cardId))
+      .orderBy(desc(cardReviews.reviewedAt));
+  }
+
+  async getDeckStats(deckId: string): Promise<{ total: number; mastered: number; learning: number; new: number; dueToday: number }> {
+    const deckCards = await this.getCards(deckId);
+    const now = new Date();
+    const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+    
+    return {
+      total: deckCards.length,
+      mastered: deckCards.filter(c => c.status === "mastered").length,
+      learning: deckCards.filter(c => c.status === "learning" || c.status === "reviewing").length,
+      new: deckCards.filter(c => c.status === "new").length,
+      dueToday: deckCards.filter(c => c.dueAt <= endOfDay).length,
+    };
   }
 
   // ==================== QUIZZES ====================

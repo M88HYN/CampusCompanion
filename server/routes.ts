@@ -138,12 +138,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.patch("/api/decks/:id", async (req, res) => {
+    try {
+      const deck = await storage.updateDeck(req.params.id, req.body);
+      if (!deck) {
+        return res.status(404).json({ error: "Deck not found" });
+      }
+      res.json(deck);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update deck" });
+    }
+  });
+
   app.delete("/api/decks/:id", async (req, res) => {
     try {
       await storage.deleteDeck(req.params.id);
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ error: "Failed to delete deck" });
+    }
+  });
+
+  app.get("/api/decks/:id/stats", async (req, res) => {
+    try {
+      const stats = await storage.getDeckStats(req.params.id);
+      res.json(stats);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch deck stats" });
     }
   });
 
@@ -175,10 +196,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (typeof quality !== "number" || quality < 0 || quality > 5) {
         return res.status(400).json({ error: "Quality must be between 0 and 5" });
       }
-      const card = await storage.reviewCard(req.params.id, quality);
+      const card = await storage.reviewCard(req.params.id, quality, DEMO_USER_ID);
       res.json(card);
     } catch (error) {
       res.status(500).json({ error: "Failed to review card" });
+    }
+  });
+
+  app.get("/api/cards/:id", async (req, res) => {
+    try {
+      const card = await storage.getCard(req.params.id);
+      if (!card) {
+        return res.status(404).json({ error: "Card not found" });
+      }
+      res.json(card);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch card" });
+    }
+  });
+
+  app.patch("/api/cards/:id", async (req, res) => {
+    try {
+      const card = await storage.updateCard(req.params.id, req.body);
+      if (!card) {
+        return res.status(404).json({ error: "Card not found" });
+      }
+      res.json(card);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update card" });
     }
   });
 

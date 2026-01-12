@@ -65,14 +65,22 @@ export const decks = pgTable("decks", {
   title: text("title").notNull(),
   subject: text("subject"),
   description: text("description"),
+  tags: text("tags").array(),
+  difficulty: text("difficulty").default("medium"), // "easy", "medium", "hard"
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
 export const cards = pgTable("cards", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   deckId: varchar("deck_id").notNull(),
+  type: text("type").notNull().default("basic"), // "basic", "cloze", "image", "definition"
   front: text("front").notNull(),
   back: text("back").notNull(),
+  imageUrl: text("image_url"), // for image-based cards
+  clozeText: text("cloze_text"), // for cloze deletion cards (text with {{blanks}})
+  definition: text("definition"), // for definition-example cards
+  example: text("example"), // for definition-example cards
+  tags: text("tags").array(),
   // Spaced Repetition fields (SM-2 algorithm)
   easeFactor: real("ease_factor").notNull().default(2.5),
   interval: integer("interval").notNull().default(0), // days
@@ -84,6 +92,18 @@ export const cards = pgTable("cards", {
   // Integration fields
   sourceQuestionId: varchar("source_question_id"), // if created from quiz question
   sourceNoteBlockId: varchar("source_note_block_id"), // if created from note
+});
+
+export const cardReviews = pgTable("card_reviews", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  cardId: varchar("card_id").notNull(),
+  userId: varchar("user_id").notNull(),
+  quality: integer("quality").notNull(), // 0-5 SM-2 quality rating
+  intervalBefore: integer("interval_before").notNull(),
+  intervalAfter: integer("interval_after").notNull(),
+  easeFactorBefore: real("ease_factor_before").notNull(),
+  easeFactorAfter: real("ease_factor_after").notNull(),
+  reviewedAt: timestamp("reviewed_at").notNull().defaultNow(),
 });
 
 export const insertDeckSchema = createInsertSchema(decks).omit({
@@ -99,12 +119,20 @@ export const insertCardSchema = createInsertSchema(cards).omit({
   repetitions: true,
   dueAt: true,
   status: true,
+  lastReviewedAt: true,
+});
+
+export const insertCardReviewSchema = createInsertSchema(cardReviews).omit({
+  id: true,
+  reviewedAt: true,
 });
 
 export type Deck = typeof decks.$inferSelect;
 export type InsertDeck = z.infer<typeof insertDeckSchema>;
 export type Card = typeof cards.$inferSelect;
 export type InsertCard = z.infer<typeof insertCardSchema>;
+export type CardReview = typeof cardReviews.$inferSelect;
+export type InsertCardReview = z.infer<typeof insertCardReviewSchema>;
 
 // ==================== QUIZZES ====================
 
