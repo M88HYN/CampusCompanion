@@ -1,14 +1,24 @@
 import { useState, useEffect } from "react";
 import { Plus, Play, Clock, CheckCircle2, AlertCircle, Star, BookMarked, Zap, Trophy, Target, RotateCw, Loader, Trash2, X } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { useForm, useFieldArray } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { queryClient } from "@/lib/queryClient";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import {
   Select,
   SelectContent,
@@ -56,15 +66,28 @@ interface Question {
   order: number;
 }
 
-interface QuestionFormData {
-  type: QuestionType;
-  question: string;
-  options: string[];
-  correctOptionIndex: number;
-  explanation: string;
-  difficulty: Difficulty;
-  correctAnswer: string;
-}
+const questionFormSchema = z.object({
+  type: z.enum(["mcq", "saq", "laq"]),
+  question: z.string().min(1, "Question is required"),
+  options: z.array(z.string()).default(["", "", "", ""]),
+  correctOptionIndex: z.number().default(0),
+  explanation: z.string().default(""),
+  difficulty: z.number().min(1).max(5).default(3),
+  correctAnswer: z.string().default(""),
+});
+
+const quizFormSchema = z.object({
+  userId: z.string().default("anonymous"),
+  title: z.string().min(1, "Title is required"),
+  subject: z.string().default(""),
+  description: z.string().default(""),
+  mode: z.enum(["practice", "exam"]).default("practice"),
+  timeLimit: z.union([z.number().min(1).max(180), z.literal("")]).default(15),
+  passingScore: z.union([z.number().min(0).max(100), z.literal("")]).default(50),
+  questions: z.array(questionFormSchema).min(1, "At least one question is required"),
+});
+
+type QuizFormValues = z.infer<typeof quizFormSchema>;
 
 export default function Quizzes() {
   const [view, setView] = useState<"list" | "taking" | "results" | "create">("list");
@@ -79,24 +102,32 @@ export default function Quizzes() {
   const [selectedQuizId, setSelectedQuizId] = useState<string | null>(null);
   const [activeQuestions, setActiveQuestions] = useState<Question[]>([]);
 
-  const [quizForm, setQuizForm] = useState({
-    title: "",
-    subject: "",
-    description: "",
-    mode: "practice" as QuizMode,
-    timeLimit: 15,
-    passingScore: 50,
+  const form = useForm<QuizFormValues>({
+    resolver: zodResolver(quizFormSchema),
+    defaultValues: {
+      userId: "anonymous",
+      title: "",
+      subject: "",
+      description: "",
+      mode: "practice",
+      timeLimit: 15,
+      passingScore: 50,
+      questions: [{
+        type: "mcq",
+        question: "",
+        options: ["", "", "", ""],
+        correctOptionIndex: 0,
+        explanation: "",
+        difficulty: 3,
+        correctAnswer: ""
+      }],
+    },
   });
 
-  const [questionsForm, setQuestionsForm] = useState<QuestionFormData[]>([{
-    type: "mcq",
-    question: "",
-    options: ["", "", "", ""],
-    correctOptionIndex: 0,
-    explanation: "",
-    difficulty: 3,
-    correctAnswer: ""
-  }]);
+  const { fields: questionFields, append: appendQuestion, remove: removeQuestion } = useFieldArray({
+    control: form.control,
+    name: "questions",
+  });
 
   const { data: quizzes = [], isLoading: isLoadingQuizzes, refetch: refetchQuizzes } = useQuery<Quiz[]>({
     queryKey: ["/api/quizzes"],
@@ -123,11 +154,49 @@ export default function Quizzes() {
   }, [selectedQuizData]);
 
   const createQuizMutation = useMutation({
-    mutationFn: async (data: any) => {
+    mutationFn: async (data: QuizFormValues) => {
+      const formattedQuestions = data.questions.filter(q => q.question.trim()).map((q, index) => {
+        if (q.type === "mcq") {
+          return {
+            type: q.type,
+            question: q.question,
+            difficulty: q.difficulty,
+            marks: 1,
+            explanation: q.explanation || "",
+            order: index,
+            options: q.options.filter(o => o.trim()).map((text, i) => ({
+              text,
+              isCorrect: i === q.correctOptionIndex,
+            }))
+          };
+        } else {
+          return {
+            type: q.type,
+            question: q.question,
+            difficulty: q.difficulty,
+            marks: q.type === "saq" ? 2 : 4,
+            explanation: q.explanation || "",
+            correctAnswer: q.correctAnswer || "",
+            order: index,
+          };
+        }
+      });
+
+      const payload = {
+        userId: data.userId,
+        title: data.title,
+        subject: data.subject || null,
+        description: data.description || null,
+        mode: data.mode,
+        timeLimit: data.timeLimit === "" ? null : data.timeLimit,
+        passingScore: data.passingScore === "" ? null : data.passingScore,
+        questions: formattedQuestions,
+      };
+
       const response = await fetch("/api/quizzes", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+        body: JSON.stringify(payload),
       });
       if (!response.ok) throw new Error("Failed to create quiz");
       return response.json();
@@ -135,7 +204,7 @@ export default function Quizzes() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/quizzes"] });
       setView("list");
-      resetForms();
+      form.reset();
     }
   });
 
@@ -151,49 +220,12 @@ export default function Quizzes() {
     }
   });
 
-  const resetForms = () => {
-    setQuizForm({ title: "", subject: "", description: "", mode: "practice", timeLimit: 15, passingScore: 50 });
-    setQuestionsForm([{ type: "mcq", question: "", options: ["", "", "", ""], correctOptionIndex: 0, explanation: "", difficulty: 3, correctAnswer: "" }]);
-  };
-
-  const handleCreateQuiz = () => {
-    if (!quizForm.title.trim()) return;
-    
-    const formattedQuestions = questionsForm.filter(q => q.question.trim()).map((q, index) => {
-      if (q.type === "mcq") {
-        return {
-          type: q.type,
-          question: q.question,
-          difficulty: q.difficulty,
-          marks: 1,
-          explanation: q.explanation,
-          order: index,
-          options: q.options.filter(o => o.trim()).map((text, i) => ({
-            text,
-            isCorrect: i === q.correctOptionIndex,
-          }))
-        };
-      } else {
-        return {
-          type: q.type,
-          question: q.question,
-          difficulty: q.difficulty,
-          marks: q.type === "saq" ? 2 : 4,
-          explanation: q.explanation,
-          correctAnswer: q.correctAnswer,
-          order: index,
-        };
-      }
-    });
-
-    createQuizMutation.mutate({
-      ...quizForm,
-      questions: formattedQuestions
-    });
+  const onSubmit = (values: QuizFormValues) => {
+    createQuizMutation.mutate(values);
   };
 
   const addQuestionField = () => {
-    setQuestionsForm([...questionsForm, {
+    appendQuestion({
       type: "mcq",
       question: "",
       options: ["", "", "", ""],
@@ -201,25 +233,13 @@ export default function Quizzes() {
       explanation: "",
       difficulty: 3,
       correctAnswer: ""
-    }]);
+    });
   };
 
   const removeQuestionField = (index: number) => {
-    if (questionsForm.length > 1) {
-      setQuestionsForm(questionsForm.filter((_, i) => i !== index));
+    if (questionFields.length > 1) {
+      removeQuestion(index);
     }
-  };
-
-  const updateQuestionField = (index: number, field: keyof QuestionFormData, value: any) => {
-    const newQuestions = [...questionsForm];
-    (newQuestions[index] as any)[field] = value;
-    setQuestionsForm(newQuestions);
-  };
-
-  const updateOptionField = (questionIndex: number, optionIndex: number, value: string) => {
-    const newQuestions = [...questionsForm];
-    newQuestions[questionIndex].options[optionIndex] = value;
-    setQuestionsForm(newQuestions);
   };
 
   const getDifficultyColor = (difficulty: number) => {
@@ -588,7 +608,7 @@ export default function Quizzes() {
               </div>
               <Button
                 variant="outline"
-                onClick={() => setView("list")}
+                onClick={() => { setView("list"); form.reset(); }}
                 className="border-white/30 text-white hover:bg-white/20"
                 data-testid="button-cancel-create"
               >
@@ -598,248 +618,349 @@ export default function Quizzes() {
             </div>
           </div>
 
-          <Card className="border-2 border-purple-200 dark:border-purple-800">
-            <CardHeader className="bg-gradient-to-r from-purple-100 to-violet-100 dark:from-purple-900 dark:to-violet-900">
-              <CardTitle>Quiz Details</CardTitle>
-              <CardDescription>Set up the basic information for your quiz</CardDescription>
-            </CardHeader>
-            <CardContent className="pt-6 space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="title">Quiz Title *</Label>
-                  <Input
-                    id="title"
-                    placeholder="Enter quiz title"
-                    value={quizForm.title}
-                    onChange={(e) => setQuizForm({...quizForm, title: e.target.value})}
-                    data-testid="input-quiz-title"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="subject">Subject</Label>
-                  <Input
-                    id="subject"
-                    placeholder="e.g., Mathematics, Science"
-                    value={quizForm.subject}
-                    onChange={(e) => setQuizForm({...quizForm, subject: e.target.value})}
-                    data-testid="input-quiz-subject"
-                  />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="description">Description</Label>
-                <Textarea
-                  id="description"
-                  placeholder="Describe what this quiz covers..."
-                  value={quizForm.description}
-                  onChange={(e) => setQuizForm({...quizForm, description: e.target.value})}
-                  data-testid="input-quiz-description"
-                />
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label>Quiz Mode</Label>
-                  <Select value={quizForm.mode} onValueChange={(v) => setQuizForm({...quizForm, mode: v as QuizMode})}>
-                    <SelectTrigger data-testid="select-quiz-mode">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="practice">Practice</SelectItem>
-                      <SelectItem value="exam">Exam</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="timeLimit">Time Limit (minutes)</Label>
-                  <Input
-                    id="timeLimit"
-                    type="number"
-                    min={1}
-                    max={180}
-                    value={quizForm.timeLimit}
-                    onChange={(e) => setQuizForm({...quizForm, timeLimit: parseInt(e.target.value) || 15})}
-                    data-testid="input-time-limit"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="passingScore">Passing Score (%)</Label>
-                  <Input
-                    id="passingScore"
-                    type="number"
-                    min={0}
-                    max={100}
-                    value={quizForm.passingScore}
-                    onChange={(e) => setQuizForm({...quizForm, passingScore: parseInt(e.target.value) || 50})}
-                    data-testid="input-passing-score"
-                  />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-2 border-purple-200 dark:border-purple-800">
-            <CardHeader className="bg-gradient-to-r from-purple-100 to-violet-100 dark:from-purple-900 dark:to-violet-900">
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle>Questions</CardTitle>
-                  <CardDescription>Add your quiz questions</CardDescription>
-                </div>
-                <Badge variant="outline">{questionsForm.length} question(s)</Badge>
-              </div>
-            </CardHeader>
-            <CardContent className="pt-6 space-y-6">
-              {questionsForm.map((q, qIndex) => (
-                <div key={qIndex} className="border-2 border-slate-200 dark:border-slate-700 rounded-xl p-6 space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-bold text-lg">Question {qIndex + 1}</h3>
-                    <div className="flex items-center gap-2">
-                      <Select value={q.type} onValueChange={(v) => updateQuestionField(qIndex, 'type', v)}>
-                        <SelectTrigger className="w-32" data-testid={`select-question-type-${qIndex}`}>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="mcq">MCQ</SelectItem>
-                          <SelectItem value="saq">Short Answer</SelectItem>
-                          <SelectItem value="laq">Long Answer</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      {questionsForm.length > 1 && (
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          onClick={() => removeQuestionField(qIndex)}
-                          className="text-red-600 hover:bg-red-50 dark:hover:bg-red-950"
-                          data-testid={`button-remove-question-${qIndex}`}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              <Card className="border-2 border-purple-200 dark:border-purple-800">
+                <CardHeader className="bg-gradient-to-r from-purple-100 to-violet-100 dark:from-purple-900 dark:to-violet-900">
+                  <CardTitle>Quiz Details</CardTitle>
+                  <CardDescription>Set up the basic information for your quiz</CardDescription>
+                </CardHeader>
+                <CardContent className="pt-6 space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="title"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Quiz Title *</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Enter quiz title" {...field} data-testid="input-quiz-title" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
                       )}
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Question Text *</Label>
-                    <Textarea
-                      placeholder="Enter your question..."
-                      value={q.question}
-                      onChange={(e) => updateQuestionField(qIndex, 'question', e.target.value)}
-                      data-testid={`input-question-text-${qIndex}`}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="subject"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Subject</FormLabel>
+                          <FormControl>
+                            <Input placeholder="e.g., Mathematics, Science" {...field} data-testid="input-quiz-subject" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
                     />
                   </div>
-
-                  {q.type === "mcq" && (
-                    <div className="space-y-3">
-                      <Label>Answer Options</Label>
-                      {q.options.map((opt, oIndex) => (
-                        <div key={oIndex} className="flex items-center gap-3">
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold shrink-0 ${
-                            q.correctOptionIndex === oIndex
-                              ? 'bg-green-500 text-white'
-                              : 'bg-slate-200 dark:bg-slate-700'
-                          }`}>
-                            {String.fromCharCode(65 + oIndex)}
-                          </div>
-                          <Input
-                            placeholder={`Option ${String.fromCharCode(65 + oIndex)}`}
-                            value={opt}
-                            onChange={(e) => updateOptionField(qIndex, oIndex, e.target.value)}
-                            data-testid={`input-option-${qIndex}-${oIndex}`}
-                          />
-                          <Button
-                            variant={q.correctOptionIndex === oIndex ? "default" : "outline"}
-                            size="sm"
-                            onClick={() => updateQuestionField(qIndex, 'correctOptionIndex', oIndex)}
-                            className={q.correctOptionIndex === oIndex ? "bg-green-500 hover:bg-green-600" : ""}
-                            data-testid={`button-correct-${qIndex}-${oIndex}`}
-                          >
-                            {q.correctOptionIndex === oIndex ? "Correct" : "Set Correct"}
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  {(q.type === "saq" || q.type === "laq") && (
-                    <div className="space-y-2">
-                      <Label>Correct Answer / Key Points</Label>
-                      <Textarea
-                        placeholder="Enter the correct answer or key points for grading..."
-                        value={q.correctAnswer}
-                        onChange={(e) => updateQuestionField(qIndex, 'correctAnswer', e.target.value)}
-                        data-testid={`input-correct-answer-${qIndex}`}
-                      />
-                    </div>
-                  )}
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>Difficulty</Label>
-                      <Select value={String(q.difficulty)} onValueChange={(v) => updateQuestionField(qIndex, 'difficulty', parseInt(v))}>
-                        <SelectTrigger data-testid={`select-difficulty-${qIndex}`}>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="1">Very Easy</SelectItem>
-                          <SelectItem value="2">Easy</SelectItem>
-                          <SelectItem value="3">Medium</SelectItem>
-                          <SelectItem value="4">Hard</SelectItem>
-                          <SelectItem value="5">Very Hard</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Explanation (shown after answering)</Label>
-                      <Input
-                        placeholder="Explain the correct answer..."
-                        value={q.explanation}
-                        onChange={(e) => updateQuestionField(qIndex, 'explanation', e.target.value)}
-                        data-testid={`input-explanation-${qIndex}`}
-                      />
-                    </div>
+                  <FormField
+                    control={form.control}
+                    name="description"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Description</FormLabel>
+                        <FormControl>
+                          <Textarea placeholder="Describe what this quiz covers..." {...field} data-testid="input-quiz-description" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="mode"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Quiz Mode</FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl>
+                              <SelectTrigger data-testid="select-quiz-mode">
+                                <SelectValue />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="practice">Practice</SelectItem>
+                              <SelectItem value="exam">Exam</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="timeLimit"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Time Limit (minutes)</FormLabel>
+                          <FormControl>
+                            <Input 
+                              type="number" 
+                              min={1} 
+                              max={180}
+                              value={field.value}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                field.onChange(val === "" ? "" : Number(val));
+                              }}
+                              onBlur={field.onBlur}
+                              name={field.name}
+                              ref={field.ref}
+                              data-testid="input-time-limit" 
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="passingScore"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Passing Score (%)</FormLabel>
+                          <FormControl>
+                            <Input 
+                              type="number" 
+                              min={0} 
+                              max={100}
+                              value={field.value}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                field.onChange(val === "" ? "" : Number(val));
+                              }}
+                              onBlur={field.onBlur}
+                              name={field.name}
+                              ref={field.ref}
+                              data-testid="input-passing-score" 
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                   </div>
-                </div>
-              ))}
+                </CardContent>
+              </Card>
 
-              <Button
-                variant="outline"
-                onClick={addQuestionField}
-                className="w-full border-2 border-dashed border-purple-300 dark:border-purple-700 text-purple-700 dark:text-purple-300 hover:bg-purple-50 dark:hover:bg-purple-950"
-                data-testid="button-add-question"
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Add Another Question
-              </Button>
-            </CardContent>
-          </Card>
+              <Card className="border-2 border-purple-200 dark:border-purple-800">
+                <CardHeader className="bg-gradient-to-r from-purple-100 to-violet-100 dark:from-purple-900 dark:to-violet-900">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle>Questions</CardTitle>
+                      <CardDescription>Add your quiz questions</CardDescription>
+                    </div>
+                    <Badge variant="outline">{questionFields.length} question(s)</Badge>
+                  </div>
+                </CardHeader>
+                <CardContent className="pt-6 space-y-6">
+                  {questionFields.map((field, qIndex) => {
+                    const questionType = form.watch(`questions.${qIndex}.type`);
+                    const correctOptionIndex = form.watch(`questions.${qIndex}.correctOptionIndex`);
+                    
+                    return (
+                      <div key={field.id} className="border-2 border-slate-200 dark:border-slate-700 rounded-xl p-6 space-y-4">
+                        <div className="flex items-center justify-between">
+                          <h3 className="font-bold text-lg">Question {qIndex + 1}</h3>
+                          <div className="flex items-center gap-2">
+                            <FormField
+                              control={form.control}
+                              name={`questions.${qIndex}.type`}
+                              render={({ field }) => (
+                                <Select onValueChange={field.onChange} value={field.value}>
+                                  <SelectTrigger className="w-32" data-testid={`select-question-type-${qIndex}`}>
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="mcq">MCQ</SelectItem>
+                                    <SelectItem value="saq">Short Answer</SelectItem>
+                                    <SelectItem value="laq">Long Answer</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              )}
+                            />
+                            {questionFields.length > 1 && (
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="icon"
+                                onClick={() => removeQuestionField(qIndex)}
+                                className="text-red-600 hover:bg-red-50 dark:hover:bg-red-950"
+                                data-testid={`button-remove-question-${qIndex}`}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </div>
+                        </div>
 
-          <div className="flex gap-4">
-            <Button
-              variant="outline"
-              className="flex-1 border-2"
-              onClick={() => setView("list")}
-              data-testid="button-cancel"
-            >
-              Cancel
-            </Button>
-            <Button
-              className="flex-1 bg-gradient-to-r from-purple-500 to-violet-600 hover:from-purple-600 hover:to-violet-700 text-white"
-              onClick={handleCreateQuiz}
-              disabled={!quizForm.title.trim() || questionsForm.every(q => !q.question.trim()) || createQuizMutation.isPending}
-              data-testid="button-create-quiz"
-            >
-              {createQuizMutation.isPending ? (
-                <>
-                  <Loader className="h-4 w-4 mr-2 animate-spin" />
-                  Creating...
-                </>
-              ) : (
-                <>
-                  <CheckCircle2 className="h-4 w-4 mr-2" />
-                  Create Quiz
-                </>
-              )}
-            </Button>
-          </div>
+                        <FormField
+                          control={form.control}
+                          name={`questions.${qIndex}.question`}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Question Text *</FormLabel>
+                              <FormControl>
+                                <Textarea placeholder="Enter your question..." {...field} data-testid={`input-question-text-${qIndex}`} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        {questionType === "mcq" && (
+                          <div className="space-y-3">
+                            <FormLabel>Answer Options</FormLabel>
+                            {[0, 1, 2, 3].map((oIndex) => (
+                              <div key={oIndex} className="flex items-center gap-3">
+                                <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold shrink-0 ${
+                                  correctOptionIndex === oIndex
+                                    ? 'bg-green-500 text-white'
+                                    : 'bg-slate-200 dark:bg-slate-700'
+                                }`}>
+                                  {String.fromCharCode(65 + oIndex)}
+                                </div>
+                                <FormField
+                                  control={form.control}
+                                  name={`questions.${qIndex}.options.${oIndex}`}
+                                  render={({ field }) => (
+                                    <FormControl>
+                                      <Input 
+                                        placeholder={`Option ${String.fromCharCode(65 + oIndex)}`} 
+                                        {...field} 
+                                        data-testid={`input-option-${qIndex}-${oIndex}`} 
+                                      />
+                                    </FormControl>
+                                  )}
+                                />
+                                <Button
+                                  type="button"
+                                  variant={correctOptionIndex === oIndex ? "default" : "outline"}
+                                  size="sm"
+                                  onClick={() => form.setValue(`questions.${qIndex}.correctOptionIndex`, oIndex)}
+                                  className={correctOptionIndex === oIndex ? "bg-green-500 hover:bg-green-600" : ""}
+                                  data-testid={`button-correct-${qIndex}-${oIndex}`}
+                                >
+                                  {correctOptionIndex === oIndex ? "Correct" : "Set Correct"}
+                                </Button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {(questionType === "saq" || questionType === "laq") && (
+                          <FormField
+                            control={form.control}
+                            name={`questions.${qIndex}.correctAnswer`}
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Correct Answer / Key Points</FormLabel>
+                                <FormControl>
+                                  <Textarea 
+                                    placeholder="Enter the correct answer or key points for grading..." 
+                                    {...field}
+                                    data-testid={`input-correct-answer-${qIndex}`} 
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        )}
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <FormField
+                            control={form.control}
+                            name={`questions.${qIndex}.difficulty`}
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Difficulty</FormLabel>
+                                <Select onValueChange={(v) => field.onChange(parseInt(v))} value={String(field.value)}>
+                                  <FormControl>
+                                    <SelectTrigger data-testid={`select-difficulty-${qIndex}`}>
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                  </FormControl>
+                                  <SelectContent>
+                                    <SelectItem value="1">Very Easy</SelectItem>
+                                    <SelectItem value="2">Easy</SelectItem>
+                                    <SelectItem value="3">Medium</SelectItem>
+                                    <SelectItem value="4">Hard</SelectItem>
+                                    <SelectItem value="5">Very Hard</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name={`questions.${qIndex}.explanation`}
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Explanation (shown after answering)</FormLabel>
+                                <FormControl>
+                                  <Input 
+                                    placeholder="Explain the correct answer..." 
+                                    {...field}
+                                    data-testid={`input-explanation-${qIndex}`} 
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={addQuestionField}
+                    className="w-full border-2 border-dashed border-purple-300 dark:border-purple-700 text-purple-700 dark:text-purple-300 hover:bg-purple-50 dark:hover:bg-purple-950"
+                    data-testid="button-add-question"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Another Question
+                  </Button>
+                </CardContent>
+              </Card>
+
+              <div className="flex gap-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="flex-1 border-2"
+                  onClick={() => { setView("list"); form.reset(); }}
+                  data-testid="button-cancel"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  className="flex-1 bg-gradient-to-r from-purple-500 to-violet-600 hover:from-purple-600 hover:to-violet-700 text-white"
+                  disabled={createQuizMutation.isPending}
+                  data-testid="button-create-quiz"
+                >
+                  {createQuizMutation.isPending ? (
+                    <>
+                      <Loader className="h-4 w-4 mr-2 animate-spin" />
+                      Creating...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 className="h-4 w-4 mr-2" />
+                      Create Quiz
+                    </>
+                  )}
+                </Button>
+              </div>
+            </form>
+          </Form>
         </div>
       </div>
     );
