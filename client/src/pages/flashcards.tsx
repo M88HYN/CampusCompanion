@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Plus, Play, RotateCw, Upload, Edit2, Trash2, Eye, EyeOff, Tags, Settings, Loader2, ArrowLeft } from "lucide-react";
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { Plus, Play, RotateCw, Upload, Edit2, Trash2, Eye, EyeOff, Tags, Settings, Loader2, ArrowLeft, Search, Shuffle } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -41,6 +41,8 @@ export default function Flashcards() {
   const [showStudySettings, setShowStudySettings] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [bulkImportText, setBulkImportText] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [shuffledCards, setShuffledCards] = useState<FlashCard[]>([]);
 
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -153,12 +155,13 @@ export default function Flashcards() {
     });
   };
 
-  const handleReview = (quality: number) => {
-    if (!selectedDeck?.cards || selectedDeck.cards.length === 0) return;
-    const card = selectedDeck.cards[currentCard];
+  const handleReview = useCallback((quality: number) => {
+    const cards = shuffledCards.length > 0 ? shuffledCards : selectedDeck?.cards || [];
+    if (cards.length === 0) return;
+    const card = cards[currentCard];
     reviewCardMutation.mutate({ cardId: card.id, quality });
     
-    if (currentCard < selectedDeck.cards.length - 1) {
+    if (currentCard < cards.length - 1) {
       setCurrentCard(currentCard + 1);
       setFlipped(false);
     } else {
@@ -166,8 +169,9 @@ export default function Flashcards() {
       setView("decks");
       setCurrentCard(0);
       setFlipped(false);
+      setShuffledCards([]);
     }
-  };
+  }, [shuffledCards, selectedDeck?.cards, currentCard, reviewCardMutation, toast]);
 
   const parseBulkImport = () => {
     const lines = bulkImportText.split("\n").filter(line => line.trim());
@@ -200,6 +204,80 @@ export default function Flashcards() {
     };
     return colors[subject || ""] || "from-green-100 to-emerald-100 dark:from-green-900 dark:to-emerald-900 border-green-300 dark:border-green-700";
   };
+
+  const filteredDecks = useMemo(() => {
+    if (!searchQuery.trim()) return decks;
+    const query = searchQuery.toLowerCase();
+    return decks.filter(deck =>
+      deck.title.toLowerCase().includes(query) ||
+      deck.subject?.toLowerCase().includes(query) ||
+      deck.tags?.some(tag => tag.toLowerCase().includes(query))
+    );
+  }, [decks, searchQuery]);
+
+  const shuffleArray = useCallback(<T,>(array: T[]): T[] => {
+    const shuffled = [...array];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled;
+  }, []);
+
+  const studyCards = useMemo(() => {
+    if (shuffledCards.length > 0) return shuffledCards;
+    return selectedDeck?.cards || [];
+  }, [shuffledCards, selectedDeck?.cards]);
+
+  useEffect(() => {
+    if (view !== "studying") return;
+    
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+      
+      switch (e.key) {
+        case " ":
+        case "Enter":
+          e.preventDefault();
+          setFlipped(f => !f);
+          break;
+        case "1":
+          e.preventDefault();
+          handleReview(1);
+          break;
+        case "2":
+          e.preventDefault();
+          handleReview(2);
+          break;
+        case "3":
+          e.preventDefault();
+          handleReview(3);
+          break;
+        case "4":
+          e.preventDefault();
+          handleReview(5);
+          break;
+        case "Escape":
+          e.preventDefault();
+          setView("decks");
+          setCurrentCard(0);
+          setFlipped(false);
+          setShuffledCards([]);
+          break;
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [view, handleReview]);
+
+  useEffect(() => {
+    if (view === "studying" && selectedDeck?.cards && shuffledCards.length === 0) {
+      if (studyPreferences.shuffleCards && selectedDeck.cards.length > 0) {
+        setShuffledCards(shuffleArray(selectedDeck.cards));
+      }
+    }
+  }, [view, selectedDeck?.cards, shuffledCards.length, studyPreferences.shuffleCards, shuffleArray]);
 
   if (isLoadingDecks) {
     return (
@@ -282,7 +360,21 @@ export default function Flashcards() {
           )}
 
           <div>
-            <h2 className="text-2xl font-bold mb-4 text-slate-900 dark:text-white">Your Decks</h2>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+              <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Your Decks</h2>
+              {decks.length > 0 && (
+                <div className="relative w-full sm:w-72">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-green-500" />
+                  <Input
+                    placeholder="Search decks..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-10 border-green-300 dark:border-green-700 focus-visible:ring-green-500"
+                    data-testid="input-search-decks"
+                  />
+                </div>
+              )}
+            </div>
             {decks.length === 0 ? (
               <Card className="p-8 text-center border-2 border-dashed border-green-300 dark:border-green-700">
                 <div className="max-w-md mx-auto">
@@ -295,9 +387,20 @@ export default function Flashcards() {
                   </Button>
                 </div>
               </Card>
+            ) : filteredDecks.length === 0 ? (
+              <Card className="p-8 text-center border-2 border-dashed border-green-300 dark:border-green-700">
+                <div className="max-w-md mx-auto">
+                  <Search className="h-12 w-12 mx-auto mb-4 text-green-400 opacity-50" />
+                  <h3 className="text-xl font-semibold mb-2">No Matching Decks</h3>
+                  <p className="text-muted-foreground mb-4">Try a different search term</p>
+                  <Button variant="outline" onClick={() => setSearchQuery("")}>
+                    Clear Search
+                  </Button>
+                </div>
+              </Card>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {decks.map((deck) => {
+                {filteredDecks.map((deck) => {
                   const progressPct = deck.cards > 0 ? (deck.mastered / deck.cards) * 100 : 0;
                   return (
                     <Card
@@ -379,9 +482,10 @@ export default function Flashcards() {
                         <Button
                           onClick={() => {
                             setSelectedDeckId(deck.id);
-                            setView("studying");
+                            setShuffledCards([]);
                             setCurrentCard(0);
                             setFlipped(false);
+                            setView("studying");
                           }}
                           disabled={deck.cards === 0}
                           className="w-full mt-2 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white"
@@ -722,9 +826,15 @@ export default function Flashcards() {
   }
 
   if (view === "studying") {
-    const cards = selectedDeck?.cards || [];
+    if (!selectedDeck?.cards) {
+      return (
+        <div className="flex h-full items-center justify-center bg-gradient-to-b from-green-50 to-emerald-50 dark:from-green-950 dark:to-emerald-950">
+          <Loader2 className="h-8 w-8 animate-spin text-green-500" />
+        </div>
+      );
+    }
     
-    if (cards.length === 0) {
+    if (studyCards.length === 0) {
       return (
         <div className="flex-1 flex items-center justify-center bg-gradient-to-b from-green-50 to-emerald-50 dark:from-green-950 dark:to-emerald-950">
           <Card className="p-8 text-center max-w-md">
@@ -736,8 +846,8 @@ export default function Flashcards() {
       );
     }
 
-    const card = cards[currentCard];
-    const progress = ((currentCard + 1) / cards.length) * 100;
+    const card = studyCards[currentCard];
+    const progress = ((currentCard + 1) / studyCards.length) * 100;
 
     return (
       <div className="flex-1 flex items-center justify-center p-6 bg-gradient-to-b from-green-50 to-emerald-50 dark:from-green-950 dark:to-emerald-950">
@@ -745,7 +855,7 @@ export default function Flashcards() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <span className="text-sm text-muted-foreground">
-                Card {currentCard + 1} of {cards.length}
+                Card {currentCard + 1} of {studyCards.length}
               </span>
               <Badge variant="secondary" className="text-xs bg-green-100 dark:bg-green-900 text-green-900 dark:text-green-100">
                 {selectedDeck?.title}
@@ -797,7 +907,7 @@ export default function Flashcards() {
               data-testid="button-difficulty-hard"
             >
               <span className="font-semibold">Again</span>
-              <span className="text-xs ml-2 opacity-80">1d</span>
+              <span className="text-xs ml-2 opacity-80">(1)</span>
             </Button>
             <Button
               size="lg"
@@ -807,7 +917,7 @@ export default function Flashcards() {
               data-testid="button-difficulty-medium"
             >
               <span className="font-semibold">Hard</span>
-              <span className="text-xs ml-2 opacity-80">3d</span>
+              <span className="text-xs ml-2 opacity-80">(2)</span>
             </Button>
             <Button
               size="lg"
@@ -817,7 +927,7 @@ export default function Flashcards() {
               data-testid="button-difficulty-medium-good"
             >
               <span className="font-semibold">Good</span>
-              <span className="text-xs ml-2 opacity-80">10d</span>
+              <span className="text-xs ml-2 opacity-80">(3)</span>
             </Button>
             <Button
               size="lg"
@@ -827,8 +937,13 @@ export default function Flashcards() {
               data-testid="button-difficulty-easy"
             >
               <span className="font-semibold">Easy</span>
-              <span className="text-xs ml-2 opacity-80">21d</span>
+              <span className="text-xs ml-2 opacity-80">(4)</span>
             </Button>
+          </div>
+
+          <div className="text-center text-xs text-muted-foreground space-y-1 pt-4 border-t">
+            <p className="font-medium">Keyboard Shortcuts</p>
+            <p>Space/Enter: Flip card | 1-4: Rate card | Esc: Exit</p>
           </div>
         </div>
       </div>
