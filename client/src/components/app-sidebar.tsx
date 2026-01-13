@@ -100,7 +100,7 @@ export function AppSidebar({ userRole = "student" }: AppSidebarProps) {
             <Rocket className="h-6 w-6" />
           </div>
           <div className="flex flex-col">
-            <span className="text-lg font-bold bg-gradient-to-r from-teal-600 to-cyan-600 dark:from-teal-400 dark:to-cyan-400 bg-clip-text text-transparent">
+            <span className="text-lg font-bold text-teal-600 dark:text-teal-400">
               StudyMate
             </span>
             <span className="text-xs text-teal-600 dark:text-teal-400 font-medium">Learn Faster</span>
