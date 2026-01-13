@@ -73,6 +73,42 @@ The backend follows a clean separation with routes defined in `server/routes.ts`
 4. **Computer Networks**: OSI/TCP-IP models, protocols (TCP, UDP, HTTP), routing, NAT
 5. **Software Engineering**: SDLC, Agile, design patterns, testing, version control
 
+## Flashcard System - Updated Jan 2026
+
+### Core Features
+1. **Custom Decks**: Create, edit, and delete flashcard decks with title, subject, description, and tags
+2. **Multiple Card Types**: Basic cards with front/back content
+3. **SM-2 Spaced Repetition**: Cards include interval, ease factor, and nextReviewDate for optimal learning
+4. **Study Mode**: Focus mode with flip animation and confidence rating
+
+### Study Session Features
+- **Card Flip Animation**: Click or use keyboard to reveal answer
+- **Confidence Rating**: 4-level rating system (Again, Hard, Good, Easy) mapping to SM-2 quality scores
+- **Progress Tracking**: Visual progress bar showing session advancement
+- **Session Completion**: Summary screen with "Start Again" or "Back to Decks" options
+
+### Usability Features
+- **Search/Filter**: Filter decks by title, subject, or tags
+- **Shuffle Mode**: Randomize card order for study sessions (Fisher-Yates algorithm)
+- **Keyboard Shortcuts**:
+  - Space/Enter: Flip card
+  - 1-4: Rate card (Again, Hard, Good, Easy)
+  - Escape: Exit study mode
+
+### Flashcard API Endpoints
+- `GET /api/flashcard-decks` - List all decks with cards
+- `POST /api/flashcard-decks` - Create new deck
+- `PATCH /api/flashcard-decks/:id` - Update deck
+- `DELETE /api/flashcard-decks/:id` - Delete deck
+- `POST /api/flashcard-decks/:deckId/cards` - Add card to deck
+- `PATCH /api/cards/:cardId` - Update card
+- `DELETE /api/cards/:cardId` - Delete card
+- `POST /api/cards/:cardId/review` - Submit review with SM-2 update
+
+### Database Tables (Flashcards)
+- `flashcard_decks`: id, userId, title, subject, description, tags, createdAt, cardCount
+- `cards`: id, deckId, type, front, back, interval, easeFactor, nextReviewDate, createdAt, updatedAt
+
 ## Insight Scout (AI Research Assistant) - Added Jan 2026
 
 ### Overview
