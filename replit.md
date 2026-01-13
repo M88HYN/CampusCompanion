@@ -31,8 +31,47 @@ The backend follows a clean separation with routes defined in `server/routes.ts`
 
 ### Data Storage Solutions
 - **Primary Database**: PostgreSQL via Neon serverless
-- **Schema Design**: Drizzle ORM schema with tables for users, notes, note blocks, flashcard decks, cards (with spaced repetition fields), quizzes, quiz questions, quiz options, quiz attempts, and quiz responses
-- **Spaced Repetition**: Cards include interval, ease factor, and next review date fields for SM-2 algorithm implementation
+- **Schema Design**: Centralised relational database with 22 tables supporting all platform features
+- **Data Integrity**: All entities linked using primary and foreign keys with CASCADE deletes
+- **Normalization**: Reduces redundancy and improves scalability
+- **Spaced Repetition**: SM-2 algorithm fields (interval, easeFactor, repetitions, dueAt) on cards and quiz questions
+
+### Complete Database Schema
+
+**User Management (3 tables):**
+- `users`: id, username, password, role (student/instructor/admin), displayName, createdAt
+- `user_preferences`: email, avatarUrl, theme, notifications, dailyGoalMinutes, preferredStudyTime
+- `sessions`: PostgreSQL-backed session storage for authentication
+
+**Notes System (2 tables):**
+- `notes`: id, userId, title, subject, tags[], createdAt, updatedAt
+- `note_blocks`: id, noteId, type (paragraph/heading/code/list), content, order
+
+**Flashcard System (3 tables):**
+- `decks`: id, userId, title, subject, description, tags[], difficulty, createdAt
+- `cards`: id, deckId, type, front, back, imageUrl, clozeText, tags[], SM-2 fields (easeFactor, interval, repetitions, dueAt, status), sourceQuestionId, sourceNoteBlockId
+- `card_reviews`: id, cardId, userId, quality (0-5), intervalBefore/After, easeFactorBefore/After, reviewedAt
+
+**Quiz System (6 tables):**
+- `quizzes`: id, userId, title, subject, description, mode, timeLimit, passingScore, isPublished, isAdaptive
+- `quiz_questions`: id, quizId, type (mcq/saq/laq), question, difficulty (1-5), marks, explanation, markScheme, tags[]
+- `quiz_options`: id, questionId, text, isCorrect, order
+- `quiz_attempts`: id, quizId, userId, mode, startedAt, completedAt, score, totalMarks, earnedMarks, timeSpent, currentDifficulty, status
+- `quiz_responses`: id, attemptId, questionId, selectedOptionId, textAnswer, isCorrect, marksAwarded, feedback, responseTime, confidenceLevel, convertedToFlashcard
+- `user_question_stats`: id, userId, questionId, timesAnswered, timesCorrect, avgResponseTime, streak, SM-2 fields, nextReviewAt
+
+**Insight Scout / Research (4 tables):**
+- `conversations`: id, title, createdAt
+- `messages`: id, conversationId, role (user/assistant), content, createdAt
+- `saved_resources`: id, userId, conversationId, title, url, content, resourceType, tags[], isFavorite, linkedDeckId, linkedQuizId
+- `search_history`: id, userId, query, searchType, resultCount, searchedAt
+
+**Gamification & Progress (4 tables):**
+- `achievements`: id, name, description, icon, category, requirement (JSON), points, rarity (common/rare/epic/legendary)
+- `user_achievements`: id, userId, achievementId, unlockedAt, progress, isNotified
+- `study_streaks`: id, userId, currentStreak, longestStreak, lastStudyDate, totalStudyDays
+- `study_sessions`: id, userId, sessionType, resourceId, durationMinutes, itemsReviewed, correctAnswers, startedAt, endedAt
+- `learning_goals`: id, userId, title, description, targetType, targetValue, currentValue, deadline, status
 
 ### Key Design Patterns
 - **Shared Types**: Schema types are generated from Drizzle schemas and shared between frontend and backend via `@shared/*` path alias

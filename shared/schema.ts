@@ -1,7 +1,8 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, integer, timestamp, boolean, real, index } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, integer, timestamp, boolean, real, index, serial } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
+import { conversations } from "./models/chat";
 
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -310,6 +311,198 @@ export type QuizResponse = typeof quizResponses.$inferSelect;
 export type InsertQuizResponse = z.infer<typeof insertQuizResponseSchema>;
 export type UserQuestionStats = typeof userQuestionStats.$inferSelect;
 export type InsertUserQuestionStats = z.infer<typeof insertUserQuestionStatsSchema>;
+
+// ==================== USER PREFERENCES & SETTINGS ====================
+
+export const userPreferences = pgTable("user_preferences", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }).unique(),
+  email: text("email"),
+  avatarUrl: text("avatar_url"),
+  theme: text("theme").notNull().default("system"), // "light", "dark", "system"
+  notificationsEnabled: boolean("notifications_enabled").notNull().default(true),
+  emailNotifications: boolean("email_notifications").notNull().default(false),
+  dailyGoalMinutes: integer("daily_goal_minutes").default(30),
+  preferredStudyTime: text("preferred_study_time"), // "morning", "afternoon", "evening", "night"
+  soundEffects: boolean("sound_effects").notNull().default(true),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+}, (table) => [
+  index("user_preferences_user_id_idx").on(table.userId),
+]);
+
+export const insertUserPreferencesSchema = createInsertSchema(userPreferences).omit({
+  id: true,
+  updatedAt: true,
+});
+
+export type UserPreferences = typeof userPreferences.$inferSelect;
+export type InsertUserPreferences = z.infer<typeof insertUserPreferencesSchema>;
+
+// ==================== GAMIFICATION: ACHIEVEMENTS & BADGES ====================
+
+export const achievements = pgTable("achievements", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull().unique(),
+  description: text("description").notNull(),
+  icon: text("icon").notNull(), // icon name or emoji
+  category: text("category").notNull(), // "streak", "mastery", "exploration", "social", "milestone"
+  requirement: text("requirement").notNull(), // JSON describing unlock condition
+  points: integer("points").notNull().default(10),
+  rarity: text("rarity").notNull().default("common"), // "common", "rare", "epic", "legendary"
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (table) => [
+  index("achievements_category_idx").on(table.category),
+]);
+
+export const userAchievements = pgTable("user_achievements", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  achievementId: varchar("achievement_id").notNull().references(() => achievements.id, { onDelete: "cascade" }),
+  unlockedAt: timestamp("unlocked_at").notNull().defaultNow(),
+  progress: integer("progress").default(0), // for progressive achievements
+  isNotified: boolean("is_notified").notNull().default(false),
+}, (table) => [
+  index("user_achievements_user_id_idx").on(table.userId),
+  index("user_achievements_achievement_id_idx").on(table.achievementId),
+]);
+
+export const insertAchievementSchema = createInsertSchema(achievements).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertUserAchievementSchema = createInsertSchema(userAchievements).omit({
+  id: true,
+  unlockedAt: true,
+});
+
+export type Achievement = typeof achievements.$inferSelect;
+export type InsertAchievement = z.infer<typeof insertAchievementSchema>;
+export type UserAchievement = typeof userAchievements.$inferSelect;
+export type InsertUserAchievement = z.infer<typeof insertUserAchievementSchema>;
+
+// ==================== PROGRESS & ANALYTICS ====================
+
+export const studyStreaks = pgTable("study_streaks", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }).unique(),
+  currentStreak: integer("current_streak").notNull().default(0),
+  longestStreak: integer("longest_streak").notNull().default(0),
+  lastStudyDate: timestamp("last_study_date"),
+  totalStudyDays: integer("total_study_days").notNull().default(0),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+}, (table) => [
+  index("study_streaks_user_id_idx").on(table.userId),
+]);
+
+export const studySessions = pgTable("study_sessions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  sessionType: text("session_type").notNull(), // "flashcards", "quiz", "notes", "research", "pomodoro"
+  resourceId: varchar("resource_id"), // deck_id, quiz_id, note_id, conversation_id
+  durationMinutes: integer("duration_minutes").notNull(),
+  itemsReviewed: integer("items_reviewed").default(0),
+  correctAnswers: integer("correct_answers").default(0),
+  startedAt: timestamp("started_at").notNull().defaultNow(),
+  endedAt: timestamp("ended_at"),
+}, (table) => [
+  index("study_sessions_user_id_idx").on(table.userId),
+  index("study_sessions_session_type_idx").on(table.sessionType),
+  index("study_sessions_started_at_idx").on(table.startedAt),
+]);
+
+export const learningGoals = pgTable("learning_goals", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  title: text("title").notNull(),
+  description: text("description"),
+  targetType: text("target_type").notNull(), // "flashcards", "quizzes", "study_time", "streak"
+  targetValue: integer("target_value").notNull(),
+  currentValue: integer("current_value").notNull().default(0),
+  deadline: timestamp("deadline"),
+  status: text("status").notNull().default("active"), // "active", "completed", "abandoned"
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  completedAt: timestamp("completed_at"),
+}, (table) => [
+  index("learning_goals_user_id_idx").on(table.userId),
+  index("learning_goals_status_idx").on(table.status),
+]);
+
+export const insertStudyStreakSchema = createInsertSchema(studyStreaks).omit({
+  id: true,
+  currentStreak: true,
+  longestStreak: true,
+  totalStudyDays: true,
+  updatedAt: true,
+});
+
+export const insertStudySessionSchema = createInsertSchema(studySessions).omit({
+  id: true,
+  startedAt: true,
+});
+
+export const insertLearningGoalSchema = createInsertSchema(learningGoals).omit({
+  id: true,
+  currentValue: true,
+  status: true,
+  createdAt: true,
+  completedAt: true,
+});
+
+export type StudyStreak = typeof studyStreaks.$inferSelect;
+export type InsertStudyStreak = z.infer<typeof insertStudyStreakSchema>;
+export type StudySession = typeof studySessions.$inferSelect;
+export type InsertStudySession = z.infer<typeof insertStudySessionSchema>;
+export type LearningGoal = typeof learningGoals.$inferSelect;
+export type InsertLearningGoal = z.infer<typeof insertLearningGoalSchema>;
+
+// ==================== INSIGHT SCOUT: SAVED RESOURCES ====================
+
+export const savedResources = pgTable("saved_resources", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  conversationId: integer("conversation_id").references(() => conversations.id, { onDelete: "set null" }),
+  title: text("title").notNull(),
+  url: text("url"),
+  content: text("content"),
+  resourceType: text("resource_type").notNull(), // "article", "video", "paper", "website", "note"
+  tags: text("tags").array(),
+  isFavorite: boolean("is_favorite").notNull().default(false),
+  linkedDeckId: varchar("linked_deck_id").references(() => decks.id, { onDelete: "set null" }),
+  linkedQuizId: varchar("linked_quiz_id").references(() => quizzes.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (table) => [
+  index("saved_resources_user_id_idx").on(table.userId),
+  index("saved_resources_conversation_id_idx").on(table.conversationId),
+  index("saved_resources_resource_type_idx").on(table.resourceType),
+]);
+
+export const searchHistory = pgTable("search_history", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  query: text("query").notNull(),
+  searchType: text("search_type").notNull(), // "research", "notes", "flashcards", "quizzes"
+  resultCount: integer("result_count"),
+  searchedAt: timestamp("searched_at").notNull().defaultNow(),
+}, (table) => [
+  index("search_history_user_id_idx").on(table.userId),
+  index("search_history_searched_at_idx").on(table.searchedAt),
+]);
+
+export const insertSavedResourceSchema = createInsertSchema(savedResources).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertSearchHistorySchema = createInsertSchema(searchHistory).omit({
+  id: true,
+  searchedAt: true,
+});
+
+export type SavedResource = typeof savedResources.$inferSelect;
+export type InsertSavedResource = z.infer<typeof insertSavedResourceSchema>;
+export type SearchHistory = typeof searchHistory.$inferSelect;
+export type InsertSearchHistory = z.infer<typeof insertSearchHistorySchema>;
 
 // Re-export chat models
 export * from "./models/chat";
