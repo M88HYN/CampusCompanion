@@ -22,43 +22,48 @@ export default function Dashboard({ userRole = "student" }: DashboardProps) {
   const features = [
     {
       title: "Notes",
-      description: "12 notebooks",
+      description: "Organize your study materials",
+      subtitle: "12 notebooks",
       icon: BookOpen,
       color: "text-white",
-      bgGradient: "bg-gradient-to-br from-blue-500 to-blue-600",
+      bgGradient: "bg-gradient-to-br from-sky-400 via-blue-500 to-indigo-600",
       href: "/notes",
     },
     {
       title: "Quizzes",
-      description: "5 active quizzes",
+      description: "Test your knowledge",
+      subtitle: "5 active quizzes",
       icon: BrainCircuit,
       color: "text-white",
-      bgGradient: "bg-gradient-to-br from-purple-500 to-purple-600",
+      bgGradient: "bg-gradient-to-br from-fuchsia-500 via-pink-500 to-rose-500",
       href: "/quizzes",
     },
     {
       title: "Flashcards",
-      description: "8 decks • 23 due today",
+      description: "Master with spaced repetition",
+      subtitle: "23 cards due today",
       icon: GraduationCap,
       color: "text-white",
-      bgGradient: "bg-gradient-to-br from-green-500 to-green-600",
+      bgGradient: "bg-gradient-to-br from-emerald-400 via-green-500 to-teal-600",
       href: "/flashcards",
       urgent: true,
     },
     {
       title: "Insight Scout",
-      description: "Research & Sources",
+      description: "AI-powered research assistant",
+      subtitle: "Ask anything",
       icon: Sparkles,
       color: "text-white",
-      bgGradient: "bg-gradient-to-br from-orange-500 to-orange-600",
+      bgGradient: "bg-gradient-to-br from-amber-400 via-orange-500 to-red-500",
       href: "/research",
     },
     {
       title: "Revision Help",
-      description: "Pomodoro, Kanban & Whiteboard",
+      description: "Focus tools & timers",
+      subtitle: "Pomodoro ready",
       icon: Lightbulb,
       color: "text-white",
-      bgGradient: "bg-gradient-to-br from-yellow-500 to-amber-600",
+      bgGradient: "bg-gradient-to-br from-yellow-400 via-lime-500 to-green-500",
       href: "/revision",
     },
   ];
@@ -163,76 +168,80 @@ export default function Dashboard({ userRole = "student" }: DashboardProps) {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="bg-gradient-to-br from-orange-500 to-red-500 rounded-lg p-4 text-white">
+          <div className="bg-gradient-to-br from-orange-400 via-red-500 to-rose-600 rounded-xl p-5 text-white shadow-lg shadow-orange-500/20">
             <div className="flex items-center gap-3 mb-3">
-              <Flame className="h-5 w-5 opacity-80" />
-              <span className="text-sm font-medium opacity-90">Study Streak</span>
+              <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
+                <Flame className="h-5 w-5" />
+              </div>
+              <span className="text-sm font-semibold">Study Streak</span>
             </div>
-            <div className="text-4xl font-bold">7</div>
-            <p className="text-xs opacity-70 mt-1">days</p>
+            <div className="text-5xl font-bold">7</div>
+            <p className="text-sm opacity-80 mt-1 font-medium">days in a row</p>
           </div>
 
-          <div className="bg-gradient-to-br from-blue-500 to-cyan-500 rounded-lg p-4 text-white">
+          <div className="bg-gradient-to-br from-cyan-400 via-blue-500 to-indigo-600 rounded-xl p-5 text-white shadow-lg shadow-blue-500/20">
             <div className="flex items-center gap-3 mb-3">
-              <Calendar className="h-5 w-5 opacity-80" />
-              <span className="text-sm font-medium opacity-90">Due Today</span>
+              <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
+                <Calendar className="h-5 w-5" />
+              </div>
+              <span className="text-sm font-semibold">Due Today</span>
             </div>
-            <div className="text-4xl font-bold">23</div>
-            <p className="text-xs opacity-70 mt-1">cards</p>
+            <div className="text-5xl font-bold">23</div>
+            <p className="text-sm opacity-80 mt-1 font-medium">cards to review</p>
           </div>
 
-          <div className="bg-gradient-to-br from-green-500 to-emerald-500 rounded-lg p-4 text-white">
+          <div className="bg-gradient-to-br from-emerald-400 via-green-500 to-teal-600 rounded-xl p-5 text-white shadow-lg shadow-green-500/20">
             <div className="flex items-center gap-3 mb-3">
-              <Target className="h-5 w-5 opacity-80" />
-              <span className="text-sm font-medium opacity-90">Accuracy</span>
+              <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
+                <Target className="h-5 w-5" />
+              </div>
+              <span className="text-sm font-semibold">Accuracy</span>
             </div>
-            <div className="text-4xl font-bold">87%</div>
-            <p className="text-xs opacity-70 mt-1">this week</p>
+            <div className="text-5xl font-bold">87%</div>
+            <p className="text-sm opacity-80 mt-1 font-medium">this week</p>
           </div>
 
-          <div className="bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg p-4 text-white">
+          <div className="bg-gradient-to-br from-violet-400 via-purple-500 to-fuchsia-600 rounded-xl p-5 text-white shadow-lg shadow-purple-500/20">
             <div className="flex items-center gap-3 mb-3">
-              <Clock className="h-5 w-5 opacity-80" />
-              <span className="text-sm font-medium opacity-90">Study Time</span>
+              <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
+                <Clock className="h-5 w-5" />
+              </div>
+              <span className="text-sm font-semibold">Study Time</span>
             </div>
-            <div className="text-4xl font-bold">12h</div>
-            <p className="text-xs opacity-70 mt-1">this week</p>
+            <div className="text-5xl font-bold">12h</div>
+            <p className="text-sm opacity-80 mt-1 font-medium">this week</p>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
           {features.map((feature) => (
-            <Card
-              key={feature.title}
-              className={`hover-elevate cursor-pointer transition-all relative border-0 ${feature.bgGradient} text-white overflow-hidden`}
-              data-testid={`card-${feature.title.toLowerCase()}`}
-            >
-              {feature.urgent && (
-                <Badge variant="destructive" className="absolute top-3 right-3 text-xs bg-red-600">
-                  Due
-                </Badge>
-              )}
-              <CardHeader className="pb-3">
-                <div className="w-12 h-12 rounded-lg bg-white/20 backdrop-blur-sm flex items-center justify-center mb-3">
-                  <feature.icon className={`h-6 w-6 ${feature.color}`} />
-                </div>
-                <CardTitle className="text-xl text-white">{feature.title}</CardTitle>
-                <CardDescription className="text-white/80">{feature.description}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Link href={feature.href}>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="w-full bg-white/20 hover:bg-white/30 text-white border-0"
-                    data-testid={`button-open-${feature.title.toLowerCase().replace(/\s/g, "-")}`}
-                    asChild
-                  >
-                    <span>Open</span>
-                  </Button>
-                </Link>
-              </CardContent>
-            </Card>
+            <Link href={feature.href} key={feature.title}>
+              <Card
+                className={`hover-elevate cursor-pointer transition-all relative border-0 ${feature.bgGradient} text-white overflow-hidden h-full shadow-lg`}
+                data-testid={`card-${feature.title.toLowerCase()}`}
+              >
+                {feature.urgent && (
+                  <Badge variant="destructive" className="absolute top-3 right-3 text-xs bg-white text-red-600 font-bold animate-pulse">
+                    Due Now
+                  </Badge>
+                )}
+                <CardHeader className="pb-2">
+                  <div className="w-14 h-14 rounded-xl bg-white/25 backdrop-blur-sm flex items-center justify-center mb-3 shadow-inner">
+                    <feature.icon className={`h-7 w-7 ${feature.color}`} />
+                  </div>
+                  <CardTitle className="text-xl text-white font-bold">{feature.title}</CardTitle>
+                  <CardDescription className="text-white/90 font-medium">{feature.description}</CardDescription>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-white/70">{feature.subtitle}</span>
+                    <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
+                      <span className="text-white text-lg">→</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </Link>
           ))}
         </div>
 

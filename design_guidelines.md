@@ -15,11 +15,15 @@ Combining Duolingo's playful energy with Notion's organizational clarity and Lin
 
 ## Color System
 
+**Brand Color Identity:**
+- **StudyMate Brand:** Teal/Cyan (#14B8A6 to #06B6D4 gradient) - Fresh, energetic, modern
+
 **Feature Color Identities:**
-- **Notes:** Bright Blue (#3B82F6 to #1D4ED8 gradient)
-- **Quizzes:** Vibrant Purple (#A855F7 to #7C3AED gradient)
-- **Flashcards:** Fresh Green (#10B981 to #059669 gradient)
-- **Insight Scout:** Warm Orange (#F97316 to #EA580C gradient)
+- **Notes:** Sky Blue to Indigo (#38BDF8 → #3B82F6 → #6366F1 gradient)
+- **Quizzes:** Fuchsia to Rose (#D946EF → #EC4899 → #F43F5E gradient)  
+- **Flashcards:** Emerald to Teal (#34D399 → #22C55E → #14B8A6 gradient)
+- **Insight Scout:** Amber to Red (#FBBF24 → #F97316 → #EF4444 gradient)
+- **Revision Help:** Yellow to Green (#FACC15 → #84CC16 → #22C55E gradient)
 
 **UI Palette:**
 - Primary Actions: Vibrant gradients matching feature context
