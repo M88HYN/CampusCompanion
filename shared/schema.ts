@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, integer, timestamp, boolean, real } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, integer, timestamp, boolean, real, index } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -26,21 +26,26 @@ export type User = typeof users.$inferSelect;
 
 export const notes = pgTable("notes", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  userId: varchar("user_id").notNull(),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   title: text("title").notNull(),
   subject: text("subject"),
   tags: text("tags").array(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
-});
+}, (table) => [
+  index("notes_user_id_idx").on(table.userId),
+  index("notes_subject_idx").on(table.subject),
+]);
 
 export const noteBlocks = pgTable("note_blocks", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  noteId: varchar("note_id").notNull(),
+  noteId: varchar("note_id").notNull().references(() => notes.id, { onDelete: "cascade" }),
   type: text("type").notNull(), // "paragraph", "heading", "code", "list"
   content: text("content").notNull(),
   order: integer("order").notNull(),
-});
+}, (table) => [
+  index("note_blocks_note_id_idx").on(table.noteId),
+]);
 
 export const insertNoteSchema = createInsertSchema(notes).omit({
   id: true,
@@ -61,18 +66,21 @@ export type InsertNoteBlock = z.infer<typeof insertNoteBlockSchema>;
 
 export const decks = pgTable("decks", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  userId: varchar("user_id").notNull(),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   title: text("title").notNull(),
   subject: text("subject"),
   description: text("description"),
   tags: text("tags").array(),
   difficulty: text("difficulty").default("medium"), // "easy", "medium", "hard"
   createdAt: timestamp("created_at").notNull().defaultNow(),
-});
+}, (table) => [
+  index("decks_user_id_idx").on(table.userId),
+  index("decks_subject_idx").on(table.subject),
+]);
 
 export const cards = pgTable("cards", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  deckId: varchar("deck_id").notNull(),
+  deckId: varchar("deck_id").notNull().references(() => decks.id, { onDelete: "cascade" }),
   type: text("type").notNull().default("basic"), // "basic", "cloze", "image", "definition"
   front: text("front").notNull(),
   back: text("back").notNull(),
@@ -92,19 +100,26 @@ export const cards = pgTable("cards", {
   // Integration fields
   sourceQuestionId: varchar("source_question_id"), // if created from quiz question
   sourceNoteBlockId: varchar("source_note_block_id"), // if created from note
-});
+}, (table) => [
+  index("cards_deck_id_idx").on(table.deckId),
+  index("cards_due_at_idx").on(table.dueAt),
+  index("cards_status_idx").on(table.status),
+]);
 
 export const cardReviews = pgTable("card_reviews", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  cardId: varchar("card_id").notNull(),
-  userId: varchar("user_id").notNull(),
+  cardId: varchar("card_id").notNull().references(() => cards.id, { onDelete: "cascade" }),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   quality: integer("quality").notNull(), // 0-5 SM-2 quality rating
   intervalBefore: integer("interval_before").notNull(),
   intervalAfter: integer("interval_after").notNull(),
   easeFactorBefore: real("ease_factor_before").notNull(),
   easeFactorAfter: real("ease_factor_after").notNull(),
   reviewedAt: timestamp("reviewed_at").notNull().defaultNow(),
-});
+}, (table) => [
+  index("card_reviews_card_id_idx").on(table.cardId),
+  index("card_reviews_user_id_idx").on(table.userId),
+]);
 
 export const insertDeckSchema = createInsertSchema(decks).omit({
   id: true,
@@ -138,7 +153,7 @@ export type InsertCardReview = z.infer<typeof insertCardReviewSchema>;
 
 export const quizzes = pgTable("quizzes", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  userId: varchar("user_id").notNull(),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   title: text("title").notNull(),
   subject: text("subject"),
   description: text("description"),
@@ -148,11 +163,14 @@ export const quizzes = pgTable("quizzes", {
   isPublished: boolean("is_published").notNull().default(false),
   isAdaptive: boolean("is_adaptive").notNull().default(false),
   createdAt: timestamp("created_at").notNull().defaultNow(),
-});
+}, (table) => [
+  index("quizzes_user_id_idx").on(table.userId),
+  index("quizzes_subject_idx").on(table.subject),
+]);
 
 export const quizQuestions = pgTable("quiz_questions", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  quizId: varchar("quiz_id").notNull(),
+  quizId: varchar("quiz_id").notNull().references(() => quizzes.id, { onDelete: "cascade" }),
   type: text("type").notNull(), // "mcq", "saq", "laq"
   question: text("question").notNull(),
   difficulty: integer("difficulty").notNull().default(3), // 1-5 stars
@@ -166,20 +184,25 @@ export const quizQuestions = pgTable("quiz_questions", {
   correctAnswer: text("correct_answer"),
   // Integration
   sourceNoteBlockId: varchar("source_note_block_id"),
-});
+}, (table) => [
+  index("quiz_questions_quiz_id_idx").on(table.quizId),
+  index("quiz_questions_difficulty_idx").on(table.difficulty),
+]);
 
 export const quizOptions = pgTable("quiz_options", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  questionId: varchar("question_id").notNull(),
+  questionId: varchar("question_id").notNull().references(() => quizQuestions.id, { onDelete: "cascade" }),
   text: text("text").notNull(),
   isCorrect: boolean("is_correct").notNull().default(false),
   order: integer("order").notNull(),
-});
+}, (table) => [
+  index("quiz_options_question_id_idx").on(table.questionId),
+]);
 
 export const quizAttempts = pgTable("quiz_attempts", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  quizId: varchar("quiz_id").notNull(),
-  userId: varchar("user_id").notNull(),
+  quizId: varchar("quiz_id").notNull().references(() => quizzes.id, { onDelete: "cascade" }),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   mode: text("mode").notNull(), // "practice", "exam", "adaptive", "spaced"
   startedAt: timestamp("started_at").notNull().defaultNow(),
   completedAt: timestamp("completed_at"),
@@ -191,12 +214,16 @@ export const quizAttempts = pgTable("quiz_attempts", {
   currentDifficulty: integer("current_difficulty").default(3), // for adaptive mode
   difficultyPath: text("difficulty_path"), // JSON array of difficulty changes
   status: text("status").notNull().default("in_progress"), // "in_progress", "completed", "abandoned"
-});
+}, (table) => [
+  index("quiz_attempts_quiz_id_idx").on(table.quizId),
+  index("quiz_attempts_user_id_idx").on(table.userId),
+  index("quiz_attempts_status_idx").on(table.status),
+]);
 
 export const quizResponses = pgTable("quiz_responses", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  attemptId: varchar("attempt_id").notNull(),
-  questionId: varchar("question_id").notNull(),
+  attemptId: varchar("attempt_id").notNull().references(() => quizAttempts.id, { onDelete: "cascade" }),
+  questionId: varchar("question_id").notNull().references(() => quizQuestions.id, { onDelete: "cascade" }),
   // For MCQ
   selectedOptionId: varchar("selected_option_id"),
   // For SAQ/LAQ
@@ -209,13 +236,16 @@ export const quizResponses = pgTable("quiz_responses", {
   convertedToFlashcard: boolean("converted_to_flashcard").notNull().default(false),
   flashcardId: varchar("flashcard_id"),
   answeredAt: timestamp("answered_at").notNull().defaultNow(),
-});
+}, (table) => [
+  index("quiz_responses_attempt_id_idx").on(table.attemptId),
+  index("quiz_responses_question_id_idx").on(table.questionId),
+]);
 
 // User question stats for adaptive engine and spaced repetition
 export const userQuestionStats = pgTable("user_question_stats", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  userId: varchar("user_id").notNull(),
-  questionId: varchar("question_id").notNull(),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  questionId: varchar("question_id").notNull().references(() => quizQuestions.id, { onDelete: "cascade" }),
   timesAnswered: integer("times_answered").notNull().default(0),
   timesCorrect: integer("times_correct").notNull().default(0),
   averageResponseTime: real("average_response_time"), // seconds
@@ -227,7 +257,11 @@ export const userQuestionStats = pgTable("user_question_stats", {
   repetitions: integer("repetitions").notNull().default(0),
   nextReviewAt: timestamp("next_review_at"),
   status: text("status").notNull().default("new"), // "new", "learning", "reviewing", "mastered"
-});
+}, (table) => [
+  index("user_question_stats_user_id_idx").on(table.userId),
+  index("user_question_stats_question_id_idx").on(table.questionId),
+  index("user_question_stats_next_review_idx").on(table.nextReviewAt),
+]);
 
 export const insertQuizSchema = createInsertSchema(quizzes).omit({
   id: true,
