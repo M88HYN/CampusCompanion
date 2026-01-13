@@ -201,7 +201,7 @@ export default function Dashboard({ userRole = "student" }: DashboardProps) {
             <p className="text-sm opacity-80 mt-1 font-medium">this week</p>
           </div>
 
-          <div className="bg-gradient-to-br from-violet-400 via-purple-500 to-fuchsia-600 rounded-xl p-5 text-white shadow-lg shadow-purple-500/20">
+          <div className="bg-gradient-to-br from-pink-400 via-rose-500 to-red-500 rounded-xl p-5 text-white shadow-lg shadow-rose-500/20">
             <div className="flex items-center gap-3 mb-3">
               <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
                 <Clock className="h-5 w-5" />
