@@ -836,14 +836,21 @@ export class DatabaseStorage implements IStorage {
     const userDecks = await this.getDecks(userId);
     let totalCards = 0;
     let masteredCards = 0;
-    let cardsWithReviews = 0;
+    let totalCardReviews = 0;
+    const flashcardStudyDates: Set<string> = new Set();
 
     for (const deck of userDecks) {
       const deckCards = await this.getCards(deck.id);
       for (const card of deckCards) {
         totalCards++;
         if (card.status === 'mastered') masteredCards++;
-        if (card.repetitions && card.repetitions > 0) cardsWithReviews++;
+        // Count actual reviews from cardReviews table
+        const reviews = await db.select().from(cardReviews).where(eq(cardReviews.cardId, card.id));
+        totalCardReviews += reviews.length;
+        // Track flashcard study dates for streak calculation
+        for (const review of reviews) {
+          flashcardStudyDates.add(review.reviewedAt.toISOString().split('T')[0]);
+        }
       }
     }
 
@@ -940,7 +947,12 @@ export class DatabaseStorage implements IStorage {
     // Calculate overall quiz accuracy (only from quiz data - accurate)
     const overallAccuracy = quizTotal > 0 ? Math.round((quizCorrect / quizTotal) * 100) : 0;
 
-    // Calculate streak from actual study dates
+    // Merge quiz and flashcard study dates for streak calculation
+    for (const date of flashcardStudyDates) {
+      studyDates.add(date);
+    }
+
+    // Calculate streak from actual study dates (quizzes + flashcard reviews)
     const sortedDates = Array.from(studyDates).sort().reverse();
     let currentStreak = 0;
     let longestStreak = 0;
@@ -1020,19 +1032,41 @@ export class DatabaseStorage implements IStorage {
       }))
       .sort((a, b) => a.hour - b.hour);
 
-    // Generate accuracy trends from actual daily response data
+    // Generate accuracy trends from actual daily response data (quiz only - no daily flashcard tracking)
     const accuracyTrends: { date: string; quizAccuracy: number; flashcardAccuracy: number }[] = [];
     const flashcardMasteryRate = totalCards > 0 ? Math.round((masteredCards / totalCards) * 100) : 0;
+    
+    // Get card review data for daily flashcard accuracy (if available)
+    const cardReviewsByDay: Record<string, { correct: number; total: number }> = {};
+    for (const deck of userDecks) {
+      const deckCards = await this.getCards(deck.id);
+      for (const card of deckCards) {
+        // Get actual reviews for this card
+        const reviews = await db.select().from(cardReviews).where(eq(cardReviews.cardId, card.id));
+        for (const review of reviews) {
+          const dateKey = review.reviewedAt.toISOString().split('T')[0];
+          if (!cardReviewsByDay[dateKey]) {
+            cardReviewsByDay[dateKey] = { correct: 0, total: 0 };
+          }
+          cardReviewsByDay[dateKey].total++;
+          // Quality >= 3 is considered correct in SM-2
+          if (review.quality >= 3) cardReviewsByDay[dateKey].correct++;
+        }
+      }
+    }
     
     for (let i = 13; i >= 0; i--) {
       const date = new Date();
       date.setDate(date.getDate() - i);
       const dateKey = date.toISOString().split('T')[0];
-      const stats = dailyQuizAccuracy[dateKey];
+      const quizStats = dailyQuizAccuracy[dateKey];
+      const flashcardStats = cardReviewsByDay[dateKey];
       accuracyTrends.push({
         date: dateKey,
-        quizAccuracy: stats && stats.total > 0 ? Math.round((stats.correct / stats.total) * 100) : 0,
-        flashcardAccuracy: flashcardMasteryRate // Use mastery rate as proxy (accurate from card status)
+        quizAccuracy: quizStats && quizStats.total > 0 ? Math.round((quizStats.correct / quizStats.total) * 100) : 0,
+        flashcardAccuracy: flashcardStats && flashcardStats.total > 0 
+          ? Math.round((flashcardStats.correct / flashcardStats.total) * 100) 
+          : 0
       });
     }
 
@@ -1088,7 +1122,7 @@ export class DatabaseStorage implements IStorage {
       });
     }
 
-    if (cardsWithReviews < 20 && totalCards > 0) {
+    if (totalCardReviews < 20 && totalCards > 0) {
       recommendations.push({
         type: 'flashcards',
         title: 'Review more flashcards',
@@ -1103,7 +1137,7 @@ export class DatabaseStorage implements IStorage {
         totalSessions: allAttempts.length,
         currentStreak,
         longestStreak,
-        cardsReviewed: cardsWithReviews,
+        cardsReviewed: totalCardReviews,
         quizzesTaken: allAttempts.length,
         overallAccuracy
       },
