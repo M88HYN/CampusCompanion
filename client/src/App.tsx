@@ -13,6 +13,7 @@ import Quizzes from "@/pages/quizzes";
 import Flashcards from "@/pages/flashcards";
 import Research from "@/pages/research";
 import Revision from "@/pages/revision";
+import Insights from "@/pages/insights";
 import Settings from "@/pages/settings";
 import NotFound from "@/pages/not-found";
 
@@ -25,6 +26,7 @@ function Router() {
       <Route path="/flashcards" component={() => <Flashcards />} />
       <Route path="/research" component={() => <Research />} />
       <Route path="/revision" component={() => <Revision />} />
+      <Route path="/insights" component={() => <Insights />} />
       <Route path="/settings" component={() => <Settings />} />
       <Route component={NotFound} />
     </Switch>
@@ -45,10 +47,10 @@ export default function App() {
             <div className="flex h-screen w-full">
               <AppSidebar userRole="student" />
               <div className="flex flex-col flex-1 overflow-hidden">
-                <header className="flex items-center justify-between px-6 py-3 border-b-2 border-purple-200 dark:border-purple-800 bg-gradient-to-r from-white to-purple-50 dark:from-slate-900 dark:to-purple-950 shrink-0 shadow-sm">
+                <header className="flex items-center justify-between px-6 py-3 border-b-2 border-teal-200 dark:border-teal-800 bg-gradient-to-r from-white to-teal-50 dark:from-slate-900 dark:to-teal-950 shrink-0 shadow-sm">
                   <div className="flex items-center gap-3">
-                    <SidebarTrigger data-testid="button-sidebar-toggle" className="text-purple-600 dark:text-purple-400" />
-                    <h1 className="text-lg font-bold bg-gradient-to-r from-purple-600 to-violet-600 dark:from-purple-400 dark:to-violet-400 bg-clip-text text-transparent hidden sm:block">
+                    <SidebarTrigger data-testid="button-sidebar-toggle" className="text-teal-600 dark:text-teal-400" />
+                    <h1 className="text-lg font-bold bg-gradient-to-r from-teal-600 to-cyan-600 dark:from-teal-400 dark:to-cyan-400 bg-clip-text text-transparent hidden sm:block">
                       StudyMate
                     </h1>
                   </div>

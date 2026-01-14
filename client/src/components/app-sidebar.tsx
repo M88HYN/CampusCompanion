@@ -8,6 +8,7 @@ import {
   Users,
   Rocket,
   Lightbulb,
+  BarChart3,
 } from "lucide-react";
 import {
   Sidebar,
@@ -64,6 +65,11 @@ export function AppSidebar({ userRole = "student" }: AppSidebarProps) {
       title: "Revision Help",
       url: "/revision",
       icon: Lightbulb,
+    },
+    {
+      title: "Learning Insights",
+      url: "/insights",
+      icon: BarChart3,
     },
   ];
 

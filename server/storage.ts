@@ -103,6 +103,26 @@ export interface IStorage {
     weaknessesByTopic: Record<string, number>;
     recentActivity: { date: string; score: number }[];
   }>;
+  
+  // Learning Insights
+  getLearningInsights(userId: string): Promise<{
+    overview: {
+      totalStudyTime: number;
+      totalSessions: number;
+      currentStreak: number;
+      longestStreak: number;
+      cardsReviewed: number;
+      quizzesTaken: number;
+      overallAccuracy: number;
+    };
+    accuracyTrends: { date: string; quizAccuracy: number; flashcardAccuracy: number }[];
+    topicPerformance: { topic: string; accuracy: number; totalQuestions: number; improvement: number }[];
+    studyPatterns: { hour: number; sessions: number; avgAccuracy: number }[];
+    weakAreas: { topic: string; accuracy: number; suggestion: string }[];
+    strengths: { topic: string; accuracy: number; masteredConcepts: number }[];
+    recommendations: { type: string; title: string; description: string; priority: 'high' | 'medium' | 'low' }[];
+    weeklyProgress: { day: string; minutes: number; items: number }[];
+  }>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -782,6 +802,318 @@ export class DatabaseStorage implements IStorage {
       strengthsByTopic,
       weaknessesByTopic,
       recentActivity,
+    };
+  }
+
+  // ==================== LEARNING INSIGHTS ====================
+
+  async getLearningInsights(userId: string): Promise<{
+    overview: {
+      totalStudyTime: number;
+      totalSessions: number;
+      currentStreak: number;
+      longestStreak: number;
+      cardsReviewed: number;
+      quizzesTaken: number;
+      overallAccuracy: number;
+    };
+    accuracyTrends: { date: string; quizAccuracy: number; flashcardAccuracy: number }[];
+    topicPerformance: { topic: string; accuracy: number; totalQuestions: number; improvement: number }[];
+    studyPatterns: { hour: number; sessions: number; avgAccuracy: number }[];
+    weakAreas: { topic: string; accuracy: number; suggestion: string }[];
+    strengths: { topic: string; accuracy: number; masteredConcepts: number }[];
+    recommendations: { type: string; title: string; description: string; priority: 'high' | 'medium' | 'low' }[];
+    weeklyProgress: { day: string; minutes: number; items: number }[];
+  }> {
+    // Get quiz attempts for the user
+    const allAttempts = await db
+      .select()
+      .from(quizAttempts)
+      .where(and(eq(quizAttempts.userId, userId), sql`${quizAttempts.completedAt} IS NOT NULL`))
+      .orderBy(desc(quizAttempts.completedAt));
+
+    // Get flashcard decks and cards - count mastered vs total for accurate metrics
+    const userDecks = await this.getDecks(userId);
+    let totalCards = 0;
+    let masteredCards = 0;
+    let cardsWithReviews = 0;
+
+    for (const deck of userDecks) {
+      const deckCards = await this.getCards(deck.id);
+      for (const card of deckCards) {
+        totalCards++;
+        if (card.status === 'mastered') masteredCards++;
+        if (card.repetitions && card.repetitions > 0) cardsWithReviews++;
+      }
+    }
+
+    // Calculate quiz stats from actual quiz responses (accurate data)
+    let quizCorrect = 0;
+    let quizTotal = 0;
+    let totalStudyTime = 0;
+    const topicStats: Record<string, { correct: number; total: number; recentCorrect: number; recentTotal: number }> = {};
+    const hourlyStats: Record<number, { sessions: number; correct: number; total: number }> = {};
+    const dailyProgress: Record<string, { minutes: number; items: number }> = {};
+    const studyDates: Set<string> = new Set();
+
+    // Initialize last 7 days
+    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date();
+      date.setDate(date.getDate() - i);
+      const dayKey = date.toISOString().split('T')[0];
+      dailyProgress[dayKey] = { minutes: 0, items: 0 };
+    }
+
+    // Daily quiz accuracy for trends (using actual response correctness)
+    const dailyQuizAccuracy: Record<string, { correct: number; total: number }> = {};
+
+    // Process quiz attempts
+    for (const attempt of allAttempts) {
+      totalStudyTime += attempt.timeSpent || 0;
+      
+      const completedDate = attempt.completedAt;
+      if (completedDate) {
+        const dateKey = completedDate.toISOString().split('T')[0];
+        studyDates.add(dateKey);
+        const hour = completedDate.getHours();
+        
+        // Track hourly patterns
+        if (!hourlyStats[hour]) {
+          hourlyStats[hour] = { sessions: 0, correct: 0, total: 0 };
+        }
+        hourlyStats[hour].sessions++;
+        
+        // Track daily progress
+        if (dailyProgress[dateKey]) {
+          dailyProgress[dateKey].minutes += Math.round((attempt.timeSpent || 0) / 60);
+        }
+
+        // Initialize daily accuracy tracking
+        if (!dailyQuizAccuracy[dateKey]) {
+          dailyQuizAccuracy[dateKey] = { correct: 0, total: 0 };
+        }
+      }
+
+      const responses = await this.getQuizResponses(attempt.id);
+      const isRecent = attempt.completedAt && (new Date().getTime() - attempt.completedAt.getTime()) < 7 * 24 * 60 * 60 * 1000;
+      
+      for (const response of responses) {
+        quizTotal++;
+        if (response.isCorrect) quizCorrect++;
+        
+        if (completedDate) {
+          const hour = completedDate.getHours();
+          const dateKey = completedDate.toISOString().split('T')[0];
+          
+          hourlyStats[hour].total++;
+          if (response.isCorrect) hourlyStats[hour].correct++;
+          
+          // Track daily accuracy from actual responses
+          dailyQuizAccuracy[dateKey].total++;
+          if (response.isCorrect) dailyQuizAccuracy[dateKey].correct++;
+          
+          if (dailyProgress[dateKey]) {
+            dailyProgress[dateKey].items++;
+          }
+        }
+
+        // Get question for topic analysis
+        const [question] = await db.select().from(quizQuestions).where(eq(quizQuestions.id, response.questionId));
+        if (question?.tags) {
+          for (const tag of question.tags) {
+            if (!topicStats[tag]) {
+              topicStats[tag] = { correct: 0, total: 0, recentCorrect: 0, recentTotal: 0 };
+            }
+            topicStats[tag].total++;
+            if (response.isCorrect) topicStats[tag].correct++;
+            
+            if (isRecent) {
+              topicStats[tag].recentTotal++;
+              if (response.isCorrect) topicStats[tag].recentCorrect++;
+            }
+          }
+        }
+      }
+    }
+
+    // Calculate overall quiz accuracy (only from quiz data - accurate)
+    const overallAccuracy = quizTotal > 0 ? Math.round((quizCorrect / quizTotal) * 100) : 0;
+
+    // Calculate streak from actual study dates
+    const sortedDates = Array.from(studyDates).sort().reverse();
+    let currentStreak = 0;
+    let longestStreak = 0;
+    let tempStreak = 0;
+    const today = new Date().toISOString().split('T')[0];
+    
+    if (sortedDates.length > 0) {
+      // Check if studied today or yesterday for current streak
+      const lastStudyDate = sortedDates[0];
+      const daysDiff = Math.floor((new Date(today).getTime() - new Date(lastStudyDate).getTime()) / (1000 * 60 * 60 * 24));
+      
+      if (daysDiff <= 1) {
+        currentStreak = 1;
+        for (let i = 1; i < sortedDates.length; i++) {
+          const prevDate = new Date(sortedDates[i - 1]);
+          const currDate = new Date(sortedDates[i]);
+          const diff = Math.floor((prevDate.getTime() - currDate.getTime()) / (1000 * 60 * 60 * 24));
+          if (diff === 1) {
+            currentStreak++;
+          } else {
+            break;
+          }
+        }
+      }
+      
+      // Calculate longest streak
+      tempStreak = 1;
+      for (let i = 1; i < sortedDates.length; i++) {
+        const prevDate = new Date(sortedDates[i - 1]);
+        const currDate = new Date(sortedDates[i]);
+        const diff = Math.floor((prevDate.getTime() - currDate.getTime()) / (1000 * 60 * 60 * 24));
+        if (diff === 1) {
+          tempStreak++;
+        } else {
+          longestStreak = Math.max(longestStreak, tempStreak);
+          tempStreak = 1;
+        }
+      }
+      longestStreak = Math.max(longestStreak, tempStreak, currentStreak);
+    }
+
+    // Build topic performance
+    const topicPerformance = Object.entries(topicStats).map(([topic, stats]) => {
+      const accuracy = stats.total > 0 ? Math.round((stats.correct / stats.total) * 100) : 0;
+      const recentAccuracy = stats.recentTotal > 0 ? Math.round((stats.recentCorrect / stats.recentTotal) * 100) : accuracy;
+      const improvement = stats.recentTotal >= 2 ? recentAccuracy - accuracy : 0;
+      return { topic, accuracy, totalQuestions: stats.total, improvement };
+    }).sort((a, b) => b.totalQuestions - a.totalQuestions);
+
+    // Identify weak areas and strengths
+    const weakAreas = topicPerformance
+      .filter(t => t.accuracy < 60 && t.totalQuestions >= 3)
+      .map(t => ({
+        topic: t.topic,
+        accuracy: t.accuracy,
+        suggestion: t.accuracy < 40 
+          ? `Review foundational concepts in ${t.topic}` 
+          : `Practice more ${t.topic} questions to improve`
+      }))
+      .slice(0, 5);
+
+    const strengths = topicPerformance
+      .filter(t => t.accuracy >= 80 && t.totalQuestions >= 3)
+      .map(t => ({
+        topic: t.topic,
+        accuracy: t.accuracy,
+        masteredConcepts: Math.round(t.totalQuestions * (t.accuracy / 100))
+      }))
+      .slice(0, 5);
+
+    // Build study patterns
+    const studyPatterns = Object.entries(hourlyStats)
+      .map(([hour, stats]) => ({
+        hour: parseInt(hour),
+        sessions: stats.sessions,
+        avgAccuracy: stats.total > 0 ? Math.round((stats.correct / stats.total) * 100) : 0
+      }))
+      .sort((a, b) => a.hour - b.hour);
+
+    // Generate accuracy trends from actual daily response data
+    const accuracyTrends: { date: string; quizAccuracy: number; flashcardAccuracy: number }[] = [];
+    const flashcardMasteryRate = totalCards > 0 ? Math.round((masteredCards / totalCards) * 100) : 0;
+    
+    for (let i = 13; i >= 0; i--) {
+      const date = new Date();
+      date.setDate(date.getDate() - i);
+      const dateKey = date.toISOString().split('T')[0];
+      const stats = dailyQuizAccuracy[dateKey];
+      accuracyTrends.push({
+        date: dateKey,
+        quizAccuracy: stats && stats.total > 0 ? Math.round((stats.correct / stats.total) * 100) : 0,
+        flashcardAccuracy: flashcardMasteryRate // Use mastery rate as proxy (accurate from card status)
+      });
+    }
+
+    // Weekly progress
+    const weeklyProgress = Object.entries(dailyProgress)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([date, data]) => {
+        const dayOfWeek = days[new Date(date).getDay()];
+        return { day: dayOfWeek, ...data };
+      });
+
+    // Generate personalized recommendations
+    const recommendations: { type: string; title: string; description: string; priority: 'high' | 'medium' | 'low' }[] = [];
+
+    if (weakAreas.length > 0) {
+      recommendations.push({
+        type: 'focus',
+        title: `Focus on ${weakAreas[0].topic}`,
+        description: `Your accuracy is ${weakAreas[0].accuracy}% in this area. Consider reviewing related flashcards or taking practice quizzes.`,
+        priority: 'high'
+      });
+    }
+
+    if (allAttempts.length < 5) {
+      recommendations.push({
+        type: 'practice',
+        title: 'Take more quizzes',
+        description: 'Complete at least 5 quizzes to get more accurate insights about your learning patterns.',
+        priority: 'medium'
+      });
+    }
+
+    const peakHour = studyPatterns.length > 0 
+      ? studyPatterns.reduce((best, curr) => curr.avgAccuracy > best.avgAccuracy ? curr : best)
+      : null;
+    
+    if (peakHour && peakHour.avgAccuracy > 70) {
+      const timeLabel = peakHour.hour < 12 ? `${peakHour.hour === 0 ? 12 : peakHour.hour}am` : peakHour.hour === 12 ? '12pm' : `${peakHour.hour - 12}pm`;
+      recommendations.push({
+        type: 'timing',
+        title: `Your peak study time is around ${timeLabel}`,
+        description: `You perform ${peakHour.avgAccuracy}% accurately during this time. Try to schedule important study sessions then.`,
+        priority: 'low'
+      });
+    }
+
+    if (strengths.length > 0) {
+      recommendations.push({
+        type: 'challenge',
+        title: `Challenge yourself in ${strengths[0].topic}`,
+        description: `You're doing great at ${strengths[0].accuracy}%! Try harder questions to push your limits.`,
+        priority: 'low'
+      });
+    }
+
+    if (cardsWithReviews < 20 && totalCards > 0) {
+      recommendations.push({
+        type: 'flashcards',
+        title: 'Review more flashcards',
+        description: `You have ${totalCards} flashcards. Regular spaced repetition helps cement knowledge.`,
+        priority: 'medium'
+      });
+    }
+
+    return {
+      overview: {
+        totalStudyTime: Math.round(totalStudyTime / 60), // in minutes
+        totalSessions: allAttempts.length,
+        currentStreak,
+        longestStreak,
+        cardsReviewed: cardsWithReviews,
+        quizzesTaken: allAttempts.length,
+        overallAccuracy
+      },
+      accuracyTrends,
+      topicPerformance: topicPerformance.slice(0, 10),
+      studyPatterns,
+      weakAreas,
+      strengths,
+      recommendations,
+      weeklyProgress
     };
   }
 }
