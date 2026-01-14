@@ -359,6 +359,69 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post("/api/quizzes/:quizId/questions", async (req, res) => {
+    try {
+      const quiz = await storage.getQuiz(req.params.quizId);
+      if (!quiz) {
+        return res.status(404).json({ error: "Quiz not found" });
+      }
+
+      const { question, type, difficulty, marks, explanation, options } = req.body;
+      
+      if (!question || typeof question !== 'string' || !question.trim()) {
+        return res.status(400).json({ error: "Question text is required" });
+      }
+
+      if (!options || !Array.isArray(options) || options.length < 2) {
+        return res.status(400).json({ error: "At least 2 options are required" });
+      }
+
+      const validOptions = options.filter((opt: any) => opt.text && typeof opt.text === 'string' && opt.text.trim());
+      if (validOptions.length < 2) {
+        return res.status(400).json({ error: "At least 2 non-empty options are required" });
+      }
+
+      const hasCorrectOption = validOptions.some((opt: any) => opt.isCorrect === true);
+      if (!hasCorrectOption) {
+        return res.status(400).json({ error: "At least one option must be marked as correct" });
+      }
+
+      const validatedDifficulty = typeof difficulty === 'number' && !isNaN(difficulty) 
+        ? Math.min(5, Math.max(1, Math.round(difficulty))) 
+        : 3;
+      const validatedMarks = typeof marks === 'number' && !isNaN(marks) && marks > 0 
+        ? Math.round(marks) 
+        : 1;
+      const validatedType = ['mcq', 'saq', 'laq'].includes(type) ? type : 'mcq';
+
+      const existingQuestions = await storage.getQuizQuestions(req.params.quizId);
+      const order = existingQuestions.length;
+
+      const newQuestion = await storage.createQuizQuestion({
+        quizId: req.params.quizId,
+        question: question.trim(),
+        type: validatedType,
+        difficulty: validatedDifficulty,
+        marks: validatedMarks,
+        explanation: explanation || "",
+        order,
+      });
+
+      for (let i = 0; i < validOptions.length; i++) {
+        await storage.createQuizOption({
+          questionId: newQuestion.id,
+          text: validOptions[i].text.trim(),
+          isCorrect: validOptions[i].isCorrect || false,
+          order: i,
+        });
+      }
+
+      res.status(201).json(newQuestion);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create quiz question" });
+    }
+  });
+
   // ==================== QUIZ ATTEMPTS API ====================
 
   app.post("/api/quizzes/:quizId/attempts", async (req, res) => {

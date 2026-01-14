@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { 
   ChevronRight, 
   Folder, 
@@ -14,7 +14,19 @@ import {
   Trash2,
   Edit,
   Loader2,
-  X
+  X,
+  Bold,
+  Italic,
+  Heading1,
+  Heading2,
+  Code,
+  List,
+  ListOrdered,
+  Quote,
+  Sparkles,
+  BookOpen,
+  HelpCircle,
+  Link
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -34,14 +46,55 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogDescription,
 } from "@/components/ui/dialog";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { Separator } from "@/components/ui/separator";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import type { Note } from "@shared/schema";
+import { useLocation } from "wouter";
+import type { Note, Deck } from "@shared/schema";
 
 interface NoteWithBlocks extends Note {
   blocks?: { id: string; type: string; content: string; order: number }[];
+}
+
+function FormatButton({ 
+  icon: Icon, 
+  label, 
+  shortcut, 
+  onClick, 
+  active = false 
+}: { 
+  icon: React.ElementType; 
+  label: string; 
+  shortcut?: string; 
+  onClick: () => void;
+  active?: boolean;
+}) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button
+          variant={active ? "secondary" : "ghost"}
+          size="icon"
+          className="h-8 w-8"
+          onClick={onClick}
+          data-testid={`button-format-${label.toLowerCase().replace(/\s+/g, '-')}`}
+        >
+          <Icon className="h-4 w-4" />
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent>
+        <p>{label}{shortcut && <span className="ml-2 text-muted-foreground">{shortcut}</span>}</p>
+      </TooltipContent>
+    </Tooltip>
+  );
 }
 
 export default function Notes() {
@@ -57,7 +110,20 @@ export default function Notes() {
   const [newNoteSubject, setNewNoteSubject] = useState("");
   const [tagInput, setTagInput] = useState("");
   const [expandedSubjects, setExpandedSubjects] = useState<Set<string>>(new Set());
+  const [showFlashcardDialog, setShowFlashcardDialog] = useState(false);
+  const [showQuizDialog, setShowQuizDialog] = useState(false);
+  const [selectedText, setSelectedText] = useState("");
+  const [flashcardFront, setFlashcardFront] = useState("");
+  const [flashcardBack, setFlashcardBack] = useState("");
+  const [selectedDeckId, setSelectedDeckId] = useState<string>("");
+  const [quizQuestion, setQuizQuestion] = useState("");
+  const [quizOptions, setQuizOptions] = useState(["", "", "", ""]);
+  const [correctOptionIndex, setCorrectOptionIndex] = useState(0);
+  const [selectedQuizId, setSelectedQuizId] = useState<string>("");
+  const [quizExplanation, setQuizExplanation] = useState("");
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   
+  const [, setLocation] = useLocation();
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
@@ -68,6 +134,14 @@ export default function Notes() {
   const { data: selectedNote } = useQuery<NoteWithBlocks>({
     queryKey: ["/api/notes", selectedNoteId],
     enabled: !!selectedNoteId,
+  });
+
+  const { data: decks = [] } = useQuery<Deck[]>({
+    queryKey: ["/api/flashcard-decks"],
+  });
+
+  const { data: quizzes = [] } = useQuery<{ id: string; title: string; subject: string | null }[]>({
+    queryKey: ["/api/quizzes"],
   });
 
   useEffect(() => {
@@ -91,7 +165,7 @@ export default function Notes() {
     mutationFn: async (data: { title: string; subject?: string; tags?: string[] }) => {
       const res = await apiRequest("POST", "/api/notes", {
         ...data,
-        blocks: [{ type: "paragraph", content: "" }],
+        blocks: [{ type: "markdown", content: "" }],
       });
       return res.json();
     },
@@ -108,19 +182,26 @@ export default function Notes() {
     },
   });
 
+  const lastSavedContentRef = useRef<string>("");
+  const lastSavedTitleRef = useRef<string>("");
+
   const updateNoteMutation = useMutation({
     mutationFn: async ({ id, data, content }: { id: string; data: Partial<Note>; content?: string }) => {
       const payload: any = { ...data };
       if (content !== undefined) {
-        payload.blocks = [{ type: "paragraph", content }];
+        payload.blocks = [{ type: "markdown", content }];
       }
       const res = await apiRequest("PATCH", `/api/notes/${id}`, payload);
-      return res.json();
+      return { response: await res.json(), savedContent: content, savedTitle: data.title };
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ["/api/notes"] });
       queryClient.invalidateQueries({ queryKey: ["/api/notes", selectedNoteId] });
-      setIsSaved(true);
+      lastSavedContentRef.current = result.savedContent || "";
+      lastSavedTitleRef.current = result.savedTitle || "";
+      if (noteContent === result.savedContent && noteTitle === result.savedTitle) {
+        setIsSaved(true);
+      }
     },
     onError: () => {
       toast({ title: "Error", description: "Failed to save note", variant: "destructive" });
@@ -144,8 +225,68 @@ export default function Notes() {
     },
   });
 
+  const createFlashcardMutation = useMutation({
+    mutationFn: async (data: { deckId: string; front: string; back: string }) => {
+      const res = await apiRequest("POST", `/api/flashcard-decks/${data.deckId}/cards`, {
+        front: data.front,
+        back: data.back,
+        type: "basic",
+      });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/flashcard-decks"] });
+      setShowFlashcardDialog(false);
+      setFlashcardFront("");
+      setFlashcardBack("");
+      setSelectedDeckId("");
+      toast({ 
+        title: "Flashcard created", 
+        description: "Your flashcard has been added to the deck.",
+      });
+    },
+    onError: () => {
+      toast({ title: "Error", description: "Failed to create flashcard", variant: "destructive" });
+    },
+  });
+
+  const createQuizQuestionMutation = useMutation({
+    mutationFn: async (data: { 
+      quizId: string; 
+      question: string; 
+      options: { text: string; isCorrect: boolean }[];
+      explanation: string;
+    }) => {
+      const res = await apiRequest("POST", `/api/quizzes/${data.quizId}/questions`, {
+        question: data.question,
+        type: "mcq",
+        difficulty: 3,
+        marks: 1,
+        explanation: data.explanation || "Review this concept in your notes.",
+        options: data.options,
+      });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/quizzes"] });
+      setShowQuizDialog(false);
+      setQuizQuestion("");
+      setQuizOptions(["", "", "", ""]);
+      setCorrectOptionIndex(0);
+      setSelectedQuizId("");
+      setQuizExplanation("");
+      toast({ 
+        title: "Quiz question created", 
+        description: "Your question has been added to the quiz.",
+      });
+    },
+    onError: () => {
+      toast({ title: "Error", description: "Failed to create quiz question", variant: "destructive" });
+    },
+  });
+
   const handleSave = useCallback(() => {
-    if (!selectedNoteId) return;
+    if (!selectedNoteId || updateNoteMutation.isPending) return;
     updateNoteMutation.mutate({
       id: selectedNoteId,
       data: {
@@ -158,13 +299,96 @@ export default function Notes() {
   }, [selectedNoteId, noteTitle, noteSubject, noteTags, noteContent, updateNoteMutation]);
 
   useEffect(() => {
-    if (!isSaved && selectedNoteId) {
+    if (!isSaved && selectedNoteId && !updateNoteMutation.isPending) {
       const timer = setTimeout(() => {
         handleSave();
       }, 1500);
       return () => clearTimeout(timer);
     }
-  }, [isSaved, noteTitle, noteContent, noteSubject, noteTags, handleSave, selectedNoteId]);
+  }, [isSaved, noteTitle, noteContent, noteSubject, noteTags, handleSave, selectedNoteId, updateNoteMutation.isPending]);
+
+  const insertFormat = (before: string, after: string = "") => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+    
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selected = noteContent.substring(start, end);
+    const newText = noteContent.substring(0, start) + before + selected + after + noteContent.substring(end);
+    
+    setNoteContent(newText);
+    setIsSaved(false);
+    
+    setTimeout(() => {
+      textarea.focus();
+      textarea.setSelectionRange(start + before.length, end + before.length);
+    }, 0);
+  };
+
+  const insertAtLineStart = (prefix: string) => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+    
+    const start = textarea.selectionStart;
+    const lineStart = noteContent.lastIndexOf('\n', start - 1) + 1;
+    const newText = noteContent.substring(0, lineStart) + prefix + noteContent.substring(lineStart);
+    
+    setNoteContent(newText);
+    setIsSaved(false);
+    
+    setTimeout(() => {
+      textarea.focus();
+      textarea.setSelectionRange(start + prefix.length, start + prefix.length);
+    }, 0);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.ctrlKey || e.metaKey) {
+      switch (e.key.toLowerCase()) {
+        case 'b':
+          e.preventDefault();
+          insertFormat('**', '**');
+          break;
+        case 'i':
+          e.preventDefault();
+          insertFormat('*', '*');
+          break;
+        case 's':
+          e.preventDefault();
+          handleSave();
+          break;
+      }
+    }
+  };
+
+  const getSelectedText = () => {
+    const textarea = textareaRef.current;
+    if (!textarea) return "";
+    return noteContent.substring(textarea.selectionStart, textarea.selectionEnd);
+  };
+
+  const openFlashcardDialog = () => {
+    const selected = getSelectedText();
+    setSelectedText(selected);
+    setFlashcardFront(selected || noteTitle);
+    setFlashcardBack("");
+    setShowFlashcardDialog(true);
+  };
+
+  const openQuizDialog = () => {
+    const selected = getSelectedText();
+    setSelectedText(selected);
+    setQuizQuestion(selected || "");
+    setQuizOptions(["", "", "", ""]);
+    setCorrectOptionIndex(0);
+    setShowQuizDialog(true);
+  };
+
+  const askInsightScout = () => {
+    const selected = getSelectedText() || noteTitle;
+    const query = encodeURIComponent(`Explain: ${selected}`);
+    setLocation(`/research?query=${query}`);
+  };
 
   const addTag = () => {
     if (tagInput.trim() && !noteTags.includes(tagInput.trim())) {
@@ -425,16 +649,106 @@ export default function Notes() {
               </div>
             </div>
 
+            <div className="px-6 py-2 border-b border-blue-100 dark:border-blue-900 flex items-center gap-1 flex-wrap bg-slate-50 dark:bg-slate-800/50">
+              <div className="flex items-center gap-1">
+                <FormatButton icon={Bold} label="Bold" shortcut="Ctrl+B" onClick={() => insertFormat('**', '**')} />
+                <FormatButton icon={Italic} label="Italic" shortcut="Ctrl+I" onClick={() => insertFormat('*', '*')} />
+              </div>
+              <Separator orientation="vertical" className="h-6 mx-1" />
+              <div className="flex items-center gap-1">
+                <FormatButton icon={Heading1} label="Heading 1" onClick={() => insertAtLineStart('# ')} />
+                <FormatButton icon={Heading2} label="Heading 2" onClick={() => insertAtLineStart('## ')} />
+              </div>
+              <Separator orientation="vertical" className="h-6 mx-1" />
+              <div className="flex items-center gap-1">
+                <FormatButton icon={List} label="Bullet List" onClick={() => insertAtLineStart('- ')} />
+                <FormatButton icon={ListOrdered} label="Numbered List" onClick={() => insertAtLineStart('1. ')} />
+                <FormatButton icon={Quote} label="Quote" onClick={() => insertAtLineStart('> ')} />
+              </div>
+              <Separator orientation="vertical" className="h-6 mx-1" />
+              <div className="flex items-center gap-1">
+                <FormatButton icon={Code} label="Code Block" onClick={() => insertFormat('```\n', '\n```')} />
+                <FormatButton icon={Link} label="Link" onClick={() => insertFormat('[', '](url)')} />
+              </div>
+              
+              <div className="flex-1" />
+              
+              <div className="flex items-center gap-1">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="gap-2 bg-emerald-50 dark:bg-emerald-950 border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900"
+                      onClick={openFlashcardDialog}
+                      data-testid="button-convert-flashcard"
+                    >
+                      <BookOpen className="h-4 w-4" />
+                      <span className="hidden sm:inline">Flashcard</span>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Convert selection to flashcard</TooltipContent>
+                </Tooltip>
+                
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="gap-2 bg-fuchsia-50 dark:bg-fuchsia-950 border-fuchsia-200 dark:border-fuchsia-800 text-fuchsia-700 dark:text-fuchsia-300 hover:bg-fuchsia-100 dark:hover:bg-fuchsia-900"
+                      onClick={openQuizDialog}
+                      data-testid="button-convert-quiz"
+                    >
+                      <HelpCircle className="h-4 w-4" />
+                      <span className="hidden sm:inline">Quiz</span>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Convert selection to quiz question</TooltipContent>
+                </Tooltip>
+                
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="gap-2 bg-amber-50 dark:bg-amber-950 border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900"
+                      onClick={askInsightScout}
+                      data-testid="button-ask-insight-scout"
+                    >
+                      <Sparkles className="h-4 w-4" />
+                      <span className="hidden sm:inline">Ask AI</span>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Research with Insight Scout</TooltipContent>
+                </Tooltip>
+              </div>
+            </div>
+
             <div className="flex-1 p-8 overflow-auto">
               <div className="max-w-4xl mx-auto">
                 <Textarea
+                  ref={textareaRef}
                   value={noteContent}
                   onChange={(e) => {
                     setNoteContent(e.target.value);
                     setIsSaved(false);
                   }}
+                  onKeyDown={handleKeyDown}
                   className="min-h-[500px] resize-none border-0 focus-visible:ring-0 font-mono text-base leading-relaxed bg-transparent focus-visible:outline-none"
-                  placeholder="Start typing your notes... You can use markdown formatting, code blocks, and more!"
+                  placeholder="Start typing your notes...
+
+Use the formatting toolbar above or keyboard shortcuts:
+• Ctrl+B for **bold**
+• Ctrl+I for *italic*
+• Ctrl+S to save
+
+Markdown formatting is supported:
+# Heading 1
+## Heading 2
+- Bullet list
+1. Numbered list
+> Blockquote
+```code block```"
                   data-testid="textarea-note-content"
                 />
               </div>
@@ -500,6 +814,186 @@ export default function Notes() {
                 <Plus className="h-4 w-4 mr-2" />
               )}
               Create Note
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showFlashcardDialog} onOpenChange={setShowFlashcardDialog}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <BookOpen className="h-5 w-5 text-emerald-600" />
+              Create Flashcard from Note
+            </DialogTitle>
+            <DialogDescription>
+              Convert your note content into a flashcard for spaced repetition learning.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Select Deck</label>
+              <select
+                value={selectedDeckId}
+                onChange={(e) => setSelectedDeckId(e.target.value)}
+                className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm"
+                data-testid="select-flashcard-deck"
+              >
+                <option value="">Choose a deck...</option>
+                {decks.map((deck) => (
+                  <option key={deck.id} value={deck.id}>{deck.title}</option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Front (Question/Term)</label>
+              <Textarea
+                value={flashcardFront}
+                onChange={(e) => setFlashcardFront(e.target.value)}
+                placeholder="What do you want to remember?"
+                className="min-h-[80px]"
+                data-testid="input-flashcard-front"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Back (Answer/Definition)</label>
+              <Textarea
+                value={flashcardBack}
+                onChange={(e) => setFlashcardBack(e.target.value)}
+                placeholder="The answer or explanation..."
+                className="min-h-[80px]"
+                data-testid="input-flashcard-back"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowFlashcardDialog(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={() => createFlashcardMutation.mutate({
+                deckId: selectedDeckId,
+                front: flashcardFront,
+                back: flashcardBack,
+              })}
+              disabled={!selectedDeckId || !flashcardFront || !flashcardBack || createFlashcardMutation.isPending}
+              className="bg-emerald-600 hover:bg-emerald-700"
+              data-testid="button-confirm-create-flashcard"
+            >
+              {createFlashcardMutation.isPending ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <BookOpen className="h-4 w-4 mr-2" />
+              )}
+              Create Flashcard
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showQuizDialog} onOpenChange={setShowQuizDialog}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <HelpCircle className="h-5 w-5 text-fuchsia-600" />
+              Create Quiz Question from Note
+            </DialogTitle>
+            <DialogDescription>
+              Turn your note content into a quiz question and add it to an existing quiz.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Select Quiz</label>
+              <select
+                value={selectedQuizId}
+                onChange={(e) => setSelectedQuizId(e.target.value)}
+                className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm"
+                data-testid="select-quiz"
+              >
+                <option value="">Choose a quiz...</option>
+                {quizzes.map((quiz) => (
+                  <option key={quiz.id} value={quiz.id}>{quiz.title}</option>
+                ))}
+              </select>
+              {quizzes.length === 0 && (
+                <p className="text-xs text-muted-foreground">No quizzes available. Create a quiz first in the Quizzes section.</p>
+              )}
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Question</label>
+              <Textarea
+                value={quizQuestion}
+                onChange={(e) => setQuizQuestion(e.target.value)}
+                placeholder="Enter your question..."
+                className="min-h-[80px]"
+                data-testid="input-quiz-question"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Options (mark the correct one)</label>
+              {quizOptions.map((option, index) => (
+                <div key={index} className="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    name="correctOption"
+                    checked={correctOptionIndex === index}
+                    onChange={() => setCorrectOptionIndex(index)}
+                    className="h-4 w-4 accent-fuchsia-600"
+                  />
+                  <Input
+                    value={option}
+                    onChange={(e) => {
+                      const newOptions = [...quizOptions];
+                      newOptions[index] = e.target.value;
+                      setQuizOptions(newOptions);
+                    }}
+                    placeholder={`Option ${index + 1}`}
+                    data-testid={`input-quiz-option-${index}`}
+                  />
+                </div>
+              ))}
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Explanation (optional)</label>
+              <Textarea
+                value={quizExplanation}
+                onChange={(e) => setQuizExplanation(e.target.value)}
+                placeholder="Explain the correct answer..."
+                className="min-h-[60px]"
+                data-testid="input-quiz-explanation"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowQuizDialog(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                const formattedOptions = quizOptions
+                  .map((text, idx) => ({
+                    text: text.trim(),
+                    isCorrect: idx === correctOptionIndex,
+                  }))
+                  .filter(opt => opt.text);
+                createQuizQuestionMutation.mutate({
+                  quizId: selectedQuizId,
+                  question: quizQuestion,
+                  options: formattedOptions,
+                  explanation: quizExplanation,
+                });
+              }}
+              disabled={!selectedQuizId || !quizQuestion.trim() || quizOptions.filter(o => o.trim()).length < 2 || !quizOptions[correctOptionIndex]?.trim() || createQuizQuestionMutation.isPending}
+              className="bg-fuchsia-600 hover:bg-fuchsia-700"
+              data-testid="button-confirm-create-quiz"
+            >
+              {createQuizQuestionMutation.isPending ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <HelpCircle className="h-4 w-4 mr-2" />
+              )}
+              Add Question
             </Button>
           </DialogFooter>
         </DialogContent>
