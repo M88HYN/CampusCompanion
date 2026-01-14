@@ -556,6 +556,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ==================== LEARNING INSIGHTS ====================
+
+  app.get("/api/learning-insights", async (req, res) => {
+    try {
+      const insights = await storage.getLearningInsights(DEMO_USER_ID);
+      res.json(insights);
+    } catch (error) {
+      console.error("Learning insights error:", error);
+      res.status(500).json({ error: "Failed to fetch learning insights" });
+    }
+  });
+
   // ==================== SPACED REPETITION ====================
 
   app.get("/api/spaced-review/due", async (req, res) => {
