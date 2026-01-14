@@ -948,9 +948,9 @@ export class DatabaseStorage implements IStorage {
     const overallAccuracy = quizTotal > 0 ? Math.round((quizCorrect / quizTotal) * 100) : 0;
 
     // Merge quiz and flashcard study dates for streak calculation
-    for (const date of flashcardStudyDates) {
+    Array.from(flashcardStudyDates).forEach(date => {
       studyDates.add(date);
-    }
+    });
 
     // Calculate streak from actual study dates (quizzes + flashcard reviews)
     const sortedDates = Array.from(studyDates).sort().reverse();
