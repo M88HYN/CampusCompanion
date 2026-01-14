@@ -59,6 +59,18 @@ Preferred communication style: Simple, everyday language.
 - **Features**: Streaming responses, persistent conversation history, various response types (Explanation, Summary, Comparison, Analysis), configurable search depths (Quick, Balanced, Comprehensive), quick prompts.
 - **Integration Ready**: Can convert research into flashcards or quiz questions.
 
+#### Notes System
+- **Markdown Editor**: Rich-text formatting with markdown storage (type: "markdown" blocks).
+- **Formatting Toolbar**: Bold, Italic, Headings (H1-H3), Code blocks, Quotes, Lists, Links.
+- **Keyboard Shortcuts**: Ctrl+B (Bold), Ctrl+I (Italic), Ctrl+S (Save).
+- **Autosave**: 1.5s debounce with proper change tracking (tracks saved content to prevent losing edits during save operations).
+- **Learning Integrations**: 
+  - Convert selected text to Flashcard (with deck selection)
+  - Convert to Quiz Question (with full client + server validation)
+  - Ask Insight Scout (navigate to AI research with query)
+- **Organization**: Subject-based categories, tags, search/filter.
+- **API Validation**: Quiz questions validated for question text, ≥2 options, correct answer, numeric difficulty (1-5), positive marks.
+
 #### Learning Insights Panel
 - **Analytics Dashboard**: Provides data-driven insights into study behavior and performance.
 - **Metrics**: Total study time, streaks, cards reviewed, quizzes taken, overall accuracy.
