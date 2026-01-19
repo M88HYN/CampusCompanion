@@ -56,8 +56,11 @@ Preferred communication style: Simple, everyday language.
 
 #### Insight Scout (AI Research Assistant)
 - **AI Integration**: Powered by Replit AI Integrations (OpenAI gpt-5.1).
-- **Features**: Streaming responses, persistent conversation history, various response types (Explanation, Summary, Comparison, Analysis), configurable search depths (Quick, Balanced, Comprehensive), quick prompts.
+- **Features**: Streaming responses, persistent conversation history, various response types (Explanation, Summary, Comparison, Analysis, Real-World Examples, Study Tips, Common Mistakes), configurable search depths (Quick, Balanced, Comprehensive), quick prompts.
 - **Integration Ready**: Can convert research into flashcards or quiz questions.
+- **Quick Prompts**: 7 pre-configured prompts that auto-set response type (Explain Concept, Summarize, Compare & Contrast, Analyze, Real-world Examples, Study Tips, Common Mistakes).
+- **Integration Buttons**: Copy to clipboard, Save to Notes, Create Flashcard (with deck selection), Create Quiz Question (MCQ with answer), Bookmark.
+- **API Schema**: conversationId is nullable/optional for new conversations.
 
 #### Notes System
 - **Markdown Editor**: Rich-text formatting with markdown storage (type: "markdown" blocks).
