@@ -98,7 +98,7 @@ function ActionCard({
       <Card className="hover-elevate cursor-pointer transition-all border-0 shadow-md overflow-hidden h-full" data-testid={testId}>
         <div className={`h-1.5 ${priorityColors[priority]}`} />
         <CardContent className="p-4">
-          <div className="flex gap-4">
+          <div className="flex gap-4 flex-wrap">
             <div className={`w-12 h-12 rounded-xl ${gradient} flex items-center justify-center shrink-0`}>
               <Icon className="h-6 w-6 text-white" />
             </div>
@@ -133,9 +133,9 @@ function WeakTopicCard({ topic, accuracy, suggestion }: { topic: string; accurac
 
   return (
     <div className={`p-3 rounded-lg border-l-4 ${getUrgencyColor(accuracy)}`} data-testid={`weak-topic-${topic.toLowerCase().replace(/\s+/g, '-')}`}>
-      <div className="flex items-center justify-between mb-2">
+      <div className="flex items-center justify-between gap-2 mb-2">
         <span className="font-medium text-sm">{topic}</span>
-        <Badge variant={accuracy < 50 ? "destructive" : "secondary"} className="text-xs">
+        <Badge variant={accuracy < 50 ? "destructive" : "secondary"} className="text-xs shrink-0">
           {accuracy}% accuracy
         </Badge>
       </div>
@@ -153,7 +153,7 @@ function QuickWinCard({ title, description, href, icon: Icon, action }: {
 }) {
   return (
     <Link href={href}>
-      <div className="flex items-center gap-3 p-3 rounded-lg bg-emerald-50 dark:bg-emerald-950/20 hover-elevate cursor-pointer border border-emerald-200 dark:border-emerald-800" data-testid={`quick-win-${title.toLowerCase().replace(/\s+/g, '-')}`}>
+      <div className="flex items-center gap-3 flex-wrap p-3 rounded-lg bg-emerald-50 dark:bg-emerald-950/20 hover-elevate cursor-pointer border border-emerald-200 dark:border-emerald-800" data-testid={`quick-win-${title.toLowerCase().replace(/\s+/g, '-')}`}>
         <div className="w-9 h-9 rounded-lg bg-emerald-500 flex items-center justify-center shrink-0">
           <Icon className="h-4 w-4 text-white" />
         </div>
@@ -416,11 +416,11 @@ export default function Dashboard({ userRole = "student" }: DashboardProps) {
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div className="flex-1 min-w-0">
             {isEditingName ? (
-              <div className="flex items-center gap-3 mb-2">
+              <div className="flex items-center gap-3 flex-wrap mb-2">
                 <Input
                   value={tempName}
                   onChange={(e) => setTempName(e.target.value)}
-                  className="max-w-xs text-2xl font-bold h-10"
+                  className="max-w-xs text-2xl font-bold"
                   data-testid="input-edit-name"
                   autoFocus
                 />
@@ -432,7 +432,7 @@ export default function Dashboard({ userRole = "student" }: DashboardProps) {
                 </Button>
               </div>
             ) : (
-              <div className="flex items-center gap-3 mb-2">
+              <div className="flex items-center gap-3 flex-wrap mb-2">
                 <h1 className="text-2xl md:text-3xl font-bold">Welcome back, {userName}!</h1>
                 <Button size="sm" variant="ghost" onClick={() => setIsEditingName(true)} data-testid="button-edit-name">
                   <Edit2 className="h-4 w-4" />
@@ -613,12 +613,12 @@ export default function Dashboard({ userRole = "student" }: DashboardProps) {
                 </CardHeader>
                 <CardContent className="space-y-2">
                   {insights.strengths.slice(0, 3).map((strength, index) => (
-                    <div key={index} className="flex items-center justify-between p-2 rounded-lg bg-white/50 dark:bg-slate-800/50">
-                      <div className="flex items-center gap-2">
-                        <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                    <div key={index} className="flex items-center justify-between gap-2 p-2 rounded-lg bg-white/50 dark:bg-slate-800/50">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
                         <span className="text-sm font-medium">{strength.topic}</span>
                       </div>
-                      <Badge variant="secondary" className="text-xs text-emerald-600 dark:text-emerald-400">
+                      <Badge variant="secondary" className="text-xs text-emerald-600 dark:text-emerald-400 shrink-0">
                         {strength.accuracy}%
                       </Badge>
                     </div>
