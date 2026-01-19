@@ -372,20 +372,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Question text is required" });
       }
 
-      if (!options || !Array.isArray(options) || options.length < 2) {
-        return res.status(400).json({ error: "At least 2 options are required" });
-      }
-
-      const validOptions = options.filter((opt: any) => opt.text && typeof opt.text === 'string' && opt.text.trim());
-      if (validOptions.length < 2) {
-        return res.status(400).json({ error: "At least 2 non-empty options are required" });
-      }
-
-      const hasCorrectOption = validOptions.some((opt: any) => opt.isCorrect === true);
-      if (!hasCorrectOption) {
-        return res.status(400).json({ error: "At least one option must be marked as correct" });
-      }
-
       const validatedDifficulty = typeof difficulty === 'number' && !isNaN(difficulty) 
         ? Math.min(5, Math.max(1, Math.round(difficulty))) 
         : 3;
@@ -393,6 +379,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ? Math.round(marks) 
         : 1;
       const validatedType = ['mcq', 'saq', 'laq'].includes(type) ? type : 'mcq';
+      
+      let validOptions: any[] = [];
+      if (validatedType === 'mcq') {
+        if (!options || !Array.isArray(options) || options.length < 2) {
+          return res.status(400).json({ error: "At least 2 options are required for multiple choice questions" });
+        }
+
+        validOptions = options.filter((opt: any) => opt.text && typeof opt.text === 'string' && opt.text.trim());
+        if (validOptions.length < 2) {
+          return res.status(400).json({ error: "At least 2 non-empty options are required" });
+        }
+
+        const hasCorrectOption = validOptions.some((opt: any) => opt.isCorrect === true);
+        if (!hasCorrectOption) {
+          return res.status(400).json({ error: "At least one option must be marked as correct" });
+        }
+      } else {
+        validOptions = (options || []).filter((opt: any) => opt.text && typeof opt.text === 'string' && opt.text.trim());
+      }
 
       const existingQuestions = await storage.getQuizQuestions(req.params.quizId);
       const order = existingQuestions.length;

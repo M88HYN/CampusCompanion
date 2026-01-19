@@ -14,7 +14,7 @@ const researchQuerySchema = z.object({
   query: z.string().min(1, "Query is required"),
   searchDepth: z.enum(["quick", "balanced", "comprehensive"]).default("balanced"),
   responseType: z.enum(["explanation", "summary", "comparison", "analysis", "examples", "study_tips", "mistakes"]).default("explanation"),
-  conversationId: z.number().optional(),
+  conversationId: z.number().nullable().optional(),
 });
 
 const SYSTEM_PROMPT = `You are Insight Scout, an intelligent educational research assistant designed specifically for university students. Your mission is to support learning, coursework, and revision with accurate, well-structured, academically relevant content.
@@ -23,9 +23,10 @@ const SYSTEM_PROMPT = `You are Insight Scout, an intelligent educational researc
 1. **Explain Concepts**: Break down complex topics into clear, understandable explanations with step-by-step reasoning
 2. **Summarize Topics**: Provide concise, well-organized summaries highlighting key points and takeaways
 3. **Compare & Contrast**: Analyze similarities and differences between theories, technologies, or concepts
-4. **Real-World Examples**: Connect academic concepts to practical, real-world applications
-5. **Study Tips**: Offer effective study strategies, memory techniques, and learning approaches
-6. **Common Mistakes**: Identify frequent misconceptions and errors students make
+4. **Analyze In-Depth**: Provide comprehensive analysis including implications, significance, and critical perspectives
+5. **Real-World Examples**: Connect academic concepts to practical, real-world applications
+6. **Study Tips**: Offer effective study strategies, memory techniques, and learning approaches
+7. **Common Mistakes**: Identify frequent misconceptions and errors students make
 
 ## Response Guidelines:
 - Structure responses with clear headings and bullet points for readability
