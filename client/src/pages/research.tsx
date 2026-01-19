@@ -12,6 +12,10 @@ import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import type { Deck, Quiz } from "@shared/schema";
 
 interface Message {
   id: number;
@@ -32,6 +36,7 @@ const QUICK_PROMPTS = [
   { label: "Explain Concept", prompt: "Explain this concept:", responseType: "explanation" as const },
   { label: "Summarize", prompt: "Summarize this topic:", responseType: "summary" as const },
   { label: "Compare & Contrast", prompt: "Compare and contrast:", responseType: "comparison" as const },
+  { label: "Analyze", prompt: "Analyze in depth:", responseType: "analysis" as const },
   { label: "Real-world Examples", prompt: "Show real-world applications of:", responseType: "examples" as const },
   { label: "Study Tips", prompt: "How should I study:", responseType: "study_tips" as const },
   { label: "Common Mistakes", prompt: "What are common mistakes with:", responseType: "mistakes" as const },
@@ -46,6 +51,15 @@ export default function Research() {
   const [currentConversationId, setCurrentConversationId] = useState<number | null>(null);
   const [streamingContent, setStreamingContent] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
+  const [showFlashcardDialog, setShowFlashcardDialog] = useState(false);
+  const [showQuizDialog, setShowQuizDialog] = useState(false);
+  const [selectedContent, setSelectedContent] = useState("");
+  const [flashcardFront, setFlashcardFront] = useState("");
+  const [flashcardBack, setFlashcardBack] = useState("");
+  const [selectedDeckId, setSelectedDeckId] = useState("");
+  const [quizQuestion, setQuizQuestion] = useState("");
+  const [quizAnswer, setQuizAnswer] = useState("");
+  const [selectedQuizId, setSelectedQuizId] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -58,6 +72,14 @@ export default function Research() {
   const { data: currentConversation } = useQuery<Conversation>({
     queryKey: ["/api/research/conversations", currentConversationId],
     enabled: !!currentConversationId,
+  });
+
+  const { data: decks = [] } = useQuery<Deck[]>({
+    queryKey: ["/api/decks"],
+  });
+
+  const { data: quizzes = [] } = useQuery<Quiz[]>({
+    queryKey: ["/api/quizzes"],
   });
 
   const messages = currentConversation?.messages || [];
@@ -119,6 +141,82 @@ export default function Research() {
   const handleSaveToNotes = (content: string) => {
     const title = content.split("\n")[0]?.substring(0, 50) || "Research Insight";
     saveToNotesMutation.mutate({ title, content });
+  };
+
+  const createFlashcardMutation = useMutation({
+    mutationFn: async (data: { deckId: string; front: string; back: string }) => {
+      const res = await apiRequest("POST", `/api/decks/${data.deckId}/cards`, {
+        front: data.front,
+        back: data.back,
+        type: "basic",
+      });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/decks"] });
+      setShowFlashcardDialog(false);
+      setFlashcardFront("");
+      setFlashcardBack("");
+      setSelectedDeckId("");
+      toast({ 
+        title: "Flashcard Created", 
+        description: "Your flashcard has been added to the deck.",
+      });
+    },
+    onError: () => {
+      toast({ title: "Error", description: "Failed to create flashcard", variant: "destructive" });
+    },
+  });
+
+  const createQuizQuestionMutation = useMutation({
+    mutationFn: async (data: { quizId: string; question: string; answer: string }) => {
+      const res = await apiRequest("POST", `/api/quizzes/${data.quizId}/questions`, {
+        question: data.question,
+        type: "mcq",
+        difficulty: 3,
+        marks: 1,
+        explanation: "Generated from Insight Scout research.",
+        options: [
+          { text: data.answer, isCorrect: true },
+          { text: "Option B (edit this)", isCorrect: false },
+        ],
+      });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/quizzes"] });
+      setShowQuizDialog(false);
+      setQuizQuestion("");
+      setQuizAnswer("");
+      setSelectedQuizId("");
+      toast({ 
+        title: "Quiz Question Created", 
+        description: "Your question has been added to the quiz. Edit the options in the Quizzes section.",
+      });
+    },
+    onError: () => {
+      toast({ title: "Error", description: "Failed to create quiz question", variant: "destructive" });
+    },
+  });
+
+  const openFlashcardDialog = (content: string) => {
+    const lines = content.split("\n").filter(l => l.trim());
+    const front = lines[0]?.substring(0, 200) || "Key Concept";
+    const back = lines.slice(1).join("\n").substring(0, 500) || content.substring(0, 500);
+    setFlashcardFront(front);
+    setFlashcardBack(back);
+    setSelectedContent(content);
+    setShowFlashcardDialog(true);
+  };
+
+  const openQuizDialog = (content: string) => {
+    const lines = content.split("\n").filter(l => l.trim());
+    const question = lines[0]?.substring(0, 200) || content.substring(0, 200);
+    const answer = lines.slice(1, 3).join(" ").substring(0, 150) || "Correct answer";
+    setQuizQuestion(question);
+    setQuizAnswer(answer);
+    setSelectedContent(content);
+    setShowQuizDialog(true);
   };
 
   const handleSend = async () => {
@@ -409,6 +507,34 @@ export default function Research() {
                           variant="ghost"
                           size="icon"
                           className="h-7 w-7"
+                          onClick={() => openFlashcardDialog(message.content)}
+                          data-testid={`button-create-flashcard-${message.id}`}
+                        >
+                          <BookOpen className="h-3.5 w-3.5 text-slate-400" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Create Flashcard</TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7"
+                          onClick={() => openQuizDialog(message.content)}
+                          data-testid={`button-create-quiz-${message.id}`}
+                        >
+                          <HelpCircle className="h-3.5 w-3.5 text-slate-400" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Create Quiz Question</TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7"
                           onClick={() => toggleSaveMessage(message.id)}
                           data-testid={`button-bookmark-${message.id}`}
                         >
@@ -492,6 +618,131 @@ export default function Research() {
           </p>
         </div>
       </div>
+
+      <Dialog open={showFlashcardDialog} onOpenChange={setShowFlashcardDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create Flashcard from Research</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Select Deck</Label>
+              <Select value={selectedDeckId} onValueChange={setSelectedDeckId}>
+                <SelectTrigger data-testid="select-flashcard-deck">
+                  <SelectValue placeholder="Choose a deck" />
+                </SelectTrigger>
+                <SelectContent>
+                  {decks.map((deck) => (
+                    <SelectItem key={deck.id} value={deck.id}>
+                      {deck.title}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Front (Question/Term)</Label>
+              <Textarea
+                value={flashcardFront}
+                onChange={(e) => setFlashcardFront(e.target.value)}
+                placeholder="Enter the question or term..."
+                className="min-h-[80px]"
+                data-testid="input-flashcard-front"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Back (Answer/Definition)</Label>
+              <Textarea
+                value={flashcardBack}
+                onChange={(e) => setFlashcardBack(e.target.value)}
+                placeholder="Enter the answer or definition..."
+                className="min-h-[120px]"
+                data-testid="input-flashcard-back"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowFlashcardDialog(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={() => createFlashcardMutation.mutate({
+                deckId: selectedDeckId,
+                front: flashcardFront,
+                back: flashcardBack,
+              })}
+              disabled={!selectedDeckId || !flashcardFront.trim() || !flashcardBack.trim() || createFlashcardMutation.isPending}
+              data-testid="button-save-flashcard"
+            >
+              {createFlashcardMutation.isPending ? "Creating..." : "Create Flashcard"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showQuizDialog} onOpenChange={setShowQuizDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create Quiz Question from Research</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Select Quiz</Label>
+              <Select value={selectedQuizId} onValueChange={setSelectedQuizId}>
+                <SelectTrigger data-testid="select-quiz">
+                  <SelectValue placeholder="Choose a quiz" />
+                </SelectTrigger>
+                <SelectContent>
+                  {quizzes.map((quiz) => (
+                    <SelectItem key={quiz.id} value={quiz.id}>
+                      {quiz.title}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Question</Label>
+              <Textarea
+                value={quizQuestion}
+                onChange={(e) => setQuizQuestion(e.target.value)}
+                placeholder="Enter the question..."
+                className="min-h-[80px]"
+                data-testid="input-quiz-question"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Correct Answer</Label>
+              <Textarea
+                value={quizAnswer}
+                onChange={(e) => setQuizAnswer(e.target.value)}
+                placeholder="Enter the correct answer..."
+                className="min-h-[60px]"
+                data-testid="input-quiz-answer"
+              />
+            </div>
+            <p className="text-xs text-muted-foreground">
+              This creates a multiple choice question. You can add more options in the Quizzes section.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowQuizDialog(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={() => createQuizQuestionMutation.mutate({
+                quizId: selectedQuizId,
+                question: quizQuestion,
+                answer: quizAnswer,
+              })}
+              disabled={!selectedQuizId || !quizQuestion.trim() || !quizAnswer.trim() || createQuizQuestionMutation.isPending}
+              data-testid="button-save-quiz-question"
+            >
+              {createQuizQuestionMutation.isPending ? "Creating..." : "Create Question"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
