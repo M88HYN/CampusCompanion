@@ -13,33 +13,36 @@ const openai = new OpenAI({
 const researchQuerySchema = z.object({
   query: z.string().min(1, "Query is required"),
   searchDepth: z.enum(["quick", "balanced", "comprehensive"]).default("balanced"),
-  responseType: z.enum(["explanation", "summary", "comparison", "analysis"]).default("explanation"),
+  responseType: z.enum(["explanation", "summary", "comparison", "analysis", "examples", "study_tips", "mistakes"]).default("explanation"),
   conversationId: z.number().optional(),
 });
 
-const SYSTEM_PROMPT = `You are Insight Scout, an intelligent educational research assistant designed for university students. Your role is to:
+const SYSTEM_PROMPT = `You are Insight Scout, an intelligent educational research assistant designed specifically for university students. Your mission is to support learning, coursework, and revision with accurate, well-structured, academically relevant content.
 
-1. Provide accurate, well-researched explanations of academic concepts
-2. Give clear definitions with examples relevant to computer science and other subjects
-3. Summarize complex topics in an accessible way
-4. Compare and contrast related concepts
-5. Suggest study strategies and common pitfalls to avoid
+## Your Capabilities:
+1. **Explain Concepts**: Break down complex topics into clear, understandable explanations with step-by-step reasoning
+2. **Summarize Topics**: Provide concise, well-organized summaries highlighting key points and takeaways
+3. **Compare & Contrast**: Analyze similarities and differences between theories, technologies, or concepts
+4. **Real-World Examples**: Connect academic concepts to practical, real-world applications
+5. **Study Tips**: Offer effective study strategies, memory techniques, and learning approaches
+6. **Common Mistakes**: Identify frequent misconceptions and errors students make
 
-Guidelines:
-- Always cite your reasoning and explain concepts step-by-step
-- Use analogies and real-world examples when helpful
-- Structure responses with clear headings when appropriate
-- For code concepts, include brief code examples when relevant
-- Be concise but thorough - adjust depth based on the question complexity
-- If asked about something outside your knowledge, acknowledge limitations
+## Response Guidelines:
+- Structure responses with clear headings and bullet points for readability
+- Use analogies and examples appropriate for university-level understanding
+- For technical concepts, include brief code examples or formulas when relevant
+- Cite your reasoning and explain the "why" behind concepts
+- Be academically rigorous while remaining accessible
+- Acknowledge limitations when topics are outside your knowledge base
 
-You support various response types:
-- Explanation: Detailed breakdown of concepts
-- Summary: Concise overview of topics  
-- Comparison: Side-by-side analysis of related concepts
-- Analysis: Deep dive into implications and applications
+## Formatting Standards:
+- Use **bold** for key terms and important concepts
+- Use bullet points for lists of related items
+- Use numbered lists for sequential steps or ranked items
+- Include section headers for longer responses
+- Provide brief summaries at the end of comprehensive responses
 
-Respond in a helpful, educational tone suitable for university-level learners.`;
+Your responses should be suitable for university coursework, exam preparation, and academic research.`;
 
 type ResearchQuery = z.infer<typeof researchQuerySchema>;
 
@@ -131,10 +134,13 @@ export function registerInsightScoutRoutes(app: Express): void {
       }[searchDepth];
 
       const typeInstruction = {
-        explanation: "Explain this concept clearly with step-by-step reasoning.",
-        summary: "Summarize this topic concisely, highlighting key points.",
-        comparison: "Compare and contrast the relevant concepts, noting similarities and differences.",
-        analysis: "Analyze this topic in depth, discussing implications and applications.",
+        explanation: "Provide a detailed explanation of this concept with step-by-step reasoning. Break down complex ideas into understandable parts and use clear examples.",
+        summary: "Provide a concise, well-organized summary highlighting the key points, main ideas, and essential takeaways. Keep it focused and academically relevant.",
+        comparison: "Compare and contrast the relevant concepts, theories, or technologies. Create a structured analysis showing similarities, differences, advantages, and disadvantages.",
+        analysis: "Provide an in-depth analysis discussing implications, applications, significance, and critical perspectives. Include academic context where relevant.",
+        examples: "Provide multiple real-world examples and practical applications of this concept. Show how it applies in industry, research, or everyday situations with specific cases.",
+        study_tips: "Provide effective study strategies and tips for learning this topic. Include memory techniques, practice approaches, key areas to focus on, and how to approach exam questions.",
+        mistakes: "Identify common mistakes, misconceptions, and errors students make with this topic. Explain why these mistakes happen and how to avoid them. Include correct approaches.",
       }[responseType];
 
       const chatMessages: OpenAI.ChatCompletionMessageParam[] = [

@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Send, Sparkles, FileText, Download, Bookmark, BookmarkCheck, Lightbulb, Plus, Trash2, Loader2 } from "lucide-react";
+import { Send, Sparkles, FileText, Download, Bookmark, BookmarkCheck, Lightbulb, Plus, Trash2, Loader2, StickyNote, BookOpen, HelpCircle, Copy, Check } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,6 +10,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useLocation } from "wouter";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface Message {
   id: number;
@@ -27,25 +29,27 @@ interface Conversation {
 }
 
 const QUICK_PROMPTS = [
-  { label: "Explain Concept", prompt: "Explain this concept in simple terms:" },
-  { label: "Summarize", prompt: "Give me a concise summary of" },
-  { label: "Compare & Contrast", prompt: "Compare and contrast" },
-  { label: "Real-world Examples", prompt: "Give real-world examples of" },
-  { label: "Study Tips", prompt: "How should I study" },
-  { label: "Common Mistakes", prompt: "What are common mistakes with" },
+  { label: "Explain Concept", prompt: "Explain this concept:", responseType: "explanation" as const },
+  { label: "Summarize", prompt: "Summarize this topic:", responseType: "summary" as const },
+  { label: "Compare & Contrast", prompt: "Compare and contrast:", responseType: "comparison" as const },
+  { label: "Real-world Examples", prompt: "Show real-world applications of:", responseType: "examples" as const },
+  { label: "Study Tips", prompt: "How should I study:", responseType: "study_tips" as const },
+  { label: "Common Mistakes", prompt: "What are common mistakes with:", responseType: "mistakes" as const },
 ];
 
 export default function Research() {
   const [input, setInput] = useState("");
   const [searchDepth, setSearchDepth] = useState<"quick" | "balanced" | "comprehensive">("balanced");
-  const [responseType, setResponseType] = useState<"explanation" | "summary" | "comparison" | "analysis">("explanation");
+  const [responseType, setResponseType] = useState<"explanation" | "summary" | "comparison" | "analysis" | "examples" | "study_tips" | "mistakes">("explanation");
   const [savedMessages, setSavedMessages] = useState<number[]>([]);
+  const [copiedMessageId, setCopiedMessageId] = useState<number | null>(null);
   const [currentConversationId, setCurrentConversationId] = useState<number | null>(null);
   const [streamingContent, setStreamingContent] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
 
   const { data: conversations = [] } = useQuery<Conversation[]>({
     queryKey: ["/api/research/conversations"],
@@ -80,6 +84,42 @@ export default function Research() {
       queryClient.invalidateQueries({ queryKey: ["/api/research/conversations"] });
     },
   });
+
+  const saveToNotesMutation = useMutation({
+    mutationFn: async (data: { title: string; content: string }) => {
+      const res = await apiRequest("POST", "/api/notes", {
+        title: data.title,
+        blocks: [{ type: "markdown", content: data.content }],
+      });
+      return res.json();
+    },
+    onSuccess: (newNote) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/notes"] });
+      toast({ 
+        title: "Saved to Notes", 
+        description: "Research insight has been saved as a new note.",
+      });
+    },
+    onError: () => {
+      toast({ title: "Error", description: "Failed to save to notes", variant: "destructive" });
+    },
+  });
+
+  const handleCopyToClipboard = async (content: string, messageId: number) => {
+    try {
+      await navigator.clipboard.writeText(content);
+      setCopiedMessageId(messageId);
+      setTimeout(() => setCopiedMessageId(null), 2000);
+      toast({ title: "Copied!", description: "Content copied to clipboard." });
+    } catch (error) {
+      toast({ title: "Error", description: "Failed to copy to clipboard", variant: "destructive" });
+    }
+  };
+
+  const handleSaveToNotes = (content: string) => {
+    const title = content.split("\n")[0]?.substring(0, 50) || "Research Insight";
+    saveToNotesMutation.mutate({ title, content });
+  };
 
   const handleSend = async () => {
     if (!input.trim() || isStreaming) return;
@@ -276,6 +316,9 @@ export default function Research() {
                   <SelectItem value="summary">Summary</SelectItem>
                   <SelectItem value="comparison">Comparison</SelectItem>
                   <SelectItem value="analysis">Analysis</SelectItem>
+                  <SelectItem value="examples">Real-World Examples</SelectItem>
+                  <SelectItem value="study_tips">Study Tips</SelectItem>
+                  <SelectItem value="mistakes">Common Mistakes</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -327,19 +370,57 @@ export default function Research() {
                   )}
                 </Card>
                 {message.role === "assistant" && message.id !== -1 && (
-                  <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-2 mt-1">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => toggleSaveMessage(message.id)}
-                      data-testid={`button-save-${message.id}`}
-                    >
-                      {isSaved(message.id) ? (
-                        <BookmarkCheck className="h-4 w-4 text-orange-500" />
-                      ) : (
-                        <Bookmark className="h-4 w-4 text-slate-400" />
-                      )}
-                    </Button>
+                  <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-1 mt-1">
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7"
+                          onClick={() => handleCopyToClipboard(message.content, message.id)}
+                          data-testid={`button-copy-${message.id}`}
+                        >
+                          {copiedMessageId === message.id ? (
+                            <Check className="h-3.5 w-3.5 text-green-500" />
+                          ) : (
+                            <Copy className="h-3.5 w-3.5 text-slate-400" />
+                          )}
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Copy to clipboard</TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7"
+                          onClick={() => handleSaveToNotes(message.content)}
+                          data-testid={`button-save-note-${message.id}`}
+                        >
+                          <StickyNote className="h-3.5 w-3.5 text-slate-400" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Save to Notes</TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7"
+                          onClick={() => toggleSaveMessage(message.id)}
+                          data-testid={`button-bookmark-${message.id}`}
+                        >
+                          {isSaved(message.id) ? (
+                            <BookmarkCheck className="h-3.5 w-3.5 text-orange-500" />
+                          ) : (
+                            <Bookmark className="h-3.5 w-3.5 text-slate-400" />
+                          )}
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>{isSaved(message.id) ? "Bookmarked" : "Bookmark"}</TooltipContent>
+                    </Tooltip>
                   </div>
                 )}
               </div>
@@ -393,7 +474,10 @@ export default function Research() {
                   variant="outline"
                   size="sm"
                   className="text-xs border-orange-300 dark:border-orange-700 text-orange-700 dark:text-orange-300 hover:bg-orange-50 dark:hover:bg-orange-950"
-                  onClick={() => setInput(input ? input + " " + prompt.prompt : prompt.prompt + " ")}
+                  onClick={() => {
+                    setResponseType(prompt.responseType);
+                    setInput(input ? input + " " + prompt.prompt : prompt.prompt + " ");
+                  }}
                   disabled={isStreaming}
                   data-testid={`button-quick-prompt-${idx}`}
                 >
