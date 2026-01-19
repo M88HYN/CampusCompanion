@@ -39,6 +39,15 @@ Preferred communication style: Simple, everyday language.
 
 ### Feature Specifications
 
+#### Dashboard (Learning Command Centre)
+- **Personal Learning Hub**: Analyzes notes, quizzes, flashcards, and revision history to show exactly what to study next.
+- **Study Now Section**: Prioritized actionable tasks with time estimates and reasons why each matters.
+- **Weak Topics Highlight**: Areas needing attention with accuracy percentages and improvement suggestions.
+- **Quick Wins**: Momentum-building easy tasks for efficient study sessions.
+- **Strengths Display**: Topics you've mastered for confidence building.
+- **Real-Time Stats**: Due cards, overall accuracy, weekly study time, items reviewed - all from live data.
+- **Data Sources**: Fetches from /api/learning-insights, /api/cards/due, /api/decks, /api/quizzes, /api/notes.
+
 #### Quiz System
 - **Adaptive Quiz Engine**: Adjusts difficulty (1-5) based on real-time performance, increasing for correct answers and decreasing for incorrect ones.
 - **Analytics Dashboard**: Tracks scores, accuracy, attempts, and time.
