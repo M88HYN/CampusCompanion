@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Send, Sparkles, FileText, Download, Bookmark, BookmarkCheck, Lightbulb, Plus, Trash2, Loader2, StickyNote, BookOpen, HelpCircle, Copy, Check } from "lucide-react";
+import ReactMarkdown from "react-markdown";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -462,7 +463,13 @@ export default function Research() {
               )}
               <div className={`flex flex-col gap-2 max-w-2xl ${message.role === "user" ? "items-end" : "items-start"}`}>
                 <Card className={`p-4 ${message.role === "user" ? "bg-orange-500 text-white" : "bg-white dark:bg-slate-800"}`}>
-                  <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
+                  {message.role === "user" ? (
+                    <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
+                  ) : (
+                    <div className="prose prose-sm dark:prose-invert max-w-none prose-headings:font-semibold prose-headings:text-foreground prose-p:text-foreground prose-strong:text-foreground prose-strong:font-semibold prose-em:text-foreground prose-code:bg-slate-100 prose-code:dark:bg-slate-700 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:text-orange-600 prose-code:dark:text-orange-400 prose-pre:bg-slate-100 prose-pre:dark:bg-slate-700 prose-li:text-foreground prose-ul:my-2 prose-ol:my-2 prose-li:my-0.5">
+                      <ReactMarkdown>{message.content}</ReactMarkdown>
+                    </div>
+                  )}
                   {message.id === -1 && (
                     <span className="inline-block w-2 h-4 bg-orange-500 animate-pulse ml-1" />
                   )}
