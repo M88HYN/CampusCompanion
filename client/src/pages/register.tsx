@@ -80,7 +80,7 @@ export default function Register() {
         description: "Welcome to StudyMate. Redirecting to your dashboard...",
       });
       setTimeout(() => {
-        setLocation("/");
+        setLocation("/dashboard");
       }, 1500);
     },
     onError: (error: Error) => {

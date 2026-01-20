@@ -38,7 +38,7 @@ export function AppSidebar({ userRole = "student" }: AppSidebarProps) {
   const learningTools = [
     {
       title: "Dashboard",
-      url: "/",
+      url: "/dashboard",
       icon: LayoutDashboard,
     },
     {

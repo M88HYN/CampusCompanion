@@ -73,7 +73,7 @@ export default function Login() {
         description: "Redirecting to your dashboard...",
       });
       setTimeout(() => {
-        setLocation("/");
+        setLocation("/dashboard");
       }, 1500);
     },
     onError: (error: Error) => {

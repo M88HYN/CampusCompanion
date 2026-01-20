@@ -23,7 +23,7 @@ import NotFound from "@/pages/not-found";
 function AppRouter() {
   return (
     <Switch>
-      <Route path="/" component={() => <Dashboard />} />
+      <Route path="/dashboard" component={() => <Dashboard />} />
       <Route path="/notes" component={() => <Notes />} />
       <Route path="/quizzes" component={() => <Quizzes />} />
       <Route path="/flashcards" component={() => <Flashcards />} />
@@ -67,7 +67,7 @@ function MainLayout() {
 
 export default function App() {
   const [location] = useLocation();
-  const isAuthPage = location === "/login" || location === "/register" || location === "/forgot-password";
+  const isAuthPage = location === "/" || location === "/login" || location === "/register" || location === "/forgot-password";
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -75,6 +75,7 @@ export default function App() {
         <ThemeProvider defaultTheme="light">
           {isAuthPage ? (
             <Switch>
+              <Route path="/" component={() => <Login />} />
               <Route path="/login" component={() => <Login />} />
               <Route path="/register" component={() => <Register />} />
               <Route path="/forgot-password" component={() => <ForgotPassword />} />
