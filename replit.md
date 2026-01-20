@@ -56,12 +56,18 @@ Preferred communication style: Simple, everyday language.
 - **Multiple Modes**: Practice (with feedback) and Exam (feedback at end).
 - **Sample Quizzes**: 5 comprehensive university-level CS quizzes provided.
 
-#### Flashcard System
-- **Custom Decks**: Create and manage decks with various attributes.
-- **Multiple Card Types**: Basic cards with front/back.
-- **SM-2 Spaced Repetition**: Cards track `interval`, `easeFactor`, and `nextReviewDate`.
-- **Study Mode**: Features card flip animations, 4-level confidence rating (Again, Hard, Good, Easy), progress tracking, and session summaries.
-- **Usability**: Search/filter decks, shuffle mode, keyboard shortcuts for interaction.
+#### Flashcard System (Intelligent Learning Engine)
+- **Smart Card Prioritization**: AI-driven queue that prioritizes cards based on spaced repetition urgency, ease factor, and learning status.
+- **Priority Scoring**: Overdue cards (+50 max), new cards (+20), low ease factor (+30 max), learning status (+25).
+- **Study Modes**: Smart Mix (AI-optimized), Due Cards Only, New Cards Only, Struggling Cards.
+- **Active Recall Prompt**: "Think First" reminder before revealing question to encourage deeper learning.
+- **SM-2 Spaced Repetition**: Cards track `interval`, `easeFactor`, `dueAt`, and `status` (new, learning, reviewing, mastered).
+- **4-Level Confidence Rating**: Again (1), Hard (2), Good (3), Easy (5) - maps to SM-2 quality ratings.
+- **Keyboard-First Design**: Space/Enter to flip, 1-4 to rate, Esc to exit session.
+- **Post-Session Analytics**: Accuracy percentage, weak concepts identification, strong concepts celebration, personalized next action recommendations.
+- **Session Configuration**: Configurable session size (10, 20, 30, 50 cards), active recall prompt toggle.
+- **API Endpoints**: `/api/cards/smart-queue`, `/api/cards/session-summary`, `/api/cards/from-note`.
+- **Urgency Levels**: Critical (>40 priority), High (>25), Medium (>15), Low (<15).
 
 #### Insight Scout (AI Research Assistant)
 - **AI Integration**: Powered by Replit AI Integrations (OpenAI gpt-5.1).

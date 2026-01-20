@@ -10,9 +10,36 @@ import {
 import { z } from "zod";
 import { registerChatRoutes } from "./replit_integrations/chat";
 import { registerInsightScoutRoutes } from "./insight-scout";
+import type { Card } from "@shared/schema";
 
 // For demo purposes - in production you'd use proper authentication
 const DEMO_USER_ID = "demo-user";
+
+// Helper functions for smart card prioritization
+function getPriorityReason(card: Card, daysSinceDue: number): string {
+  if (daysSinceDue > 7) return "Overdue by more than a week";
+  if (daysSinceDue > 0) return "Due for review";
+  if (card.status === "new") return "New card - needs initial learning";
+  if (card.easeFactor < 2.0) return "Struggling - needs extra practice";
+  if (card.status === "learning") return "Currently learning";
+  if (card.easeFactor < 2.5) return "Needs reinforcement";
+  return "Scheduled review";
+}
+
+function getUrgencyLevel(score: number): "critical" | "high" | "medium" | "low" {
+  if (score >= 40) return "critical";
+  if (score >= 25) return "high";
+  if (score >= 15) return "medium";
+  return "low";
+}
+
+function getEncouragement(accuracy: number): string {
+  if (accuracy >= 90) return "Outstanding! You're mastering this material!";
+  if (accuracy >= 80) return "Great work! Keep up the momentum!";
+  if (accuracy >= 70) return "Good progress! A little more practice will help.";
+  if (accuracy >= 50) return "You're learning! Focus on the concepts you missed.";
+  return "Every expert was once a beginner. Keep practicing!";
+}
 
 export async function registerRoutes(app: Express): Promise<Server> {
   
@@ -211,6 +238,232 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(dueCards);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch due cards" });
+    }
+  });
+
+  // Smart card prioritization for intelligent study sessions
+  app.get("/api/cards/smart-queue", async (req, res) => {
+    try {
+      const { deckId, mode = "smart", limit = "50" } = req.query;
+      const maxCards = Math.min(parseInt(limit as string) || 50, 100);
+      
+      // Get all cards (from specific deck or all decks)
+      let allCards: Card[] = [];
+      if (deckId) {
+        allCards = await storage.getCards(deckId as string);
+      } else {
+        const decks = await storage.getDecks(DEMO_USER_ID);
+        for (const deck of decks) {
+          const deckCards = await storage.getCards(deck.id);
+          allCards.push(...deckCards);
+        }
+      }
+
+      const now = new Date();
+      
+      // Calculate priority score for each card
+      const scoredCards = allCards.map(card => {
+        let priorityScore = 0;
+        const dueDate = new Date(card.dueAt);
+        const daysSinceDue = (now.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24);
+        
+        // Overdue cards get highest priority (max +50 points)
+        if (daysSinceDue > 0) {
+          priorityScore += Math.min(daysSinceDue * 10, 50);
+        }
+        
+        // New cards get moderate priority (+20 points)
+        if (card.status === "new") {
+          priorityScore += 20;
+        }
+        
+        // Low ease factor = struggling cards get priority (+30 max)
+        if (card.easeFactor < 2.5) {
+          priorityScore += (2.5 - card.easeFactor) * 20;
+        }
+        
+        // Cards with many failed reviews (low repetitions but old) get priority
+        if (card.repetitions < 3 && card.lastReviewedAt) {
+          const daysSinceReview = (now.getTime() - new Date(card.lastReviewedAt).getTime()) / (1000 * 60 * 60 * 24);
+          if (daysSinceReview > 1) {
+            priorityScore += 15;
+          }
+        }
+        
+        // Learning cards due now get high priority
+        if (card.status === "learning" && daysSinceDue >= 0) {
+          priorityScore += 25;
+        }
+
+        return {
+          ...card,
+          priorityScore,
+          priorityReason: getPriorityReason(card, daysSinceDue),
+          urgency: getUrgencyLevel(priorityScore),
+        };
+      });
+
+      // Sort by priority score (highest first)
+      scoredCards.sort((a, b) => b.priorityScore - a.priorityScore);
+
+      // Apply mode-specific filtering
+      let filteredCards = scoredCards;
+      if (mode === "due-only") {
+        filteredCards = scoredCards.filter(c => new Date(c.dueAt) <= now);
+      } else if (mode === "new-only") {
+        filteredCards = scoredCards.filter(c => c.status === "new");
+      } else if (mode === "struggling") {
+        filteredCards = scoredCards.filter(c => c.easeFactor < 2.3 || c.priorityScore > 30);
+      }
+
+      // Limit results
+      const result = filteredCards.slice(0, maxCards);
+
+      // Calculate session stats
+      const stats = {
+        totalCards: allCards.length,
+        dueNow: allCards.filter(c => new Date(c.dueAt) <= now).length,
+        newCards: allCards.filter(c => c.status === "new").length,
+        strugglingCards: allCards.filter(c => c.easeFactor < 2.3).length,
+        masteredCards: allCards.filter(c => c.status === "mastered").length,
+        estimatedTime: Math.ceil(result.length * 0.5), // 30 seconds per card average
+      };
+
+      res.json({ cards: result, stats });
+    } catch (error) {
+      console.error("Smart queue error:", error);
+      res.status(500).json({ error: "Failed to get smart queue" });
+    }
+  });
+
+  // Auto-generate flashcards from notes
+  const fromNoteSchema = z.object({
+    noteId: z.string().min(1),
+    deckId: z.string().min(1),
+  });
+  
+  app.post("/api/cards/from-note", async (req, res) => {
+    try {
+      const parsed = fromNoteSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ error: "noteId and deckId are required", details: parsed.error.errors });
+      }
+      const { noteId, deckId } = parsed.data;
+
+      const note = await storage.getNote(noteId);
+      if (!note) {
+        return res.status(404).json({ error: "Note not found" });
+      }
+
+      const blocks = await storage.getNoteBlocks(noteId);
+      const createdCards: Card[] = [];
+
+      // Extract key concepts from note blocks
+      for (const block of blocks) {
+        if (block.type === "heading" || (block.content.length > 20 && block.content.length < 500)) {
+          // Create a card from significant content
+          const card = await storage.createCard({
+            deckId,
+            type: "basic",
+            front: `What do you know about: ${block.content.substring(0, 100)}${block.content.length > 100 ? '...' : ''}?`,
+            back: block.content,
+            tags: note.tags || [],
+            sourceNoteBlockId: block.id,
+          });
+          createdCards.push(card);
+        }
+      }
+
+      res.status(201).json({ 
+        cardsCreated: createdCards.length, 
+        cards: createdCards,
+        message: `Created ${createdCards.length} flashcards from note "${note.title}"`
+      });
+    } catch (error) {
+      console.error("Note to flashcard error:", error);
+      res.status(500).json({ error: "Failed to create flashcards from note" });
+    }
+  });
+
+  // Get session summary after studying
+  const sessionSummarySchema = z.object({
+    cardIds: z.array(z.string()),
+    responses: z.array(z.number().min(0).max(5)),
+  });
+  
+  app.post("/api/cards/session-summary", async (req, res) => {
+    try {
+      const parsed = sessionSummarySchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ error: "cardIds and responses arrays required", details: parsed.error.errors });
+      }
+      const { cardIds, responses } = parsed.data;
+
+      // Calculate session metrics
+      const totalCards = cardIds.length;
+      const correctCount = responses.filter((r: number) => r >= 3).length;
+      const strugglingCount = responses.filter((r: number) => r <= 1).length;
+      const accuracy = totalCards > 0 ? Math.round((correctCount / totalCards) * 100) : 0;
+
+      // Get the cards to analyze weak areas
+      const cards = await Promise.all(cardIds.map((id: string) => storage.getCard(id)));
+      const validCards = cards.filter(Boolean) as Card[];
+
+      // Identify weak concepts (cards rated 1 or 2)
+      const weakCards = validCards.filter((_, idx) => responses[idx] <= 2);
+      const strongCards = validCards.filter((_, idx) => responses[idx] >= 4);
+
+      // Calculate next review estimates
+      const nextActions = [];
+      if (strugglingCount > 0) {
+        nextActions.push({
+          type: "review",
+          title: "Review struggling cards",
+          description: `${strugglingCount} cards need more practice. Review them again soon.`,
+          priority: "high" as const,
+        });
+      }
+      if (accuracy < 70) {
+        nextActions.push({
+          type: "practice",
+          title: "More practice recommended",
+          description: "Your accuracy was below 70%. Consider shorter, more frequent sessions.",
+          priority: "medium" as const,
+        });
+      }
+      if (accuracy >= 80) {
+        nextActions.push({
+          type: "advance",
+          title: "Great progress!",
+          description: "You're doing well. Consider adding new cards or trying harder topics.",
+          priority: "low" as const,
+        });
+      }
+
+      res.json({
+        summary: {
+          totalCards,
+          correctCount,
+          strugglingCount,
+          accuracy,
+          estimatedTimeSpent: Math.ceil(totalCards * 0.5),
+        },
+        weakConcepts: weakCards.map(c => ({
+          id: c.id,
+          front: c.front,
+          easeFactor: c.easeFactor,
+          suggestion: "Practice this concept more frequently",
+        })),
+        strongConcepts: strongCards.map(c => ({
+          id: c.id,
+          front: c.front,
+        })),
+        nextActions,
+        encouragement: getEncouragement(accuracy),
+      });
+    } catch (error) {
+      console.error("Session summary error:", error);
+      res.status(500).json({ error: "Failed to generate session summary" });
     }
   });
 
