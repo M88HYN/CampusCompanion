@@ -134,6 +134,275 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ==================== NOTES AUTO-GENERATION ====================
+  
+  // Auto-generate quiz from note
+  const generateQuizFromNoteSchema = z.object({
+    noteId: z.string().min(1),
+    title: z.string().optional(),
+    questionCount: z.number().min(1).max(20).optional().default(5),
+  });
+  
+  app.post("/api/notes/:id/generate-quiz", async (req, res) => {
+    try {
+      const parsed = generateQuizFromNoteSchema.safeParse({ ...req.body, noteId: req.params.id });
+      if (!parsed.success) {
+        return res.status(400).json({ error: "Invalid request", details: parsed.error.errors });
+      }
+      
+      const { noteId, title, questionCount } = parsed.data;
+      const note = await storage.getNote(noteId);
+      if (!note) {
+        return res.status(404).json({ error: "Note not found" });
+      }
+      
+      const blocks = await storage.getNoteBlocks(noteId);
+      if (blocks.length === 0) {
+        return res.status(400).json({ error: "Note has no content to generate quiz from" });
+      }
+      
+      // Create quiz
+      const quiz = await storage.createQuiz({
+        userId: DEMO_USER_ID,
+        title: title || `Quiz: ${note.title}`,
+        subject: note.subject || "General",
+        description: `Auto-generated from note: ${note.title}`,
+        timeLimit: questionCount * 60, // 1 min per question
+        passingScore: 70,
+      });
+      
+      // Generate questions from note blocks
+      const questions = [];
+      const eligibleBlocks = blocks.filter(b => 
+        b.content.length >= 20 && 
+        (b.noteType === "concept" || b.noteType === "definition" || b.noteType === "process" || b.noteType === "exam_tip" || b.type !== "heading")
+      );
+      
+      const blocksToUse = eligibleBlocks.slice(0, questionCount);
+      
+      for (let i = 0; i < blocksToUse.length; i++) {
+        const block = blocksToUse[i];
+        let questionText = "";
+        let correctAnswer = "";
+        
+        // Generate question based on note type
+        if (block.noteType === "definition") {
+          questionText = `Define the following: ${block.content.substring(0, 50)}...`;
+          correctAnswer = block.content;
+        } else if (block.noteType === "process") {
+          questionText = `Explain the process described: ${block.content.substring(0, 50)}...`;
+          correctAnswer = block.content;
+        } else if (block.noteType === "concept") {
+          questionText = `Explain this concept: ${block.content.substring(0, 50)}...`;
+          correctAnswer = block.content;
+        } else if (block.noteType === "exam_tip") {
+          questionText = `What is the key exam tip for: ${block.content.substring(0, 50)}...`;
+          correctAnswer = block.content;
+        } else {
+          questionText = `What do you know about: ${block.content.substring(0, 80)}${block.content.length > 80 ? '...' : ''}?`;
+          correctAnswer = block.content;
+        }
+        
+        const question = await storage.createQuizQuestion({
+          quizId: quiz.id,
+          type: "saq",
+          question: questionText,
+          explanation: `From your notes: ${block.content.substring(0, 200)}`,
+          difficulty: block.examMarks ? Math.min(5, Math.ceil(block.examMarks / 2)) : 3,
+          marks: block.examMarks || 2,
+          correctAnswer: correctAnswer.substring(0, 500),
+          order: i,
+        });
+        
+        questions.push(question);
+      }
+      
+      res.status(201).json({
+        quiz,
+        questionsCreated: questions.length,
+        message: `Created quiz with ${questions.length} questions from "${note.title}"`,
+      });
+    } catch (error) {
+      console.error("Generate quiz from note error:", error);
+      res.status(500).json({ error: "Failed to generate quiz from note" });
+    }
+  });
+  
+  // Auto-generate flashcards from note
+  const generateFlashcardsFromNoteSchema = z.object({
+    noteId: z.string().min(1),
+    deckId: z.string().min(1),
+    cardCount: z.number().min(1).max(50).optional(),
+  });
+  
+  app.post("/api/notes/:id/generate-flashcards", async (req, res) => {
+    try {
+      const parsed = generateFlashcardsFromNoteSchema.safeParse({ ...req.body, noteId: req.params.id });
+      if (!parsed.success) {
+        return res.status(400).json({ error: "Invalid request", details: parsed.error.errors });
+      }
+      
+      const { noteId, deckId, cardCount } = parsed.data;
+      const note = await storage.getNote(noteId);
+      if (!note) {
+        return res.status(404).json({ error: "Note not found" });
+      }
+      
+      const deck = await storage.getDeck(deckId);
+      if (!deck) {
+        return res.status(404).json({ error: "Deck not found" });
+      }
+      
+      const blocks = await storage.getNoteBlocks(noteId);
+      if (blocks.length === 0) {
+        return res.status(400).json({ error: "Note has no content to generate flashcards from" });
+      }
+      
+      // Filter blocks suitable for flashcards
+      const eligibleBlocks = blocks.filter(b => 
+        b.content.length >= 15 && b.content.length <= 1000
+      );
+      
+      const blocksToUse = cardCount ? eligibleBlocks.slice(0, cardCount) : eligibleBlocks;
+      const createdCards = [];
+      
+      for (const block of blocksToUse) {
+        let front = "";
+        let back = block.content;
+        
+        // Generate front based on note type
+        if (block.noteType === "definition") {
+          front = `Define: ${block.content.split(/[.!?]/)[0].substring(0, 100)}`;
+        } else if (block.noteType === "process") {
+          front = `Explain the steps/process for: ${block.content.substring(0, 60)}...`;
+        } else if (block.noteType === "concept") {
+          front = `What is: ${block.content.substring(0, 60)}...?`;
+        } else if (block.noteType === "example") {
+          front = `Give an example of: ${block.content.substring(0, 60)}...`;
+        } else if (block.noteType === "exam_tip") {
+          front = `Exam tip: ${block.content.substring(0, 60)}...`;
+        } else {
+          front = `What do you know about: ${block.content.substring(0, 60)}${block.content.length > 60 ? '...' : ''}?`;
+        }
+        
+        const card = await storage.createCard({
+          deckId,
+          type: "basic",
+          front,
+          back,
+          tags: note.tags || [],
+          sourceNoteBlockId: block.id,
+        });
+        
+        createdCards.push(card);
+      }
+      
+      res.status(201).json({
+        cardsCreated: createdCards.length,
+        deckId,
+        message: `Created ${createdCards.length} flashcards from "${note.title}"`,
+      });
+    } catch (error) {
+      console.error("Generate flashcards from note error:", error);
+      res.status(500).json({ error: "Failed to generate flashcards from note" });
+    }
+  });
+  
+  // Update note block with smart annotations
+  app.patch("/api/notes/:noteId/blocks/:blockId", async (req, res) => {
+    try {
+      const { noteId, blockId } = req.params;
+      const { noteType, isExamContent, examPrompt, examMarks, keyTerms } = req.body;
+      
+      const note = await storage.getNote(noteId);
+      if (!note) {
+        return res.status(404).json({ error: "Note not found" });
+      }
+      
+      const blocks = await storage.getNoteBlocks(noteId);
+      const block = blocks.find(b => b.id === blockId);
+      if (!block) {
+        return res.status(404).json({ error: "Block not found" });
+      }
+      
+      // Update the block with annotations by deleting and recreating
+      // Since we don't have updateNoteBlock, we update via deleteNoteBlocks + createNoteBlocks pattern
+      // For now, just update the note with the new block data
+      await storage.deleteNoteBlocks(noteId);
+      const allBlocks = blocks.map(b => {
+        if (b.id === blockId) {
+          return {
+            noteId,
+            type: b.type,
+            content: b.content,
+            order: b.order,
+            noteType: noteType ?? b.noteType,
+            isExamContent: isExamContent ?? b.isExamContent,
+            examPrompt: examPrompt ?? b.examPrompt,
+            examMarks: examMarks ?? b.examMarks,
+            keyTerms: keyTerms ?? b.keyTerms,
+          };
+        }
+        return {
+          noteId,
+          type: b.type,
+          content: b.content,
+          order: b.order,
+          noteType: b.noteType,
+          isExamContent: b.isExamContent,
+          examPrompt: b.examPrompt,
+          examMarks: b.examMarks,
+          keyTerms: b.keyTerms,
+        };
+      });
+      await storage.createNoteBlocks(allBlocks);
+      
+      const updatedBlocks = await storage.getNoteBlocks(noteId);
+      const updatedBlock = updatedBlocks.find(b => b.order === block.order);
+      
+      res.json(updatedBlock);
+    } catch (error) {
+      console.error("Update block error:", error);
+      res.status(500).json({ error: "Failed to update block" });
+    }
+  });
+  
+  // Get note content with recall mode (key terms hidden)
+  app.get("/api/notes/:id/recall", async (req, res) => {
+    try {
+      const note = await storage.getNote(req.params.id);
+      if (!note) {
+        return res.status(404).json({ error: "Note not found" });
+      }
+      
+      const blocks = await storage.getNoteBlocks(req.params.id);
+      
+      // Process blocks for recall mode - hide key terms
+      const recallBlocks = blocks.map(block => {
+        let maskedContent = block.content;
+        
+        if (block.keyTerms) {
+          const terms = block.keyTerms.split(',').map(t => t.trim()).filter(Boolean);
+          for (const term of terms) {
+            const regex = new RegExp(`\\b${term}\\b`, 'gi');
+            maskedContent = maskedContent.replace(regex, '▓'.repeat(term.length));
+          }
+        }
+        
+        return {
+          ...block,
+          originalContent: block.content,
+          content: maskedContent,
+          hasKeyTerms: !!block.keyTerms,
+        };
+      });
+      
+      res.json({ ...note, blocks: recallBlocks });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch note for recall" });
+    }
+  });
+
   // ==================== FLASHCARDS API ====================
 
   app.get("/api/decks", async (req, res) => {
@@ -1368,12 +1637,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
           // Remaining cards stay as "new"
           
-          await storage.createCard({
+          const card = await storage.createCard({
             deckId: deck.id,
             type: "basic",
             front: cardData.front,
             back: cardData.back,
             tags: deckData.tags,
+          });
+          
+          // Update with spaced repetition state (not in insert schema)
+          await storage.updateCard(card.id, {
             status,
             easeFactor,
             interval,

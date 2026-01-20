@@ -38,14 +38,27 @@ export const notes = pgTable("notes", {
   index("notes_subject_idx").on(table.subject),
 ]);
 
+// Smart note types for learning categorization
+export const noteTypeEnum = ["concept", "definition", "process", "example", "exam_tip", "general"] as const;
+export type NoteType = typeof noteTypeEnum[number];
+
 export const noteBlocks = pgTable("note_blocks", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   noteId: varchar("note_id").notNull().references(() => notes.id, { onDelete: "cascade" }),
-  type: text("type").notNull(), // "paragraph", "heading", "code", "list"
+  type: text("type").notNull(), // "paragraph", "heading", "code", "list", "markdown"
   content: text("content").notNull(),
   order: integer("order").notNull(),
+  // Smart learning type
+  noteType: text("note_type").default("general"), // "concept", "definition", "process", "example", "exam_tip", "general"
+  // Exam prompt annotations
+  isExamContent: boolean("is_exam_content").default(false),
+  examPrompt: text("exam_prompt"), // "SAQ", "MCQ", "Essay", etc.
+  examMarks: integer("exam_marks"), // Number of marks for this content
+  // Key terms for recall mode (comma-separated)
+  keyTerms: text("key_terms"),
 }, (table) => [
   index("note_blocks_note_id_idx").on(table.noteId),
+  index("note_blocks_note_type_idx").on(table.noteType),
 ]);
 
 export const insertNoteSchema = createInsertSchema(notes).omit({
