@@ -4,24 +4,9 @@ import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { conversations } from "./models/chat";
 
-export const users = pgTable("users", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  username: text("username").notNull().unique(),
-  password: text("password").notNull(),
-  role: text("role").notNull().default("student"), // "student", "instructor"
-  displayName: text("display_name"),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-});
-
-export const insertUserSchema = createInsertSchema(users).pick({
-  username: true,
-  password: true,
-  role: true,
-  displayName: true,
-});
-
-export type InsertUser = z.infer<typeof insertUserSchema>;
-export type User = typeof users.$inferSelect;
+// Import and re-export auth models (users, sessions tables and types)
+import { users, sessions, type User, type UpsertUser } from "./models/auth";
+export { users, sessions, type User, type UpsertUser };
 
 // ==================== NOTES ====================
 

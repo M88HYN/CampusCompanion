@@ -10,10 +10,13 @@ import {
 import { z } from "zod";
 import { registerChatRoutes } from "./replit_integrations/chat";
 import { registerInsightScoutRoutes } from "./insight-scout";
+import { setupAuth, registerAuthRoutes } from "./replit_integrations/auth";
 import type { Card } from "@shared/schema";
 
-// For demo purposes - in production you'd use proper authentication
-const DEMO_USER_ID = "demo-user";
+// Helper to get user ID from authenticated request or use demo ID
+function getUserId(req: any): string {
+  return req.user?.claims?.sub || "demo-user";
+}
 
 // Helper functions for smart card prioritization
 function getPriorityReason(card: Card, daysSinceDue: number): string {
@@ -42,12 +45,15 @@ function getEncouragement(accuracy: number): string {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Setup authentication (must be before other routes)
+  await setupAuth(app);
+  registerAuthRoutes(app);
   
   // ==================== NOTES API ====================
   
   app.get("/api/notes", async (req, res) => {
     try {
-      const notes = await storage.getNotes(DEMO_USER_ID);
+      const notes = await storage.getNotes(getUserId(req));
       res.json(notes);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch notes" });
@@ -69,7 +75,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/notes", async (req, res) => {
     try {
-      const noteData = insertNoteSchema.parse({ ...req.body, userId: DEMO_USER_ID });
+      const noteData = insertNoteSchema.parse({ ...req.body, userId: getUserId(req) });
       const note = await storage.createNote(noteData);
       
       if (req.body.blocks && Array.isArray(req.body.blocks)) {
@@ -163,7 +169,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Create quiz
       const quiz = await storage.createQuiz({
-        userId: DEMO_USER_ID,
+        userId: getUserId(req),
         title: title || `Quiz: ${note.title}`,
         subject: note.subject || "General",
         description: `Auto-generated from note: ${note.title}`,
@@ -407,7 +413,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/decks", async (req, res) => {
     try {
-      const decks = await storage.getDecks(DEMO_USER_ID);
+      const decks = await storage.getDecks(getUserId(req));
       
       // Enrich with card counts
       const enrichedDecks = await Promise.all(
@@ -447,7 +453,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/decks", async (req, res) => {
     try {
-      const deckData = insertDeckSchema.parse({ ...req.body, userId: DEMO_USER_ID });
+      const deckData = insertDeckSchema.parse({ ...req.body, userId: getUserId(req) });
       const deck = await storage.createDeck(deckData);
       res.status(201).json(deck);
     } catch (error) {
@@ -503,7 +509,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/cards/due", async (req, res) => {
     try {
-      const dueCards = await storage.getDueCards(DEMO_USER_ID);
+      const dueCards = await storage.getDueCards(getUserId(req));
       res.json(dueCards);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch due cards" });
@@ -521,7 +527,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (deckId) {
         allCards = await storage.getCards(deckId as string);
       } else {
-        const decks = await storage.getDecks(DEMO_USER_ID);
+        const decks = await storage.getDecks(getUserId(req));
         for (const deck of decks) {
           const deckCards = await storage.getCards(deck.id);
           allCards.push(...deckCards);
@@ -742,7 +748,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (typeof quality !== "number" || quality < 0 || quality > 5) {
         return res.status(400).json({ error: "Quality must be between 0 and 5" });
       }
-      const card = await storage.reviewCard(req.params.id, quality, DEMO_USER_ID);
+      const card = await storage.reviewCard(req.params.id, quality, getUserId(req));
       res.json(card);
     } catch (error) {
       res.status(500).json({ error: "Failed to review card" });
@@ -786,13 +792,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/quizzes", async (req, res) => {
     try {
-      const quizzes = await storage.getQuizzes(DEMO_USER_ID);
+      const quizzes = await storage.getQuizzes(getUserId(req));
       
       // Enrich with question counts and attempt stats
       const enrichedQuizzes = await Promise.all(
         quizzes.map(async (quiz) => {
           const questions = await storage.getQuizQuestions(quiz.id);
-          const attempts = await storage.getQuizAttempts(quiz.id, DEMO_USER_ID);
+          const attempts = await storage.getQuizAttempts(quiz.id, getUserId(req));
           const completedAttempts = attempts.filter(a => a.completedAt);
           const bestScore = completedAttempts.length > 0
             ? Math.max(...completedAttempts.map(a => a.score || 0))
@@ -840,7 +846,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/quizzes", async (req, res) => {
     try {
       const { questions, ...quizData } = req.body;
-      const quiz = await storage.createQuiz(insertQuizSchema.parse({ ...quizData, userId: DEMO_USER_ID }));
+      const quiz = await storage.createQuiz(insertQuizSchema.parse({ ...quizData, userId: getUserId(req) }));
       
       if (questions && Array.isArray(questions)) {
         for (let i = 0; i < questions.length; i++) {
@@ -960,7 +966,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const attempt = await storage.createQuizAttempt({
         quizId: req.params.quizId,
-        userId: DEMO_USER_ID,
+        userId: getUserId(req),
         mode: req.body.mode || quiz.mode,
       });
       
@@ -972,7 +978,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/quizzes/:quizId/attempts", async (req, res) => {
     try {
-      const attempts = await storage.getQuizAttempts(req.params.quizId, DEMO_USER_ID);
+      const attempts = await storage.getQuizAttempts(req.params.quizId, getUserId(req));
       res.json(attempts);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch attempts" });
@@ -1106,15 +1112,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/dashboard/stats", async (req, res) => {
     try {
       const [notes, decks, quizzes, dueCards] = await Promise.all([
-        storage.getNotes(DEMO_USER_ID),
-        storage.getDecks(DEMO_USER_ID),
-        storage.getQuizzes(DEMO_USER_ID),
-        storage.getDueCards(DEMO_USER_ID),
+        storage.getNotes(getUserId(req)),
+        storage.getDecks(getUserId(req)),
+        storage.getQuizzes(getUserId(req)),
+        storage.getDueCards(getUserId(req)),
       ]);
       
       // Calculate accuracy from quiz attempts
       const allAttempts = await Promise.all(
-        quizzes.map(q => storage.getQuizAttempts(q.id, DEMO_USER_ID))
+        quizzes.map(q => storage.getQuizAttempts(q.id, getUserId(req)))
       );
       const completedAttempts = allAttempts.flat().filter(a => a.completedAt && a.score !== null);
       const averageAccuracy = completedAttempts.length > 0
@@ -1139,7 +1145,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/user/analytics", async (req, res) => {
     try {
-      const analytics = await storage.getUserAnalytics(DEMO_USER_ID);
+      const analytics = await storage.getUserAnalytics(getUserId(req));
       res.json(analytics);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch user analytics" });
@@ -1150,7 +1156,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/learning-insights", async (req, res) => {
     try {
-      const insights = await storage.getLearningInsights(DEMO_USER_ID);
+      const insights = await storage.getLearningInsights(getUserId(req));
       res.json(insights);
     } catch (error) {
       console.error("Learning insights error:", error);
@@ -1163,7 +1169,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/spaced-review/due", async (req, res) => {
     try {
       const limit = parseInt(req.query.limit as string) || 20;
-      const dueQuestions = await storage.getDueQuestionsForReview(DEMO_USER_ID, limit);
+      const dueQuestions = await storage.getDueQuestionsForReview(getUserId(req), limit);
       
       // Get the actual questions for each stat
       const questionsWithDetails = await Promise.all(
@@ -1220,7 +1226,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const attempt = await storage.createQuizAttempt({
         quizId: req.params.quizId,
-        userId: DEMO_USER_ID,
+        userId: getUserId(req),
         mode: "adaptive",
         currentQuestionIndex: 0,
         currentDifficulty: 3, // Start at medium difficulty
@@ -1229,7 +1235,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       // Get first question at medium difficulty (pass attempt.id to filter within this attempt only)
-      const firstQuestion = await storage.getNextAdaptiveQuestion(req.params.quizId, DEMO_USER_ID, 3, attempt.id);
+      const firstQuestion = await storage.getNextAdaptiveQuestion(req.params.quizId, getUserId(req), 3, attempt.id);
       
       // Include options for MCQ questions
       let firstQuestionWithOptions: any = firstQuestion;
@@ -1293,7 +1299,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       // Update user question stats for spaced repetition
-      await storage.upsertUserQuestionStats(DEMO_USER_ID, questionId, isCorrect, responseTime || 0);
+      await storage.upsertUserQuestionStats(getUserId(req), questionId, isCorrect, responseTime || 0);
       
       // Adjust difficulty based on answer
       const currentDifficulty = attempt.currentDifficulty || 3;
@@ -1343,7 +1349,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get next question (pass attemptId to filter within current attempt only)
       const nextQuestion = await storage.getNextAdaptiveQuestion(
         attempt.quizId, 
-        DEMO_USER_ID, 
+        getUserId(req), 
         newDifficulty,
         req.params.attemptId
       );
@@ -1436,7 +1442,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       // Update user question stats
-      await storage.upsertUserQuestionStats(DEMO_USER_ID, questionId, isCorrect, responseTime || 0);
+      await storage.upsertUserQuestionStats(getUserId(req), questionId, isCorrect, responseTime || 0);
       
       res.json({
         response,
@@ -1592,7 +1598,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       for (const deckData of sampleDecks) {
         // Create deck
         const deck = await storage.createDeck({
-          userId: DEMO_USER_ID,
+          userId: getUserId(req),
           title: deckData.title,
           subject: deckData.subject,
           description: deckData.description,
