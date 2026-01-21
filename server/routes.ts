@@ -1674,6 +1674,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Seed sample quizzes
+  app.post("/api/seed/quizzes", async (req, res) => {
+    try {
+      const { seedQuizzes } = await import("./seed-quizzes");
+      const createdQuizzes = await seedQuizzes(getUserId(req));
+      res.json({
+        message: "Sample quizzes created successfully",
+        quizzes: createdQuizzes.map(q => ({ id: q.id, title: q.title })),
+        count: createdQuizzes.length,
+      });
+    } catch (error) {
+      console.error("Seed quizzes error:", error);
+      res.status(500).json({ error: "Failed to seed quizzes" });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;
