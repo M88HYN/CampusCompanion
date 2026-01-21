@@ -1690,6 +1690,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Seed sample flashcards
+  app.post("/api/seed/flashcards", async (req, res) => {
+    try {
+      const { seedFlashcards } = await import("./seed-flashcards");
+      const result = await seedFlashcards(getUserId(req));
+      res.json({
+        message: "Sample flashcards created successfully",
+        decksCreated: result.decksCreated,
+        cardsCreated: result.cardsCreated,
+      });
+    } catch (error) {
+      console.error("Seed flashcards error:", error);
+      res.status(500).json({ error: "Failed to seed flashcards" });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;
