@@ -3,7 +3,7 @@ import OpenAI from "openai";
 import { chatStorage } from "./storage";
 
 const openai = new OpenAI({
-  apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
+  apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY || process.env.OPENAI_API_KEY || "sk-test-key",
   baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
 });
 
@@ -82,7 +82,7 @@ export function registerChatRoutes(app: Express): void {
 
       // Stream response from OpenAI
       const stream = await openai.chat.completions.create({
-        model: "gpt-5.1",
+        model: "gpt-3.5-turbo",
         messages: chatMessages,
         stream: true,
         max_completion_tokens: 2048,
@@ -104,13 +104,25 @@ export function registerChatRoutes(app: Express): void {
       res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
       res.end();
     } catch (error) {
-      console.error("Error sending message:", error);
+      console.error("Error sending message:", error instanceof Error ? error.message : error);
+      
+      let errorMessage = "Failed to send message";
+      if (error instanceof Error) {
+        if (error.message.includes("getaddrinfo") || error.message.includes("ENOTFOUND")) {
+          errorMessage = "Network error: Unable to reach AI service";
+        } else if (error.message.includes("401")) {
+          errorMessage = "Authentication error: Invalid API key";
+        } else if (error.message.includes("model")) {
+          errorMessage = "Model error: The configured AI model is not available";
+        }
+      }
+      
       // Check if headers already sent (SSE streaming started)
       if (res.headersSent) {
-        res.write(`data: ${JSON.stringify({ error: "Failed to send message" })}\n\n`);
+        res.write(`data: ${JSON.stringify({ error: errorMessage })}\n\n`);
         res.end();
       } else {
-        res.status(500).json({ error: "Failed to send message" });
+        res.status(500).json({ error: errorMessage });
       }
     }
   });

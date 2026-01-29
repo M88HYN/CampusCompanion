@@ -1,12 +1,9 @@
 import type { Express, Request, Response } from "express";
 import OpenAI from "openai";
-import { db } from "./db";
-import { conversations, messages } from "@shared/schema";
-import { eq, desc } from "drizzle-orm";
 import { z } from "zod";
 
 const openai = new OpenAI({
-  apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
+  apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY || process.env.OPENAI_API_KEY || "sk-test-key",
   baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
 });
 
@@ -14,7 +11,7 @@ const researchQuerySchema = z.object({
   query: z.string().min(1, "Query is required"),
   searchDepth: z.enum(["quick", "balanced", "comprehensive"]).default("balanced"),
   responseType: z.enum(["explanation", "summary", "comparison", "analysis", "examples", "study_tips", "mistakes"]).default("explanation"),
-  conversationId: z.number().nullable().optional(),
+  conversationId: z.string().nullable().optional(),
 });
 
 const SYSTEM_PROMPT = `You are Insight Scout, an intelligent educational research assistant designed specifically for university students. Your mission is to support learning, coursework, and revision with accurate, well-structured, academically relevant content.
@@ -48,59 +45,8 @@ Your responses should be suitable for university coursework, exam preparation, a
 type ResearchQuery = z.infer<typeof researchQuerySchema>;
 
 export function registerInsightScoutRoutes(app: Express): void {
-  app.get("/api/research/conversations", async (req: Request, res: Response) => {
-    try {
-      const allConversations = await db.select().from(conversations).orderBy(desc(conversations.createdAt));
-      res.json(allConversations);
-    } catch (error) {
-      console.error("Error fetching research conversations:", error);
-      res.status(500).json({ error: "Failed to fetch conversations" });
-    }
-  });
-
-  app.get("/api/research/conversations/:id", async (req: Request, res: Response) => {
-    try {
-      const id = parseInt(req.params.id);
-      if (isNaN(id)) {
-        return res.status(400).json({ error: "Invalid conversation ID" });
-      }
-      const [conversation] = await db.select().from(conversations).where(eq(conversations.id, id));
-      if (!conversation) {
-        return res.status(404).json({ error: "Conversation not found" });
-      }
-      const conversationMessages = await db.select().from(messages).where(eq(messages.conversationId, id)).orderBy(messages.createdAt);
-      res.json({ ...conversation, messages: conversationMessages });
-    } catch (error) {
-      console.error("Error fetching conversation:", error);
-      res.status(500).json({ error: "Failed to fetch conversation" });
-    }
-  });
-
-  app.post("/api/research/conversations", async (req: Request, res: Response) => {
-    try {
-      const { title } = req.body;
-      const [conversation] = await db.insert(conversations).values({ title: title || "New Research Session" }).returning();
-      res.status(201).json(conversation);
-    } catch (error) {
-      console.error("Error creating conversation:", error);
-      res.status(500).json({ error: "Failed to create conversation" });
-    }
-  });
-
-  app.delete("/api/research/conversations/:id", async (req: Request, res: Response) => {
-    try {
-      const id = parseInt(req.params.id);
-      if (isNaN(id)) {
-        return res.status(400).json({ error: "Invalid conversation ID" });
-      }
-      await db.delete(messages).where(eq(messages.conversationId, id));
-      await db.delete(conversations).where(eq(conversations.id, id));
-      res.status(204).send();
-    } catch (error) {
-      console.error("Error deleting conversation:", error);
-      res.status(500).json({ error: "Failed to delete conversation" });
-    }
-  });
+  // Conversation management endpoints moved to routes.ts
+  // Only keep the query endpoint here
 
   app.post("/api/research/query", async (req: Request, res: Response) => {
     try {
@@ -110,24 +56,9 @@ export function registerInsightScoutRoutes(app: Express): void {
       }
       
       const { query, searchDepth, responseType, conversationId } = parseResult.data;
-      let convoId = conversationId;
+      let convoId = conversationId || "temp-" + Math.random().toString(36).substring(7);
       
-      if (!convoId) {
-        const titleWords = query.split(" ").slice(0, 5).join(" ");
-        const [newConvo] = await db.insert(conversations).values({ 
-          title: titleWords.length > 50 ? titleWords.substring(0, 50) + "..." : titleWords 
-        }).returning();
-        convoId = newConvo.id;
-      }
-
-      await db.insert(messages).values({
-        conversationId: convoId,
-        role: "user",
-        content: query,
-      });
-
-      const existingMessages = await db.select().from(messages).where(eq(messages.conversationId, convoId)).orderBy(messages.createdAt);
-      
+      // For now, skip database storage and just return a stub response
       const depthInstruction = {
         quick: "Provide a brief, focused answer in 2-3 paragraphs.",
         balanced: "Provide a well-structured answer with appropriate depth.",
@@ -146,10 +77,6 @@ export function registerInsightScoutRoutes(app: Express): void {
 
       const chatMessages: OpenAI.ChatCompletionMessageParam[] = [
         { role: "system", content: SYSTEM_PROMPT },
-        ...existingMessages.map((m) => ({
-          role: m.role as "user" | "assistant",
-          content: m.content,
-        })),
         { role: "user", content: `${depthInstruction} ${typeInstruction}\n\nQuery: ${query}` },
       ];
 
@@ -158,7 +85,7 @@ export function registerInsightScoutRoutes(app: Express): void {
       res.setHeader("Connection", "keep-alive");
 
       const stream = await openai.chat.completions.create({
-        model: "gpt-5.1",
+        model: "gpt-3.5-turbo",
         messages: chatMessages,
         stream: true,
         max_completion_tokens: searchDepth === "comprehensive" ? 4096 : searchDepth === "quick" ? 1024 : 2048,
@@ -174,21 +101,31 @@ export function registerInsightScoutRoutes(app: Express): void {
         }
       }
 
-      await db.insert(messages).values({
-        conversationId: convoId,
-        role: "assistant",
-        content: fullResponse,
-      });
-
       res.write(`data: ${JSON.stringify({ done: true, conversationId: convoId })}\n\n`);
       res.end();
     } catch (error) {
       console.error("Error processing research query:", error);
+      
+      let errorMessage = "Failed to process research query";
+      if (error instanceof Error) {
+        if (error.message.includes("getaddrinfo") || error.message.includes("ENOTFOUND")) {
+          errorMessage = "Network error: Unable to reach external services. Please check your connection.";
+        } else if (error.message.includes("401") || error.message.includes("401") || error.message.includes("Unauthorized")) {
+          errorMessage = "Authentication error: Invalid API credentials configured.";
+        } else if (error.message.includes("429")) {
+          errorMessage = "Rate limit exceeded: Too many requests. Please try again later.";
+        } else if (error.message.includes("model") || error.message.includes("does not exist")) {
+          errorMessage = "Model error: The configured AI model is not available.";
+        } else {
+          errorMessage = `Error: ${error.message}`;
+        }
+      }
+      
       if (res.headersSent) {
-        res.write(`data: ${JSON.stringify({ error: "Failed to process query" })}\n\n`);
+        res.write(`data: ${JSON.stringify({ error: errorMessage })}\n\n`);
         res.end();
       } else {
-        res.status(500).json({ error: "Failed to process research query" });
+        res.status(500).json({ error: errorMessage });
       }
     }
   });

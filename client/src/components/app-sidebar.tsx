@@ -9,6 +9,7 @@ import {
   Rocket,
   Lightbulb,
   BarChart3,
+  LogOut,
 } from "lucide-react";
 import {
   Sidebar,
@@ -25,15 +26,19 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useLocation } from "wouter";
+import { useAuth } from "@/hooks/use-auth";
+import { Button } from "@/components/ui/button";
 
 type UserRole = "student" | "instructor" | "admin";
 
 interface AppSidebarProps {
   userRole?: UserRole;
+  onLogout?: () => void;
 }
 
-export function AppSidebar({ userRole = "student" }: AppSidebarProps) {
+export function AppSidebar({ userRole = "student", onLogout }: AppSidebarProps) {
   const [location] = useLocation();
+  const { user } = useAuth();
 
   const learningTools = [
     {
@@ -160,13 +165,17 @@ export function AppSidebar({ userRole = "student" }: AppSidebarProps) {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter className="p-4 border-t-2 border-teal-200 dark:border-teal-800 bg-gradient-to-r from-teal-50 to-cyan-50 dark:from-teal-950 dark:to-cyan-950">
-        <a href="/settings" className="flex items-center gap-3 hover:opacity-80 transition-opacity cursor-pointer">
+      <SidebarFooter className="p-4 border-t-2 border-teal-200 dark:border-teal-800 bg-gradient-to-r from-teal-50 to-cyan-50 dark:from-teal-950 dark:to-cyan-950 space-y-3">
+        <div className="flex items-center gap-3">
           <Avatar className="border-2 border-teal-300 dark:border-teal-700">
-            <AvatarFallback className="bg-gradient-to-br from-teal-500 to-cyan-600 text-white font-bold">JD</AvatarFallback>
+            <AvatarFallback className="bg-gradient-to-br from-teal-500 to-cyan-600 text-white font-bold">
+              {user?.firstName?.[0] || user?.email?.[0]?.toUpperCase() || "U"}
+            </AvatarFallback>
           </Avatar>
           <div className="flex flex-col flex-1 min-w-0">
-            <span className="text-sm font-semibold text-slate-900 dark:text-white truncate">John Doe</span>
+            <span className="text-sm font-semibold text-slate-900 dark:text-white truncate">
+              {user?.firstName && user?.lastName ? `${user.firstName} ${user.lastName}` : user?.email || "User"}
+            </span>
             <Badge
               className={`w-fit text-xs border-0 ${
                 userRole === "admin"
@@ -180,7 +189,17 @@ export function AppSidebar({ userRole = "student" }: AppSidebarProps) {
               {userRole.charAt(0).toUpperCase() + userRole.slice(1)}
             </Badge>
           </div>
-        </a>
+        </div>
+        {onLogout && (
+          <Button
+            onClick={onLogout}
+            variant="outline"
+            className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950 border-red-200 dark:border-red-800"
+          >
+            <LogOut className="h-4 w-4 mr-2" />
+            Logout
+          </Button>
+        )}
       </SidebarFooter>
     </Sidebar>
   );
