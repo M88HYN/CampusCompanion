@@ -1,6 +1,11 @@
 import type { Express } from "express";
+import express from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
+import { db } from "./db";
+import * as schema from "@shared/schema";
+import { eq, and, desc, sql } from "drizzle-orm";
+import { randomUUID } from "crypto";
 import {
   insertNoteSchema, insertNoteBlockSchema,
   insertDeckSchema, insertCardSchema,
@@ -10,12 +15,15 @@ import {
 import { z } from "zod";
 import { registerChatRoutes } from "./replit_integrations/chat";
 import { registerInsightScoutRoutes } from "./insight-scout";
-import { setupAuth, registerAuthRoutes } from "./replit_integrations/auth";
+import { registerAuthRoutes, authMiddleware } from "./auth-routes";
 import type { Card } from "@shared/schema";
 
-// Helper to get user ID from authenticated request or use demo ID
+// Helper to get user ID from authenticated request
 function getUserId(req: any): string {
-  return req.user?.claims?.sub || "demo-user";
+  if (!req.user?.userId) {
+    throw new Error("Unauthorized: No user ID found");
+  }
+  return req.user.userId;
 }
 
 // Helper functions for smart card prioritization
@@ -45,22 +53,38 @@ function getEncouragement(accuracy: number): string {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Setup authentication (must be before other routes)
-  await setupAuth(app);
+  // Register auth routes first
   registerAuthRoutes(app);
+
+  // Verify token endpoint
+  app.get("/api/auth/verify", authMiddleware, (req: any, res) => {
+    res.json({ authenticated: true, user: req.user });
+  });
+
+  // Health check endpoint
+  app.get("/api/health", (_req, res) => {
+    res.json({ status: "ok", timestamp: new Date().toISOString() });
+  });
   
   // ==================== NOTES API ====================
   
-  app.get("/api/notes", async (req, res) => {
+  app.get("/api/notes", authMiddleware, async (req, res) => {
     try {
-      const notes = await storage.getNotes(getUserId(req));
+      const userId = getUserId(req);
+      console.log("Fetching notes for user:", userId);
+      const notes = await storage.getNotes(userId);
+      console.log("Notes fetched successfully:", notes.length, "notes found");
       res.json(notes);
     } catch (error) {
+      console.error("Error fetching notes:", error instanceof Error ? error.message : String(error));
+      if (error instanceof Error) {
+        console.error("Stack trace:", error.stack);
+      }
       res.status(500).json({ error: "Failed to fetch notes" });
     }
   });
 
-  app.get("/api/notes/:id", async (req, res) => {
+  app.get("/api/notes/:id", authMiddleware, async (req, res) => {
     try {
       const note = await storage.getNote(req.params.id);
       if (!note) {
@@ -73,10 +97,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/notes", async (req, res) => {
+  app.post("/api/notes", authMiddleware, async (req, res) => {
     try {
-      const noteData = insertNoteSchema.parse({ ...req.body, userId: getUserId(req) });
+      console.log("POST /api/notes - Request body:", JSON.stringify(req.body, null, 2));
+      const userId = getUserId(req);
+      console.log("User ID extracted:", userId);
+      
+      const noteData = insertNoteSchema.parse({ ...req.body, userId });
+      console.log("Note data after schema validation:", JSON.stringify(noteData, null, 2));
+      
       const note = await storage.createNote(noteData);
+      console.log("Note created successfully:", note);
       
       if (req.body.blocks && Array.isArray(req.body.blocks)) {
         const blocks = req.body.blocks.map((block: any, index: number) => ({
@@ -85,19 +116,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
           content: block.content,
           order: index,
         }));
+        console.log("Creating note blocks:", JSON.stringify(blocks, null, 2));
         await storage.createNoteBlocks(blocks);
       }
       
       res.status(201).json(note);
     } catch (error) {
+      console.error("Error creating note:", error instanceof Error ? error.message : String(error));
+      if (error instanceof Error) {
+        console.error("Stack trace:", error.stack);
+      }
+      
       if (error instanceof z.ZodError) {
         return res.status(400).json({ error: error.errors });
+      }
+      if (error instanceof Error && error.message.includes("Unauthorized")) {
+        return res.status(401).json({ error: "Unauthorized" });
       }
       res.status(500).json({ error: "Failed to create note" });
     }
   });
 
-  app.patch("/api/notes/:id", async (req, res) => {
+  app.patch("/api/notes/:id", authMiddleware, async (req, res) => {
     try {
       const { blocks, title, subject, tags } = req.body;
       const safeNoteData: { title?: string; subject?: string; tags?: string[] } = {};
@@ -131,7 +171,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/notes/:id", async (req, res) => {
+  app.delete("/api/notes/:id", authMiddleware, async (req, res) => {
     try {
       await storage.deleteNote(req.params.id);
       res.status(204).send();
@@ -149,7 +189,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     questionCount: z.number().min(1).max(20).optional().default(5),
   });
   
-  app.post("/api/notes/:id/generate-quiz", async (req, res) => {
+  app.post("/api/notes/:id/generate-quiz", authMiddleware, async (req: any, res) => {
     try {
       const parsed = generateQuizFromNoteSchema.safeParse({ ...req.body, noteId: req.params.id });
       if (!parsed.success) {
@@ -241,7 +281,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     cardCount: z.number().min(1).max(50).optional(),
   });
   
-  app.post("/api/notes/:id/generate-flashcards", async (req, res) => {
+  app.post("/api/notes/:id/generate-flashcards", authMiddleware, async (req: any, res) => {
     try {
       const parsed = generateFlashcardsFromNoteSchema.safeParse({ ...req.body, noteId: req.params.id });
       if (!parsed.success) {
@@ -315,7 +355,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Update note block with smart annotations
-  app.patch("/api/notes/:noteId/blocks/:blockId", async (req, res) => {
+  app.patch("/api/notes/:noteId/blocks/:blockId", authMiddleware, async (req: any, res) => {
     try {
       const { noteId, blockId } = req.params;
       const { noteType, isExamContent, examPrompt, examMarks, keyTerms } = req.body;
@@ -411,9 +451,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // ==================== FLASHCARDS API ====================
 
-  app.get("/api/decks", async (req, res) => {
+  app.get("/api/decks", authMiddleware, async (req: any, res) => {
     try {
-      const decks = await storage.getDecks(getUserId(req));
+      const userId = getUserId(req);
+      const decks = await storage.getDecks(userId);
       
       // Enrich with card counts
       const enrichedDecks = await Promise.all(
@@ -451,9 +492,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/decks", async (req, res) => {
+  app.post("/api/decks", authMiddleware, async (req: any, res) => {
     try {
-      const deckData = insertDeckSchema.parse({ ...req.body, userId: getUserId(req) });
+      const userId = getUserId(req);
+      const deckData = insertDeckSchema.parse({ ...req.body, userId });
       const deck = await storage.createDeck(deckData);
       res.status(201).json(deck);
     } catch (error) {
@@ -464,7 +506,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/decks/:id", async (req, res) => {
+  app.patch("/api/decks/:id", authMiddleware, async (req: any, res) => {
     try {
       const deck = await storage.updateDeck(req.params.id, req.body);
       if (!deck) {
@@ -476,7 +518,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/decks/:id", async (req, res) => {
+  app.delete("/api/decks/:id", authMiddleware, async (req: any, res) => {
     try {
       await storage.deleteDeck(req.params.id);
       res.status(204).send();
@@ -494,7 +536,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/cards", async (req, res) => {
+  app.post("/api/cards", authMiddleware, async (req: any, res) => {
     try {
       const cardData = insertCardSchema.parse(req.body);
       const card = await storage.createCard(cardData);
@@ -507,9 +549,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/cards/due", async (req, res) => {
+  app.get("/api/cards/due", authMiddleware, async (req: any, res) => {
     try {
-      const dueCards = await storage.getDueCards(getUserId(req));
+      const userId = getUserId(req);
+      const dueCards = await storage.getDueCards(userId);
       res.json(dueCards);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch due cards" });
@@ -517,7 +560,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Smart card prioritization for intelligent study sessions
-  app.get("/api/cards/smart-queue", async (req, res) => {
+  app.get("/api/cards/smart-queue", authMiddleware, async (req: any, res) => {
     try {
       const { deckId, mode = "smart", limit = "50" } = req.query;
       const maxCards = Math.min(parseInt(limit as string) || 50, 100);
@@ -617,7 +660,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     deckId: z.string().min(1),
   });
   
-  app.post("/api/cards/from-note", async (req, res) => {
+  app.post("/api/cards/from-note", authMiddleware, async (req: any, res) => {
     try {
       const parsed = fromNoteSchema.safeParse(req.body);
       if (!parsed.success) {
@@ -666,7 +709,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     responses: z.array(z.number().min(0).max(5)),
   });
   
-  app.post("/api/cards/session-summary", async (req, res) => {
+  app.post("/api/cards/session-summary", authMiddleware, async (req: any, res) => {
     try {
       const parsed = sessionSummarySchema.safeParse(req.body);
       if (!parsed.success) {
@@ -742,7 +785,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/cards/:id/review", async (req, res) => {
+  app.post("/api/cards/:id/review", authMiddleware, async (req: any, res) => {
     try {
       const { quality } = req.body;
       if (typeof quality !== "number" || quality < 0 || quality > 5) {
@@ -767,7 +810,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/cards/:id", async (req, res) => {
+  app.patch("/api/cards/:id", authMiddleware, async (req: any, res) => {
     try {
       const card = await storage.updateCard(req.params.id, req.body);
       if (!card) {
@@ -779,7 +822,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/cards/:id", async (req, res) => {
+  app.delete("/api/cards/:id", authMiddleware, async (req: any, res) => {
     try {
       await storage.deleteCard(req.params.id);
       res.status(204).send();
@@ -790,9 +833,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // ==================== QUIZZES API ====================
 
-  app.get("/api/quizzes", async (req, res) => {
+  app.get("/api/quizzes", authMiddleware, async (req: any, res) => {
     try {
-      const quizzes = await storage.getQuizzes(getUserId(req));
+      const userId = getUserId(req);
+      const quizzes = await storage.getQuizzes(userId);
       
       // Enrich with question counts and attempt stats
       const enrichedQuizzes = await Promise.all(
@@ -843,10 +887,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/quizzes", async (req, res) => {
+  app.post("/api/quizzes", authMiddleware, async (req: any, res) => {
     try {
+      const userId = getUserId(req);
       const { questions, ...quizData } = req.body;
-      const quiz = await storage.createQuiz(insertQuizSchema.parse({ ...quizData, userId: getUserId(req) }));
+      const quiz = await storage.createQuiz(insertQuizSchema.parse({ ...quizData, userId }));
       
       if (questions && Array.isArray(questions)) {
         for (let i = 0; i < questions.length; i++) {
@@ -878,7 +923,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/quizzes/:id", async (req, res) => {
+  app.delete("/api/quizzes/:id", authMiddleware, async (req: any, res) => {
     try {
       await storage.deleteQuiz(req.params.id);
       res.status(204).send();
@@ -887,7 +932,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/quizzes/:quizId/questions", async (req, res) => {
+  app.post("/api/quizzes/:quizId/questions", authMiddleware, async (req: any, res) => {
     try {
       const quiz = await storage.getQuiz(req.params.quizId);
       if (!quiz) {
@@ -957,8 +1002,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // ==================== QUIZ ATTEMPTS API ====================
 
-  app.post("/api/quizzes/:quizId/attempts", async (req, res) => {
+  app.post("/api/quizzes/:quizId/attempts", authMiddleware, async (req: any, res) => {
     try {
+      const userId = getUserId(req);
       const quiz = await storage.getQuiz(req.params.quizId);
       if (!quiz) {
         return res.status(404).json({ error: "Quiz not found" });
@@ -966,7 +1012,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const attempt = await storage.createQuizAttempt({
         quizId: req.params.quizId,
-        userId: getUserId(req),
+        userId,
         mode: req.body.mode || quiz.mode,
       });
       
@@ -999,7 +1045,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/attempts/:attemptId/submit", async (req, res) => {
+  app.post("/api/attempts/:attemptId/submit", authMiddleware, async (req: any, res) => {
     try {
       const { responses = [], timeSpent } = req.body;
       const attempt = await storage.getQuizAttempt(req.params.attemptId);
@@ -1085,7 +1131,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // ==================== INTEGRATION ENDPOINTS ====================
 
-  app.post("/api/flashcards/from-response", async (req, res) => {
+  app.post("/api/flashcards/from-response", authMiddleware, async (req: any, res) => {
     try {
       const { responseId, deckId } = req.body;
       if (!responseId || !deckId) {
@@ -1154,9 +1200,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // ==================== LEARNING INSIGHTS ====================
 
-  app.get("/api/learning-insights", async (req, res) => {
+  app.get("/api/learning-insights", authMiddleware, async (req: any, res) => {
     try {
-      const insights = await storage.getLearningInsights(getUserId(req));
+      const userId = getUserId(req);
+      const insights = await storage.getLearningInsights(userId);
       res.json(insights);
     } catch (error) {
       console.error("Learning insights error:", error);
@@ -1202,7 +1249,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/spaced-review/:statsId/review", async (req, res) => {
+  app.post("/api/spaced-review/:statsId/review", authMiddleware, async (req: any, res) => {
     try {
       const { quality } = req.body;
       if (typeof quality !== "number" || quality < 0 || quality > 5) {
@@ -1217,7 +1264,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // ==================== ADAPTIVE QUIZ ====================
 
-  app.post("/api/quizzes/:quizId/adaptive-attempt", async (req, res) => {
+  app.post("/api/quizzes/:quizId/adaptive-attempt", authMiddleware, async (req: any, res) => {
     try {
       const quiz = await storage.getQuiz(req.params.quizId);
       if (!quiz) {
@@ -1255,7 +1302,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/attempts/:attemptId/adaptive-answer", async (req, res) => {
+  app.post("/api/attempts/:attemptId/adaptive-answer", authMiddleware, async (req: any, res) => {
     try {
       const { questionId, selectedOptionId, textAnswer, responseTime } = req.body;
       const attempt = await storage.getQuizAttempt(req.params.attemptId);
@@ -1385,7 +1432,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // ==================== SINGLE QUESTION ANSWER (for instant feedback) ====================
 
-  app.post("/api/attempts/:attemptId/answer", async (req, res) => {
+  app.post("/api/attempts/:attemptId/answer", authMiddleware, async (req: any, res) => {
     try {
       const { questionId, selectedOptionId, textAnswer, responseTime } = req.body;
       const attempt = await storage.getQuizAttempt(req.params.attemptId);
@@ -1704,6 +1751,123 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Seed flashcards error:", error);
       res.status(500).json({ error: "Failed to seed flashcards" });
     }
+  });
+
+  // ==================== RESEARCH/CONVERSATIONS API ====================
+
+  app.get("/api/research/conversations", authMiddleware, async (req: any, res) => {
+    try {
+      const userId = getUserId(req);
+      res.json([]);
+    } catch (error) {
+      console.error("Get conversations error:", error);
+      res.status(500).json({ error: "Failed to fetch conversations" });
+    }
+  });
+
+  app.get("/api/research/conversations/:id", authMiddleware, async (req: any, res) => {
+    try {
+      const userId = getUserId(req);
+      res.json({ id: req.params.id, title: "Conversation", messages: [] });
+    } catch (error) {
+      console.error("Get conversation error:", error);
+      res.status(500).json({ error: "Failed to fetch conversation" });
+    }
+  });
+
+  app.post("/api/research/conversations", authMiddleware, async (req: any, res) => {
+    try {
+      const userId = getUserId(req);
+      const { title } = req.body;
+      res.status(201).json({ id: randomUUID(), title: title || "New Conversation", userId, createdAt: new Date() });
+    } catch (error) {
+      console.error("Create conversation error:", error);
+      res.status(500).json({ error: "Failed to create conversation" });
+    }
+  });
+
+  app.delete("/api/research/conversations/:id", authMiddleware, async (req: any, res) => {
+    try {
+      const userId = getUserId(req);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Delete conversation error:", error);
+      res.status(500).json({ error: "Failed to delete conversation" });
+    }
+  });
+
+  app.post("/api/research/conversations/:id/messages", authMiddleware, async (req: any, res) => {
+    try {
+      const userId = getUserId(req);
+      const { role, content } = req.body;
+      res.status(201).json({ id: randomUUID(), conversationId: req.params.id, role: role || "user", content, createdAt: new Date() });
+    } catch (error) {
+      console.error("Create message error:", error);
+      res.status(500).json({ error: "Failed to create message" });
+    }
+  });
+
+  // ==================== USER SETTINGS/PREFERENCES ====================
+
+  app.get("/api/settings", authMiddleware, async (req: any, res) => {
+    try {
+      const userId = getUserId(req);
+      let preferences = await storage.getUserPreferences(userId);
+      
+      // If preferences don't exist, create with defaults
+      if (!preferences) {
+        preferences = await storage.updateUserPreferences(userId, { userId });
+      }
+      
+      res.json(preferences);
+    } catch (error) {
+      console.error("Get settings error:", error);
+      res.status(500).json({ error: "Failed to fetch settings" });
+    }
+  });
+
+  app.patch("/api/settings", authMiddleware, async (req: any, res) => {
+    try {
+      const userId = getUserId(req);
+      const updates = req.body;
+      
+      // Validate incoming data if needed - remove userId from updates if present
+      const { userId: _, ...safeUpdates } = updates;
+      
+      const updated = await storage.updateUserPreferences(userId, safeUpdates);
+      res.json(updated);
+    } catch (error) {
+      console.error("Update settings error:", error);
+      res.status(500).json({ error: "Failed to update settings" });
+    }
+  });
+
+  // Vite dev server in development, static files in production
+  if (process.env.NODE_ENV !== "production") {
+    const { createServer: createViteServer } = await import("vite");
+    const vite = await createViteServer({
+      server: { middlewareMode: true },
+      appType: "spa",
+    });
+    app.use(vite.middlewares);
+  } else {
+    app.use(express.static("dist/public"));
+  }
+
+  // Global error handler middleware
+  app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+    console.error("Server error:", err);
+    // Don't expose error details - redirect to login for API errors
+    if (req.path.startsWith("/api")) {
+      res.status(500).json({ error: "Internal server error" });
+    } else {
+      res.sendFile("dist/public/index.html", { root: process.cwd() });
+    }
+  });
+
+  // Serve index.html for SPA routing (catch-all route)
+  app.get("*", (req, res) => {
+    res.sendFile("dist/public/index.html", { root: process.cwd() });
   });
 
   const httpServer = createServer(app);

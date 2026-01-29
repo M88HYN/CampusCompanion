@@ -1,5 +1,5 @@
 import {
-  type User, type InsertUser,
+  type User, type UpsertUser,
   type Note, type InsertNote,
   type NoteBlock, type InsertNoteBlock,
   type Deck, type InsertDeck,
@@ -11,17 +11,19 @@ import {
   type QuizAttempt, type InsertQuizAttempt,
   type QuizResponse, type InsertQuizResponse,
   type UserQuestionStats, type InsertUserQuestionStats,
+  type UserPreferences, type InsertUserPreferences,
   users, notes, noteBlocks, decks, cards, cardReviews,
-  quizzes, quizQuestions, quizOptions, quizAttempts, quizResponses, userQuestionStats
+  quizzes, quizQuestions, quizOptions, quizAttempts, quizResponses, userQuestionStats, userPreferences
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, lt, sql, or, lte, asc, inArray } from "drizzle-orm";
+import { randomUUID } from "crypto";
 
 export interface IStorage {
   // Users
   getUser(id: string): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
-  createUser(user: InsertUser): Promise<User>;
+  createUser(user: UpsertUser): Promise<User>;
 
   // Notes
   getNotes(userId: string): Promise<Note[]>;
@@ -123,6 +125,10 @@ export interface IStorage {
     recommendations: { type: string; title: string; description: string; priority: 'high' | 'medium' | 'low' }[];
     weeklyProgress: { day: string; minutes: number; items: number }[];
   }>;
+
+  // User Preferences/Settings
+  getUserPreferences(userId: string): Promise<any>;
+  updateUserPreferences(userId: string, preferences: any): Promise<any>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -134,14 +140,14 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.username, username));
-    return user || undefined;
+    // Users table doesn't have username field - return undefined or use email
+    return undefined;
   }
 
-  async createUser(insertUser: InsertUser): Promise<User> {
+  async createUser(insertUser: UpsertUser): Promise<User> {
     const [user] = await db
       .insert(users)
-      .values(insertUser)
+      .values({ id: randomUUID(), ...insertUser, createdAt: new Date(), updatedAt: new Date() })
       .returning();
     return user;
   }
@@ -158,7 +164,15 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createNote(note: InsertNote): Promise<Note> {
-    const [created] = await db.insert(notes).values(note).returning();
+    if (!note.userId || !note.title) {
+      throw new Error("userId and title are required");
+    }
+    const [created] = await db.insert(notes).values({ 
+      id: randomUUID(),
+      ...note,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    }).returning();
     return created;
   }
 
@@ -182,7 +196,11 @@ export class DatabaseStorage implements IStorage {
 
   async createNoteBlocks(blocks: InsertNoteBlock[]): Promise<NoteBlock[]> {
     if (blocks.length === 0) return [];
-    return await db.insert(noteBlocks).values(blocks).returning();
+    const blocksWithIds = blocks.map(block => ({
+      id: randomUUID(),
+      ...block
+    }));
+    return await db.insert(noteBlocks).values(blocksWithIds).returning();
   }
 
   async deleteNoteBlocks(noteId: string): Promise<void> {
@@ -201,7 +219,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createDeck(deck: InsertDeck): Promise<Deck> {
-    const [created] = await db.insert(decks).values(deck).returning();
+    const [created] = await db.insert(decks).values({ id: randomUUID(), ...deck, createdAt: new Date() }).returning();
     return created;
   }
 
@@ -229,7 +247,12 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createCard(card: InsertCard): Promise<Card> {
-    const [created] = await db.insert(cards).values(card).returning();
+    const [created] = await db.insert(cards).values({ 
+      id: randomUUID(), 
+      ...card, 
+      createdAt: new Date(),
+      dueAt: new Date()
+    }).returning();
     return created;
   }
 
@@ -317,6 +340,7 @@ export class DatabaseStorage implements IStorage {
 
     // Record review history
     await db.insert(cardReviews).values({
+      id: randomUUID(),
       cardId,
       userId,
       quality,
@@ -354,7 +378,12 @@ export class DatabaseStorage implements IStorage {
   // ==================== QUIZZES ====================
 
   async getQuizzes(userId: string): Promise<Quiz[]> {
-    return await db.select().from(quizzes).where(eq(quizzes.userId, userId)).orderBy(desc(quizzes.createdAt));
+    try {
+      return await db.select().from(quizzes).where(eq(quizzes.userId, userId)).orderBy(desc(quizzes.createdAt));
+    } catch (error) {
+      console.error("Error fetching quizzes:", error);
+      return [];
+    }
   }
 
   async getQuiz(id: string): Promise<Quiz | undefined> {
@@ -363,7 +392,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createQuiz(quiz: InsertQuiz): Promise<Quiz> {
-    const [created] = await db.insert(quizzes).values(quiz).returning();
+    const [created] = await db.insert(quizzes).values({ id: randomUUID(), ...quiz }).returning();
     return created;
   }
 
@@ -381,7 +410,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createQuizQuestion(question: InsertQuizQuestion): Promise<QuizQuestion> {
-    const [created] = await db.insert(quizQuestions).values(question).returning();
+    const [created] = await db.insert(quizQuestions).values({ id: randomUUID(), ...question }).returning();
     return created;
   }
 
@@ -390,14 +419,14 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createQuizOption(option: InsertQuizOption): Promise<QuizOption> {
-    const [created] = await db.insert(quizOptions).values(option).returning();
+    const [created] = await db.insert(quizOptions).values({ id: randomUUID(), ...option }).returning();
     return created;
   }
 
   // ==================== QUIZ ATTEMPTS ====================
 
   async createQuizAttempt(attempt: InsertQuizAttempt): Promise<QuizAttempt> {
-    const [created] = await db.insert(quizAttempts).values(attempt).returning();
+    const [created] = await db.insert(quizAttempts).values({ id: randomUUID(), ...attempt }).returning();
     return created;
   }
 
@@ -438,7 +467,7 @@ export class DatabaseStorage implements IStorage {
   // ==================== QUIZ RESPONSES ====================
 
   async createQuizResponse(response: InsertQuizResponse): Promise<QuizResponse> {
-    const [created] = await db.insert(quizResponses).values(response).returning();
+    const [created] = await db.insert(quizResponses).values({ id: randomUUID(), ...response }).returning();
     return created;
   }
 
@@ -505,8 +534,8 @@ export class DatabaseStorage implements IStorage {
     }
 
     const totalAttempts = attempts.length;
-    const averageScore = attempts.reduce((sum, a) => sum + (a.score || 0), 0) / totalAttempts;
-    const averageTimeSpent = attempts.reduce((sum, a) => sum + (a.timeSpent || 0), 0) / totalAttempts;
+    const averageScore = attempts.reduce((sum: number, a: any) => sum + (a.score || 0), 0) / totalAttempts;
+    const averageTimeSpent = attempts.reduce((sum: number, a: any) => sum + (a.timeSpent || 0), 0) / totalAttempts;
 
     // Calculate accuracy by difficulty
     const questions = await this.getQuizQuestions(quizId);
@@ -579,6 +608,7 @@ export class DatabaseStorage implements IStorage {
       const [created] = await db
         .insert(userQuestionStats)
         .values({
+          id: randomUUID(),
           userId,
           questionId,
           timesAnswered: 1,
@@ -699,7 +729,7 @@ export class DatabaseStorage implements IStorage {
       .from(quizQuestions)
       .where(and(eq(quizQuestions.quizId, quizId), eq(quizQuestions.difficulty, difficulty)));
     
-    return questions.filter(q => !excludeIds.includes(q.id));
+    return questions.filter((q: any) => !excludeIds.includes(q.id));
   }
 
   // ==================== QUIZ ATTEMPT UPDATES ====================
@@ -789,7 +819,7 @@ export class DatabaseStorage implements IStorage {
     }
 
     // Recent activity (last 10 attempts)
-    const recentActivity = attempts.slice(0, 10).map(a => ({
+    const recentActivity = attempts.slice(0, 10).map((a: any) => ({
       date: a.completedAt?.toISOString().split('T')[0] || '',
       score: a.score || 0,
     }));
@@ -1149,6 +1179,35 @@ export class DatabaseStorage implements IStorage {
       recommendations,
       weeklyProgress
     };
+  }
+
+  // ==================== USER PREFERENCES ====================
+
+  async getUserPreferences(userId: string): Promise<UserPreferences | undefined> {
+    const [prefs] = await db.select().from(userPreferences).where(eq(userPreferences.userId, userId));
+    return prefs;
+  }
+
+  async updateUserPreferences(userId: string, preferences: Partial<InsertUserPreferences>): Promise<UserPreferences> {
+    const [updated] = await db
+      .update(userPreferences)
+      .set({ ...preferences, updatedAt: new Date() })
+      .where(eq(userPreferences.userId, userId))
+      .returning();
+    
+    if (updated) {
+      return updated;
+    }
+
+    // If preferences don't exist yet, create them with defaults
+    const [created] = await db
+      .insert(userPreferences)
+      .values({
+        userId,
+        ...preferences
+      })
+      .returning();
+    return created;
   }
 }
 

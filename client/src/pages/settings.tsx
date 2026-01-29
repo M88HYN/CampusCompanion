@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { User, Mail, Lock, Bell, Eye, EyeOff, Save, LogOut, Shield, Globe, Sparkles, Zap } from "lucide-react";
+import { useState, useEffect } from "react";
+import { User, Mail, Lock, Bell, Eye, EyeOff, Save, LogOut, Shield, Globe, Sparkles, Zap, Loader2 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,29 +14,78 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 type SettingsTab = "account" | "privacy" | "notifications" | "security" | "insight-scout";
 
+interface UserPreferences {
+  id?: string;
+  userId?: string;
+  phone?: string;
+  bio?: string;
+  language: string;
+  timezone: string;
+  profileVisibility: boolean;
+  showStudyActivity: boolean;
+  shareQuizResults: boolean;
+  quizReminders: boolean;
+  flashcardReminders: boolean;
+  weeklyDigest: boolean;
+  newFeatures: boolean;
+  marketing: boolean;
+  aiModel: string;
+  searchDepth: string;
+  citationFormat: string;
+  responseTone: string;
+  includeExamples: boolean;
+  includeSources: boolean;
+  maxResults: string;
+  queryHistory: boolean;
+  autoSave: boolean;
+  researchSummary: boolean;
+  webSearch: boolean;
+  academicDatabases: boolean;
+  enhancedAnalysis: boolean;
+  multiLanguageSupport: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export default function Settings() {
   const [activeTab, setActiveTab] = useState<SettingsTab>("account");
+  const [showPassword, setShowPassword] = useState(false);
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  // Fetch current settings
+  const { data: preferences, isLoading } = useQuery({
+    queryKey: ["settings"],
+    queryFn: async () => {
+      const response = await apiRequest("GET", "/api/settings");
+      return (await response.json()) as UserPreferences;
+    },
+    staleTime: 30000,
+  });
+
+  // Local form state
   const [formData, setFormData] = useState({
-    firstName: "John",
-    lastName: "Doe",
-    email: "john.doe@example.com",
-    phone: "+1 (555) 123-4567",
-    bio: "Student passionate about learning",
+    phone: "",
+    bio: "",
     language: "en",
     timezone: "america/new_york",
   });
-  const [showPassword, setShowPassword] = useState(false);
-  const [notifications, setNotifications] = useState({
+
+  const [notificationsState, setNotificationsState] = useState({
     quizReminders: true,
     flashcardReminders: true,
     weeklyDigest: true,
     newFeatures: false,
     marketing: false,
   });
-  const [insightScoutSettings, setInsightScoutSettings] = useState({
+
+  const [insightScoutState, setInsightScoutState] = useState({
     aiModel: "gpt-4",
     searchDepth: "comprehensive",
     citationFormat: "apa",
@@ -47,11 +96,82 @@ export default function Settings() {
     queryHistory: true,
     autoSave: true,
     researchSummary: true,
-    citationStyle: "apa",
     webSearch: true,
     academicDatabases: true,
     enhancedAnalysis: true,
     multiLanguageSupport: false,
+  });
+
+  const [privacyState, setPrivacyState] = useState({
+    profileVisibility: true,
+    showStudyActivity: true,
+    shareQuizResults: true,
+  });
+
+  // Update local state when preferences load
+  useEffect(() => {
+    if (preferences) {
+      setFormData({
+        phone: preferences.phone || "",
+        bio: preferences.bio || "",
+        language: preferences.language || "en",
+        timezone: preferences.timezone || "america/new_york",
+      });
+
+      setNotificationsState({
+        quizReminders: preferences.quizReminders ?? true,
+        flashcardReminders: preferences.flashcardReminders ?? true,
+        weeklyDigest: preferences.weeklyDigest ?? true,
+        newFeatures: preferences.newFeatures ?? false,
+        marketing: preferences.marketing ?? false,
+      });
+
+      setInsightScoutState({
+        aiModel: preferences.aiModel || "gpt-4",
+        searchDepth: preferences.searchDepth || "comprehensive",
+        citationFormat: preferences.citationFormat || "apa",
+        responseTone: preferences.responseTone || "academic",
+        includeExamples: preferences.includeExamples ?? true,
+        includeSources: preferences.includeSources ?? true,
+        maxResults: preferences.maxResults || "10",
+        queryHistory: preferences.queryHistory ?? true,
+        autoSave: preferences.autoSave ?? true,
+        researchSummary: preferences.researchSummary ?? true,
+        webSearch: preferences.webSearch ?? true,
+        academicDatabases: preferences.academicDatabases ?? true,
+        enhancedAnalysis: preferences.enhancedAnalysis ?? true,
+        multiLanguageSupport: preferences.multiLanguageSupport ?? false,
+      });
+
+      setPrivacyState({
+        profileVisibility: preferences.profileVisibility ?? true,
+        showStudyActivity: preferences.showStudyActivity ?? true,
+        shareQuizResults: preferences.shareQuizResults ?? true,
+      });
+    }
+  }, [preferences]);
+
+  // Update mutation - connects all buttons to backend
+  const updateMutation = useMutation({
+    mutationFn: async (updates: Partial<UserPreferences>) => {
+      const response = await apiRequest("PATCH", "/api/settings", updates);
+      return await response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["settings"] });
+      toast({
+        title: "Settings saved",
+        description: "Your settings have been updated successfully.",
+      });
+    },
+    onError: (error) => {
+      console.error("Settings update error:", error);
+      toast({
+        title: "Error",
+        description: "Failed to save settings. Please try again.",
+        variant: "destructive",
+      });
+    },
   });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -63,21 +183,33 @@ export default function Settings() {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleNotificationChange = (key: keyof typeof notifications) => {
-    setNotifications(prev => ({ ...prev, [key]: !prev[key] }));
+  const handleNotificationChange = (key: keyof typeof notificationsState) => {
+    setNotificationsState(prev => ({ ...prev, [key]: !prev[key] }));
   };
 
-  const handleInsightScoutChange = (key: keyof typeof insightScoutSettings, value: any) => {
-    setInsightScoutSettings(prev => ({ ...prev, [key]: value }));
+  const handleInsightScoutChange = (key: keyof typeof insightScoutState, value: any) => {
+    setInsightScoutState(prev => ({ ...prev, [key]: value }));
   };
 
-  const tabs = [
-    { id: "account" as SettingsTab, label: "Account", icon: User },
-    { id: "privacy" as SettingsTab, label: "Privacy", icon: Shield },
-    { id: "notifications" as SettingsTab, label: "Notifications", icon: Bell },
-    { id: "security" as SettingsTab, label: "Security", icon: Lock },
-    { id: "insight-scout" as SettingsTab, label: "Insight Scout", icon: Sparkles },
-  ];
+  const handlePrivacyChange = (key: keyof typeof privacyState) => {
+    setPrivacyState(prev => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const handleSaveProfile = async () => {
+    await updateMutation.mutateAsync(formData);
+  };
+
+  const handleSaveNotifications = async () => {
+    await updateMutation.mutateAsync(notificationsState);
+  };
+
+  const handleSavePrivacy = async () => {
+    await updateMutation.mutateAsync(privacyState);
+  };
+
+  const handleSaveInsightScout = async () => {
+    await updateMutation.mutateAsync(insightScoutState);
+  };
 
   return (
     <div className="flex-1 overflow-auto bg-gradient-to-b from-purple-50 to-indigo-50 dark:from-purple-950 dark:to-indigo-950">
@@ -88,222 +220,224 @@ export default function Settings() {
           <p className="text-lg opacity-90 max-w-2xl">Customize your StudyMate experience and manage your account</p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* Sidebar Navigation */}
-          <div className="lg:col-span-1">
-            <Card className="border-2 border-purple-200 dark:border-purple-800 sticky top-6">
-              <CardContent className="p-0">
-                <nav className="flex flex-col">
-                  {tabs.map((tab) => {
-                    const Icon = tab.icon;
-                    const isActive = activeTab === tab.id;
-                    return (
-                      <button
-                        key={tab.id}
-                        onClick={() => setActiveTab(tab.id)}
-                        className={`flex items-center gap-3 px-4 py-3 text-left transition-all border-l-4 ${
-                          isActive
-                            ? "border-l-purple-500 bg-purple-50 dark:bg-purple-950 text-purple-700 dark:text-purple-300 font-semibold"
-                            : "border-l-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800"
-                        }`}
-                        data-testid={`button-settings-${tab.id}`}
-                      >
-                        <Icon className="h-5 w-5" />
-                        <span>{tab.label}</span>
-                      </button>
-                    );
-                  })}
-                </nav>
-              </CardContent>
-            </Card>
+        {isLoading ? (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
           </div>
-
-          {/* Main Content */}
-          <div className="lg:col-span-3">
-            {/* Account Settings */}
-            {activeTab === "account" && (
-              <div className="space-y-6">
-                {/* Profile Picture */}
-                <Card className="border-2 border-purple-200 dark:border-purple-800">
-                  <CardHeader className="bg-gradient-to-r from-purple-100 to-violet-100 dark:from-purple-900 dark:to-violet-900">
-                    <CardTitle>Profile Picture</CardTitle>
-                  </CardHeader>
-                  <CardContent className="pt-6">
-                    <div className="flex items-center gap-6">
-                      <Avatar className="h-24 w-24 border-4 border-purple-300 dark:border-purple-700">
-                        <AvatarFallback className="bg-gradient-to-br from-purple-500 to-violet-600 text-white text-2xl font-bold">
-                          JD
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="space-y-3">
-                        <p className="text-sm text-muted-foreground">JPG, PNG or GIF (max 5MB)</p>
-                        <Button className="bg-gradient-to-r from-purple-500 to-violet-600 hover:from-purple-600 hover:to-violet-700 text-white">
-                          Upload New Picture
-                        </Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Personal Information */}
-                <Card className="border-2 border-purple-200 dark:border-purple-800">
-                  <CardHeader className="bg-gradient-to-r from-purple-100 to-violet-100 dark:from-purple-900 dark:to-violet-900">
-                    <CardTitle>Personal Information</CardTitle>
-                    <CardDescription>Update your basic information</CardDescription>
-                  </CardHeader>
-                  <CardContent className="pt-6 space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="firstName" className="font-semibold">First Name</Label>
-                        <Input
-                          id="firstName"
-                          name="firstName"
-                          value={formData.firstName}
-                          onChange={handleInputChange}
-                          className="border-2 border-purple-200 dark:border-purple-800 focus-visible:ring-purple-500"
-                          data-testid="input-first-name"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="lastName" className="font-semibold">Last Name</Label>
-                        <Input
-                          id="lastName"
-                          name="lastName"
-                          value={formData.lastName}
-                          onChange={handleInputChange}
-                          className="border-2 border-purple-200 dark:border-purple-800 focus-visible:ring-purple-500"
-                          data-testid="input-last-name"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="email" className="font-semibold">Email Address</Label>
-                      <Input
-                        id="email"
-                        name="email"
-                        type="email"
-                        value={formData.email}
-                        onChange={handleInputChange}
-                        className="border-2 border-purple-200 dark:border-purple-800 focus-visible:ring-purple-500"
-                        data-testid="input-email"
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="phone" className="font-semibold">Phone Number</Label>
-                      <Input
-                        id="phone"
-                        name="phone"
-                        type="tel"
-                        value={formData.phone}
-                        onChange={handleInputChange}
-                        className="border-2 border-purple-200 dark:border-purple-800 focus-visible:ring-purple-500"
-                        data-testid="input-phone"
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="bio" className="font-semibold">Bio</Label>
-                      <textarea
-                        id="bio"
-                        name="bio"
-                        value={formData.bio}
-                        onChange={handleInputChange}
-                        className="w-full p-3 border-2 border-purple-200 dark:border-purple-800 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-500 bg-white dark:bg-slate-900 text-slate-900 dark:text-white"
-                        rows={4}
-                        placeholder="Tell us about yourself..."
-                        data-testid="textarea-bio"
-                      />
-                    </div>
-
-                    <Button className="w-full bg-gradient-to-r from-purple-500 to-violet-600 hover:from-purple-600 hover:to-violet-700 text-white" data-testid="button-save-profile">
-                      <Save className="h-4 w-4 mr-2" />
-                      Save Changes
-                    </Button>
-                  </CardContent>
-                </Card>
-
-                {/* Preferences */}
-                <Card className="border-2 border-purple-200 dark:border-purple-800">
-                  <CardHeader className="bg-gradient-to-r from-purple-100 to-violet-100 dark:from-purple-900 dark:to-violet-900">
-                    <CardTitle>Preferences</CardTitle>
-                  </CardHeader>
-                  <CardContent className="pt-6 space-y-6">
-                    <div className="space-y-2">
-                      <Label htmlFor="language" className="font-semibold">Language</Label>
-                      <Select value={formData.language} onValueChange={(value) => handleSelectChange("language", value)}>
-                        <SelectTrigger className="border-2 border-purple-200 dark:border-purple-800" data-testid="select-language">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="en">English</SelectItem>
-                          <SelectItem value="es">Español</SelectItem>
-                          <SelectItem value="fr">Français</SelectItem>
-                          <SelectItem value="de">Deutsch</SelectItem>
-                          <SelectItem value="zh">中文</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="timezone" className="font-semibold">Timezone</Label>
-                      <Select value={formData.timezone} onValueChange={(value) => handleSelectChange("timezone", value)}>
-                        <SelectTrigger className="border-2 border-purple-200 dark:border-purple-800" data-testid="select-timezone">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="america/new_york">America/New York (EST)</SelectItem>
-                          <SelectItem value="america/chicago">America/Chicago (CST)</SelectItem>
-                          <SelectItem value="america/denver">America/Denver (MST)</SelectItem>
-                          <SelectItem value="america/los_angeles">America/Los Angeles (PST)</SelectItem>
-                          <SelectItem value="europe/london">Europe/London (GMT)</SelectItem>
-                          <SelectItem value="europe/paris">Europe/Paris (CET)</SelectItem>
-                          <SelectItem value="asia/tokyo">Asia/Tokyo (JST)</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            )}
-
-            {/* Privacy Settings */}
-            {activeTab === "privacy" && (
-              <Card className="border-2 border-purple-200 dark:border-purple-800">
-                <CardHeader className="bg-gradient-to-r from-purple-100 to-violet-100 dark:from-purple-900 dark:to-violet-900">
-                  <CardTitle>Privacy Settings</CardTitle>
-                  <CardDescription>Control who can see your information</CardDescription>
-                </CardHeader>
-                <CardContent className="pt-6 space-y-6">
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between p-4 border-2 border-slate-200 dark:border-slate-700 rounded-lg">
-                      <div>
-                        <p className="font-semibold">Profile Visibility</p>
-                        <p className="text-sm text-muted-foreground">Let other students see your profile</p>
-                      </div>
-                      <Switch defaultChecked data-testid="switch-profile-visibility" />
-                    </div>
-
-                    <div className="flex items-center justify-between p-4 border-2 border-slate-200 dark:border-slate-700 rounded-lg">
-                      <div>
-                        <p className="font-semibold">Show Study Activity</p>
-                        <p className="text-sm text-muted-foreground">Display your study stats on leaderboards</p>
-                      </div>
-                      <Switch defaultChecked data-testid="switch-study-activity" />
-                    </div>
-
-                    <div className="flex items-center justify-between p-4 border-2 border-slate-200 dark:border-slate-700 rounded-lg">
-                      <div>
-                        <p className="font-semibold">Share Quiz Results</p>
-                        <p className="text-sm text-muted-foreground">Allow instructors to see your quiz performance</p>
-                      </div>
-                      <Switch defaultChecked data-testid="switch-quiz-results" />
-                    </div>
-                  </div>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            {/* Sidebar Navigation */}
+            <div className="lg:col-span-1">
+              <Card className="border-2 border-purple-200 dark:border-purple-800 sticky top-6">
+                <CardContent className="p-0">
+                  <nav className="flex flex-col">
+                    {tabs.map((tab) => {
+                      const Icon = tab.icon;
+                      const isActive = activeTab === tab.id;
+                      return (
+                        <button
+                          key={tab.id}
+                          onClick={() => setActiveTab(tab.id)}
+                          className={`flex items-center gap-3 px-4 py-3 text-left transition-all border-l-4 ${
+                            isActive
+                              ? "border-l-purple-500 bg-purple-50 dark:bg-purple-950 text-purple-700 dark:text-purple-300 font-semibold"
+                              : "border-l-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800"
+                          }`}
+                          data-testid={`button-settings-${tab.id}`}
+                        >
+                          <Icon className="h-5 w-5" />
+                          <span>{tab.label}</span>
+                        </button>
+                      );
+                    })}
+                  </nav>
                 </CardContent>
               </Card>
-            )}
+            </div>
+
+            {/* Main Content */}
+            <div className="lg:col-span-3">
+              {/* Account Settings */}
+              {activeTab === "account" && (
+                <div className="space-y-6">
+                  {/* Profile Picture */}
+                  <Card className="border-2 border-purple-200 dark:border-purple-800">
+                    <CardHeader className="bg-gradient-to-r from-purple-100 to-violet-100 dark:from-purple-900 dark:to-violet-900">
+                      <CardTitle>Profile Picture</CardTitle>
+                    </CardHeader>
+                    <CardContent className="pt-6">
+                      <div className="flex items-center gap-6">
+                        <Avatar className="h-24 w-24 border-4 border-purple-300 dark:border-purple-700">
+                          <AvatarFallback className="bg-gradient-to-br from-purple-500 to-violet-600 text-white text-2xl font-bold">
+                            {formData.bio ? formData.bio.charAt(0).toUpperCase() : "U"}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="space-y-3">
+                          <p className="text-sm text-muted-foreground">JPG, PNG or GIF (max 5MB)</p>
+                          <Button className="bg-gradient-to-r from-purple-500 to-violet-600 hover:from-purple-600 hover:to-violet-700 text-white">
+                            Upload New Picture
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Personal Information */}
+                  <Card className="border-2 border-purple-200 dark:border-purple-800">
+                    <CardHeader className="bg-gradient-to-r from-purple-100 to-violet-100 dark:from-purple-900 dark:to-violet-900">
+                      <CardTitle>Personal Information</CardTitle>
+                      <CardDescription>Update your basic information</CardDescription>
+                    </CardHeader>
+                    <CardContent className="pt-6 space-y-6">
+                      <div className="space-y-2">
+                        <Label htmlFor="phone" className="font-semibold">Phone Number</Label>
+                        <Input
+                          id="phone"
+                          name="phone"
+                          type="tel"
+                          value={formData.phone}
+                          onChange={handleInputChange}
+                          className="border-2 border-purple-200 dark:border-purple-800 focus-visible:ring-purple-500"
+                          data-testid="input-phone"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="bio" className="font-semibold">Bio</Label>
+                        <textarea
+                          id="bio"
+                          name="bio"
+                          value={formData.bio}
+                          onChange={handleInputChange}
+                          className="w-full p-3 border-2 border-purple-200 dark:border-purple-800 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-500 bg-white dark:bg-slate-900 text-slate-900 dark:text-white"
+                          rows={4}
+                          placeholder="Tell us about yourself..."
+                          data-testid="textarea-bio"
+                        />
+                      </div>
+
+                      <Button 
+                        className="w-full bg-gradient-to-r from-purple-500 to-violet-600 hover:from-purple-600 hover:to-violet-700 text-white disabled:opacity-50" 
+                        data-testid="button-save-profile"
+                        onClick={handleSaveProfile}
+                        disabled={updateMutation.isPending}
+                      >
+                        {updateMutation.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
+                        {updateMutation.isPending ? "Saving..." : "Save Changes"}
+                      </Button>
+                    </CardContent>
+                  </Card>
+
+                  {/* Preferences */}
+                  <Card className="border-2 border-purple-200 dark:border-purple-800">
+                    <CardHeader className="bg-gradient-to-r from-purple-100 to-violet-100 dark:from-purple-900 dark:to-violet-900">
+                      <CardTitle>Preferences</CardTitle>
+                    </CardHeader>
+                    <CardContent className="pt-6 space-y-6">
+                      <div className="space-y-2">
+                        <Label htmlFor="language" className="font-semibold">Language</Label>
+                        <Select value={formData.language} onValueChange={(value) => handleSelectChange("language", value)}>
+                          <SelectTrigger className="border-2 border-purple-200 dark:border-purple-800" data-testid="select-language">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="en">English</SelectItem>
+                            <SelectItem value="es">Español</SelectItem>
+                            <SelectItem value="fr">Français</SelectItem>
+                            <SelectItem value="de">Deutsch</SelectItem>
+                            <SelectItem value="zh">中文</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="timezone" className="font-semibold">Timezone</Label>
+                        <Select value={formData.timezone} onValueChange={(value) => handleSelectChange("timezone", value)}>
+                          <SelectTrigger className="border-2 border-purple-200 dark:border-purple-800" data-testid="select-timezone">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="america/new_york">America/New York (EST)</SelectItem>
+                            <SelectItem value="america/chicago">America/Chicago (CST)</SelectItem>
+                            <SelectItem value="america/denver">America/Denver (MST)</SelectItem>
+                            <SelectItem value="america/los_angeles">America/Los Angeles (PST)</SelectItem>
+                            <SelectItem value="europe/london">Europe/London (GMT)</SelectItem>
+                            <SelectItem value="europe/paris">Europe/Paris (CET)</SelectItem>
+                            <SelectItem value="asia/tokyo">Asia/Tokyo (JST)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <Button 
+                        className="w-full bg-gradient-to-r from-purple-500 to-violet-600 hover:from-purple-600 hover:to-violet-700 text-white disabled:opacity-50" 
+                        onClick={handleSaveProfile}
+                        disabled={updateMutation.isPending}
+                      >
+                        {updateMutation.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
+                        {updateMutation.isPending ? "Saving..." : "Save Changes"}
+                      </Button>
+                    </CardContent>
+                  </Card>
+                </div>
+              )}
+
+              {/* Privacy Settings */}
+              {activeTab === "privacy" && (
+                <Card className="border-2 border-purple-200 dark:border-purple-800">
+                  <CardHeader className="bg-gradient-to-r from-purple-100 to-violet-100 dark:from-purple-900 dark:to-violet-900">
+                    <CardTitle>Privacy Settings</CardTitle>
+                    <CardDescription>Control who can see your information</CardDescription>
+                  </CardHeader>
+                  <CardContent className="pt-6 space-y-6">
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between p-4 border-2 border-slate-200 dark:border-slate-700 rounded-lg">
+                        <div>
+                          <p className="font-semibold">Profile Visibility</p>
+                          <p className="text-sm text-muted-foreground">Let other students see your profile</p>
+                        </div>
+                        <Switch 
+                          checked={privacyState.profileVisibility}
+                          onCheckedChange={() => handlePrivacyChange("profileVisibility")}
+                          data-testid="switch-profile-visibility" 
+                        />
+                      </div>
+
+                      <div className="flex items-center justify-between p-4 border-2 border-slate-200 dark:border-slate-700 rounded-lg">
+                        <div>
+                          <p className="font-semibold">Show Study Activity</p>
+                          <p className="text-sm text-muted-foreground">Display your study stats on leaderboards</p>
+                        </div>
+                        <Switch 
+                          checked={privacyState.showStudyActivity}
+                          onCheckedChange={() => handlePrivacyChange("showStudyActivity")}
+                          data-testid="switch-study-activity" 
+                        />
+                      </div>
+
+                      <div className="flex items-center justify-between p-4 border-2 border-slate-200 dark:border-slate-700 rounded-lg">
+                        <div>
+                          <p className="font-semibold">Share Quiz Results</p>
+                          <p className="text-sm text-muted-foreground">Allow instructors to see your quiz performance</p>
+                        </div>
+                        <Switch 
+                          checked={privacyState.shareQuizResults}
+                          onCheckedChange={() => handlePrivacyChange("shareQuizResults")}
+                          data-testid="switch-quiz-results" 
+                        />
+                      </div>
+
+                      <Button 
+                        className="w-full bg-gradient-to-r from-purple-500 to-violet-600 hover:from-purple-600 hover:to-violet-700 text-white disabled:opacity-50 mt-6"
+                        onClick={handleSavePrivacy}
+                        disabled={updateMutation.isPending}
+                      >
+                        {updateMutation.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
+                        {updateMutation.isPending ? "Saving..." : "Save Privacy Settings"}
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
 
             {/* Notification Settings */}
             {activeTab === "notifications" && (
@@ -320,7 +454,7 @@ export default function Settings() {
                         <p className="text-sm text-blue-700 dark:text-blue-300">Remind me about upcoming quizzes</p>
                       </div>
                       <Switch
-                        checked={notifications.quizReminders}
+                        checked={notificationsState.quizReminders}
                         onCheckedChange={() => handleNotificationChange("quizReminders")}
                         data-testid="switch-quiz-reminders"
                       />
@@ -332,7 +466,7 @@ export default function Settings() {
                         <p className="text-sm text-green-700 dark:text-green-300">Daily spaced repetition reminders</p>
                       </div>
                       <Switch
-                        checked={notifications.flashcardReminders}
+                        checked={notificationsState.flashcardReminders}
                         onCheckedChange={() => handleNotificationChange("flashcardReminders")}
                         data-testid="switch-flashcard-reminders"
                       />
@@ -344,7 +478,7 @@ export default function Settings() {
                         <p className="text-sm text-purple-700 dark:text-purple-300">Summary of your study progress</p>
                       </div>
                       <Switch
-                        checked={notifications.weeklyDigest}
+                        checked={notificationsState.weeklyDigest}
                         onCheckedChange={() => handleNotificationChange("weeklyDigest")}
                         data-testid="switch-weekly-digest"
                       />
@@ -356,7 +490,7 @@ export default function Settings() {
                         <p className="text-sm text-muted-foreground">Be notified about new features and updates</p>
                       </div>
                       <Switch
-                        checked={notifications.newFeatures}
+                        checked={notificationsState.newFeatures}
                         onCheckedChange={() => handleNotificationChange("newFeatures")}
                         data-testid="switch-new-features"
                       />
@@ -368,11 +502,20 @@ export default function Settings() {
                         <p className="text-sm text-muted-foreground">Promotional content and special offers</p>
                       </div>
                       <Switch
-                        checked={notifications.marketing}
+                        checked={notificationsState.marketing}
                         onCheckedChange={() => handleNotificationChange("marketing")}
                         data-testid="switch-marketing"
                       />
                     </div>
+
+                    <Button 
+                      className="w-full bg-gradient-to-r from-purple-500 to-violet-600 hover:from-purple-600 hover:to-violet-700 text-white disabled:opacity-50 mt-6"
+                      onClick={handleSaveNotifications}
+                      disabled={updateMutation.isPending}
+                    >
+                      {updateMutation.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
+                      {updateMutation.isPending ? "Saving..." : "Save Notification Settings"}
+                    </Button>
                   </div>
                 </CardContent>
               </Card>
@@ -517,7 +660,7 @@ export default function Settings() {
                   <CardContent className="pt-6 space-y-6">
                     <div className="space-y-2">
                       <Label htmlFor="ai-model" className="font-semibold">AI Model</Label>
-                      <Select value={insightScoutSettings.aiModel} onValueChange={(value) => handleInsightScoutChange("aiModel", value)}>
+                      <Select value={insightScoutState.aiModel} onValueChange={(value) => handleInsightScoutChange("aiModel", value)}>
                         <SelectTrigger className="border-2 border-orange-200 dark:border-orange-800" data-testid="select-ai-model">
                           <SelectValue />
                         </SelectTrigger>
@@ -533,7 +676,7 @@ export default function Settings() {
 
                     <div className="space-y-2">
                       <Label htmlFor="search-depth" className="font-semibold">Search Depth</Label>
-                      <Select value={insightScoutSettings.searchDepth} onValueChange={(value) => handleInsightScoutChange("searchDepth", value)}>
+                      <Select value={insightScoutState.searchDepth} onValueChange={(value) => handleInsightScoutChange("searchDepth", value)}>
                         <SelectTrigger className="border-2 border-orange-200 dark:border-orange-800" data-testid="select-search-depth">
                           <SelectValue />
                         </SelectTrigger>
@@ -549,7 +692,7 @@ export default function Settings() {
 
                     <div className="space-y-2">
                       <Label htmlFor="max-results" className="font-semibold">Maximum Results Per Query</Label>
-                      <Select value={insightScoutSettings.maxResults} onValueChange={(value) => handleInsightScoutChange("maxResults", value)}>
+                      <Select value={insightScoutState.maxResults} onValueChange={(value) => handleInsightScoutChange("maxResults", value)}>
                         <SelectTrigger className="border-2 border-orange-200 dark:border-orange-800" data-testid="select-max-results">
                           <SelectValue />
                         </SelectTrigger>
@@ -573,7 +716,7 @@ export default function Settings() {
                   <CardContent className="pt-6 space-y-4">
                     <div className="space-y-2">
                       <Label htmlFor="response-tone" className="font-semibold">Response Tone</Label>
-                      <Select value={insightScoutSettings.responseTone} onValueChange={(value) => handleInsightScoutChange("responseTone", value)}>
+                      <Select value={insightScoutState.responseTone} onValueChange={(value) => handleInsightScoutChange("responseTone", value)}>
                         <SelectTrigger className="border-2 border-orange-200 dark:border-orange-800" data-testid="select-response-tone">
                           <SelectValue />
                         </SelectTrigger>
@@ -588,7 +731,7 @@ export default function Settings() {
 
                     <div className="space-y-2">
                       <Label htmlFor="citation-format" className="font-semibold">Citation Format</Label>
-                      <Select value={insightScoutSettings.citationFormat} onValueChange={(value) => handleInsightScoutChange("citationFormat", value)}>
+                      <Select value={insightScoutState.citationFormat} onValueChange={(value) => handleInsightScoutChange("citationFormat", value)}>
                         <SelectTrigger className="border-2 border-orange-200 dark:border-orange-800" data-testid="select-citation-format">
                           <SelectValue />
                         </SelectTrigger>
@@ -608,7 +751,7 @@ export default function Settings() {
                         <p className="text-sm text-muted-foreground">Add real-world examples to explanations</p>
                       </div>
                       <Switch
-                        checked={insightScoutSettings.includeExamples}
+                        checked={insightScoutState.includeExamples}
                         onCheckedChange={(value) => handleInsightScoutChange("includeExamples", value)}
                         data-testid="switch-include-examples"
                       />
@@ -620,7 +763,7 @@ export default function Settings() {
                         <p className="text-sm text-muted-foreground">Display source citations and references</p>
                       </div>
                       <Switch
-                        checked={insightScoutSettings.includeSources}
+                        checked={insightScoutState.includeSources}
                         onCheckedChange={(value) => handleInsightScoutChange("includeSources", value)}
                         data-testid="switch-include-sources"
                       />
@@ -632,7 +775,7 @@ export default function Settings() {
                         <p className="text-sm text-muted-foreground">Auto-generate summary of findings</p>
                       </div>
                       <Switch
-                        checked={insightScoutSettings.researchSummary}
+                        checked={insightScoutState.researchSummary}
                         onCheckedChange={(value) => handleInsightScoutChange("researchSummary", value)}
                         data-testid="switch-research-summary"
                       />
@@ -653,7 +796,7 @@ export default function Settings() {
                         <p className="text-sm text-blue-700 dark:text-blue-300">General web search results</p>
                       </div>
                       <Switch
-                        checked={insightScoutSettings.webSearch}
+                        checked={insightScoutState.webSearch}
                         onCheckedChange={(value) => handleInsightScoutChange("webSearch", value)}
                         data-testid="switch-web-search"
                       />
@@ -665,7 +808,7 @@ export default function Settings() {
                         <p className="text-sm text-purple-700 dark:text-purple-300">Access to academic journals and papers</p>
                       </div>
                       <Switch
-                        checked={insightScoutSettings.academicDatabases}
+                        checked={insightScoutState.academicDatabases}
                         onCheckedChange={(value) => handleInsightScoutChange("academicDatabases", value)}
                         data-testid="switch-academic-databases"
                       />
@@ -677,7 +820,7 @@ export default function Settings() {
                         <p className="text-sm text-muted-foreground">Search across multiple languages</p>
                       </div>
                       <Switch
-                        checked={insightScoutSettings.multiLanguageSupport}
+                        checked={insightScoutState.multiLanguageSupport}
                         onCheckedChange={(value) => handleInsightScoutChange("multiLanguageSupport", value)}
                         data-testid="switch-multi-language"
                       />
@@ -698,7 +841,7 @@ export default function Settings() {
                         <p className="text-sm text-muted-foreground">AI-powered analysis and insights</p>
                       </div>
                       <Switch
-                        checked={insightScoutSettings.enhancedAnalysis}
+                        checked={insightScoutState.enhancedAnalysis}
                         onCheckedChange={(value) => handleInsightScoutChange("enhancedAnalysis", value)}
                         data-testid="switch-enhanced-analysis"
                       />
@@ -710,7 +853,7 @@ export default function Settings() {
                         <p className="text-sm text-muted-foreground">Save and revisit past searches</p>
                       </div>
                       <Switch
-                        checked={insightScoutSettings.queryHistory}
+                        checked={insightScoutState.queryHistory}
                         onCheckedChange={(value) => handleInsightScoutChange("queryHistory", value)}
                         data-testid="switch-query-history"
                       />
@@ -722,7 +865,7 @@ export default function Settings() {
                         <p className="text-sm text-muted-foreground">Automatically save all research sessions</p>
                       </div>
                       <Switch
-                        checked={insightScoutSettings.autoSave}
+                        checked={insightScoutState.autoSave}
                         onCheckedChange={(value) => handleInsightScoutChange("autoSave", value)}
                         data-testid="switch-auto-save"
                       />
@@ -758,15 +901,29 @@ export default function Settings() {
                 </Card>
 
                 {/* Save Settings */}
-                <Button className="w-full bg-gradient-to-r from-orange-500 to-yellow-600 hover:from-orange-600 hover:to-yellow-700 text-white" data-testid="button-save-insight-scout">
-                  <Save className="h-4 w-4 mr-2" />
-                  Save Insight Scout Settings
+                <Button 
+                  className="w-full bg-gradient-to-r from-orange-500 to-yellow-600 hover:from-orange-600 hover:to-yellow-700 text-white disabled:opacity-50" 
+                  data-testid="button-save-insight-scout"
+                  onClick={handleSaveInsightScout}
+                  disabled={updateMutation.isPending}
+                >
+                  {updateMutation.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
+                  {updateMutation.isPending ? "Saving..." : "Save Insight Scout Settings"}
                 </Button>
               </div>
             )}
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
 }
+
+const tabs = [
+  { id: "account" as SettingsTab, label: "Account", icon: User },
+  { id: "privacy" as SettingsTab, label: "Privacy", icon: Shield },
+  { id: "notifications" as SettingsTab, label: "Notifications", icon: Bell },
+  { id: "security" as SettingsTab, label: "Security", icon: Lock },
+  { id: "insight-scout" as SettingsTab, label: "Insight Scout", icon: Sparkles },
+];

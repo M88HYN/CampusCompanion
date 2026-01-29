@@ -1,3 +1,4 @@
+import "dotenv/config";
 import * as client from "openid-client";
 import { Strategy, type VerifyFunction } from "openid-client/passport";
 
@@ -8,25 +9,48 @@ import memoize from "memoizee";
 import connectPg from "connect-pg-simple";
 import { authStorage } from "./storage";
 
+/* =========================================================
+   ENV CHECK – ARE WE RUNNING ON REPLIT?
+   ========================================================= */
+
+const isReplit =
+  !!process.env.REPL_ID &&
+  !!process.env.ISSUER_URL &&
+  !!process.env.SESSION_SECRET;
+
+/* =========================================================
+   OIDC CONFIG (REPLIT ONLY)
+   ========================================================= */
+
 const getOidcConfig = memoize(
   async () => {
+    if (!isReplit) {
+      throw new Error("OIDC config requested outside Replit");
+    }
+
     return await client.discovery(
-      new URL(process.env.ISSUER_URL ?? "https://replit.com/oidc"),
+      new URL(process.env.ISSUER_URL!),
       process.env.REPL_ID!
     );
   },
   { maxAge: 3600 * 1000 }
 );
 
+/* =========================================================
+   SESSION SETUP (EXPORTED)
+   ========================================================= */
+
 export function getSession() {
-  const sessionTtl = 7 * 24 * 60 * 60 * 1000; // 1 week
+  const sessionTtl = 7 * 24 * 60 * 60 * 1000;
   const pgStore = connectPg(session);
+
   const sessionStore = new pgStore({
     conString: process.env.DATABASE_URL,
     createTableIfMissing: false,
     ttl: sessionTtl,
     tableName: "sessions",
   });
+
   return session({
     secret: process.env.SESSION_SECRET!,
     store: sessionStore,
@@ -39,6 +63,10 @@ export function getSession() {
     },
   });
 }
+
+/* =========================================================
+   USER HELPERS
+   ========================================================= */
 
 function updateUserSession(
   user: any,
@@ -60,7 +88,17 @@ async function upsertUser(claims: any) {
   });
 }
 
+/* =========================================================
+   AUTH SETUP
+   ========================================================= */
+
 export async function setupAuth(app: Express) {
+  // 🔹 LOCAL DEV: skip Replit auth entirely
+  if (!isReplit) {
+    console.warn("⚠️ Replit Auth disabled (local development)");
+    return;
+  }
+
   app.set("trust proxy", 1);
   app.use(getSession());
   app.use(passport.initialize());
@@ -68,22 +106,18 @@ export async function setupAuth(app: Express) {
 
   const config = await getOidcConfig();
 
-  const verify: VerifyFunction = async (
-    tokens: client.TokenEndpointResponse & client.TokenEndpointResponseHelpers,
-    verified: passport.AuthenticateCallback
-  ) => {
+  const verify: VerifyFunction = async (tokens, verified) => {
     const user = {};
     updateUserSession(user, tokens);
     await upsertUser(tokens.claims());
     verified(null, user);
   };
 
-  // Keep track of registered strategies
   const registeredStrategies = new Set<string>();
 
-  // Helper function to ensure strategy exists for a domain
   const ensureStrategy = (domain: string) => {
     const strategyName = `replitauth:${domain}`;
+
     if (!registeredStrategies.has(strategyName)) {
       const strategy = new Strategy(
         {
@@ -99,8 +133,8 @@ export async function setupAuth(app: Express) {
     }
   };
 
-  passport.serializeUser((user: Express.User, cb) => cb(null, user));
-  passport.deserializeUser((user: Express.User, cb) => cb(null, user));
+  passport.serializeUser((user: any, cb) => cb(null, user));
+  passport.deserializeUser((user: any, cb) => cb(null, user));
 
   app.get("/api/login", (req, res, next) => {
     ensureStrategy(req.hostname);
@@ -130,31 +164,36 @@ export async function setupAuth(app: Express) {
   });
 }
 
+/* =========================================================
+   AUTH GUARD
+   ========================================================= */
+
 export const isAuthenticated: RequestHandler = async (req, res, next) => {
+  // 🔹 LOCAL DEV: always allow
+  if (!isReplit) return next();
+
   const user = req.user as any;
 
-  if (!req.isAuthenticated() || !user.expires_at) {
+  if (!req.isAuthenticated() || !user?.expires_at) {
     return res.status(401).json({ message: "Unauthorized" });
   }
 
   const now = Math.floor(Date.now() / 1000);
-  if (now <= user.expires_at) {
-    return next();
-  }
+  if (now <= user.expires_at) return next();
 
-  const refreshToken = user.refresh_token;
-  if (!refreshToken) {
-    res.status(401).json({ message: "Unauthorized" });
-    return;
+  if (!user.refresh_token) {
+    return res.status(401).json({ message: "Unauthorized" });
   }
 
   try {
     const config = await getOidcConfig();
-    const tokenResponse = await client.refreshTokenGrant(config, refreshToken);
+    const tokenResponse = await client.refreshTokenGrant(
+      config,
+      user.refresh_token
+    );
     updateUserSession(user, tokenResponse);
     return next();
-  } catch (error) {
-    res.status(401).json({ message: "Unauthorized" });
-    return;
+  } catch {
+    return res.status(401).json({ message: "Unauthorized" });
   }
 };

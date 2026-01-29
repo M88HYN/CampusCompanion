@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { 
   BookOpen, BrainCircuit, GraduationCap, Sparkles, Clock, TrendingUp, 
   Flame, Target, Calendar, Edit2, Save, X, Lightbulb, AlertTriangle,
@@ -13,6 +13,7 @@ import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "@/hooks/use-auth";
 
 interface LearningInsights {
   overview: {
@@ -170,9 +171,25 @@ function QuickWinCard({ title, description, href, icon: Icon, action }: {
 }
 
 export default function Dashboard({ userRole = "student" }: DashboardProps) {
-  const [userName, setUserName] = useState("John");
+  const { user } = useAuth();
+  const [userName, setUserName] = useState("");
   const [isEditingName, setIsEditingName] = useState(false);
   const [tempName, setTempName] = useState(userName);
+
+  // Initialize userName from user profile
+  useEffect(() => {
+    if (user?.firstName) {
+      setUserName(user.firstName);
+      setTempName(user.firstName);
+    } else if (user?.email) {
+      const emailName = user.email.split("@")[0];
+      setUserName(emailName);
+      setTempName(emailName);
+    } else {
+      setUserName("Student");
+      setTempName("Student");
+    }
+  }, [user]);
 
   const { data: insights, isLoading: isLoadingInsights } = useQuery<LearningInsights>({
     queryKey: ['/api/learning-insights'],

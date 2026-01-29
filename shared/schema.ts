@@ -310,32 +310,6 @@ export type InsertQuizResponse = z.infer<typeof insertQuizResponseSchema>;
 export type UserQuestionStats = typeof userQuestionStats.$inferSelect;
 export type InsertUserQuestionStats = z.infer<typeof insertUserQuestionStatsSchema>;
 
-// ==================== USER PREFERENCES & SETTINGS ====================
-
-export const userPreferences = pgTable("user_preferences", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }).unique(),
-  email: text("email"),
-  avatarUrl: text("avatar_url"),
-  theme: text("theme").notNull().default("system"), // "light", "dark", "system"
-  notificationsEnabled: boolean("notifications_enabled").notNull().default(true),
-  emailNotifications: boolean("email_notifications").notNull().default(false),
-  dailyGoalMinutes: integer("daily_goal_minutes").default(30),
-  preferredStudyTime: text("preferred_study_time"), // "morning", "afternoon", "evening", "night"
-  soundEffects: boolean("sound_effects").notNull().default(true),
-  updatedAt: timestamp("updated_at").notNull().defaultNow(),
-}, (table) => [
-  index("user_preferences_user_id_idx").on(table.userId),
-]);
-
-export const insertUserPreferencesSchema = createInsertSchema(userPreferences).omit({
-  id: true,
-  updatedAt: true,
-});
-
-export type UserPreferences = typeof userPreferences.$inferSelect;
-export type InsertUserPreferences = z.infer<typeof insertUserPreferencesSchema>;
-
 // ==================== GAMIFICATION: ACHIEVEMENTS & BADGES ====================
 
 export const achievements = pgTable("achievements", {
@@ -501,6 +475,57 @@ export type SavedResource = typeof savedResources.$inferSelect;
 export type InsertSavedResource = z.infer<typeof insertSavedResourceSchema>;
 export type SearchHistory = typeof searchHistory.$inferSelect;
 export type InsertSearchHistory = z.infer<typeof insertSearchHistorySchema>;
+
+// ==================== USER PREFERENCES ====================
+
+export const userPreferences = pgTable("user_preferences", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }).unique(),
+  // Account settings
+  phone: varchar("phone"),
+  bio: text("bio"),
+  language: varchar("language").notNull().default("en"),
+  timezone: varchar("timezone").notNull().default("america/new_york"),
+  // Privacy settings
+  profileVisibility: boolean("profile_visibility").notNull().default(true),
+  showStudyActivity: boolean("show_study_activity").notNull().default(true),
+  shareQuizResults: boolean("share_quiz_results").notNull().default(true),
+  // Notification settings
+  quizReminders: boolean("quiz_reminders").notNull().default(true),
+  flashcardReminders: boolean("flashcard_reminders").notNull().default(true),
+  weeklyDigest: boolean("weekly_digest").notNull().default(true),
+  newFeatures: boolean("new_features").notNull().default(false),
+  marketing: boolean("marketing").notNull().default(false),
+  // Insight Scout settings
+  aiModel: varchar("ai_model").notNull().default("gpt-4"),
+  searchDepth: varchar("search_depth").notNull().default("comprehensive"),
+  citationFormat: varchar("citation_format").notNull().default("apa"),
+  responseTone: varchar("response_tone").notNull().default("academic"),
+  includeExamples: boolean("include_examples").notNull().default(true),
+  includeSources: boolean("include_sources").notNull().default(true),
+  maxResults: varchar("max_results").notNull().default("10"),
+  queryHistory: boolean("query_history").notNull().default(true),
+  autoSave: boolean("auto_save").notNull().default(true),
+  researchSummary: boolean("research_summary").notNull().default(true),
+  webSearch: boolean("web_search").notNull().default(true),
+  academicDatabases: boolean("academic_databases").notNull().default(true),
+  enhancedAnalysis: boolean("enhanced_analysis").notNull().default(true),
+  multiLanguageSupport: boolean("multi_language_support").notNull().default(false),
+  // Timestamps
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+}, (table) => [
+  index("user_preferences_user_id_idx").on(table.userId),
+]);
+
+export const insertUserPreferencesSchema = createInsertSchema(userPreferences).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type UserPreferences = typeof userPreferences.$inferSelect;
+export type InsertUserPreferences = z.infer<typeof insertUserPreferencesSchema>;
 
 // Re-export chat models
 export * from "./models/chat";

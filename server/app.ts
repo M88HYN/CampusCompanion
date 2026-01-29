@@ -27,6 +27,7 @@ declare module 'http' {
     rawBody: unknown
   }
 }
+
 app.use(express.json({
   verify: (req, _res, buf) => {
     req.rawBody = buf;
@@ -34,6 +35,7 @@ app.use(express.json({
 }));
 app.use(express.urlencoded({ extended: false }));
 
+// Request logging middleware
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
@@ -64,33 +66,64 @@ app.use((req, res, next) => {
   next();
 });
 
+// Health check endpoint - always works
+app.get("/api/health", (_req: Request, res: Response) => {
+  res.json({ status: "ok", timestamp: new Date().toISOString() });
+});
+
 export default async function runApp(
   setup: (app: Express, server: Server) => Promise<void>,
 ) {
   const server = await registerRoutes(app);
 
+  // 404 handler - return JSON
+  app.use((_req: Request, res: Response) => {
+    res.status(404).json({ message: "Not Found" });
+  });
+
+  // Global error handler - MUST be last middleware
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
+    const isDev = process.env.NODE_ENV === 'development';
 
-    res.status(status).json({ message });
-    throw err;
+    log(`ERROR: ${status} ${message}`, "express");
+    
+    if (isDev) {
+      console.error(err);
+    }
+
+    res.status(status).json({
+      message,
+      ...(isDev && { stack: err.stack }),
+    });
   });
 
-  // importantly run the final setup after setting up all the other routes so
-  // the catch-all route doesn't interfere with the other routes
+  // Handle unhandled promise rejections
+  process.on('unhandledRejection', (reason, promise) => {
+    log(`Unhandled Rejection at: ${promise}, reason: ${reason}`, "express");
+    console.error('Unhandled Rejection:', reason);
+  });
+
+  // Handle uncaught exceptions
+  process.on('uncaughtException', (error) => {
+    log(`Uncaught Exception: ${error.message}`, "express");
+    console.error('Uncaught Exception:', error);
+  });
+
+  // Run setup
   await setup(app, server);
 
-  // ALWAYS serve the app on the port specified in the environment variable PORT
-  // Other ports are firewalled. Default to 5000 if not specified.
-  // this serves both the API and the client.
-  // It is the only port that is not firewalled.
   const port = parseInt(process.env.PORT || '5000', 10);
-  server.listen({
-    port,
-    host: "0.0.0.0",
-    reusePort: true,
-  }, () => {
+  const host = process.env.NODE_ENV === 'production' ? '0.0.0.0' : '127.0.0.1';
+  
+  server.listen(port, host, () => {
     log(`serving on port ${port}`);
+  });
+
+  // Handle server errors
+  server.on('error', (error) => {
+    log(`Server error: ${error.message}`, "express");
+    console.error('Server Error:', error);
   });
 }

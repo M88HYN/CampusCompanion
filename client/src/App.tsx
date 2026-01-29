@@ -1,4 +1,5 @@
 import { Switch, Route, useLocation, Redirect } from "wouter";
+import React from "react";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -18,7 +19,8 @@ import Revision from "@/pages/revision";
 import Insights from "@/pages/insights";
 import Settings from "@/pages/settings";
 import Login from "@/pages/login";
-import NotFound from "@/pages/not-found";
+
+console.log("[App.tsx] Module loading");
 
 function AppRouter() {
   return (
@@ -31,12 +33,15 @@ function AppRouter() {
       <Route path="/revision" component={() => <Revision />} />
       <Route path="/insights" component={() => <Insights />} />
       <Route path="/settings" component={() => <Settings />} />
-      <Route component={NotFound} />
+      {/* Catch-all: redirect unknown routes to login */}
+      <Route>
+        {() => <Redirect to="/login" />}
+      </Route>
     </Switch>
   );
 }
 
-function MainLayout() {
+function MainLayout({ onLogout }: { onLogout: () => void }) {
   const style = {
     "--sidebar-width": "16rem",
     "--sidebar-width-icon": "3rem",
@@ -45,7 +50,7 @@ function MainLayout() {
   return (
     <SidebarProvider style={style as React.CSSProperties}>
       <div className="flex h-screen w-full">
-        <AppSidebar userRole="student" />
+        <AppSidebar userRole="student" onLogout={onLogout} />
         <div className="flex flex-col flex-1 overflow-hidden">
           <header className="flex items-center justify-between px-6 py-3 border-b-2 border-teal-200 dark:border-teal-800 bg-gradient-to-r from-white to-teal-50 dark:from-slate-900 dark:to-teal-950 shrink-0 shadow-sm">
             <div className="flex items-center gap-3">
@@ -77,43 +82,99 @@ function LoadingScreen() {
 }
 
 function AuthenticatedApp() {
-  const { user, isLoading, isAuthenticated } = useAuth();
+  const { user, isLoading, isAuthenticated, logout } = useAuth();
   const [location] = useLocation();
 
+  console.log("[AuthenticatedApp] Rendering", { isLoading, isAuthenticated, location, user: user?.email });
+
+  // Show loading screen
   if (isLoading) {
+    console.log("[AuthenticatedApp] Still loading auth...");
     return <LoadingScreen />;
   }
 
+  // Not authenticated - show login only
   if (!isAuthenticated) {
+    console.log("[AuthenticatedApp] User not authenticated, showing login");
     return (
-      <Switch>
-        <Route path="/" component={() => <Login />} />
-        <Route path="/login" component={() => <Login />} />
-        <Route>
-          <Redirect to="/" />
-        </Route>
-      </Switch>
+      <div className="w-full min-h-screen bg-white">
+        <Switch>
+          <Route path="/login" component={() => <Login />} />
+          {/* Catch-all: redirect to login for all unauthenticated users */}
+          <Route>
+            {() => <Redirect to="/login" />}
+          </Route>
+        </Switch>
+      </div>
     );
   }
 
+  console.log("[AuthenticatedApp] User authenticated", { email: user?.email });
+
   // User is authenticated - show main app
-  // If they're on login page, redirect to dashboard
-  if (location === "/" || location === "/login") {
+  // If they try to access login, redirect to dashboard
+  if (location === "/login") {
     return <Redirect to="/dashboard" />;
   }
 
-  return <MainLayout />;
+  return <MainLayout onLogout={logout} />;
 }
 
 export default function App() {
+  console.log("[App] Root component rendering");
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <ThemeProvider defaultTheme="light">
-          <AuthenticatedApp />
-          <Toaster />
-        </ThemeProvider>
-      </TooltipProvider>
-    </QueryClientProvider>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <ThemeProvider defaultTheme="light">
+            <AuthenticatedApp />
+            <Toaster />
+          </ThemeProvider>
+        </TooltipProvider>
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
+}
+
+// Error Boundary component
+class ErrorBoundary extends React.Component<
+  { children: React.ReactNode },
+  { hasError: boolean; error?: Error }
+> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error("React Error:", error);
+    console.error("Error Info:", errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="w-full h-screen flex items-center justify-center bg-gradient-to-br from-red-50 to-red-100">
+          <div className="text-center max-w-md mx-auto p-6">
+            <div className="text-6xl mb-4">⚠️</div>
+            <h1 className="text-2xl font-bold text-red-600 mb-4">Something went wrong</h1>
+            <p className="text-red-500 mb-2">Error: {this.state.error?.message}</p>
+            <p className="text-gray-600 mb-6">The application encountered an error. Please refresh the page to continue.</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-semibold transition"
+            >
+              Refresh Page
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
 }
