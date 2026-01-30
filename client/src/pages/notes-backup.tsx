@@ -34,6 +34,7 @@ import {
   Target,
   GraduationCap,
   Eye,
+  EyeOff,
   Brain,
   ListChecks,
   ClipboardList
@@ -112,15 +113,13 @@ function FormatButton({
   label, 
   shortcut, 
   onClick, 
-  active = false,
-  disabled = false
+  active = false 
 }: { 
   icon: React.ElementType; 
   label: string; 
   shortcut?: string; 
   onClick: () => void;
   active?: boolean;
-  disabled?: boolean;
 }) {
   return (
     <Tooltip>
@@ -130,7 +129,6 @@ function FormatButton({
           size="icon"
           className="h-8 w-8"
           onClick={onClick}
-          disabled={disabled}
           data-testid={`button-format-${label.toLowerCase().replace(/\s+/g, '-')}`}
         >
           <Icon className="h-4 w-4" />
@@ -177,8 +175,6 @@ export default function Notes() {
   const [autoGenerateType, setAutoGenerateType] = useState<"quiz" | "flashcards">("quiz");
   const [isGenerating, setIsGenerating] = useState(false);
   const [previewMode, setPreviewMode] = useState(false);
-  const [showRenameDialog, setShowRenameDialog] = useState(false);
-  const [renameTitle, setRenameTitle] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   
   const [, setLocation] = useLocation();
@@ -194,16 +190,12 @@ export default function Notes() {
     enabled: !!selectedNoteId,
   });
 
-  const { data: decks = [], isLoading: decksLoading } = useQuery<Deck[]>({
-    queryKey: ["/api/decks"],
-    staleTime: 30000,
-    gcTime: 5 * 60 * 1000,
+  const { data: decks = [] } = useQuery<Deck[]>({
+    queryKey: ["/api/flashcard-decks"],
   });
 
-  const { data: quizzes = [], isLoading: quizzesLoading } = useQuery<{ id: string; title: string; subject: string | null }[]>({
+  const { data: quizzes = [] } = useQuery<{ id: string; title: string; subject: string | null }[]>({
     queryKey: ["/api/quizzes"],
-    staleTime: 30000,
-    gcTime: 5 * 60 * 1000,
   });
 
   useEffect(() => {
@@ -232,11 +224,7 @@ export default function Notes() {
       return res.json();
     },
     onSuccess: (newNote) => {
-      // Update cache immediately with new note instead of invalidating
-      queryClient.setQueryData(["/api/notes"], (oldNotes: Note[] | undefined) => {
-        return oldNotes ? [...oldNotes, newNote] : [newNote];
-      });
-      
+      queryClient.invalidateQueries({ queryKey: ["/api/notes"] });
       setSelectedNoteId(newNote.id);
       setShowNewNoteDialog(false);
       setNewNoteTitle("");
@@ -245,9 +233,13 @@ export default function Notes() {
     },
     onError: (error: Error) => {
       console.error("Create note error:", error);
-      toast({ title: "Error", description: error.message || "Failed to create note", variant: "destructive" });
+      const errorMessage = error.message || "Failed to create note";
+      toast({ title: "Error", description: errorMessage, variant: "destructive" });
     },
   });
+
+  const lastSavedContentRef = useRef<string>("");
+  const lastSavedTitleRef = useRef<string>("");
 
   const updateNoteMutation = useMutation({
     mutationFn: async ({ id, data, content }: { id: string; data: Partial<Note>; content?: string }) => {
@@ -261,14 +253,14 @@ export default function Notes() {
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ["/api/notes"] });
       queryClient.invalidateQueries({ queryKey: ["/api/notes", selectedNoteId] });
+      lastSavedContentRef.current = result.savedContent || "";
+      lastSavedTitleRef.current = result.savedTitle || "";
       if (noteContent === result.savedContent && noteTitle === result.savedTitle) {
         setIsSaved(true);
       }
-      toast({ title: "Note saved", description: "Changes saved successfully." });
     },
-    onError: (error: Error) => {
-      console.error("Update note error:", error);
-      toast({ title: "Error", description: error.message || "Failed to save note", variant: "destructive" });
+    onError: () => {
+      toast({ title: "Error", description: "Failed to save note", variant: "destructive" });
     },
   });
 
@@ -278,30 +270,28 @@ export default function Notes() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/notes"] });
-      const remaining = notes.filter(n => n.id !== selectedNoteId);
-      setSelectedNoteId(remaining[0]?.id || null);
-      toast({ title: "Note deleted", description: "Note has been deleted successfully." });
+      if (selectedNoteId === notes.find(n => n.id === selectedNoteId)?.id) {
+        const remaining = notes.filter(n => n.id !== selectedNoteId);
+        setSelectedNoteId(remaining[0]?.id || null);
+      }
+      toast({ title: "Note deleted" });
     },
-    onError: (error: Error) => {
-      console.error("Delete note error:", error);
-      toast({ title: "Error", description: error.message || "Failed to delete note", variant: "destructive" });
+    onError: () => {
+      toast({ title: "Error", description: "Failed to delete note", variant: "destructive" });
     },
   });
 
   const createFlashcardMutation = useMutation({
     mutationFn: async (data: { deckId: string; front: string; back: string }) => {
-      const res = await apiRequest("POST", `/api/decks/${data.deckId}/cards`, {
+      const res = await apiRequest("POST", `/api/flashcard-decks/${data.deckId}/cards`, {
         front: data.front,
         back: data.back,
         type: "basic",
       });
       return res.json();
     },
-    onSuccess: (newCard) => {
-      // Update deck data in cache
-      queryClient.setQueryData(["/api/decks"], (oldDecks: Deck[] | undefined) => {
-        return oldDecks ? oldDecks : [];
-      });
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/flashcard-decks"] });
       setShowFlashcardDialog(false);
       setFlashcardFront("");
       setFlashcardBack("");
@@ -311,9 +301,8 @@ export default function Notes() {
         description: "Your flashcard has been added to the deck.",
       });
     },
-    onError: (error: Error) => {
-      console.error("Create flashcard error:", error);
-      toast({ title: "Error", description: error.message || "Failed to create flashcard", variant: "destructive" });
+    onError: () => {
+      toast({ title: "Error", description: "Failed to create flashcard", variant: "destructive" });
     },
   });
 
@@ -329,14 +318,12 @@ export default function Notes() {
         type: "mcq",
         difficulty: 3,
         marks: 1,
-        order: 0,
         explanation: data.explanation || "Review this concept in your notes.",
         options: data.options,
       });
       return res.json();
     },
     onSuccess: () => {
-      // Invalidate quizzes to refresh data
       queryClient.invalidateQueries({ queryKey: ["/api/quizzes"] });
       setShowQuizDialog(false);
       setQuizQuestion("");
@@ -349,62 +336,56 @@ export default function Notes() {
         description: "Your question has been added to the quiz.",
       });
     },
-    onError: (error: Error) => {
-      console.error("Create quiz question error:", error);
-      toast({ title: "Error", description: error.message || "Failed to create quiz question", variant: "destructive" });
+    onError: () => {
+      toast({ title: "Error", description: "Failed to create quiz question", variant: "destructive" });
     },
   });
 
+  // Auto-generate quiz from entire note
   const generateQuizMutation = useMutation({
     mutationFn: async ({ noteId, questionCount }: { noteId: string; questionCount?: number }) => {
       const res = await apiRequest("POST", `/api/notes/${noteId}/generate-quiz`, { questionCount });
       return res.json();
     },
     onSuccess: (data) => {
-      // Invalidate and refetch quizzes
       queryClient.invalidateQueries({ queryKey: ["/api/quizzes"] });
       setShowAutoGenerateDialog(false);
       setIsGenerating(false);
       toast({ 
         title: "Quiz Generated!", 
-        description: data.message || "Quiz created successfully from your note.",
+        description: data.message,
       });
     },
-    onError: (error: Error) => {
-      console.error("Generate quiz error:", error);
+    onError: () => {
       setIsGenerating(false);
-      toast({ title: "Error", description: error.message || "Failed to generate quiz from note", variant: "destructive" });
+      toast({ title: "Error", description: "Failed to generate quiz from note", variant: "destructive" });
     },
   });
 
+  // Auto-generate flashcards from entire note
   const generateFlashcardsMutation = useMutation({
     mutationFn: async ({ noteId, deckId }: { noteId: string; deckId: string }) => {
       const res = await apiRequest("POST", `/api/notes/${noteId}/generate-flashcards`, { deckId });
       return res.json();
     },
     onSuccess: (data) => {
-      // Invalidate and refetch decks
+      queryClient.invalidateQueries({ queryKey: ["/api/flashcard-decks"] });
       queryClient.invalidateQueries({ queryKey: ["/api/decks"] });
       setShowAutoGenerateDialog(false);
       setIsGenerating(false);
       toast({ 
         title: "Flashcards Generated!", 
-        description: data.message || "Flashcards created successfully from your note.",
+        description: data.message,
       });
     },
-    onError: (error: Error) => {
-      console.error("Generate flashcards error:", error);
+    onError: () => {
       setIsGenerating(false);
-      toast({ title: "Error", description: error.message || "Failed to generate flashcards from note", variant: "destructive" });
+      toast({ title: "Error", description: "Failed to generate flashcards from note", variant: "destructive" });
     },
   });
 
   const handleAutoGenerate = () => {
-    if (!selectedNoteId) {
-      toast({ title: "No note selected", description: "Please select a note first", variant: "destructive" });
-      return;
-    }
-    
+    if (!selectedNoteId) return;
     setIsGenerating(true);
     
     if (autoGenerateType === "quiz") {
@@ -419,6 +400,7 @@ export default function Notes() {
     }
   };
 
+  // Insert exam prompt annotation
   const insertExamPrompt = () => {
     const annotation = `\n\n> **${examPromptType}** (${examMarks} marks)\n`;
     setNoteContent(noteContent + annotation);
@@ -427,6 +409,7 @@ export default function Notes() {
     toast({ title: "Exam prompt added", description: `Added ${examPromptType} annotation (${examMarks} marks)` });
   };
 
+  // Get content for recall mode (hide key terms)
   const getRecallContent = (content: string): string => {
     if (!recallMode || !keyTermsInput) return content;
     
@@ -569,30 +552,6 @@ export default function Notes() {
     setExpandedSubjects(newExpanded);
   };
 
-  const handleRenameNote = () => {
-    if (!selectedNoteId || !renameTitle.trim()) {
-      toast({ title: "Invalid title", description: "Please enter a valid note title", variant: "destructive" });
-      return;
-    }
-    
-    updateNoteMutation.mutate({
-      id: selectedNoteId,
-      data: { title: renameTitle },
-    });
-    
-    setNoteTitle(renameTitle);
-    setShowRenameDialog(false);
-    setRenameTitle("");
-  };
-
-  const handleDeleteNote = () => {
-    if (!selectedNoteId) return;
-    
-    if (confirm("Are you sure you want to delete this note? This action cannot be undone.")) {
-      deleteNoteMutation.mutate(selectedNoteId);
-    }
-  };
-
   const groupedNotes = notes.reduce((acc, note) => {
     const subject = note.subject || "Uncategorized";
     if (!acc[subject]) acc[subject] = [];
@@ -627,7 +586,6 @@ export default function Notes() {
 
   return (
     <div className="flex h-full bg-slate-50 dark:bg-slate-950">
-      {/* Sidebar */}
       <div className="w-72 border-r border-blue-200 dark:border-blue-900 flex flex-col bg-white dark:bg-slate-900 shadow-sm">
         <div className="p-4 border-b border-blue-100 dark:border-blue-900 space-y-3 bg-gradient-to-b from-blue-50 to-white dark:from-blue-950 dark:to-slate-900">
           <div className="flex items-center gap-2 mb-2">
@@ -721,11 +679,9 @@ export default function Notes() {
         </div>
       </div>
 
-      {/* Main Content Area */}
       <div className="flex-1 flex flex-col bg-white dark:bg-slate-900">
         {selectedNoteId ? (
           <>
-            {/* Header */}
             <div className="border-b border-blue-200 dark:border-blue-900 px-6 py-4 flex items-center justify-between gap-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-slate-900 dark:to-slate-800">
               <div className="flex-1">
                 <Input
@@ -786,21 +742,14 @@ export default function Notes() {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-48">
-                    <DropdownMenuItem 
-                      className="gap-2"
-                      onClick={() => {
-                        setRenameTitle(noteTitle);
-                        setShowRenameDialog(true);
-                      }}
-                    >
+                    <DropdownMenuItem className="gap-2">
                       <Edit className="h-4 w-4" />
                       Rename
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem 
                       className="text-destructive gap-2"
-                      onClick={handleDeleteNote}
-                      disabled={deleteNoteMutation.isPending}
+                      onClick={() => selectedNoteId && deleteNoteMutation.mutate(selectedNoteId)}
                     >
                       <Trash2 className="h-4 w-4" />
                       Delete Note
@@ -810,7 +759,6 @@ export default function Notes() {
               </div>
             </div>
 
-            {/* Tags Bar */}
             <div className="px-6 py-3 border-b border-blue-100 dark:border-blue-900 flex items-center gap-2 flex-wrap">
               <Tag className="h-4 w-4 text-blue-500" />
               {noteTags.map((tag) => (
@@ -840,27 +788,26 @@ export default function Notes() {
               </div>
             </div>
 
-            {/* Formatting Toolbar */}
             <div className="px-6 py-2 border-b border-blue-100 dark:border-blue-900 flex items-center gap-1 flex-wrap bg-slate-50 dark:bg-slate-800/50">
               <div className="flex items-center gap-1">
-                <FormatButton icon={Bold} label="Bold" shortcut="Ctrl+B" onClick={() => insertFormat('**', '**')} disabled={previewMode} />
-                <FormatButton icon={Italic} label="Italic" shortcut="Ctrl+I" onClick={() => insertFormat('*', '*')} disabled={previewMode} />
+                <FormatButton icon={Bold} label="Bold" shortcut="Ctrl+B" onClick={() => insertFormat('**', '**')} />
+                <FormatButton icon={Italic} label="Italic" shortcut="Ctrl+I" onClick={() => insertFormat('*', '*')} />
               </div>
               <Separator orientation="vertical" className="h-6 mx-1" />
               <div className="flex items-center gap-1">
-                <FormatButton icon={Heading1} label="Heading 1" onClick={() => insertAtLineStart('# ')} disabled={previewMode} />
-                <FormatButton icon={Heading2} label="Heading 2" onClick={() => insertAtLineStart('## ')} disabled={previewMode} />
+                <FormatButton icon={Heading1} label="Heading 1" onClick={() => insertAtLineStart('# ')} />
+                <FormatButton icon={Heading2} label="Heading 2" onClick={() => insertAtLineStart('## ')} />
               </div>
               <Separator orientation="vertical" className="h-6 mx-1" />
               <div className="flex items-center gap-1">
-                <FormatButton icon={List} label="Bullet List" onClick={() => insertAtLineStart('- ')} disabled={previewMode} />
-                <FormatButton icon={ListOrdered} label="Numbered List" onClick={() => insertAtLineStart('1. ')} disabled={previewMode} />
-                <FormatButton icon={Quote} label="Quote" onClick={() => insertAtLineStart('> ')} disabled={previewMode} />
+                <FormatButton icon={List} label="Bullet List" onClick={() => insertAtLineStart('- ')} />
+                <FormatButton icon={ListOrdered} label="Numbered List" onClick={() => insertAtLineStart('1. ')} />
+                <FormatButton icon={Quote} label="Quote" onClick={() => insertAtLineStart('> ')} />
               </div>
               <Separator orientation="vertical" className="h-6 mx-1" />
               <div className="flex items-center gap-1">
-                <FormatButton icon={Code} label="Code Block" onClick={() => insertFormat('```\n', '\n```')} disabled={previewMode} />
-                <FormatButton icon={Link} label="Link" onClick={() => insertFormat('[', '](url)')} disabled={previewMode} />
+                <FormatButton icon={Code} label="Code Block" onClick={() => insertFormat('```\n', '\n```')} />
+                <FormatButton icon={Link} label="Link" onClick={() => insertFormat('[', '](url)')} />
               </div>
               
               <Separator orientation="vertical" className="h-6 mx-1" />
@@ -891,7 +838,6 @@ export default function Notes() {
                       size="sm"
                       className="gap-2 bg-emerald-50 dark:bg-emerald-950 border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900"
                       onClick={openFlashcardDialog}
-                      disabled={!selectedNoteId}
                       data-testid="button-convert-flashcard"
                     >
                       <BookOpen className="h-4 w-4" />
@@ -908,7 +854,6 @@ export default function Notes() {
                       size="sm"
                       className="gap-2 bg-fuchsia-50 dark:bg-fuchsia-950 border-fuchsia-200 dark:border-fuchsia-800 text-fuchsia-700 dark:text-fuchsia-300 hover:bg-fuchsia-100 dark:hover:bg-fuchsia-900"
                       onClick={openQuizDialog}
-                      disabled={!selectedNoteId}
                       data-testid="button-convert-quiz"
                     >
                       <HelpCircle className="h-4 w-4" />
@@ -925,7 +870,6 @@ export default function Notes() {
                       size="sm"
                       className="gap-2 bg-amber-50 dark:bg-amber-950 border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900"
                       onClick={askInsightScout}
-                      disabled={!selectedNoteId}
                       data-testid="button-ask-insight-scout"
                     >
                       <Sparkles className="h-4 w-4" />
@@ -939,6 +883,7 @@ export default function Notes() {
 
             {/* Smart Note Types & Learning Tools Bar */}
             <div className="px-6 py-2 border-b border-blue-100 dark:border-blue-900 flex items-center gap-3 flex-wrap bg-gradient-to-r from-teal-50/50 to-cyan-50/50 dark:from-teal-950/30 dark:to-cyan-950/30">
+              {/* Note Type Selector */}
               <div className="flex items-center gap-2">
                 <span className="text-xs font-medium text-muted-foreground">Type:</span>
                 <Select value={selectedNoteType} onValueChange={setSelectedNoteType}>
@@ -982,6 +927,7 @@ export default function Notes() {
 
               <Separator orientation="vertical" className="h-6" />
 
+              {/* Exam Prompt Button */}
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
@@ -989,7 +935,6 @@ export default function Notes() {
                     size="sm"
                     className="h-7 gap-1.5 text-xs bg-red-50 dark:bg-red-950 border-red-200 dark:border-red-800 text-red-700 dark:text-red-300"
                     onClick={() => setShowExamPrompt(!showExamPrompt)}
-                    disabled={previewMode}
                     data-testid="button-add-exam-prompt"
                   >
                     <ClipboardList className="h-3.5 w-3.5" />
@@ -1030,6 +975,7 @@ export default function Notes() {
 
               <div className="flex-1" />
 
+              {/* Recall Mode */}
               <div className="flex items-center gap-2">
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -1059,6 +1005,7 @@ export default function Notes() {
 
               <Separator orientation="vertical" className="h-6" />
 
+              {/* Auto-Generate Buttons */}
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
@@ -1069,7 +1016,6 @@ export default function Notes() {
                       setAutoGenerateType("quiz");
                       setShowAutoGenerateDialog(true);
                     }}
-                    disabled={!selectedNoteId}
                     data-testid="button-auto-generate-quiz"
                   >
                     <ListChecks className="h-3.5 w-3.5" />
@@ -1089,7 +1035,6 @@ export default function Notes() {
                       setAutoGenerateType("flashcards");
                       setShowAutoGenerateDialog(true);
                     }}
-                    disabled={!selectedNoteId}
                     data-testid="button-auto-generate-flashcards"
                   >
                     <Zap className="h-3.5 w-3.5" />
@@ -1100,7 +1045,6 @@ export default function Notes() {
               </Tooltip>
             </div>
 
-            {/* Editor Area */}
             <div className="flex-1 p-8 overflow-auto">
               <div className="max-w-4xl mx-auto">
                 {recallMode && keyTermsInput ? (
@@ -1177,7 +1121,6 @@ Markdown formatting is supported:
         )}
       </div>
 
-      {/* New Note Dialog */}
       <Dialog open={showNewNoteDialog} onOpenChange={setShowNewNoteDialog}>
         <DialogContent>
           <DialogHeader>
@@ -1226,44 +1169,6 @@ Markdown formatting is supported:
         </DialogContent>
       </Dialog>
 
-      {/* Rename Note Dialog */}
-      <Dialog open={showRenameDialog} onOpenChange={setShowRenameDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Rename Note</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">New Title</label>
-              <Input
-                value={renameTitle}
-                onChange={(e) => setRenameTitle(e.target.value)}
-                placeholder="Enter new note title..."
-                data-testid="input-rename-note-title"
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowRenameDialog(false)}>
-              Cancel
-            </Button>
-            <Button
-              onClick={handleRenameNote}
-              disabled={!renameTitle.trim() || updateNoteMutation.isPending}
-              data-testid="button-confirm-rename-note"
-            >
-              {updateNoteMutation.isPending ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              ) : (
-                <Edit className="h-4 w-4 mr-2" />
-              )}
-              Rename
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Flashcard Dialog */}
       <Dialog open={showFlashcardDialog} onOpenChange={setShowFlashcardDialog}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
@@ -1278,19 +1183,17 @@ Markdown formatting is supported:
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <label className="text-sm font-medium">Select Deck</label>
-              <Select value={selectedDeckId} onValueChange={setSelectedDeckId}>
-                <SelectTrigger data-testid="select-flashcard-deck">
-                  <SelectValue placeholder="Choose a deck..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {decks.map((deck) => (
-                    <SelectItem key={deck.id} value={deck.id}>{deck.title}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {decks.length === 0 && (
-                <p className="text-xs text-muted-foreground">No decks available. Create a deck first in the Flashcards section.</p>
-              )}
+              <select
+                value={selectedDeckId}
+                onChange={(e) => setSelectedDeckId(e.target.value)}
+                className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm"
+                data-testid="select-flashcard-deck"
+              >
+                <option value="">Choose a deck...</option>
+                {decks.map((deck) => (
+                  <option key={deck.id} value={deck.id}>{deck.title}</option>
+                ))}
+              </select>
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">Front (Question/Term)</label>
@@ -1338,7 +1241,6 @@ Markdown formatting is supported:
         </DialogContent>
       </Dialog>
 
-      {/* Quiz Dialog */}
       <Dialog open={showQuizDialog} onOpenChange={setShowQuizDialog}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
@@ -1353,16 +1255,17 @@ Markdown formatting is supported:
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <label className="text-sm font-medium">Select Quiz</label>
-              <Select value={selectedQuizId} onValueChange={setSelectedQuizId}>
-                <SelectTrigger data-testid="select-quiz">
-                  <SelectValue placeholder="Choose a quiz..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {quizzes.map((quiz) => (
-                    <SelectItem key={quiz.id} value={quiz.id}>{quiz.title}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <select
+                value={selectedQuizId}
+                onChange={(e) => setSelectedQuizId(e.target.value)}
+                className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm"
+                data-testid="select-quiz"
+              >
+                <option value="">Choose a quiz...</option>
+                {quizzes.map((quiz) => (
+                  <option key={quiz.id} value={quiz.id}>{quiz.title}</option>
+                ))}
+              </select>
               {quizzes.length === 0 && (
                 <p className="text-xs text-muted-foreground">No quizzes available. Create a quiz first in the Quizzes section.</p>
               )}
@@ -1424,12 +1327,6 @@ Markdown formatting is supported:
                     isCorrect: idx === correctOptionIndex,
                   }))
                   .filter(opt => opt.text);
-                
-                if (formattedOptions.length < 2) {
-                  toast({ title: "Invalid options", description: "Please provide at least 2 options", variant: "destructive" });
-                  return;
-                }
-                
                 createQuizQuestionMutation.mutate({
                   quizId: selectedQuizId,
                   question: quizQuestion,
@@ -1489,9 +1386,6 @@ Markdown formatting is supported:
                     ))}
                   </SelectContent>
                 </Select>
-                {decks.length === 0 && (
-                  <p className="text-xs text-muted-foreground">No decks available. Create a deck first.</p>
-                )}
               </div>
             )}
             <div className="bg-slate-50 dark:bg-slate-800 rounded-lg p-4">
@@ -1499,15 +1393,15 @@ Markdown formatting is supported:
               <ul className="text-sm text-muted-foreground space-y-1">
                 {autoGenerateType === "quiz" ? (
                   <>
-                    <li>• Up to 5 questions from your note content</li>
-                    <li>• Questions based on concepts, definitions, and processes</li>
-                    <li>• Exam prompts get priority treatment</li>
+                    <li>Up to 5 questions from your note content</li>
+                    <li>Questions based on concepts, definitions, and processes</li>
+                    <li>Exam prompts get priority treatment</li>
                   </>
                 ) : (
                   <>
-                    <li>• One flashcard per significant content block</li>
-                    <li>• Front: Question based on content type</li>
-                    <li>• Back: Full content from your notes</li>
+                    <li>One flashcard per significant content block</li>
+                    <li>Front: Question based on content type</li>
+                    <li>Back: Full content from your notes</li>
                   </>
                 )}
               </ul>

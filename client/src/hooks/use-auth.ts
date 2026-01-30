@@ -36,7 +36,9 @@ export function useAuth() {
 
   const createUserFromDecoded = (decoded: JWTPayload): User => ({
     id: decoded.userId,
+    username: null,
     email: decoded.email || null,
+    passwordHash: null,
     firstName: decoded.firstName || null,
     lastName: decoded.lastName || null,
     profileImageUrl: null,

@@ -1,6 +1,7 @@
 import { db } from "./db";
 import { quizzes, quizQuestions, quizOptions, users } from "@shared/schema";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
+import { randomUUID } from "crypto";
 
 const sampleQuizzes = [
   {
@@ -836,46 +837,49 @@ export async function seedQuizzes(userId: string) {
 
   for (const quizData of sampleQuizzes) {
     try {
-      const [quiz] = await db
-        .insert(quizzes)
-        .values({
-          userId,
-          title: quizData.title,
-          subject: quizData.subject,
-          description: quizData.description,
-          mode: quizData.mode,
-          passingScore: quizData.passingScore,
-          isPublished: true,
-        })
-        .returning();
+      const quizId = randomUUID();
+      // Use raw SQL insert to avoid pg-core timestamp/boolean mapping in SQLite
+      await db.run(sql`
+        INSERT INTO quizzes (id, user_id, title, subject, description, mode, passing_score, is_published, created_at)
+        VALUES (${quizId}, ${userId}, ${quizData.title}, ${quizData.subject}, ${quizData.description}, ${quizData.mode}, ${quizData.passingScore ?? null}, ${1}, CURRENT_TIMESTAMP)
+      `);
+
+      const [quiz] = await db.select().from(quizzes).where(eq(quizzes.id, quizId));
+      if (!quiz) {
+        throw new Error("Failed to read created quiz");
+      }
 
       console.log(`Created quiz: ${quiz.title} (${quiz.id})`);
 
       for (let i = 0; i < quizData.questions.length; i++) {
         const questionData = quizData.questions[i];
-        const [question] = await db
-          .insert(quizQuestions)
-          .values({
-            quizId: quiz.id,
-            type: questionData.type,
-            question: questionData.question,
-            difficulty: questionData.difficulty,
-            marks: questionData.marks,
-            explanation: questionData.explanation,
-            order: i + 1,
-            tags: [quizData.subject || "General"],
-          })
-          .returning();
+        const questionId = randomUUID();
+        // Raw insert to avoid pg array mapping in SQLite
+        await db.run(sql`
+          INSERT INTO quiz_questions (id, quiz_id, type, question, difficulty, marks, explanation)
+          VALUES (
+            ${questionId},
+            ${quiz.id},
+            ${questionData.type},
+            ${questionData.question},
+            ${questionData.difficulty},
+            ${questionData.marks},
+            ${questionData.explanation}
+          )
+        `);
 
         if (questionData.options) {
           for (let j = 0; j < questionData.options.length; j++) {
             const optionData = questionData.options[j];
-            await db.insert(quizOptions).values({
-              questionId: question.id,
-              text: optionData.text,
-              isCorrect: optionData.isCorrect,
-              order: j + 1,
-            });
+            await db.run(sql`
+              INSERT INTO quiz_options (id, question_id, text, is_correct)
+              VALUES (
+                ${randomUUID()},
+                ${questionId},
+                ${optionData.text},
+                ${optionData.isCorrect ? 1 : 0}
+              )
+            `);
           }
         }
       }

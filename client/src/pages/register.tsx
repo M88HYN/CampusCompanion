@@ -25,9 +25,11 @@ import {
 } from "lucide-react";
 
 const registerSchema = z.object({
-  name: z.string().min(2, "Name must be at least 2 characters"),
+  username: z.string().min(3, "Username must be at least 3 characters"),
+  firstName: z.string().min(2, "First name must be at least 2 characters"),
+  lastName: z.string().min(2, "Last name must be at least 2 characters"),
   email: z.string().email("Please enter a valid email address"),
-  password: z.string().min(8, "Password must be at least 8 characters"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
   confirmPassword: z.string(),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords don't match",
@@ -46,7 +48,9 @@ export default function Register() {
   const form = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
     defaultValues: {
-      name: "",
+      username: "",
+      firstName: "",
+      lastName: "",
       email: "",
       password: "",
       confirmPassword: "",
@@ -56,11 +60,15 @@ export default function Register() {
 
   const registerMutation = useMutation({
     mutationFn: async (data: RegisterFormData) => {
-      const response = await apiRequest("POST", "/api/auth/register", {
-        name: data.name,
+      const payload = {
+        username: data.username,
+        firstName: data.firstName,
+        lastName: data.lastName,
         email: data.email,
         password: data.password,
-      });
+      };
+      console.log("Sending registration data:", payload);
+      const response = await apiRequest("POST", "/api/auth/register", payload);
       
       const contentType = response.headers.get("content-type");
       if (!contentType || !contentType.includes("application/json")) {
@@ -168,26 +176,74 @@ export default function Register() {
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                 <FormField
                   control={form.control}
-                  name="name"
+                  name="username"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className="text-slate-700 dark:text-slate-300">
-                        Full name
+                        Username
                       </FormLabel>
                       <FormControl>
                         <Input
                           {...field}
                           type="text"
-                          placeholder="Your full name"
+                          placeholder="Choose a username"
                           className="h-11 border-slate-200 dark:border-slate-700 focus:border-teal-500 focus:ring-teal-500"
-                          data-testid="input-name"
-                          autoComplete="name"
+                          data-testid="input-username"
+                          autoComplete="username"
                         />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
+
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="firstName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-slate-700 dark:text-slate-300">
+                          First name
+                        </FormLabel>
+                        <FormControl>
+                          <Input
+                            {...field}
+                            type="text"
+                            placeholder="First name"
+                            className="h-11 border-slate-200 dark:border-slate-700 focus:border-teal-500 focus:ring-teal-500"
+                            data-testid="input-firstName"
+                            autoComplete="given-name"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="lastName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-slate-700 dark:text-slate-300">
+                          Last name
+                        </FormLabel>
+                        <FormControl>
+                          <Input
+                            {...field}
+                            type="text"
+                            placeholder="Last name"
+                            className="h-11 border-slate-200 dark:border-slate-700 focus:border-teal-500 focus:ring-teal-500"
+                            data-testid="input-lastName"
+                            autoComplete="family-name"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
 
                 <FormField
                   control={form.control}

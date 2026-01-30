@@ -147,7 +147,12 @@ export class DatabaseStorage implements IStorage {
   async createUser(insertUser: UpsertUser): Promise<User> {
     const [user] = await db
       .insert(users)
-      .values({ id: randomUUID(), ...insertUser, createdAt: new Date(), updatedAt: new Date() })
+      .values({ 
+        id: randomUUID(), 
+        ...insertUser,
+        createdAt: sql`CURRENT_TIMESTAMP` as any,
+        updatedAt: sql`CURRENT_TIMESTAMP` as any
+      })
       .returning();
     return user;
   }
@@ -167,19 +172,30 @@ export class DatabaseStorage implements IStorage {
     if (!note.userId || !note.title) {
       throw new Error("userId and title are required");
     }
+    // Stringify array fields for SQLite compatibility
     const [created] = await db.insert(notes).values({ 
       id: randomUUID(),
-      ...note,
-      createdAt: new Date(),
-      updatedAt: new Date()
+      userId: note.userId,
+      title: note.title,
+      subject: note.subject || null,
+      tags: note.tags ? JSON.stringify(note.tags) : null,
+      createdAt: sql`CURRENT_TIMESTAMP` as any,
+      updatedAt: sql`CURRENT_TIMESTAMP` as any
     }).returning();
     return created;
   }
 
   async updateNote(id: string, note: Partial<InsertNote>): Promise<Note | undefined> {
+    const updateData: any = { 
+      ...note,
+      updatedAt: sql`CURRENT_TIMESTAMP` as any
+    };
+    if (note.tags !== undefined) {
+      updateData.tags = note.tags ? JSON.stringify(note.tags) : null;
+    }
     const [updated] = await db
       .update(notes)
-      .set({ ...note, updatedAt: new Date() })
+      .set(updateData)
       .where(eq(notes.id, id))
       .returning();
     return updated || undefined;
@@ -196,11 +212,35 @@ export class DatabaseStorage implements IStorage {
 
   async createNoteBlocks(blocks: InsertNoteBlock[]): Promise<NoteBlock[]> {
     if (blocks.length === 0) return [];
-    const blocksWithIds = blocks.map(block => ({
-      id: randomUUID(),
-      ...block
-    }));
-    return await db.insert(noteBlocks).values(blocksWithIds).returning();
+    try {
+      const createdIds: string[] = [];
+      
+      // Insert blocks one by one to handle type conversion properly
+      for (const block of blocks) {
+        const id = randomUUID();
+        await db.insert(noteBlocks).values({
+          id,
+          noteId: block.noteId,
+          type: String(block.type),
+          content: String(block.content),
+          order: Number(block.order),
+          noteType: String(block.noteType || 'general'),
+          isExamContent: Boolean(block.isExamContent),
+          examPrompt: block.examPrompt ? String(block.examPrompt) : null,
+          examMarks: block.examMarks ? Number(block.examMarks) : null,
+          keyTerms: block.keyTerms ? String(block.keyTerms) : null,
+        });
+        createdIds.push(id);
+      }
+      
+      // Return the created blocks
+      return await db.select().from(noteBlocks).where(
+        inArray(noteBlocks.id, createdIds)
+      );
+    } catch (error) {
+      console.error('Error in createNoteBlocks:', error);
+      throw error;
+    }
   }
 
   async deleteNoteBlocks(noteId: string): Promise<void> {
@@ -219,14 +259,23 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createDeck(deck: InsertDeck): Promise<Deck> {
-    const [created] = await db.insert(decks).values({ id: randomUUID(), ...deck, createdAt: new Date() }).returning();
+    const [created] = await db.insert(decks).values({ 
+      id: randomUUID(), 
+      ...deck, 
+      tags: deck.tags ? JSON.stringify(deck.tags) : null,
+      createdAt: sql`CURRENT_TIMESTAMP` as any
+    }).returning();
     return created;
   }
 
   async updateDeck(id: string, deck: Partial<InsertDeck>): Promise<Deck | undefined> {
+    const updateData: any = { ...deck };
+    if (deck.tags !== undefined) {
+      updateData.tags = deck.tags ? JSON.stringify(deck.tags) : null;
+    }
     const [updated] = await db
       .update(decks)
-      .set(deck)
+      .set(updateData)
       .where(eq(decks.id, id))
       .returning();
     return updated || undefined;
@@ -250,8 +299,8 @@ export class DatabaseStorage implements IStorage {
     const [created] = await db.insert(cards).values({ 
       id: randomUUID(), 
       ...card, 
-      createdAt: new Date(),
-      dueAt: new Date()
+      createdAt: sql`CURRENT_TIMESTAMP` as any,
+      dueAt: sql`CURRENT_TIMESTAMP` as any
     }).returning();
     return created;
   }
@@ -333,7 +382,7 @@ export class DatabaseStorage implements IStorage {
         repetitions,
         dueAt,
         status,
-        lastReviewedAt: new Date(),
+        lastReviewedAt: sql`CURRENT_TIMESTAMP` as any,
       })
       .where(eq(cards.id, cardId))
       .returning();
@@ -445,7 +494,7 @@ export class DatabaseStorage implements IStorage {
     const [updated] = await db
       .update(quizAttempts)
       .set({
-        completedAt: new Date(),
+        completedAt: sql`CURRENT_TIMESTAMP` as any,
         score,
         earnedMarks,
         totalMarks,

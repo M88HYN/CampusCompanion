@@ -14,7 +14,9 @@ export const storage = {
     try {
       await db.insert(users).values({
         id: user.id,
+        username: user.username || null,
         email: user.email,
+        passwordHash: user.password || null,
         firstName: user.firstName || null,
         lastName: user.lastName || null,
         profileImageUrl: null,
@@ -34,7 +36,9 @@ export const storage = {
     try {
       await db.update(users)
         .set({
+          username: user.username || null,
           email: user.email,
+          passwordHash: user.password || null,
           firstName: user.firstName || null,
           lastName: user.lastName || null,
           updatedAt: new Date(),
@@ -52,6 +56,15 @@ export const storage = {
   async findUserByEmail(email: string): Promise<AuthUser | null> {
     for (const user of (userCache as Map<string, AuthUser>).values()) {
       if (user.email === email) {
+        return user;
+      }
+    }
+    return null;
+  },
+
+  async findUserByUsername(username: string): Promise<AuthUser | null> {
+    for (const user of (userCache as Map<string, AuthUser>).values()) {
+      if (user.username === username) {
         return user;
       }
     }

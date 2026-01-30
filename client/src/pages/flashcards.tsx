@@ -135,7 +135,8 @@ export default function Flashcards() {
       if (studyMode === "deck" && selectedDeckId) {
         params.append("deckId", selectedDeckId);
       }
-      const res = await fetch(`/api/cards/smart-queue?${params}`);
+      // Use apiRequest to include auth token in headers
+      const res = await apiRequest("GET", `/api/cards/smart-queue?${params}`);
       return res.json();
     },
     enabled: view === "smart-study" || view === "decks",

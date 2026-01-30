@@ -11,7 +11,7 @@ import { Progress } from "@/components/ui/progress";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { queryClient } from "@/lib/queryClient";
+import { queryClient, apiRequest } from "@/lib/queryClient";
 import {
   Form,
   FormControl,
@@ -286,12 +286,8 @@ export default function Quizzes() {
         questions: formattedQuestions,
       };
 
-      const response = await fetch("/api/quizzes", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      if (!response.ok) throw new Error("Failed to create quiz");
+      // Use apiRequest to include auth token
+      const response = await apiRequest("POST", "/api/quizzes", payload);
       return response.json();
     },
     onSuccess: () => {
@@ -303,10 +299,8 @@ export default function Quizzes() {
 
   const deleteQuizMutation = useMutation({
     mutationFn: async (quizId: string) => {
-      const response = await fetch(`/api/quizzes/${quizId}`, {
-        method: "DELETE",
-      });
-      if (!response.ok) throw new Error("Failed to delete quiz");
+      // Use apiRequest to include auth token
+      await apiRequest("DELETE", `/api/quizzes/${quizId}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/quizzes"] });

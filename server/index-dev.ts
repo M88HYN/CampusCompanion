@@ -1,4 +1,4 @@
-import "dotenv/config";
+import "dotenv/config"; // Load .env variables FIRST before other imports
 import runApp from "./app";
 import { seedComputerScienceData } from "./seed-computer-science";
 import type { Express } from "express";
