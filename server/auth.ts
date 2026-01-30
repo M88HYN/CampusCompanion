@@ -7,6 +7,7 @@ const JWT_EXPIRY = "7d";
 
 export interface AuthUser {
   id: string;
+  username?: string;
   email: string;
   password?: string;
   firstName?: string;
@@ -58,12 +59,13 @@ export function verifyToken(token: string): JWTPayload | null {
   }
 }
 
-export async function createUser(email: string, password: string, firstName?: string, lastName?: string): Promise<AuthUser> {
+export async function createUser(email: string, password: string, firstName?: string, lastName?: string, username?: string): Promise<AuthUser> {
   const hashedPassword = await hashPassword(password);
   const userId = Date.now().toString();
   
   const user: AuthUser = {
     id: userId,
+    username,
     email,
     password: hashedPassword,
     firstName,
@@ -78,6 +80,10 @@ export async function createUser(email: string, password: string, firstName?: st
 
 export async function findUserByEmail(email: string): Promise<AuthUser | null> {
   return storage.findUserByEmail(email);
+}
+
+export async function findUserByUsername(username: string): Promise<AuthUser | null> {
+  return storage.findUserByUsername(username);
 }
 
 export async function findUserById(userId: string): Promise<AuthUser | null> {

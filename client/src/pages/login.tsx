@@ -17,6 +17,7 @@ export default function Login() {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [username, setUsername] = useState("");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [loading, setLoading] = useState(false);
@@ -59,8 +60,8 @@ export default function Login() {
     try {
       const endpoint = isLogin ? "/api/auth/login" : "/api/auth/register";
       const body = isLogin
-        ? { email, password }
-        : { email, password, firstName, lastName };
+        ? { emailOrUsername: email, password }
+        : { username, email, password, firstName, lastName };
 
       const response = await fetch(endpoint, {
         method: "POST",
@@ -155,11 +156,14 @@ export default function Login() {
             <form onSubmit={handleSubmit} className="space-y-4">
               {!isLogin && (
                 <>
-                  <Input type="text" placeholder="First Name" value={firstName} onChange={(e) => setFirstName(e.target.value)} className="h-11" />
-                  <Input type="text" placeholder="Last Name" value={lastName} onChange={(e) => setLastName(e.target.value)} className="h-11" />
+                  <Input type="text" placeholder="Username" value={username} onChange={(e) => setUsername(e.target.value)} className="h-11" required />
+                  <div className="grid grid-cols-2 gap-2">
+                    <Input type="text" placeholder="First Name" value={firstName} onChange={(e) => setFirstName(e.target.value)} className="h-11" required />
+                    <Input type="text" placeholder="Last Name" value={lastName} onChange={(e) => setLastName(e.target.value)} className="h-11" required />
+                  </div>
                 </>
               )}
-              <Input type="email" placeholder="Email address" value={email} onChange={(e) => setEmail(e.target.value)} required className="h-11" />
+              <Input type={isLogin ? "text" : "email"} placeholder={isLogin ? "Email or Username" : "Email address"} value={email} onChange={(e) => setEmail(e.target.value)} required className="h-11" />
               <Input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required className="h-11" />
               <Button type="submit" disabled={loading} className="w-full h-11 bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white font-semibold">
                 {loading ? "Loading..." : (isLogin ? "Sign In" : "Sign Up")}

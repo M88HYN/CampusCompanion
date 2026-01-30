@@ -8,7 +8,9 @@ async function throwIfResNotOk(res: Response) {
       window.dispatchEvent(new CustomEvent("auth-update"));
     }
     const text = (await res.text()) || res.statusText;
-    throw new Error(`${res.status}: ${text}`);
+    const error = `${res.status}: ${text}`;
+    console.error("[API Error]", res.url || "unknown", res.status, error);
+    throw new Error(error);
   }
 }
 

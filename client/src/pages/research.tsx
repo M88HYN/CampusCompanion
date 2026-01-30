@@ -232,9 +232,16 @@ export default function Research() {
     let fullContent = "";
 
     try {
+      // Include auth token for API request
+      const token = localStorage.getItem("token");
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+      
       const response = await fetch("/api/research/query", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({
           query,
           searchDepth,

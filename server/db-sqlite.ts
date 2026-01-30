@@ -35,7 +35,9 @@ function createTables() {
   sqlite.exec(`
     CREATE TABLE IF NOT EXISTS users (
       id VARCHAR PRIMARY KEY,
+      username TEXT UNIQUE,
       email TEXT UNIQUE,
+      password_hash TEXT,
       first_name TEXT,
       last_name TEXT,
       profile_image_url TEXT,

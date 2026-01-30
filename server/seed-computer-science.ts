@@ -1,7 +1,8 @@
 import { storage } from "./storage";
 import { db } from "./db";
 import { users } from "@shared/schema";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
+import { seedQuizzes } from "./seed-quizzes";
 
 export async function seedComputerScienceData(userId: string) {
   try {
@@ -15,8 +16,8 @@ export async function seedComputerScienceData(userId: string) {
           email: "demo@studymate.local",
           firstName: "Demo",
           lastName: "User",
-          createdAt: new Date(),
-          updatedAt: new Date()
+          createdAt: sql`CURRENT_TIMESTAMP` as any,
+          updatedAt: sql`CURRENT_TIMESTAMP` as any
         });
       }
     } catch (userError) {
@@ -168,6 +169,13 @@ export async function seedComputerScienceData(userId: string) {
       } catch (err) {
         console.log(`Card may already exist or error creating: ${err}`);
       }
+    }
+
+    // Quizzes
+    try {
+      await seedQuizzes(userId);
+    } catch (err) {
+      console.log(`Quiz seed may already exist or error creating: ${err}`);
     }
 
     console.log("✅ Computer Science sample data seeded successfully!");

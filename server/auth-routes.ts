@@ -4,6 +4,7 @@ import axios from "axios";
 import {
   createUser,
   findUserByEmail,
+  findUserByUsername,
   findUserById,
   findOrCreateOAuthUser,
   comparePasswords,
@@ -14,13 +15,15 @@ import {
 import { db } from "./db";
 import { users } from "@shared/schema";
 import { eq } from "drizzle-orm";
+import { seedComputerScienceData } from "./seed-computer-science";
 
 const loginSchema = z.object({
-  email: z.string().email(),
+  emailOrUsername: z.string().min(1, "Email or username is required"),
   password: z.string().min(6),
 });
 
 const registerSchema = z.object({
+  username: z.string().min(3, "Username must be at least 3 characters").optional(),
   email: z.string().email(),
   password: z.string().min(6),
   firstName: z.string().optional(),
@@ -79,27 +82,49 @@ export function registerAuthRoutes(app: Express) {
   // Register route
   app.post("/api/auth/register", async (req: any, res: Response) => {
     try {
+      console.log("Register request body:", req.body);
       const data = registerSchema.parse(req.body);
+      console.log("Parsed register data:", data);
 
-      const existing = await findUserByEmail(data.email);
-      if (existing) {
+      // Check if username already exists (only if provided)
+      if (data.username) {
+        const existingUsername = await findUserByUsername(data.username);
+        if (existingUsername) {
+          return res.status(400).json({ message: "Username already taken" });
+        }
+      }
+
+      // Check if email already exists
+      const existingEmail = await findUserByEmail(data.email);
+      if (existingEmail) {
         return res.status(400).json({ message: "Email already registered" });
       }
 
-      const user = await createUser(data.email, data.password, data.firstName, data.lastName);
+      const user = await createUser(data.email, data.password, data.firstName, data.lastName, data.username);
+      
+      // Seed sample data for new user
+      try {
+        await seedComputerScienceData(user.id);
+      } catch (seedError) {
+        console.log("Note: Could not seed sample data for new user, but registration succeeded:", seedError);
+      }
+      
       const token = generateToken(user);
 
       res.json({
         token,
         user: {
           id: user.id,
+          username: user.username,
           email: user.email,
           firstName: user.firstName,
           lastName: user.lastName,
         },
       });
     } catch (error: any) {
+      console.error("Register error:", error);
       if (error instanceof z.ZodError) {
+        console.error("Zod validation errors:", error.errors);
         return res.status(400).json({ message: error.errors[0].message });
       }
       res.status(500).json({ message: "Registration failed" });
@@ -111,7 +136,12 @@ export function registerAuthRoutes(app: Express) {
     try {
       const data = loginSchema.parse(req.body);
 
-      const user = await findUserByEmail(data.email);
+      // Try to find user by email or username
+      let user = await findUserByEmail(data.emailOrUsername);
+      if (!user) {
+        user = await findUserByUsername(data.emailOrUsername);
+      }
+
       if (!user || !user.password) {
         return res.status(401).json({ message: "Invalid credentials" });
       }
@@ -126,6 +156,7 @@ export function registerAuthRoutes(app: Express) {
         token,
         user: {
           id: user.id,
+          username: user.username,
           email: user.email,
           firstName: user.firstName,
           lastName: user.lastName,

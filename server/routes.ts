@@ -112,9 +112,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (req.body.blocks && Array.isArray(req.body.blocks)) {
         const blocks = req.body.blocks.map((block: any, index: number) => ({
           noteId: note.id,
-          type: block.type,
-          content: block.content,
+          type: block.type || 'paragraph',
+          // Ensure content is a string - stringify if it's an object
+          content: typeof block.content === 'string' ? block.content : JSON.stringify(block.content),
           order: index,
+          noteType: block.noteType || 'general',
+          isExamContent: block.isExamContent || false,
+          examPrompt: block.examPrompt || null,
+          examMarks: block.examMarks || null,
+          keyTerms: block.keyTerms || null,
         }));
         console.log("Creating note blocks:", JSON.stringify(blocks, null, 2));
         await storage.createNoteBlocks(blocks);
@@ -542,6 +548,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const card = await storage.createCard(cardData);
       res.status(201).json(card);
     } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: error.errors });
+      }
+      res.status(500).json({ error: "Failed to create card" });
+    }
+  });
+
+  // Create card in specific deck
+  app.post("/api/decks/:deckId/cards", authMiddleware, async (req: any, res) => {
+    try {
+      const { deckId } = req.params;
+      const deck = await storage.getDeck(deckId);
+      if (!deck) {
+        return res.status(404).json({ error: "Deck not found" });
+      }
+      
+      const cardData = insertCardSchema.parse({
+        ...req.body,
+        deckId,
+      });
+      const card = await storage.createCard(cardData);
+      res.status(201).json(card);
+    } catch (error) {
+      console.error("Create card in deck error:", error);
       if (error instanceof z.ZodError) {
         return res.status(400).json({ error: error.errors });
       }

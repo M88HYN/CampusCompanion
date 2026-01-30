@@ -28,6 +28,19 @@ declare module 'http' {
   }
 }
 
+// CORS configuration for local dev (allows vite dev server on 5173 to reach backend on 5000)
+app.use((req, res, next) => {
+  res.header("Access-Control-Allow-Origin", req.headers.origin || "*");
+  res.header("Access-Control-Allow-Credentials", "true");
+  res.header("Access-Control-Allow-Methods", "GET,HEAD,PUT,PATCH,POST,DELETE");
+  res.header("Access-Control-Allow-Headers", "Content-Type,Authorization");
+  
+  if (req.method === "OPTIONS") {
+    return res.sendStatus(200);
+  }
+  next();
+});
+
 app.use(express.json({
   verify: (req, _res, buf) => {
     req.rawBody = buf;
@@ -118,7 +131,11 @@ export default async function runApp(
   const host = process.env.NODE_ENV === 'production' ? '0.0.0.0' : '127.0.0.1';
   
   server.listen(port, host, () => {
-    log(`serving on port ${port}`);
+    log(`✅ Backend API server ready at http://${host}:${port}`);
+    if (process.env.NODE_ENV === 'development') {
+      log(`📱 Frontend will be available at http://127.0.0.1:5173`, "express");
+      log(`🔗 API requests from frontend will be proxied to http://${host}:${port}`, "express");
+    }
   });
 
   // Handle server errors
