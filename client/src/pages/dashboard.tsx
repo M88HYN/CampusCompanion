@@ -15,6 +15,48 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 
+interface DashboardMetrics {
+  dueToday: number;
+  accuracy: number;
+  weeklyStudyTime: number;
+  itemsReviewedThisWeek: number;
+}
+
+interface DueCard {
+  id: string;
+  deckId: string;
+  front: string;
+  back: string;
+  nextReviewDate: string;
+  easeFactor: number;
+  status: string;
+}
+
+interface Deck {
+  id: string;
+  title: string;
+  subject?: string;
+  cards?: number;
+  dueToday?: number;
+  mastered?: number;
+}
+
+interface Quiz {
+  id: string;
+  title: string;
+  subject?: string;
+  questionCount?: number;
+  bestScore?: number | null;
+  attemptCount?: number;
+}
+
+interface Note {
+  id: string;
+  title: string;
+  subject?: string;
+  updatedAt: string;
+}
+
 interface LearningInsights {
   overview: {
     totalStudyTime: number;
@@ -29,36 +71,6 @@ interface LearningInsights {
   strengths: { topic: string; accuracy: number; masteredConcepts: number }[];
   recommendations: { type: string; title: string; description: string; priority: 'high' | 'medium' | 'low' }[];
   weeklyProgress: { day: string; minutes: number; items: number }[];
-}
-
-interface DueCard {
-  id: number;
-  deckId: number;
-  front: string;
-  back: string;
-}
-
-interface Deck {
-  id: number;
-  name: string;
-  subject?: string;
-  cardCount?: number;
-}
-
-interface Quiz {
-  id: number;
-  title: string;
-  subject?: string;
-  questionCount?: number;
-  bestScore?: number;
-  attemptCount?: number;
-}
-
-interface Note {
-  id: number;
-  title: string;
-  subject?: string;
-  updatedAt: string;
 }
 
 type UserRole = "student" | "instructor" | "admin";
@@ -191,24 +203,58 @@ export default function Dashboard({ userRole = "student" }: DashboardProps) {
     }
   }, [user]);
 
-  const { data: insights, isLoading: isLoadingInsights } = useQuery<LearningInsights>({
-    queryKey: ['/api/learning-insights'],
+  // Fetch real metrics from backend
+  const { data: metrics, isLoading: isLoadingMetrics } = useQuery<DashboardMetrics>({
+    queryKey: ['/api/dashboard/metrics'],
+    enabled: !!user,
+    retry: 1,
   });
 
-  const { data: dueCards = [] } = useQuery<DueCard[]>({
-    queryKey: ['/api/cards/due'],
+  // Fetch due flashcards for immediate review
+  const { data: dueCards = [], isError: dueCardsError } = useQuery<DueCard[]>({
+    queryKey: ['/api/dashboard/due-flashcards'],
+    enabled: !!user,
+    retry: 1,
   });
 
-  const { data: decks = [] } = useQuery<Deck[]>({
+  // Fetch lowest scoring quiz for retake recommendation
+  const { data: lowestQuiz } = useQuery({
+    queryKey: ['/api/dashboard/lowest-quiz'],
+    enabled: !!user,
+    retry: 1,
+  });
+
+  // Fetch recent notes
+  const { data: recentNotes = [], isError: notesError } = useQuery<Note[]>({
+    queryKey: ['/api/dashboard/recent-notes'],
+    enabled: !!user,
+    retry: 1,
+  });
+
+  // Keep the existing queries for deck/quiz counts
+  const { data: decks = [], isError: decksError } = useQuery<Deck[]>({
     queryKey: ['/api/decks'],
+    enabled: !!user,
+    retry: 1,
   });
 
-  const { data: quizzes = [] } = useQuery<Quiz[]>({
+  const { data: quizzes = [], isError: quizzesError } = useQuery<Quiz[]>({
     queryKey: ['/api/quizzes'],
+    enabled: !!user,
+    retry: 1,
   });
 
   const { data: notes = [] } = useQuery<Note[]>({
     queryKey: ['/api/notes'],
+    enabled: !!user,
+    retry: 1,
+  });
+
+  // Still fetch insights for weak areas and strengths
+  const { data: insights, isLoading: isLoadingInsights } = useQuery<LearningInsights>({
+    queryKey: ['/api/learning-insights'],
+    enabled: !!user,
+    retry: 1,
   });
 
   const features = [
@@ -275,6 +321,7 @@ export default function Dashboard({ userRole = "student" }: DashboardProps) {
       gradient: string;
     }> = [];
 
+    // 1. Due flashcards
     if (dueCards.length > 0) {
       actions.push({
         title: `Review ${dueCards.length} Flashcard${dueCards.length > 1 ? 's' : ''}`,
@@ -288,6 +335,21 @@ export default function Dashboard({ userRole = "student" }: DashboardProps) {
       });
     }
 
+    // 2. Retake lowest scoring quiz
+    if (lowestQuiz && lowestQuiz.bestScore < 70) {
+      actions.push({
+        title: `Retake: ${lowestQuiz.title}`,
+        description: `Your best score was ${lowestQuiz.bestScore}%. A focused review can improve your understanding.`,
+        reason: "Below target score",
+        timeEstimate: "15-20 min",
+        priority: lowestQuiz.bestScore < 50 ? 'high' : 'medium',
+        icon: BrainCircuit,
+        href: `/quizzes/${lowestQuiz.id}`,
+        gradient: "bg-gradient-to-br from-fuchsia-400 to-rose-500"
+      });
+    }
+
+    // 3. Weak areas from insights
     if (insights?.weakAreas && insights.weakAreas.length > 0) {
       const weakest = insights.weakAreas[0];
       actions.push({
@@ -302,23 +364,9 @@ export default function Dashboard({ userRole = "student" }: DashboardProps) {
       });
     }
 
-    const lowScoreQuizzes = quizzes.filter(q => q.bestScore !== undefined && q.bestScore < 70);
-    if (lowScoreQuizzes.length > 0) {
-      const quiz = lowScoreQuizzes[0];
-      actions.push({
-        title: `Retake: ${quiz.title}`,
-        description: `Your last score was ${quiz.bestScore}%. A focused review can improve your understanding.`,
-        reason: "Below target score",
-        timeEstimate: `${Math.ceil((quiz.questionCount || 10) * 1.5)} min`,
-        priority: (quiz.bestScore || 0) < 50 ? 'high' : 'medium',
-        icon: BrainCircuit,
-        href: "/quizzes",
-        gradient: "bg-gradient-to-br from-fuchsia-400 to-rose-500"
-      });
-    }
-
+    // 4. Additional recommendations
     if (insights?.recommendations) {
-      insights.recommendations.slice(0, 2).forEach(rec => {
+      insights.recommendations.slice(0, 1).forEach(rec => {
         const iconMap: Record<string, React.ElementType> = {
           'focus': AlertTriangle,
           'practice': Target,
@@ -366,19 +414,21 @@ export default function Dashboard({ userRole = "student" }: DashboardProps) {
       action: string;
     }> = [];
 
+    // Small number of due cards
     if (dueCards.length > 0 && dueCards.length <= 5) {
       wins.push({
-        title: `${dueCards.length} easy cards`,
-        description: "Quick review to keep your streak",
+        title: `${dueCards.length} quick cards`,
+        description: "Quick review to keep your streak alive",
         href: "/flashcards",
         icon: CheckCircle2,
         action: "2 min"
       });
     }
 
+    // Master area reinforcement
     if (insights?.strengths && insights.strengths.length > 0) {
       wins.push({
-        title: `Review ${insights.strengths[0].topic}`,
+        title: `Master: ${insights.strengths[0].topic}`,
         description: "Reinforce your strongest subject",
         href: "/flashcards",
         icon: Award,
@@ -386,16 +436,19 @@ export default function Dashboard({ userRole = "student" }: DashboardProps) {
       });
     }
 
-    if (notes.length > 0) {
+    // Recent notes review
+    if (recentNotes.length > 0) {
+      const mostRecent = recentNotes[0];
       wins.push({
-        title: "Review recent notes",
+        title: `Review: ${mostRecent.title.substring(0, 20)}...`,
         description: "Refresh your latest study material",
-        href: "/notes",
+        href: `/notes/${mostRecent.id}`,
         icon: BookOpen,
         action: "3 min"
       });
     }
 
+    // Pomodoro session
     wins.push({
       title: "Quick Pomodoro",
       description: "25 min focused study session",
@@ -410,10 +463,7 @@ export default function Dashboard({ userRole = "student" }: DashboardProps) {
   const studyActions = generateStudyNowActions();
   const quickWins = generateQuickWins();
 
-  const weekTotal = insights?.weeklyProgress?.reduce((sum, day) => sum + day.minutes, 0) || 0;
-  const weekItems = insights?.weeklyProgress?.reduce((sum, day) => sum + day.items, 0) || 0;
-
-  if (isLoadingInsights) {
+  if (isLoadingInsights || isLoadingMetrics) {
     return (
       <div className="flex-1 overflow-auto">
         <div className="max-w-7xl mx-auto p-6 space-y-6">
@@ -474,7 +524,9 @@ export default function Dashboard({ userRole = "student" }: DashboardProps) {
               <Calendar className="h-4 w-4 opacity-80" />
               <span className="text-xs font-semibold opacity-90">Due Today</span>
             </div>
-            <div className="text-3xl font-bold" data-testid="stat-due-today">{dueCards.length}</div>
+            <div className="text-3xl font-bold" data-testid="stat-due-today">
+              {metrics?.dueToday ?? dueCards.length}
+            </div>
             <p className="text-xs opacity-80 mt-1">cards to review</p>
           </div>
 
@@ -483,7 +535,9 @@ export default function Dashboard({ userRole = "student" }: DashboardProps) {
               <Target className="h-4 w-4 opacity-80" />
               <span className="text-xs font-semibold opacity-90">Accuracy</span>
             </div>
-            <div className="text-3xl font-bold" data-testid="stat-accuracy">{insights?.overview?.overallAccuracy || 0}%</div>
+            <div className="text-3xl font-bold" data-testid="stat-accuracy">
+              {metrics?.accuracy ?? insights?.overview?.overallAccuracy ?? 0}%
+            </div>
             <p className="text-xs opacity-80 mt-1">overall</p>
           </div>
 
@@ -492,7 +546,9 @@ export default function Dashboard({ userRole = "student" }: DashboardProps) {
               <Clock className="h-4 w-4 opacity-80" />
               <span className="text-xs font-semibold opacity-90">This Week</span>
             </div>
-            <div className="text-3xl font-bold" data-testid="stat-week-time">{Math.round(weekTotal / 60)}h</div>
+            <div className="text-3xl font-bold" data-testid="stat-week-time">
+              {Math.round((metrics?.weeklyStudyTime ?? 0) / 60)}h
+            </div>
             <p className="text-xs opacity-80 mt-1">study time</p>
           </div>
 
@@ -501,7 +557,9 @@ export default function Dashboard({ userRole = "student" }: DashboardProps) {
               <BarChart3 className="h-4 w-4 opacity-80" />
               <span className="text-xs font-semibold opacity-90">Items Reviewed</span>
             </div>
-            <div className="text-3xl font-bold" data-testid="stat-items-reviewed">{weekItems}</div>
+            <div className="text-3xl font-bold" data-testid="stat-items-reviewed">
+              {metrics?.itemsReviewedThisWeek ?? 0}
+            </div>
             <p className="text-xs opacity-80 mt-1">this week</p>
           </div>
         </div>

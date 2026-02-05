@@ -221,12 +221,20 @@ export default function Research() {
   };
 
   const handleSend = async () => {
-    if (!input.trim() || isStreaming) return;
+    console.log("[RESEARCH] Send Query button clicked");
+    if (!input.trim() || isStreaming) {
+      console.log("[RESEARCH] Send blocked - empty input or already streaming");
+      return;
+    }
 
     const query = input.trim();
+    console.log("[RESEARCH] Handler entered - query length:", query.length);
     setInput("");
     setStreamingContent("");
     setIsStreaming(true);
+    
+    const token = localStorage.getItem("token");
+    console.log("[RESEARCH] Auth check - token exists:", !!token);
     
     let receivedConversationId: number | null = null;
     let fullContent = "";
@@ -239,6 +247,7 @@ export default function Research() {
         headers["Authorization"] = `Bearer ${token}`;
       }
       
+      console.log("[RESEARCH API] Sending POST /api/research/query", { queryLength: query.length, searchDepth, responseType });
       const response = await fetch("/api/research/query", {
         method: "POST",
         headers,
@@ -249,10 +258,14 @@ export default function Research() {
           conversationId: currentConversationId,
         }),
       });
+      console.log("[RESEARCH API] Response status:", response.status);
 
       if (!response.ok) {
+        console.error("[RESEARCH] Query ERROR - response not ok");
         throw new Error("Failed to send query");
       }
+
+      console.log("[RESEARCH] Starting stream read");
 
       const reader = response.body?.getReader();
       const decoder = new TextDecoder();

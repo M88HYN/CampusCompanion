@@ -169,21 +169,35 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createNote(note: InsertNote): Promise<Note> {
-    if (!note.userId || !note.title) {
-      throw new Error("userId and title are required");
-    }
-    // Stringify array fields for SQLite compatibility
-    const [created] = await db.insert(notes).values({ 
-      id: randomUUID(),
-      userId: note.userId,
-      title: note.title,
-      subject: note.subject || null,
-      tags: note.tags ? JSON.stringify(note.tags) : null,
-      createdAt: sql`CURRENT_TIMESTAMP` as any,
-      updatedAt: sql`CURRENT_TIMESTAMP` as any
-    }).returning();
-    return created;
+  if (!note.userId || !note.title) {
+    throw new Error("userId and title are required");
   }
+
+  const id = randomUUID();
+
+  // INSERT (SQLite-safe)
+  await db.insert(notes).values({
+    id,
+    userId: note.userId,
+    title: note.title,
+    subject: note.subject ?? null,
+    tags: note.tags ? JSON.stringify(note.tags) : null,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  });
+
+  // 🔥 RE-SELECT (THIS IS THE KEY FIX)
+  const [created] = await db
+    .select()
+    .from(notes)
+    .where(eq(notes.id, id));
+
+  if (!created) {
+    throw new Error("Failed to create note");
+  }
+
+  return created;
+}
 
   async updateNote(id: string, note: Partial<InsertNote>): Promise<Note | undefined> {
     const updateData: any = { 
@@ -475,7 +489,27 @@ export class DatabaseStorage implements IStorage {
   // ==================== QUIZ ATTEMPTS ====================
 
   async createQuizAttempt(attempt: InsertQuizAttempt): Promise<QuizAttempt> {
-    const [created] = await db.insert(quizAttempts).values({ id: randomUUID(), ...attempt }).returning();
+    const id = randomUUID();
+    
+    // Use raw SQL to bypass Drizzle's type checking for SQLite
+    await db.run(sql`
+      INSERT INTO quiz_attempts (
+        id, quiz_id, user_id, mode, started_at, current_question_index,
+        current_difficulty, status
+      ) VALUES (
+        ${id}, 
+        ${attempt.quizId}, 
+        ${attempt.userId}, 
+        ${attempt.mode}, 
+        CURRENT_TIMESTAMP,
+        ${attempt.currentQuestionIndex ?? 0},
+        ${attempt.currentDifficulty ?? 3},
+        ${attempt.status ?? 'in_progress'}
+      )
+    `);
+    
+    // Fetch the created record
+    const [created] = await db.select().from(quizAttempts).where(eq(quizAttempts.id, id));
     return created;
   }
 
@@ -516,7 +550,34 @@ export class DatabaseStorage implements IStorage {
   // ==================== QUIZ RESPONSES ====================
 
   async createQuizResponse(response: InsertQuizResponse): Promise<QuizResponse> {
-    const [created] = await db.insert(quizResponses).values({ id: randomUUID(), ...response }).returning();
+    const id = randomUUID();
+    const isCorrectValue = typeof response.isCorrect === "boolean" ? (response.isCorrect ? 1 : 0) : null;
+    
+    // Use raw SQL to bypass Drizzle's type checking for SQLite
+    await db.run(sql`
+      INSERT INTO quiz_responses (
+        id, attempt_id, question_id, selected_option_id, text_answer,
+        is_correct, marks_awarded, feedback, response_time, 
+        confidence_level, flashcard_id, answered_at, converted_to_flashcard
+      ) VALUES (
+        ${id}, 
+        ${response.attemptId}, 
+        ${response.questionId}, 
+        ${response.selectedOptionId ?? null}, 
+        ${response.textAnswer ?? null},
+        ${isCorrectValue}, 
+        ${response.marksAwarded ?? 0}, 
+        ${response.feedback ?? null}, 
+        ${response.responseTime ?? null},
+        ${response.confidenceLevel ?? null}, 
+        ${response.flashcardId ?? null}, 
+        CURRENT_TIMESTAMP,
+        0
+      )
+    `);
+    
+    // Fetch the created record
+    const [created] = await db.select().from(quizResponses).where(eq(quizResponses.id, id));
     return created;
   }
 
@@ -641,52 +702,102 @@ export class DatabaseStorage implements IStorage {
       const newStreak = isCorrect ? existing.streak + 1 : 0;
       const newAvgTime = ((existing.averageResponseTime || 0) * existing.timesAnswered + responseTime) / newTimesAnswered;
       
-      const [updated] = await db
-        .update(userQuestionStats)
-        .set({
-          timesAnswered: newTimesAnswered,
-          timesCorrect: newTimesCorrect,
-          streak: newStreak,
-          averageResponseTime: newAvgTime,
-          lastAnsweredAt: new Date(),
-        })
-        .where(eq(userQuestionStats.id, existing.id))
-        .returning();
-      return updated;
+      // Use raw SQL to avoid column name mismatch (lastAnsweredAt vs last_attempted_at)
+      await db.run(sql`
+        UPDATE user_question_stats
+        SET times_answered = ${newTimesAnswered},
+            times_correct = ${newTimesCorrect},
+            streak = ${newStreak},
+            average_response_time = ${newAvgTime},
+            last_attempted_at = ${new Date().toISOString()}
+        WHERE id = ${existing.id}
+      `);
+      
+      return {
+        ...existing,
+        timesAnswered: newTimesAnswered,
+        timesCorrect: newTimesCorrect,
+        streak: newStreak,
+        averageResponseTime: newAvgTime,
+        lastAnsweredAt: new Date(),
+      };
     } else {
-      const [created] = await db
-        .insert(userQuestionStats)
-        .values({
-          id: randomUUID(),
-          userId,
-          questionId,
-          timesAnswered: 1,
-          timesCorrect: isCorrect ? 1 : 0,
-          averageResponseTime: responseTime,
-          lastAnsweredAt: new Date(),
-          streak: isCorrect ? 1 : 0,
-          nextReviewAt: new Date(),
-        })
-        .returning();
-      return created;
+      const newId = randomUUID();
+      const now = new Date().toISOString();
+      
+      // Use raw SQL to avoid column name mismatch
+      await db.run(sql`
+        INSERT INTO user_question_stats (
+          id, user_id, question_id, times_answered, times_correct,
+          average_response_time, last_attempted_at, streak, next_review_date
+        ) VALUES (
+          ${newId}, ${userId}, ${questionId}, 1, ${isCorrect ? 1 : 0},
+          ${responseTime}, ${now}, ${isCorrect ? 1 : 0}, ${now}
+        )
+      `);
+      
+      return {
+        id: newId,
+        userId,
+        questionId,
+        timesAnswered: 1,
+        timesCorrect: isCorrect ? 1 : 0,
+        averageResponseTime: responseTime,
+        lastAnsweredAt: new Date(),
+        streak: isCorrect ? 1 : 0,
+        easeFactor: 2.5,
+        interval: 0,
+        repetitions: 0,
+        nextReviewAt: new Date(),
+        status: 'new',
+      };
     }
   }
 
   async getDueQuestionsForReview(userId: string, limit: number = 20): Promise<UserQuestionStats[]> {
-    return await db
-      .select()
-      .from(userQuestionStats)
-      .where(
-        and(
-          eq(userQuestionStats.userId, userId),
-          or(
-            lte(userQuestionStats.nextReviewAt, new Date()),
-            sql`${userQuestionStats.nextReviewAt} IS NULL`
-          )
-        )
-      )
-      .orderBy(asc(userQuestionStats.nextReviewAt))
-      .limit(limit);
+    // ALTERNATIVE: Get questions from incorrect quiz responses instead of userQuestionStats
+    try {
+      // Get all completed quiz attempts for this user
+      const attempts = await db
+        .select()
+        .from(quizAttempts)
+        .where(and(
+          eq(quizAttempts.userId, userId),
+          sql`${quizAttempts.completedAt} IS NOT NULL`
+        ));
+
+      if (attempts.length === 0) return [];
+
+      // Get all incorrect responses
+      const incorrectResponses = await db
+        .select()
+        .from(quizResponses)
+        .where(and(
+          inArray(quizResponses.attemptId, attempts.map((a: typeof attempts[0]) => a.id)),
+          eq(quizResponses.isCorrect, false)
+        ))
+        .limit(limit);
+
+      // Convert to UserQuestionStats format for compatibility
+      return incorrectResponses.map((response: typeof incorrectResponses[0]) => ({
+        id: response.id,
+        userId,
+        questionId: response.questionId,
+        timesAnswered: 1,
+        timesCorrect: 0,
+        averageResponseTime: response.responseTime || null,
+        lastAnsweredAt: response.answeredAt,
+        nextReviewAt: response.answeredAt, // Due immediately
+        easeFactor: 2.5,
+        interval: 1,
+        repetitions: 0,
+        streak: 0,
+        status: 'new',
+      } as UserQuestionStats));
+    } catch (error) {
+      console.error("[Spaced Review] Error fetching due questions:", error);
+      return [];
+    }
   }
 
   async updateSpacedRepetition(statsId: string, quality: number): Promise<UserQuestionStats> {
@@ -798,90 +909,257 @@ export class DatabaseStorage implements IStorage {
 
   // ==================== USER ANALYTICS ====================
 
-  async getUserAnalytics(userId: string): Promise<{
-    totalQuizzesTaken: number;
-    totalQuestionsAnswered: number;
-    overallAccuracy: number;
-    averageTimePerQuestion: number;
-    strengthsByTopic: Record<string, number>;
-    weaknessesByTopic: Record<string, number>;
-    recentActivity: { date: string; score: number }[];
-  }> {
-    // Get all user's quiz attempts
-    const attempts = await db
-      .select()
-      .from(quizAttempts)
-      .where(and(eq(quizAttempts.userId, userId), sql`${quizAttempts.completedAt} IS NOT NULL`))
-      .orderBy(desc(quizAttempts.completedAt));
+  async getUserAnalytics(userId: string): Promise<any> {
+    // Analytics are derived from quiz_attempts and quiz_responses tables
+    // No separate user_analytics table - data is calculated on-demand
+    // This ensures analytics are always in sync with actual quiz activity
+    
+    try {
+      // Get all completed quiz attempts with quiz details
+      const attemptsResult = await db.run(sql`
+        SELECT 
+          qa.id,
+          qa.quiz_id,
+          qa.score,
+          qa.earned_marks,
+          qa.total_marks,
+          qa.time_spent,
+          qa.completed_at,
+          q.title as quiz_title,
+          q.subject as topic
+        FROM quiz_attempts qa
+        LEFT JOIN quizzes q ON qa.quiz_id = q.id
+        WHERE qa.user_id = ${userId} AND qa.completed_at IS NOT NULL
+        ORDER BY qa.completed_at DESC
+      `);
 
-    if (attempts.length === 0) {
+      // Ensure attemptsResult is an array
+      const attempts = Array.isArray(attemptsResult) ? attemptsResult : [];
+
+      // Safe default for users with no quiz history
+      if (!attempts || attempts.length === 0) {
+        return {
+          totalQuizzesTaken: 0,
+          totalQuestionsAnswered: 0,
+          correctAnswers: 0,
+          incorrectAnswers: 0,
+          accuracy: 0,
+          avgTimePerQuestion: 0,
+          totalStudyTimeMinutes: 0,
+          currentStreak: 0,
+          longestStreak: 0,
+          strengths: [],
+          weaknesses: [],
+          performanceByDifficulty: [],
+          topicBreakdown: [],
+          recentActivity: [],
+        };
+      }
+
+      // Get all responses for these attempts using raw SQL
+      let totalCorrect = 0;
+      let totalQuestions = 0;
+      let totalTime = 0;
+      const topicAccuracy: Record<string, { correct: number; total: number; timeSum: number; quizIds: Set<string> }> = {};
+      const difficultyStats: Record<string, { correct: number; total: number }> = {
+        easy: { correct: 0, total: 0 },
+        medium: { correct: 0, total: 0 },
+        hard: { correct: 0, total: 0 },
+      };
+
+      for (const attempt of attempts) {
+        try {
+          const responsesResult = await db.run(sql`
+            SELECT qr.*, qq.tags, qq.difficulty as question_difficulty
+            FROM quiz_responses qr
+            LEFT JOIN quiz_questions qq ON qr.question_id = qq.id
+            WHERE qr.attempt_id = ${attempt.id}
+          `);
+          
+          const responses = Array.isArray(responsesResult) ? responsesResult : [];
+          
+          // Safely handle empty or null responses
+          if (!responses || responses.length === 0) continue;
+          
+          for (const response of responses) {
+            totalQuestions++;
+            // SQLite stores boolean as 0/1
+            const isCorrect = response.is_correct === 1;
+            if (isCorrect) totalCorrect++;
+            totalTime += response.response_time || 0;
+
+            // Track difficulty performance (use question difficulty if available)
+            const questionDifficulty = response.question_difficulty ?? 3;
+            const difficulty = questionDifficulty <= 2 ? "easy" : questionDifficulty <= 4 ? "medium" : "hard";
+            if (difficultyStats[difficulty]) {
+              difficultyStats[difficulty].total++;
+              if (isCorrect) difficultyStats[difficulty].correct++;
+            }
+
+            // Process tags for topic analysis (defensive parsing)
+            if (response.tags) {
+              let tags: string[];
+              try {
+                tags = typeof response.tags === 'string' ? JSON.parse(response.tags) : response.tags;
+              } catch {
+                tags = [];
+              }
+              
+              for (const tag of tags) {
+                if (!tag || typeof tag !== 'string') continue; // Skip invalid tags
+                if (!topicAccuracy[tag]) {
+                  topicAccuracy[tag] = { correct: 0, total: 0, timeSum: 0, quizIds: new Set() };
+                }
+                topicAccuracy[tag].total++;
+                topicAccuracy[tag].timeSum += response.response_time || 0;
+                topicAccuracy[tag].quizIds.add(attempt.quiz_id);
+                if (isCorrect) topicAccuracy[tag].correct++;
+              }
+            }
+          }
+        } catch (responseError) {
+          // Log but don't crash - skip this attempt if responses fail to load
+          console.warn(`[Analytics] Failed to load responses for attempt ${attempt.id}:`, responseError);
+          continue;
+        }
+      }
+
+      const incorrectAnswers = totalQuestions - totalCorrect;
+
+      // Calculate strengths (≥70% accuracy, ≥3 questions)
+      const strengths = Object.entries(topicAccuracy)
+        .filter(([_, stats]) => stats.total >= 3 && (stats.correct / stats.total) >= 0.7)
+        .map(([topic, stats]) => ({
+          topic,
+          accuracy: Math.round((stats.correct / stats.total) * 100),
+          questionsAnswered: stats.total,
+          avgTimeSeconds: Math.round(stats.timeSum / stats.total),
+          quizzesTaken: stats.quizIds.size,
+        }))
+        .sort((a, b) => b.accuracy - a.accuracy);
+
+      // Calculate weaknesses (<70% accuracy, ≥3 questions)
+      const weaknesses = Object.entries(topicAccuracy)
+        .filter(([_, stats]) => stats.total >= 3 && (stats.correct / stats.total) < 0.7)
+        .map(([topic, stats]) => ({
+          topic,
+          accuracy: Math.round((stats.correct / stats.total) * 100),
+          questionsAnswered: stats.total,
+          avgTimeSeconds: Math.round(stats.timeSum / stats.total),
+          quizzesTaken: stats.quizIds.size,
+        }))
+        .sort((a, b) => a.accuracy - b.accuracy);
+
+      // Performance by difficulty
+      const performanceByDifficulty = Object.entries(difficultyStats).map(([level, stats]) => ({
+        level,
+        accuracy: stats.total > 0 ? Math.round((stats.correct / stats.total) * 100) : 0,
+        questionsAnswered: stats.total,
+      }));
+
+      // Topic breakdown
+      const topicBreakdown = Object.entries(topicAccuracy).map(([topic, stats]) => ({
+        topic,
+        accuracy: Math.round((stats.correct / stats.total) * 100),
+        questionsAnswered: stats.total,
+        quizzesTaken: stats.quizIds.size,
+        avgTimeSeconds: Math.round(stats.timeSum / stats.total),
+      }));
+
+      // Study streak calculation
+      const studyDates = [...new Set(
+        attempts
+          .map((a: any) => a.completed_at?.split('T')[0])
+          .filter(Boolean)
+      )].sort().reverse();
+
+      let currentStreak = 0;
+      let longestStreak = 0;
+      let tempStreak = 0;
+      const today = new Date().toISOString().split('T')[0];
+      let lastDate = today;
+
+      for (const date of studyDates) {
+        const daysDiff = Math.floor(
+          (new Date(lastDate).getTime() - new Date(date).getTime()) / (1000 * 60 * 60 * 24)
+        );
+
+        if (daysDiff <= 1) {
+          tempStreak++;
+          if (lastDate === today || daysDiff === 1) {
+            currentStreak = tempStreak;
+          }
+        } else {
+          longestStreak = Math.max(longestStreak, tempStreak);
+          tempStreak = 1;
+        }
+        lastDate = date;
+      }
+      longestStreak = Math.max(longestStreak, tempStreak, currentStreak);
+
+      // Recent activity (last 10 attempts)
+      const recentActivity = attempts.slice(0, 10).map((a: any) => {
+        let date = '';
+        try {
+          if (a.completed_at) {
+            date = a.completed_at.split('T')[0].split(' ')[0];
+          }
+        } catch {
+          date = '';
+        }
+        const totalMarks = typeof a.total_marks === 'number' ? a.total_marks : 0;
+        const earnedMarks = typeof a.earned_marks === 'number' ? a.earned_marks : 0;
+        return {
+          quizId: a.quiz_id,
+          quizTitle: a.quiz_title || 'Untitled Quiz',
+          topic: a.topic || 'General',
+          score: earnedMarks,
+          maxScore: totalMarks,
+          accuracy: totalMarks > 0 ? Math.round((earnedMarks / totalMarks) * 100) : 0,
+          completedAt: a.completed_at,
+          date,
+        };
+      });
+
+      // Total study time in minutes
+      const totalStudyTimeMinutes = Math.round(totalTime / 60);
+
+      return {
+        totalQuizzesTaken: attemptsResult.length,
+        totalQuestionsAnswered: totalQuestions,
+        correctAnswers: totalCorrect,
+        incorrectAnswers,
+        accuracy: totalQuestions > 0 ? Math.round((totalCorrect / totalQuestions) * 100) : 0,
+        avgTimePerQuestion: totalQuestions > 0 ? Math.round(totalTime / totalQuestions) : 0,
+        totalStudyTimeMinutes,
+        currentStreak,
+        longestStreak,
+        strengths,
+        weaknesses,
+        performanceByDifficulty,
+        topicBreakdown,
+        recentActivity,
+      };
+    } catch (error) {
+      // If any error occurs, return safe defaults instead of crashing
+      console.error('[Analytics] Error calculating user analytics:', error);
       return {
         totalQuizzesTaken: 0,
         totalQuestionsAnswered: 0,
-        overallAccuracy: 0,
-        averageTimePerQuestion: 0,
-        strengthsByTopic: {},
-        weaknessesByTopic: {},
+        correctAnswers: 0,
+        incorrectAnswers: 0,
+        accuracy: 0,
+        avgTimePerQuestion: 0,
+        totalStudyTimeMinutes: 0,
+        currentStreak: 0,
+        longestStreak: 0,
+        strengths: [],
+        weaknesses: [],
+        performanceByDifficulty: [],
+        topicBreakdown: [],
         recentActivity: [],
       };
     }
-
-    // Get all responses for these attempts
-    let totalCorrect = 0;
-    let totalQuestions = 0;
-    let totalTime = 0;
-    const topicAccuracy: Record<string, { correct: number; total: number }> = {};
-
-    for (const attempt of attempts) {
-      const responses = await this.getQuizResponses(attempt.id);
-      
-      for (const response of responses) {
-        totalQuestions++;
-        if (response.isCorrect) totalCorrect++;
-        totalTime += response.responseTime || 0;
-
-        // Get question for topic analysis
-        const [question] = await db.select().from(quizQuestions).where(eq(quizQuestions.id, response.questionId));
-        if (question?.tags) {
-          for (const tag of question.tags) {
-            if (!topicAccuracy[tag]) {
-              topicAccuracy[tag] = { correct: 0, total: 0 };
-            }
-            topicAccuracy[tag].total++;
-            if (response.isCorrect) topicAccuracy[tag].correct++;
-          }
-        }
-      }
-    }
-
-    // Calculate strengths and weaknesses
-    const strengthsByTopic: Record<string, number> = {};
-    const weaknessesByTopic: Record<string, number> = {};
-
-    for (const [topic, stats] of Object.entries(topicAccuracy)) {
-      const accuracy = Math.round((stats.correct / stats.total) * 100);
-      if (accuracy >= 70) {
-        strengthsByTopic[topic] = accuracy;
-      } else {
-        weaknessesByTopic[topic] = accuracy;
-      }
-    }
-
-    // Recent activity (last 10 attempts)
-    const recentActivity = attempts.slice(0, 10).map((a: any) => ({
-      date: a.completedAt?.toISOString().split('T')[0] || '',
-      score: a.score || 0,
-    }));
-
-    return {
-      totalQuizzesTaken: attempts.length,
-      totalQuestionsAnswered: totalQuestions,
-      overallAccuracy: totalQuestions > 0 ? Math.round((totalCorrect / totalQuestions) * 100) : 0,
-      averageTimePerQuestion: totalQuestions > 0 ? Math.round(totalTime / totalQuestions) : 0,
-      strengthsByTopic,
-      weaknessesByTopic,
-      recentActivity,
-    };
   }
 
   // ==================== LEARNING INSIGHTS ====================
@@ -904,6 +1182,7 @@ export class DatabaseStorage implements IStorage {
     recommendations: { type: string; title: string; description: string; priority: 'high' | 'medium' | 'low' }[];
     weeklyProgress: { day: string; minutes: number; items: number }[];
   }> {
+    try {
     // Get quiz attempts for the user
     const allAttempts = await db
       .select()
@@ -924,11 +1203,16 @@ export class DatabaseStorage implements IStorage {
         totalCards++;
         if (card.status === 'mastered') masteredCards++;
         // Count actual reviews from cardReviews table
-        const reviews = await db.select().from(cardReviews).where(eq(cardReviews.cardId, card.id));
+        const reviews = await db.run(sql`
+          SELECT review_date, quality FROM card_reviews WHERE card_id = ${card.id}
+        `);
         totalCardReviews += reviews.length;
         // Track flashcard study dates for streak calculation
         for (const review of reviews) {
-          flashcardStudyDates.add(review.reviewedAt.toISOString().split('T')[0]);
+          const reviewDate = review.review_date ? new Date(review.review_date) : null;
+          if (reviewDate && !isNaN(reviewDate.getTime())) {
+            flashcardStudyDates.add(reviewDate.toISOString().split('T')[0]);
+          }
         }
       }
     }
@@ -958,8 +1242,8 @@ export class DatabaseStorage implements IStorage {
     for (const attempt of allAttempts) {
       totalStudyTime += attempt.timeSpent || 0;
       
-      const completedDate = attempt.completedAt;
-      if (completedDate) {
+      const completedDate = attempt.completedAt ? new Date(attempt.completedAt as any) : null;
+      if (completedDate && !isNaN(completedDate.getTime())) {
         const dateKey = completedDate.toISOString().split('T')[0];
         studyDates.add(dateKey);
         const hour = completedDate.getHours();
@@ -982,7 +1266,7 @@ export class DatabaseStorage implements IStorage {
       }
 
       const responses = await this.getQuizResponses(attempt.id);
-      const isRecent = attempt.completedAt && (new Date().getTime() - attempt.completedAt.getTime()) < 7 * 24 * 60 * 60 * 1000;
+      const isRecent = completedDate ? (new Date().getTime() - completedDate.getTime()) < 7 * 24 * 60 * 60 * 1000 : false;
       
       for (const response of responses) {
         quizTotal++;
@@ -1121,9 +1405,13 @@ export class DatabaseStorage implements IStorage {
       const deckCards = await this.getCards(deck.id);
       for (const card of deckCards) {
         // Get actual reviews for this card
-        const reviews = await db.select().from(cardReviews).where(eq(cardReviews.cardId, card.id));
+        const reviews = await db.run(sql`
+          SELECT review_date, quality FROM card_reviews WHERE card_id = ${card.id}
+        `);
         for (const review of reviews) {
-          const dateKey = review.reviewedAt.toISOString().split('T')[0];
+          const reviewDate = review.review_date ? new Date(review.review_date) : null;
+          if (!reviewDate || isNaN(reviewDate.getTime())) continue;
+          const dateKey = reviewDate.toISOString().split('T')[0];
           if (!cardReviewsByDay[dateKey]) {
             cardReviewsByDay[dateKey] = { correct: 0, total: 0 };
           }
@@ -1228,6 +1516,27 @@ export class DatabaseStorage implements IStorage {
       recommendations,
       weeklyProgress
     };
+    } catch (error) {
+      console.error('[Learning Insights] Error calculating insights:', error);
+      return {
+        overview: {
+          totalStudyTime: 0,
+          totalSessions: 0,
+          currentStreak: 0,
+          longestStreak: 0,
+          cardsReviewed: 0,
+          quizzesTaken: 0,
+          overallAccuracy: 0
+        },
+        accuracyTrends: [],
+        topicPerformance: [],
+        studyPatterns: [],
+        weakAreas: [],
+        strengths: [],
+        recommendations: [],
+        weeklyProgress: []
+      };
+    }
   }
 
   // ==================== USER PREFERENCES ====================

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { Plus, Play, Clock, CheckCircle2, AlertCircle, Star, BookMarked, Zap, Trophy, Target, RotateCw, Loader, Trash2, X, Brain, TrendingUp, BarChart3, RefreshCw, ChevronRight } from "lucide-react";
+import { Plus, Play, Clock, CheckCircle2, AlertCircle, Star, BookMarked, Zap, Trophy, Target, RotateCw, Loader, Trash2, X, Brain, TrendingUp, TrendingDown, BarChart3, RefreshCw, ChevronRight } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -11,7 +11,7 @@ import { Progress } from "@/components/ui/progress";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { queryClient, apiRequest } from "@/lib/queryClient";
+import { queryClient, apiRequest, getQueryFn } from "@/lib/queryClient";
 import {
   Form,
   FormControl,
@@ -79,11 +79,18 @@ interface QuizAttempt {
 interface UserAnalytics {
   totalQuizzesTaken: number;
   totalQuestionsAnswered: number;
-  overallAccuracy: number;
-  averageTimePerQuestion: number;
-  strengthsByTopic: Record<string, number>;
-  weaknessesByTopic: Record<string, number>;
-  recentActivity: { date: string; score: number }[];
+  correctAnswers: number;
+  incorrectAnswers: number;
+  accuracy: number;
+  avgTimePerQuestion: number;
+  totalStudyTimeMinutes: number;
+  currentStreak: number;
+  longestStreak: number;
+  strengths: { topic: string; accuracy: number; questionsAnswered: number; avgTimeSeconds: number; quizzesTaken: number }[];
+  weaknesses: { topic: string; accuracy: number; questionsAnswered: number; avgTimeSeconds: number; quizzesTaken: number }[];
+  performanceByDifficulty: { level: string; accuracy: number; questionsAnswered: number }[];
+  topicBreakdown: { topic: string; accuracy: number; questionsAnswered: number; quizzesTaken: number; avgTimeSeconds: number }[];
+  recentActivity: { date: string; quizTitle: string; topic: string; score: number; maxScore: number; accuracy: number }[];
 }
 
 interface SpacedReviewItem {
@@ -129,6 +136,7 @@ export default function Quizzes() {
   const [showFeedback, setShowFeedback] = useState(false);
   const [feedbackCorrect, setFeedbackCorrect] = useState(false);
   const [feedbackExplanation, setFeedbackExplanation] = useState<string>("");
+  const [answerError, setAnswerError] = useState<string | null>(null);
   const [selectedQuizId, setSelectedQuizId] = useState<string | null>(null);
   const [activeQuestions, setActiveQuestions] = useState<Question[]>([]);
   const [currentAttempt, setCurrentAttempt] = useState<QuizAttempt | null>(null);
@@ -170,8 +178,12 @@ export default function Quizzes() {
     name: "questions",
   });
 
-  const { data: quizzes = [], isLoading: isLoadingQuizzes } = useQuery<Quiz[]>({
+  const { data: quizzes = [], isLoading: isLoadingQuizzes, refetch: refetchQuizzes } = useQuery<Quiz[]>({
     queryKey: ["/api/quizzes"],
+    queryFn: getQueryFn({ on401: "throw" }),
+    staleTime: 0, // Always refetch to ensure fresh data when navigating back
+    refetchOnMount: true,
+    retry: 1,
   });
 
   const { data: selectedQuizData, isLoading: isLoadingQuiz } = useQuery<{
@@ -183,17 +195,26 @@ export default function Quizzes() {
   }>({
     queryKey: ["/api/quizzes", selectedQuizId],
     enabled: !!selectedQuizId && (view === "taking" || view === "adaptive"),
+    retry: 1,
   });
 
   const { data: userAnalytics, isLoading: isLoadingAnalytics } = useQuery<UserAnalytics>({
     queryKey: ["/api/user/analytics"],
-    enabled: activeTab === "analytics",
+    enabled: true, // Always enabled so invalidation after quiz completion works
+    staleTime: 30000, // 30 seconds - prevents over-fetching
+    retry: 1,
   });
 
   const { data: spacedReviewItems = [], isLoading: isLoadingReview, refetch: refetchReview } = useQuery<SpacedReviewItem[]>({
     queryKey: ["/api/spaced-review/due"],
     enabled: activeTab === "review",
+    retry: 1,
   });
+
+  // Ensure quizzes are always fetched when component mounts
+  useEffect(() => {
+    refetchQuizzes();
+  }, []);
 
   useEffect(() => {
     if (selectedQuizData?.questions && view === "taking") {
@@ -234,9 +255,14 @@ export default function Quizzes() {
           isCorrect: a.correct,
         }));
         
+        // Include auth token for API request
+        const token = localStorage.getItem("token");
+        const headers: Record<string, string> = { "Content-Type": "application/json" };
+        if (token) headers["Authorization"] = `Bearer ${token}`;
+        
         await fetch(`/api/attempts/${currentAttempt.id}/submit`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers,
           body: JSON.stringify({ responses, timeSpent: Math.round((Date.now() - startTimeRef.current) / 1000) }),
         });
       } catch (error) {
@@ -248,6 +274,11 @@ export default function Quizzes() {
 
   const createQuizMutation = useMutation({
     mutationFn: async (data: QuizFormValues) => {
+      console.log("[QUIZZES] Create Quiz mutation started");
+      console.log("[QUIZZES] Handler entered - quiz data:", data.title);
+      const token = localStorage.getItem("token");
+      console.log("[QUIZZES] Auth check - token exists:", !!token);
+      
       const formattedQuestions = data.questions.filter(q => q.question.trim()).map((q, index) => {
         if (q.type === "mcq") {
           return {
@@ -287,23 +318,40 @@ export default function Quizzes() {
       };
 
       // Use apiRequest to include auth token
+      console.log("[QUIZZES API] Sending POST /api/quizzes", payload);
       const response = await apiRequest("POST", "/api/quizzes", payload);
-      return response.json();
+      console.log("[QUIZZES API] Response status:", response.status);
+      const result = await response.json();
+      console.log("[QUIZZES API] Response data:", result);
+      return result;
     },
     onSuccess: () => {
+      console.log("[QUIZZES] Create quiz SUCCESS");
       queryClient.invalidateQueries({ queryKey: ["/api/quizzes"] });
       setView("list");
       form.reset();
+    },
+    onError: (error) => {
+      console.error("[QUIZZES] Create quiz ERROR:", error);
     }
   });
 
   const deleteQuizMutation = useMutation({
     mutationFn: async (quizId: string) => {
+      console.log("[QUIZZES] Delete Quiz mutation started - quizId:", quizId);
+      const token = localStorage.getItem("token");
+      console.log("[QUIZZES] Auth check - token exists:", !!token);
+      console.log("[QUIZZES API] Sending DELETE /api/quizzes/:id");
       // Use apiRequest to include auth token
       await apiRequest("DELETE", `/api/quizzes/${quizId}`);
+      console.log("[QUIZZES API] Delete SUCCESS");
     },
     onSuccess: () => {
+      console.log("[QUIZZES] Delete quiz SUCCESS");
       queryClient.invalidateQueries({ queryKey: ["/api/quizzes"] });
+    },
+    onError: (error) => {
+      console.error("[QUIZZES] Delete quiz ERROR:", error);
     }
   });
 
@@ -336,12 +384,18 @@ export default function Quizzes() {
     setSelectedAnswer("");
     setTextAnswer("");
     setShowFeedback(false);
+    setAnswerError(null);
     startTimeRef.current = Date.now();
     
     try {
+      // Include auth token for API request
+      const token = localStorage.getItem("token");
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+      
       const response = await fetch(`/api/quizzes/${quizId}/attempts`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({ mode }),
       });
       if (response.ok) {
@@ -363,12 +417,18 @@ export default function Quizzes() {
     setSelectedAnswer("");
     setTextAnswer("");
     setShowFeedback(false);
+    setAnswerError(null);
     startTimeRef.current = Date.now();
     
     try {
+      // Include auth token for API request
+      const token = localStorage.getItem("token");
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+      
       const response = await fetch(`/api/quizzes/${quizId}/adaptive-attempt`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
       });
       if (response.ok) {
         const data = await response.json();
@@ -386,40 +446,78 @@ export default function Quizzes() {
     setView("adaptive");
   };
 
-  const handleAnswerSubmit = async () => {
-    if (isSubmitting || !currentAttempt) return;
+  const handleAnswerSubmit = async (answerOptionId?: string) => {
+    console.log("[QUIZZES] Answer Submit button clicked");
+    
+    // Use passed answer or fall back to state
+    const effectiveAnswer = answerOptionId ?? selectedAnswer;
+    
+    if (isSubmitting || !currentAttempt) {
+      console.log("[QUIZZES] Submit blocked - isSubmitting:", isSubmitting, "hasAttempt:", !!currentAttempt);
+      return;
+    }
+    
+    if (!effectiveAnswer && activeQuestions[currentQuestion]?.type === "mcq") {
+      console.log("[QUIZZES] No answer selected");
+      setAnswerError("Please select an answer before submitting.");
+      return;
+    }
+    
+    console.log("[QUIZZES] Handler entered - submitting answer");
+    
     setIsSubmitting(true);
+    setAnswerError(null);
     
     const question = activeQuestions[currentQuestion];
     const responseTime = Math.round((Date.now() - startTimeRef.current) / 1000);
+    const token = localStorage.getItem("token");
+    console.log("[QUIZZES] Auth check - token exists:", !!token);
     
     try {
+      // Include auth token for API request
+      const token = localStorage.getItem("token");
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+      
+      console.log("[QUIZZES API] Sending POST /api/attempts/:id/answer", { questionId: question.id, selectedAnswer: effectiveAnswer });
       const response = await fetch(`/api/attempts/${currentAttempt.id}/answer`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({
           questionId: question.id,
-          selectedOptionId: question.type === "mcq" ? selectedAnswer : null,
+          selectedOptionId: question.type === "mcq" ? effectiveAnswer : null,
           textAnswer: question.type !== "mcq" ? textAnswer : null,
           responseTime,
         }),
       });
       
-      if (response.ok) {
-        const data = await response.json();
-        setFeedbackCorrect(data.isCorrect);
-        setFeedbackExplanation(data.explanation || "");
-        setShowFeedback(true);
-        
-        setUserAnswers([...userAnswers, {
-          questionId: question.id,
-          answer: question.type === "mcq" ? selectedAnswer : textAnswer,
-          correct: data.isCorrect,
-          explanation: data.explanation,
-        }]);
+      if (!response.ok) {
+        const errorText = await response.text();
+        setAnswerError(errorText || "Failed to submit answer. Please try again.");
+        return;
       }
+
+      const data = await response.json();
+      const isCorrect = !!data.isCorrect;
+      setFeedbackCorrect(isCorrect);
+      setFeedbackExplanation(data.explanation || "");
+      setShowFeedback(true);
+      setAnswerError(null);
+      
+      // Update selected answer state to match what was submitted
+      if (answerOptionId) {
+        setSelectedAnswer(answerOptionId);
+      }
+      
+      setUserAnswers([...userAnswers, {
+        questionId: question.id,
+        answer: question.type === "mcq" ? effectiveAnswer : textAnswer,
+        correct: isCorrect,
+        explanation: data.explanation,
+      }]);
     } catch (error) {
       console.error("Failed to submit answer:", error);
+      setAnswerError("Failed to submit answer. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -431,6 +529,7 @@ export default function Quizzes() {
       setSelectedAnswer("");
       setTextAnswer("");
       setShowFeedback(false);
+      setAnswerError(null);
       startTimeRef.current = Date.now();
     } else {
       if (timerRef.current) {
@@ -442,49 +541,97 @@ export default function Quizzes() {
   };
 
   const finalizeQuizAttempt = async () => {
-    if (!currentAttempt) return;
+    console.log("[QUIZZES] Finalize Quiz Attempt called");
+    if (!currentAttempt) {
+      console.log("[QUIZZES] Finalize blocked - no attempt");
+      return;
+    }
+    console.log("[QUIZZES] Handler entered - attemptId:", currentAttempt.id);
+    
+    const token = localStorage.getItem("token");
+    console.log("[QUIZZES] Auth check - token exists:", !!token);
     
     try {
+      // Include auth token for API request
+      const token = localStorage.getItem("token");
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+      
       const timeSpent = Math.round((Date.now() - startTimeRef.current) / 1000);
-      await fetch(`/api/attempts/${currentAttempt.id}/submit`, {
+      console.log("[QUIZZES API] Sending POST /api/attempts/:id/submit", { timeSpent });
+      const response = await fetch(`/api/attempts/${currentAttempt.id}/submit`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({
           responses: [],
           timeSpent,
         }),
       });
+      console.log("[QUIZZES API] Response status:", response.status);
+      console.log("[QUIZZES] Finalize SUCCESS - Quiz completed, invalidating analytics");
       queryClient.invalidateQueries({ queryKey: ["/api/quizzes"] });
       queryClient.invalidateQueries({ queryKey: ["/api/user/analytics"] });
       queryClient.invalidateQueries({ queryKey: ["/api/spaced-review/due"] });
+      console.log("[ANALYTICS] Queries invalidated, analytics should refetch");
     } catch (error) {
-      console.error("Failed to finalize attempt:", error);
+      console.error("[QUIZZES] Finalize ERROR:", error);
     }
   };
 
-  const handleAdaptiveAnswer = async () => {
-    if (isSubmitting || !currentAttempt || !adaptiveQuestion) return;
+  const handleAdaptiveAnswer = async (answerOptionId?: string) => {
+    console.log("[QUIZZES] Adaptive Answer button clicked");
+    
+    // Use passed answer or fall back to state
+    const effectiveAnswer = answerOptionId ?? selectedAnswer;
+    
+    if (isSubmitting || !currentAttempt || !adaptiveQuestion) {
+      console.log("[QUIZZES] Adaptive submit blocked - isSubmitting:", isSubmitting, "hasAttempt:", !!currentAttempt, "hasQuestion:", !!adaptiveQuestion);
+      return;
+    }
+    
+    if (!effectiveAnswer && adaptiveQuestion.type === "mcq") {
+      console.log("[QUIZZES] No answer selected");
+      return;
+    }
+    
+    console.log("[QUIZZES] Handler entered - submitting adaptive answer");
     setIsSubmitting(true);
+    
+    const token = localStorage.getItem("token");
+    console.log("[QUIZZES] Auth check - token exists:", !!token);
     
     const responseTime = Math.round((Date.now() - startTimeRef.current) / 1000);
     
     try {
+      // Include auth token for API request
+      const token = localStorage.getItem("token");
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+      
+      console.log("[QUIZZES API] Sending POST /api/attempts/:id/adaptive-answer", { questionId: adaptiveQuestion.id, selectedAnswer: effectiveAnswer });
       const response = await fetch(`/api/attempts/${currentAttempt.id}/adaptive-answer`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({
           questionId: adaptiveQuestion.id,
-          selectedOptionId: adaptiveQuestion.type === "mcq" ? selectedAnswer : null,
+          selectedOptionId: adaptiveQuestion.type === "mcq" ? effectiveAnswer : null,
           textAnswer: adaptiveQuestion.type !== "mcq" ? textAnswer : null,
           responseTime,
         }),
       });
+      console.log("[QUIZZES API] Response status:", response.status);
       
       if (response.ok) {
         const data = await response.json();
+        console.log("[QUIZZES] Adaptive answer SUCCESS - isCorrect:", data.isCorrect, "completed:", data.completed);
         setFeedbackCorrect(data.isCorrect);
         setFeedbackExplanation(data.explanation || "");
         setShowFeedback(true);
+        
+        // Update selected answer state to match what was submitted
+        if (answerOptionId) {
+          setSelectedAnswer(answerOptionId);
+        }
         
         setAdaptiveAnswers([...adaptiveAnswers, {
           correct: data.isCorrect,
@@ -516,24 +663,39 @@ export default function Quizzes() {
             startTimeRef.current = Date.now();
           }, 2000);
         }
+      } else {
+        console.error("[QUIZZES] Adaptive answer ERROR - response not ok");
       }
     } catch (error) {
-      console.error("Failed to submit adaptive answer:", error);
+      console.error("[QUIZZES] Adaptive answer ERROR:", error);
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleSpacedReview = async (statsId: string, quality: number) => {
+    console.log("[QUIZZES] Spaced Review button clicked - statsId:", statsId, "quality:", quality);
+    console.log("[QUIZZES] Handler entered - submitting review");
+    const token = localStorage.getItem("token");
+    console.log("[QUIZZES] Auth check - token exists:", !!token);
+    
     try {
-      await fetch(`/api/spaced-review/${statsId}/review`, {
+      // Include auth token for API request
+      const token = localStorage.getItem("token");
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+      
+      console.log("[QUIZZES API] Sending POST /api/spaced-review/:id/review", { quality });
+      const response = await fetch(`/api/spaced-review/${statsId}/review`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({ quality }),
       });
+      console.log("[QUIZZES API] Response status:", response.status);
+      console.log("[QUIZZES] Spaced review SUCCESS");
       refetchReview();
     } catch (error) {
-      console.error("Failed to update review:", error);
+      console.error("[QUIZZES] Spaced review ERROR:", error);
     }
   };
 
@@ -776,8 +938,8 @@ export default function Quizzes() {
                     return (
                       <button
                         key={option.id}
-                        onClick={() => !showFeedback && setSelectedAnswer(option.id)}
-                        disabled={showFeedback}
+                        onClick={() => !showFeedback && handleAdaptiveAnswer(option.id)}
+                        disabled={showFeedback || isSubmitting}
                         className={`w-full p-5 rounded-xl font-semibold text-lg transition-all duration-300 cursor-pointer text-left border-2 flex items-center gap-3 ${
                           showFeedback && isCorrectOption
                             ? 'border-green-500 bg-green-100 dark:bg-green-950 text-green-900 dark:text-green-100 scale-105 shadow-lg'
@@ -952,8 +1114,8 @@ export default function Quizzes() {
                     return (
                       <button
                         key={option.id}
-                        onClick={() => !showFeedback && setSelectedAnswer(option.id)}
-                        disabled={showFeedback}
+                        onClick={() => !showFeedback && handleAnswerSubmit(option.id)}
+                        disabled={showFeedback || isSubmitting}
                         className={`w-full p-5 rounded-xl font-semibold text-lg transition-all duration-300 cursor-pointer text-left border-2 flex items-center gap-3 ${
                           showFeedback && isCorrectOption
                             ? 'border-green-500 bg-green-100 dark:bg-green-950 text-green-900 dark:text-green-100 scale-105 shadow-lg'
@@ -1011,6 +1173,12 @@ export default function Quizzes() {
                 {feedbackExplanation && (
                   <div className="text-sm font-normal text-center opacity-90">{feedbackExplanation}</div>
                 )}
+              </div>
+            )}
+
+            {answerError && (
+              <div className="p-4 rounded-lg mb-6 border-2 border-red-300 bg-red-50 text-red-800 text-sm font-medium">
+                {answerError}
               </div>
             )}
 
@@ -1566,114 +1734,227 @@ export default function Quizzes() {
               <div className="flex items-center justify-center py-12">
                 <Loader className="h-8 w-8 animate-spin text-teal-600" />
               </div>
-            ) : userAnalytics ? (
+            ) : userAnalytics && userAnalytics.totalQuizzesTaken > 0 ? (
               <div className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                {/* Overview Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                   <Card className="bg-gradient-to-br from-teal-50 to-teal-100 dark:from-teal-950 dark:to-teal-900 border-teal-200 dark:border-teal-800">
                     <CardContent className="pt-6 text-center">
                       <Trophy className="h-8 w-8 text-teal-600 dark:text-teal-400 mx-auto mb-2" />
                       <div className="text-3xl font-bold text-teal-700 dark:text-teal-300">{userAnalytics.totalQuizzesTaken}</div>
-                      <p className="text-sm text-teal-600 dark:text-teal-400 font-medium">Quizzes Taken</p>
+                      <p className="text-xs text-teal-600 dark:text-teal-400 font-medium mt-1">
+                        {userAnalytics.totalQuestionsAnswered} questions answered
+                      </p>
                     </CardContent>
                   </Card>
-                  <Card className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900 border-blue-200 dark:border-blue-800">
-                    <CardContent className="pt-6 text-center">
-                      <Target className="h-8 w-8 text-blue-600 dark:text-blue-400 mx-auto mb-2" />
-                      <div className="text-3xl font-bold text-blue-700 dark:text-blue-300">{userAnalytics.totalQuestionsAnswered}</div>
-                      <p className="text-sm text-blue-600 dark:text-blue-400 font-medium">Questions Answered</p>
-                    </CardContent>
-                  </Card>
+
                   <Card className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950 dark:to-green-900 border-green-200 dark:border-green-800">
                     <CardContent className="pt-6 text-center">
-                      <TrendingUp className="h-8 w-8 text-green-600 dark:text-green-400 mx-auto mb-2" />
-                      <div className="text-3xl font-bold text-green-700 dark:text-green-300">{userAnalytics.overallAccuracy}%</div>
-                      <p className="text-sm text-green-600 dark:text-green-400 font-medium">Overall Accuracy</p>
+                      <Target className="h-8 w-8 text-green-600 dark:text-green-400 mx-auto mb-2" />
+                      <div className="text-3xl font-bold text-green-700 dark:text-green-300">{userAnalytics.accuracy}%</div>
+                      <p className="text-xs text-green-600 dark:text-green-400 font-medium mt-1">
+                        {userAnalytics.correctAnswers} correct · {userAnalytics.incorrectAnswers} incorrect
+                      </p>
                     </CardContent>
                   </Card>
+
+                  <Card className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900 border-blue-200 dark:border-blue-800">
+                    <CardContent className="pt-6 text-center">
+                      <Clock className="h-8 w-8 text-blue-600 dark:text-blue-400 mx-auto mb-2" />
+                      <div className="text-3xl font-bold text-blue-700 dark:text-blue-300">{userAnalytics.totalStudyTimeMinutes}m</div>
+                      <p className="text-xs text-blue-600 dark:text-blue-400 font-medium mt-1">
+                        ~{userAnalytics.avgTimePerQuestion}s per question
+                      </p>
+                    </CardContent>
+                  </Card>
+
                   <Card className="bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-950 dark:to-orange-900 border-orange-200 dark:border-orange-800">
                     <CardContent className="pt-6 text-center">
-                      <Clock className="h-8 w-8 text-orange-600 dark:text-orange-400 mx-auto mb-2" />
-                      <div className="text-3xl font-bold text-orange-700 dark:text-orange-300">{userAnalytics.averageTimePerQuestion}s</div>
-                      <p className="text-sm text-orange-600 dark:text-orange-400 font-medium">Avg Time/Question</p>
+                      <Star className="h-8 w-8 text-orange-600 dark:text-orange-400 mx-auto mb-2" />
+                      <div className="text-3xl font-bold text-orange-700 dark:text-orange-300">
+                        {userAnalytics.currentStreak} {userAnalytics.currentStreak === 1 ? 'day' : 'days'}
+                      </div>
+                      <p className="text-xs text-orange-600 dark:text-orange-400 font-medium mt-1">
+                        Longest: {userAnalytics.longestStreak} {userAnalytics.longestStreak === 1 ? 'day' : 'days'}
+                      </p>
                     </CardContent>
                   </Card>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <Card className="border-2 border-green-200 dark:border-green-800">
+                {/* Performance by Difficulty */}
+                {userAnalytics.performanceByDifficulty && userAnalytics.performanceByDifficulty.length > 0 && userAnalytics.performanceByDifficulty.some((d: any) => d.questionsAnswered > 0) && (
+                  <Card>
                     <CardHeader>
-                      <CardTitle className="text-green-700 dark:text-green-300 flex items-center gap-2">
-                        <CheckCircle2 className="h-5 w-5" />
-                        Strengths
-                      </CardTitle>
-                      <CardDescription>Topics you excel at (70%+ accuracy)</CardDescription>
+                      <CardTitle>Performance by Difficulty</CardTitle>
+                      <CardDescription>How well you perform across different difficulty levels</CardDescription>
                     </CardHeader>
                     <CardContent>
-                      {Object.entries(userAnalytics.strengthsByTopic).length > 0 ? (
-                        <div className="space-y-3">
-                          {Object.entries(userAnalytics.strengthsByTopic).map(([topic, accuracy]) => (
-                            <div key={topic} className="flex items-center justify-between">
-                              <span className="font-medium">{topic}</span>
-                              <Badge className="bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300">
-                                {accuracy}%
-                              </Badge>
+                      <div className="space-y-4">
+                        {userAnalytics.performanceByDifficulty.filter((item: any) => item.questionsAnswered > 0).map((item: any) => (
+                          <div key={item.level} className="space-y-2">
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm font-medium capitalize">{item.level}</span>
+                              <span className="text-sm text-muted-foreground">
+                                {item.accuracy}% · {item.questionsAnswered} questions
+                              </span>
                             </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <p className="text-muted-foreground text-sm">Complete more quizzes to see your strengths</p>
-                      )}
+                            <div className="h-2 bg-secondary rounded-full overflow-hidden">
+                              <div
+                                className={`h-full transition-all ${
+                                  item.level === 'easy' ? 'bg-green-500' :
+                                  item.level === 'medium' ? 'bg-yellow-500' :
+                                  'bg-red-500'
+                                }`}
+                                style={{ width: `${item.accuracy}%` }}
+                              />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
                     </CardContent>
                   </Card>
+                )}
 
-                  <Card className="border-2 border-red-200 dark:border-red-800">
-                    <CardHeader>
-                      <CardTitle className="text-red-700 dark:text-red-300 flex items-center gap-2">
-                        <AlertCircle className="h-5 w-5" />
-                        Areas to Improve
-                      </CardTitle>
-                      <CardDescription>Topics that need more practice (below 70%)</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      {Object.entries(userAnalytics.weaknessesByTopic).length > 0 ? (
+                {/* Strengths & Weaknesses */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {userAnalytics.strengths && userAnalytics.strengths.length > 0 && (
+                    <Card className="border-2 border-green-200 dark:border-green-800">
+                      <CardHeader>
+                        <CardTitle className="text-green-700 dark:text-green-300 flex items-center gap-2">
+                          <TrendingUp className="h-5 w-5" />
+                          Your Strengths
+                        </CardTitle>
+                        <CardDescription>Topics where you excel (≥70% accuracy)</CardDescription>
+                      </CardHeader>
+                      <CardContent>
                         <div className="space-y-3">
-                          {Object.entries(userAnalytics.weaknessesByTopic).map(([topic, accuracy]) => (
-                            <div key={topic} className="flex items-center justify-between">
-                              <span className="font-medium">{topic}</span>
-                              <Badge className="bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300">
-                                {accuracy}%
+                          {userAnalytics.strengths.map((strength: any, idx: number) => (
+                            <div key={idx} className="flex items-center justify-between p-3 bg-green-50 dark:bg-green-950 rounded-lg">
+                              <div className="flex-1">
+                                <p className="font-medium">{strength.topic}</p>
+                                <p className="text-xs text-muted-foreground">
+                                  {strength.questionsAnswered} questions · ~{strength.avgTimeSeconds}s avg
+                                </p>
+                              </div>
+                              <Badge className="bg-green-600 text-white">
+                                {strength.accuracy}%
                               </Badge>
                             </div>
                           ))}
                         </div>
-                      ) : (
-                        <p className="text-muted-foreground text-sm">Great job! No weak areas identified yet</p>
-                      )}
-                    </CardContent>
-                  </Card>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {userAnalytics.weaknesses && userAnalytics.weaknesses.length > 0 && (
+                    <Card className="border-2 border-red-200 dark:border-red-800">
+                      <CardHeader>
+                        <CardTitle className="text-red-700 dark:text-red-300 flex items-center gap-2">
+                          <TrendingDown className="h-5 w-5" />
+                          Areas for Improvement
+                        </CardTitle>
+                        <CardDescription>Topics that need more practice (&lt;70% accuracy)</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-3">
+                          {userAnalytics.weaknesses.map((weakness: any, idx: number) => (
+                            <div key={idx} className="flex items-center justify-between p-3 bg-red-50 dark:bg-red-950 rounded-lg">
+                              <div className="flex-1">
+                                <p className="font-medium">{weakness.topic}</p>
+                                <p className="text-xs text-muted-foreground">
+                                  {weakness.questionsAnswered} questions · ~{weakness.avgTimeSeconds}s avg
+                                </p>
+                              </div>
+                              <Badge variant="destructive">
+                                {weakness.accuracy}%
+                              </Badge>
+                            </div>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {(!userAnalytics.strengths || userAnalytics.strengths.length === 0) && (!userAnalytics.weaknesses || userAnalytics.weaknesses.length === 0) && (
+                    <Card className="lg:col-span-2">
+                      <CardContent className="py-8 text-center">
+                        <p className="text-muted-foreground">Complete more quizzes (with at least 3 questions per topic) to see detailed performance analysis</p>
+                      </CardContent>
+                    </Card>
+                  )}
                 </div>
 
-                {userAnalytics.recentActivity.length > 0 && (
-                  <Card className="border-2 border-teal-200 dark:border-teal-800">
+                {/* Topic Breakdown */}
+                {userAnalytics.topicBreakdown && userAnalytics.topicBreakdown.length > 0 && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Performance by Topic</CardTitle>
+                      <CardDescription>Detailed breakdown across all topics</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        {userAnalytics.topicBreakdown.map((topic: any, idx: number) => (
+                          <div key={idx} className="space-y-2">
+                            <div className="flex items-center justify-between">
+                              <div className="flex-1">
+                                <p className="text-sm font-medium">{topic.topic}</p>
+                                <p className="text-xs text-muted-foreground">
+                                  {topic.quizzesTaken} {topic.quizzesTaken === 1 ? 'quiz' : 'quizzes'} · {topic.questionsAnswered} questions · ~{topic.avgTimeSeconds}s avg
+                                </p>
+                              </div>
+                              <Badge variant={topic.accuracy >= 70 ? "default" : "destructive"} className={topic.accuracy >= 70 ? "bg-green-600" : ""}>
+                                {topic.accuracy}%
+                              </Badge>
+                            </div>
+                            <div className="h-2 bg-secondary rounded-full overflow-hidden">
+                              <div
+                                className={`h-full transition-all ${
+                                  topic.accuracy >= 80 ? 'bg-green-500' :
+                                  topic.accuracy >= 70 ? 'bg-blue-500' :
+                                  topic.accuracy >= 50 ? 'bg-yellow-500' :
+                                  'bg-red-500'
+                                }`}
+                                style={{ width: `${topic.accuracy}%` }}
+                              />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Recent Activity */}
+                {userAnalytics.recentActivity && userAnalytics.recentActivity.length > 0 && (
+                  <Card>
                     <CardHeader>
                       <CardTitle>Recent Activity</CardTitle>
-                      <CardDescription>Your last 10 quiz attempts</CardDescription>
+                      <CardDescription>Your last {userAnalytics.recentActivity.length} completed quizzes</CardDescription>
                     </CardHeader>
                     <CardContent>
-                      <div className="flex items-end gap-2 h-32">
-                        {userAnalytics.recentActivity.map((activity, index) => (
-                          <div key={index} className="flex-1 flex flex-col items-center gap-1">
-                            <div 
-                              className={`w-full rounded-t transition-all ${
-                                activity.score >= 70 
-                                  ? 'bg-green-500' 
-                                  : activity.score >= 50 
-                                  ? 'bg-yellow-500' 
-                                  : 'bg-red-500'
-                              }`}
-                              style={{ height: `${activity.score}%` }}
-                            />
-                            <span className="text-xs text-muted-foreground">{activity.score}%</span>
+                      <div className="space-y-3">
+                        {userAnalytics.recentActivity.map((activity: any, idx: number) => (
+                          <div
+                            key={idx}
+                            className="flex items-center justify-between p-3 border rounded-lg hover:bg-accent transition-colors"
+                          >
+                            <div className="flex-1">
+                              <p className="font-medium">{activity.quizTitle}</p>
+                              <div className="flex items-center gap-2 mt-1">
+                                <Badge variant="outline" className="text-xs">
+                                  {activity.topic}
+                                </Badge>
+                                <span className="text-xs text-muted-foreground">
+                                  {activity.date}
+                                </span>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-lg font-bold">{activity.score}/{activity.maxScore}</p>
+                              <Badge variant={activity.accuracy >= 70 ? "default" : "destructive"} className={activity.accuracy >= 70 ? "bg-green-600 text-xs" : "text-xs"}>
+                                {activity.accuracy}%
+                              </Badge>
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -1682,11 +1963,65 @@ export default function Quizzes() {
                 )}
               </div>
             ) : (
-              <Card className="border-2 border-dashed border-teal-300 dark:border-teal-700">
-                <CardContent className="py-12 text-center">
-                  <BarChart3 className="h-12 w-12 text-teal-600 mx-auto mb-4" />
-                  <h3 className="text-xl font-bold mb-2">No Analytics Yet</h3>
-                  <p className="text-muted-foreground">Complete some quizzes to see your performance analytics</p>
+              <Card className="border border-teal-200 dark:border-teal-800 bg-gradient-to-br from-teal-50/50 via-white to-blue-50/30 dark:from-teal-950/30 dark:via-slate-900 dark:to-blue-950/20 overflow-hidden">
+                <CardContent className="py-16 px-6 text-center relative">
+                  {/* Decorative background */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-teal-100/20 to-transparent dark:from-teal-900/10 pointer-events-none" />
+                  
+                  <div className="relative z-10 max-w-md mx-auto space-y-6">
+                    {/* Icon with subtle animation */}
+                    <div className="inline-flex p-4 rounded-2xl bg-gradient-to-br from-teal-500 to-blue-500 shadow-lg shadow-teal-500/20 dark:shadow-teal-500/10">
+                      <BarChart3 className="h-10 w-10 text-white" />
+                    </div>
+                    
+                    {/* Title */}
+                    <div>
+                      <h3 className="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-3">
+                        Your Analytics Await
+                      </h3>
+                      <p className="text-slate-600 dark:text-slate-400 leading-relaxed">
+                        Complete quizzes to unlock powerful insights about your learning journey
+                      </p>
+                    </div>
+                    
+                    {/* Value proposition */}
+                    <div className="grid grid-cols-2 gap-3 pt-4">
+                      <div className="p-3 rounded-lg bg-white/60 dark:bg-slate-800/40 border border-teal-200/50 dark:border-teal-800/30">
+                        <Target className="h-5 w-5 text-teal-600 dark:text-teal-400 mx-auto mb-1" />
+                        <p className="text-xs font-medium text-slate-700 dark:text-slate-300">Track Accuracy</p>
+                      </div>
+                      <div className="p-3 rounded-lg bg-white/60 dark:bg-slate-800/40 border border-blue-200/50 dark:border-blue-800/30">
+                        <TrendingUp className="h-5 w-5 text-blue-600 dark:text-blue-400 mx-auto mb-1" />
+                        <p className="text-xs font-medium text-slate-700 dark:text-slate-300">View Progress</p>
+                      </div>
+                      <div className="p-3 rounded-lg bg-white/60 dark:bg-slate-800/40 border border-green-200/50 dark:border-green-800/30">
+                        <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400 mx-auto mb-1" />
+                        <p className="text-xs font-medium text-slate-700 dark:text-slate-300">Find Strengths</p>
+                      </div>
+                      <div className="p-3 rounded-lg bg-white/60 dark:bg-slate-800/40 border border-orange-200/50 dark:border-orange-800/30">
+                        <AlertCircle className="h-5 w-5 text-orange-600 dark:text-orange-400 mx-auto mb-1" />
+                        <p className="text-xs font-medium text-slate-700 dark:text-slate-300">Spot Gaps</p>
+                      </div>
+                    </div>
+                    
+                    {/* Call to action */}
+                    <div className="pt-4">
+                      <Button
+                        onClick={() => {
+                          console.log("[ANALYTICS] Start First Quiz clicked - switching to My Quizzes tab");
+                          setView("list");
+                          setActiveTab("list");
+                        }}
+                        className="bg-gradient-to-r from-teal-600 to-blue-600 hover:from-teal-700 hover:to-blue-700 text-white shadow-lg shadow-teal-500/30 dark:shadow-teal-500/20 transition-all hover:scale-105"
+                      >
+                        <Play className="h-4 w-4 mr-2" />
+                        Start Your First Quiz
+                      </Button>
+                      <p className="text-xs text-slate-500 dark:text-slate-500 mt-3">
+                        Complete 5+ questions to unlock analytics
+                      </p>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
             )}
@@ -1698,11 +2033,75 @@ export default function Quizzes() {
                 <Loader className="h-8 w-8 animate-spin text-teal-600" />
               </div>
             ) : spacedReviewItems.length === 0 ? (
-              <Card className="border-2 border-dashed border-teal-300 dark:border-teal-700">
-                <CardContent className="py-12 text-center">
-                  <RefreshCw className="h-12 w-12 text-teal-600 mx-auto mb-4" />
-                  <h3 className="text-xl font-bold mb-2">No Questions Due for Review</h3>
-                  <p className="text-muted-foreground">Complete some quizzes and check back later. Questions you struggle with will appear here for review.</p>
+              <Card className="border border-teal-200 dark:border-teal-800 bg-gradient-to-br from-purple-50/50 via-white to-teal-50/30 dark:from-purple-950/30 dark:via-slate-900 dark:to-teal-950/20 overflow-hidden">
+                <CardContent className="py-16 px-6 text-center relative">
+                  {/* Decorative background pattern */}
+                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(139,92,246,0.08),transparent_50%)] dark:bg-[radial-gradient(circle_at_30%_20%,rgba(139,92,246,0.05),transparent_50%)] pointer-events-none" />
+                  
+                  <div className="relative z-10 max-w-lg mx-auto space-y-6">
+                    {/* Icon with rotation animation hint */}
+                    <div className="inline-flex p-4 rounded-2xl bg-gradient-to-br from-purple-500 to-teal-500 shadow-lg shadow-purple-500/20 dark:shadow-purple-500/10">
+                      <RefreshCw className="h-10 w-10 text-white" />
+                    </div>
+                    
+                    {/* Title and description */}
+                    <div>
+                      <h3 className="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-3">
+                        Spaced Repetition Ready
+                      </h3>
+                      <p className="text-slate-600 dark:text-slate-400 leading-relaxed mb-4">
+                        Your personalized review queue is empty right now. Great work staying on top of your studies!
+                      </p>
+                    </div>
+                    
+                    {/* How it works */}
+                    <div className="bg-white/60 dark:bg-slate-800/40 border border-purple-200/50 dark:border-purple-800/30 rounded-xl p-6 space-y-4 text-left">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Brain className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                        <h4 className="font-semibold text-slate-900 dark:text-slate-100">How Spaced Review Works</h4>
+                      </div>
+                      
+                      <div className="space-y-3 text-sm">
+                        <div className="flex items-start gap-3">
+                          <div className="flex-shrink-0 w-6 h-6 rounded-full bg-teal-500/20 dark:bg-teal-500/30 flex items-center justify-center text-teal-700 dark:text-teal-300 font-bold text-xs">1</div>
+                          <p className="text-slate-600 dark:text-slate-400 pt-0.5">
+                            Answer quiz questions and track which ones you find challenging
+                          </p>
+                        </div>
+                        <div className="flex items-start gap-3">
+                          <div className="flex-shrink-0 w-6 h-6 rounded-full bg-teal-500/20 dark:bg-teal-500/30 flex items-center justify-center text-teal-700 dark:text-teal-300 font-bold text-xs">2</div>
+                          <p className="text-slate-600 dark:text-slate-400 pt-0.5">
+                            Questions you struggle with will automatically appear here at optimal intervals
+                          </p>
+                        </div>
+                        <div className="flex items-start gap-3">
+                          <div className="flex-shrink-0 w-6 h-6 rounded-full bg-teal-500/20 dark:bg-teal-500/30 flex items-center justify-center text-teal-700 dark:text-teal-300 font-bold text-xs">3</div>
+                          <p className="text-slate-600 dark:text-slate-400 pt-0.5">
+                            Regular review strengthens memory and boosts long-term retention
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Call to action */}
+                    <div className="pt-2">
+                      <Button
+                        onClick={() => {
+                          console.log("[SPACED REVIEW] Browse Quizzes clicked - switching to My Quizzes tab");
+                          setView("list");
+                          setActiveTab("list");
+                        }}
+                        variant="outline"
+                        className="border-teal-300 dark:border-teal-700 text-teal-700 dark:text-teal-300 hover:bg-teal-50 dark:hover:bg-teal-950/30 transition-all hover:scale-105"
+                      >
+                        <ChevronRight className="h-4 w-4 mr-2" />
+                        Browse Available Quizzes
+                      </Button>
+                      <p className="text-xs text-slate-500 dark:text-slate-500 mt-3">
+                        Check back after completing more quizzes
+                      </p>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
             ) : (
