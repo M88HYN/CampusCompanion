@@ -13,13 +13,13 @@ export { users, sessions, type User, type UpsertUser };
 import { sqliteTable, text, integer, index } from "drizzle-orm/sqlite-core";
 
 export const notes = sqliteTable("notes", {
-  id: pgText("id").primaryKey(),
-  userId: pgText("user_id").notNull(),
-  title: pgText("title").notNull(),
-  subject: pgText("subject"),
-  tags: pgText("tags"), // JSON string if needed
-  createdAt: pgInteger("created_at").notNull(),
-  updatedAt: pgInteger("updated_at").notNull(),
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull(),
+  title: text("title").notNull(),
+  subject: text("subject"),
+  tags: text("tags"), // JSON string if needed
+  createdAt: integer("created_at").notNull(),
+  updatedAt: integer("updated_at").notNull(),
 }, (table) => ({
   notesUserIdIdx: index("notes_user_id_idx").on(table.userId),
   notesSubjectIdx: index("notes_subject_idx").on(table.subject),
