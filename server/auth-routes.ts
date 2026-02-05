@@ -16,6 +16,7 @@ import { db } from "./db";
 import { users } from "@shared/schema";
 import { eq } from "drizzle-orm";
 import { seedComputerScienceData } from "./seed-computer-science";
+import { storage } from "./storage";
 
 const loginSchema = z.object({
   emailOrUsername: z.string().min(1, "Email or username is required"),
@@ -55,7 +56,7 @@ export function authMiddleware(req: any, res: Response, next: NextFunction) {
 
   req.user = payload;
   
-  // Ensure user exists in database (fire and forget)
+  // Ensure user exists in database AND has sample data (fire and forget)
   setImmediate(async () => {
     try {
       const [user] = await db.select().from(users).where(eq(users.id, payload.userId));
@@ -70,8 +71,17 @@ export function authMiddleware(req: any, res: Response, next: NextFunction) {
           updatedAt: new Date(),
         }).catch(() => {}); // Ignore if already exists due to race condition
       }
+      
+      // Check if user has any data, seed if empty (only check once per user session)
+      const notes = await storage.getNotes(payload.userId);
+      const quizzes = await storage.getQuizzes(payload.userId);
+      if (notes.length === 0 || quizzes.length === 0) {
+        console.log(`[Auth] User ${payload.userId} has ${notes.length} notes and ${quizzes.length} quizzes - seeding sample content`);
+        await seedComputerScienceData(payload.userId);
+      }
     } catch (error) {
-      // Silently fail - user creation is best-effort
+      // Silently fail - best-effort seeding
+      console.log("[Auth] Sample data seeding skipped:", error instanceof Error ? error.message : String(error));
     }
   });
   
@@ -150,6 +160,19 @@ export function registerAuthRoutes(app: Express) {
       if (!valid) {
         return res.status(401).json({ message: "Invalid credentials" });
       }
+
+      // Seed sample data if user has none (fire and forget - don't block login)
+      setImmediate(async () => {
+        try {
+          const notes = await storage.getNotes(user.id);
+          if (notes.length === 0) {
+            console.log("User has no data - seeding sample content for userId:", user.id);
+            await seedComputerScienceData(user.id);
+          }
+        } catch (seedError) {
+          console.log("Note: Could not seed sample data, but login succeeded:", seedError);
+        }
+      });
 
       const token = generateToken(user);
       res.json({

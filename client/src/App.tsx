@@ -25,6 +25,7 @@ console.log("[App.tsx] Module loading");
 function AppRouter() {
   return (
     <Switch>
+      <Route path="/" component={() => <Redirect to="/dashboard" />} />
       <Route path="/dashboard" component={() => <Dashboard />} />
       <Route path="/notes" component={() => <Notes />} />
       <Route path="/quizzes" component={() => <Quizzes />} />
@@ -33,9 +34,9 @@ function AppRouter() {
       <Route path="/revision" component={() => <Revision />} />
       <Route path="/insights" component={() => <Insights />} />
       <Route path="/settings" component={() => <Settings />} />
-      {/* Catch-all: redirect unknown routes to login */}
+      {/* Catch-all: redirect unknown routes to dashboard */}
       <Route>
-        {() => <Redirect to="/login" />}
+        {() => <Redirect to="/dashboard" />}
       </Route>
     </Switch>
   );

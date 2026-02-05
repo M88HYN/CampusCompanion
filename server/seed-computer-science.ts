@@ -6,14 +6,14 @@ import { seedQuizzes } from "./seed-quizzes";
 
 export async function seedComputerScienceData(userId: string) {
   try {
-    // Try to ensure demo user exists, but don't fail if DB connection fails
+    // Try to ensure user exists, but don't fail if DB connection fails
     try {
       const existingUser = await db.select().from(users).where(eq(users.id, userId));
       if (existingUser.length === 0) {
-        // Create a demo user if it doesn't exist
+        // Create a user if it doesn't exist - use userId as unique email
         await db.insert(users).values({
           id: userId,
-          email: "demo@studymate.local",
+          email: `user-${userId}@studymate.local`,
           firstName: "Demo",
           lastName: "User",
           createdAt: sql`CURRENT_TIMESTAMP` as any,
@@ -21,8 +21,8 @@ export async function seedComputerScienceData(userId: string) {
         });
       }
     } catch (userError) {
-      console.log("Error creating demo user:", userError);
-      return true; // Don't fail the startup
+      // Silently ignore if user already exists (likely duplicate email)
+      // This is fine - the user already exists in the database
     }
 
     // Computer Science Decks

@@ -36,7 +36,11 @@ import {
   Eye,
   Brain,
   ListChecks,
-  ClipboardList
+  ClipboardList,
+  Copy,
+  Download,
+  Edit2,
+  AlertCircle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -58,6 +62,15 @@ import {
   DialogFooter,
   DialogDescription,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   Tooltip,
   TooltipContent,
@@ -179,6 +192,8 @@ export default function Notes() {
   const [previewMode, setPreviewMode] = useState(false);
   const [showRenameDialog, setShowRenameDialog] = useState(false);
   const [renameTitle, setRenameTitle] = useState("");
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [deleteNoteTrigger, setDeleteNoteTrigger] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   
   const [, setLocation] = useLocation();
@@ -187,23 +202,23 @@ export default function Notes() {
 
   const { data: notes = [], isLoading } = useQuery<Note[]>({
     queryKey: ["/api/notes"],
+    retry: 1,
   });
 
   const { data: selectedNote } = useQuery<NoteWithBlocks>({
     queryKey: ["/api/notes", selectedNoteId],
     enabled: !!selectedNoteId,
+    retry: 1,
   });
 
   const { data: decks = [], isLoading: decksLoading } = useQuery<Deck[]>({
     queryKey: ["/api/decks"],
-    staleTime: 30000,
-    gcTime: 5 * 60 * 1000,
+    retry: 1,
   });
 
   const { data: quizzes = [], isLoading: quizzesLoading } = useQuery<{ id: string; title: string; subject: string | null }[]>({
     queryKey: ["/api/quizzes"],
-    staleTime: 30000,
-    gcTime: 5 * 60 * 1000,
+    retry: 1,
   });
 
   useEffect(() => {
@@ -225,13 +240,18 @@ export default function Notes() {
 
   const createNoteMutation = useMutation({
     mutationFn: async (data: { title: string; subject?: string; tags?: string[] }) => {
+      console.log("[NOTES API] Sending POST /api/notes", data);
       const res = await apiRequest("POST", "/api/notes", {
         ...data,
         blocks: [{ type: "markdown", content: "" }],
       });
-      return res.json();
+      console.log("[NOTES API] Response status:", res.status);
+      const result = await res.json();
+      console.log("[NOTES API] Response data:", result);
+      return result;
     },
     onSuccess: (newNote) => {
+      console.log("[NOTES] Create note SUCCESS:", newNote.id);
       // Update cache immediately with new note instead of invalidating
       queryClient.setQueryData(["/api/notes"], (oldNotes: Note[] | undefined) => {
         return oldNotes ? [...oldNotes, newNote] : [newNote];
@@ -244,21 +264,26 @@ export default function Notes() {
       toast({ title: "Note created", description: "Your new note is ready." });
     },
     onError: (error: Error) => {
-      console.error("Create note error:", error);
+      console.error("[NOTES] Create note ERROR:", error);
       toast({ title: "Error", description: error.message || "Failed to create note", variant: "destructive" });
     },
   });
 
   const updateNoteMutation = useMutation({
     mutationFn: async ({ id, data, content }: { id: string; data: Partial<Note>; content?: string }) => {
+      console.log("[NOTES API] Sending PATCH /api/notes/:id", { id, hasContent: !!content });
       const payload: any = { ...data };
       if (content !== undefined) {
         payload.blocks = [{ type: "markdown", content }];
       }
       const res = await apiRequest("PATCH", `/api/notes/${id}`, payload);
-      return { response: await res.json(), savedContent: content, savedTitle: data.title };
+      console.log("[NOTES API] Response status:", res.status);
+      const responseData = await res.json();
+      console.log("[NOTES API] Response data:", responseData);
+      return { response: responseData, savedContent: content, savedTitle: data.title };
     },
     onSuccess: (result) => {
+      console.log("[NOTES] Update note SUCCESS");
       queryClient.invalidateQueries({ queryKey: ["/api/notes"] });
       queryClient.invalidateQueries({ queryKey: ["/api/notes", selectedNoteId] });
       if (noteContent === result.savedContent && noteTitle === result.savedTitle) {
@@ -267,23 +292,27 @@ export default function Notes() {
       toast({ title: "Note saved", description: "Changes saved successfully." });
     },
     onError: (error: Error) => {
-      console.error("Update note error:", error);
+      console.error("[NOTES] Update note ERROR:", error);
       toast({ title: "Error", description: error.message || "Failed to save note", variant: "destructive" });
     },
   });
 
   const deleteNoteMutation = useMutation({
     mutationFn: async (id: string) => {
-      await apiRequest("DELETE", `/api/notes/${id}`);
+      console.log("[NOTES API] Sending DELETE /api/notes/:id", id);
+      const res = await apiRequest("DELETE", `/api/notes/${id}`);
+      console.log("[NOTES API] Response status:", res.status);
+      console.log("[NOTES API] Delete SUCCESS");
     },
     onSuccess: () => {
+      console.log("[NOTES] Delete note SUCCESS");
       queryClient.invalidateQueries({ queryKey: ["/api/notes"] });
       const remaining = notes.filter(n => n.id !== selectedNoteId);
       setSelectedNoteId(remaining[0]?.id || null);
       toast({ title: "Note deleted", description: "Note has been deleted successfully." });
     },
     onError: (error: Error) => {
-      console.error("Delete note error:", error);
+      console.error("[NOTES] Delete note ERROR:", error);
       toast({ title: "Error", description: error.message || "Failed to delete note", variant: "destructive" });
     },
   });
@@ -357,10 +386,15 @@ export default function Notes() {
 
   const generateQuizMutation = useMutation({
     mutationFn: async ({ noteId, questionCount }: { noteId: string; questionCount?: number }) => {
+      console.log("[NOTES AI] Sending POST /api/notes/:id/generate-quiz", { noteId, questionCount });
       const res = await apiRequest("POST", `/api/notes/${noteId}/generate-quiz`, { questionCount });
-      return res.json();
+      console.log("[NOTES AI] Response status:", res.status);
+      const result = await res.json();
+      console.log("[NOTES AI] Response data:", result);
+      return result;
     },
     onSuccess: (data) => {
+      console.log("[NOTES AI] Generate quiz SUCCESS");
       // Invalidate and refetch quizzes
       queryClient.invalidateQueries({ queryKey: ["/api/quizzes"] });
       setShowAutoGenerateDialog(false);
@@ -371,7 +405,7 @@ export default function Notes() {
       });
     },
     onError: (error: Error) => {
-      console.error("Generate quiz error:", error);
+      console.error("[NOTES AI] Generate quiz ERROR:", error);
       setIsGenerating(false);
       toast({ title: "Error", description: error.message || "Failed to generate quiz from note", variant: "destructive" });
     },
@@ -379,10 +413,15 @@ export default function Notes() {
 
   const generateFlashcardsMutation = useMutation({
     mutationFn: async ({ noteId, deckId }: { noteId: string; deckId: string }) => {
+      console.log("[NOTES AI] Sending POST /api/notes/:id/generate-flashcards", { noteId, deckId });
       const res = await apiRequest("POST", `/api/notes/${noteId}/generate-flashcards`, { deckId });
-      return res.json();
+      console.log("[NOTES AI] Response status:", res.status);
+      const result = await res.json();
+      console.log("[NOTES AI] Response data:", result);
+      return result;
     },
     onSuccess: (data) => {
+      console.log("[NOTES AI] Generate flashcards SUCCESS");
       // Invalidate and refetch decks
       queryClient.invalidateQueries({ queryKey: ["/api/decks"] });
       setShowAutoGenerateDialog(false);
@@ -393,28 +432,37 @@ export default function Notes() {
       });
     },
     onError: (error: Error) => {
-      console.error("Generate flashcards error:", error);
+      console.error("[NOTES AI] Generate flashcards ERROR:", error);
       setIsGenerating(false);
       toast({ title: "Error", description: error.message || "Failed to generate flashcards from note", variant: "destructive" });
     },
   });
 
   const handleAutoGenerate = () => {
+    console.log("[NOTES] Auto Generate button clicked - type:", autoGenerateType);
+    console.log("[NOTES] Handler entered - selectedNoteId:", selectedNoteId);
     if (!selectedNoteId) {
+      console.log("[NOTES] Auto Generate blocked - no note selected");
       toast({ title: "No note selected", description: "Please select a note first", variant: "destructive" });
       return;
     }
     
+    const token = localStorage.getItem("token");
+    console.log("[NOTES] Auth check - token exists:", !!token);
+    
     setIsGenerating(true);
     
     if (autoGenerateType === "quiz") {
+      console.log("[NOTES] Calling generateQuiz mutation");
       generateQuizMutation.mutate({ noteId: selectedNoteId, questionCount: 5 });
     } else {
       if (!selectedDeckId) {
+        console.log("[NOTES] Auto Generate blocked - no deck selected");
         setIsGenerating(false);
         toast({ title: "Select a deck", description: "Please select a deck for the flashcards", variant: "destructive" });
         return;
       }
+      console.log("[NOTES] Calling generateFlashcards mutation - deckId:", selectedDeckId);
       generateFlashcardsMutation.mutate({ noteId: selectedNoteId, deckId: selectedDeckId });
     }
   };
@@ -587,10 +635,61 @@ export default function Notes() {
 
   const handleDeleteNote = () => {
     if (!selectedNoteId) return;
+    setDeleteNoteTrigger(selectedNoteId);
+    setShowDeleteDialog(true);
+  };
+
+  const confirmDeleteNote = () => {
+    if (!deleteNoteTrigger) return;
+    deleteNoteMutation.mutate(deleteNoteTrigger);
+    setShowDeleteDialog(false);
+    setDeleteNoteTrigger(null);
+  };
+
+  const handleExportNote = () => {
+    if (!selectedNoteId || !noteTitle) return;
     
-    if (confirm("Are you sure you want to delete this note? This action cannot be undone.")) {
-      deleteNoteMutation.mutate(selectedNoteId);
+    const content = `${noteTitle}
+${noteSubject ? `Subject: ${noteSubject}` : ""}
+${noteTags.length > 0 ? `Tags: ${noteTags.join(", ")}` : ""}
+${"=".repeat(50)}
+
+${noteContent}`;
+
+    const element = document.createElement("a");
+    const file = new Blob([content], { type: "text/plain" });
+    element.href = URL.createObjectURL(file);
+    element.download = `${noteTitle.replace(/[^a-z0-9]/gi, "-").toLowerCase()}.txt`;
+    document.body.appendChild(element);
+    element.click();
+    document.body.removeChild(element);
+    
+    toast({ title: "Exported", description: "Note exported as text file." });
+  };
+
+  const handleCopyToClipboard = async () => {
+    if (!noteTitle) return;
+    
+    const content = `${noteTitle}
+${noteContent}`;
+
+    try {
+      await navigator.clipboard.writeText(content);
+      toast({ title: "Copied", description: "Note content copied to clipboard." });
+    } catch (error) {
+      console.error("Failed to copy:", error);
+      toast({ title: "Error", description: "Failed to copy note content", variant: "destructive" });
     }
+  };
+
+  const handleDuplicateNote = () => {
+    if (!selectedNoteId || !noteTitle) return;
+    
+    createNoteMutation.mutate({
+      title: `${noteTitle} (Copy)`,
+      subject: noteSubject,
+      tags: noteTags,
+    });
   };
 
   const groupedNotes = notes.reduce((acc, note) => {
@@ -785,7 +884,7 @@ export default function Notes() {
                       <MoreVertical className="h-5 w-5" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuContent align="end" className="w-56">
                     <DropdownMenuItem 
                       className="gap-2"
                       onClick={() => {
@@ -793,17 +892,44 @@ export default function Notes() {
                         setShowRenameDialog(true);
                       }}
                     >
-                      <Edit className="h-4 w-4" />
-                      Rename
+                      <Edit2 className="h-4 w-4" />
+                      <span>Edit Note</span>
                     </DropdownMenuItem>
+                    
+                    <DropdownMenuItem 
+                      className="gap-2"
+                      onClick={handleCopyToClipboard}
+                    >
+                      <Copy className="h-4 w-4" />
+                      <span>Copy to Clipboard</span>
+                    </DropdownMenuItem>
+                    
+                    <DropdownMenuItem 
+                      className="gap-2"
+                      onClick={handleDuplicateNote}
+                      disabled={createNoteMutation.isPending}
+                    >
+                      <FileText className="h-4 w-4" />
+                      <span>Duplicate Note</span>
+                    </DropdownMenuItem>
+                    
+                    <DropdownMenuItem 
+                      className="gap-2"
+                      onClick={handleExportNote}
+                    >
+                      <Download className="h-4 w-4" />
+                      <span>Export as TXT</span>
+                    </DropdownMenuItem>
+                    
                     <DropdownMenuSeparator />
+                    
                     <DropdownMenuItem 
                       className="text-destructive gap-2"
                       onClick={handleDeleteNote}
                       disabled={deleteNoteMutation.isPending}
                     >
                       <Trash2 className="h-4 w-4" />
-                      Delete Note
+                      <span>Delete Note</span>
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -1262,6 +1388,38 @@ Markdown formatting is supported:
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Note Confirmation Dialog */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertCircle className="h-5 w-5 text-destructive" />
+              Delete Note?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. The note "{noteTitle}" will be permanently deleted.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-3 flex items-start gap-2">
+            <AlertCircle className="h-4 w-4 text-destructive mt-0.5 flex-shrink-0" />
+            <p className="text-sm text-destructive">All associated data will be lost.</p>
+          </div>
+          <AlertDialogCancel className="mt-4">Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={confirmDeleteNote}
+            disabled={deleteNoteMutation.isPending}
+            className="bg-destructive hover:bg-destructive/90"
+          >
+            {deleteNoteMutation.isPending ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <Trash2 className="h-4 w-4 mr-2" />
+            )}
+            Delete
+          </AlertDialogAction>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Flashcard Dialog */}
       <Dialog open={showFlashcardDialog} onOpenChange={setShowFlashcardDialog}>

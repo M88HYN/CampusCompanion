@@ -127,18 +127,55 @@ export default async function runApp(
   // Run setup
   await setup(app, server);
 
-  const port = parseInt(process.env.PORT || '5000', 10);
   const host = process.env.NODE_ENV === 'production' ? '0.0.0.0' : '127.0.0.1';
-  
-  server.listen(port, host, () => {
-    log(`✅ Backend API server ready at http://${host}:${port}`);
-    if (process.env.NODE_ENV === 'development') {
-      log(`📱 Frontend will be available at http://127.0.0.1:5173`, "express");
-      log(`🔗 API requests from frontend will be proxied to http://${host}:${port}`, "express");
-    }
-  });
+  let port = parseInt(process.env.PORT || '5000', 10);
+  let attempts = 0;
+  const maxAttempts = 10;
 
-  // Handle server errors
+  // Function to attempt starting the server on a port
+  const startServer = async (currentPort: number): Promise<boolean> => {
+    return new Promise((resolve) => {
+      const errorHandler = (error: any) => {
+        if (error.code === 'EADDRINUSE') {
+          log(`Port ${currentPort} is in use, trying another one...`, "express");
+          resolve(false);
+        } else {
+          log(`Server error: ${error.message}`, "express");
+          console.error('Server Error:', error);
+          resolve(false);
+        }
+      };
+
+      server.once('error', errorHandler);
+
+      server.listen(currentPort, host, () => {
+        server.removeListener('error', errorHandler);
+        log(`✅ Backend API server ready at http://${host}:${currentPort}`);
+        if (process.env.NODE_ENV === 'development') {
+          log(`📱 Frontend will be available at http://127.0.0.1:5173`, "express");
+          log(`🔗 API requests from frontend will be proxied to http://${host}:${currentPort}`, "express");
+        }
+        resolve(true);
+      });
+    });
+  };
+
+  // Try to start server, incrementing port on failure
+  while (attempts < maxAttempts) {
+    const success = await startServer(port);
+    if (success) {
+      break;
+    }
+    port++;
+    attempts++;
+    
+    if (attempts >= maxAttempts) {
+      log(`Failed to find available port after ${maxAttempts} attempts`, "express");
+      process.exit(1);
+    }
+  }
+
+  // Handle server errors after successful start
   server.on('error', (error) => {
     log(`Server error: ${error.message}`, "express");
     console.error('Server Error:', error);

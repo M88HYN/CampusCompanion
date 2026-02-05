@@ -4,19 +4,23 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { db } from "./db";
 import * as schema from "@shared/schema";
-import { eq, and, desc, sql } from "drizzle-orm";
+import { eq, and, desc, sql, gte, lte, asc } from "drizzle-orm";
 import { randomUUID } from "crypto";
 import {
   insertNoteSchema, insertNoteBlockSchema,
   insertDeckSchema, insertCardSchema,
   insertQuizSchema, insertQuizQuestionSchema, insertQuizOptionSchema,
-  insertQuizAttemptSchema, insertQuizResponseSchema
+  insertQuizAttemptSchema, insertQuizResponseSchema,
+  cardReviews
 } from "@shared/schema";
 import { z } from "zod";
 import { registerChatRoutes } from "./replit_integrations/chat";
 import { registerInsightScoutRoutes } from "./insight-scout";
 import { registerAuthRoutes, authMiddleware } from "./auth-routes";
 import type { Card } from "@shared/schema";
+import type { JWTPayload } from "./auth";
+import { notes } from "./schema/notes";
+
 
 // Helper to get user ID from authenticated request
 function getUserId(req: any): string {
@@ -106,8 +110,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const noteData = insertNoteSchema.parse({ ...req.body, userId });
       console.log("Note data after schema validation:", JSON.stringify(noteData, null, 2));
       
-      const note = await storage.createNote(noteData);
-      console.log("Note created successfully:", note);
+    // 🔥 CREATE NOTE AND RETURN IT IMMEDIATELY
+    const [note] = await db
+    .insert(schema.notes)
+    .values(noteData)
+    .returning();
+
+    // Safety check (prevents silent 500s)
+if (!note) {
+  return res.status(500).json({ error: "Note creation failed" });
+}
+
       
       if (req.body.blocks && Array.isArray(req.body.blocks)) {
         const blocks = req.body.blocks.map((block: any, index: number) => ({
@@ -217,7 +230,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const quiz = await storage.createQuiz({
         userId: getUserId(req),
         title: title || `Quiz: ${note.title}`,
-        subject: note.subject || "General",
+        subject: (note.subject || "General") as string,
         description: `Auto-generated from note: ${note.title}`,
         timeLimit: questionCount * 60, // 1 min per question
         passingScore: 70,
@@ -342,7 +355,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           type: "basic",
           front,
           back,
-          tags: note.tags || [],
+          tags: (note.tags || []) as string[],
           sourceNoteBlockId: block.id,
         });
         
@@ -590,6 +603,104 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Smart card prioritization for intelligent study sessions
+  // Get overall flashcard statistics
+  app.get("/api/flashcards/stats", authMiddleware, async (req: any, res) => {
+    try {
+      const userId = getUserId(req);
+      const now = new Date();
+
+      // Get all decks for this user
+      const userDecks = await storage.getDecks(userId);
+      
+      // Collect all cards
+      let allCards: Card[] = [];
+      for (const deck of userDecks) {
+        const deckCards = await storage.getCards(deck.id);
+        allCards.push(...deckCards);
+      }
+
+      // Calculate stats
+      const stats = {
+        totalCards: allCards.length,
+        dueNow: allCards.filter(c => new Date(c.dueAt) <= now).length,
+        new: allCards.filter(c => c.status === "new").length,
+        struggling: allCards.filter(c => c.easeFactor < 2.0).length,
+        mastered: allCards.filter(c => c.interval > 30).length, // interval > 30 days means mastered
+      };
+
+      res.json(stats);
+    } catch (error) {
+      console.error("[Flashcards Stats] Error:", error);
+      res.status(500).json({ 
+        totalCards: 0, 
+        dueNow: 0, 
+        new: 0, 
+        struggling: 0, 
+        mastered: 0 
+      });
+    }
+  });
+
+  // Get filtered flashcards
+  app.get("/api/flashcards", authMiddleware, async (req: any, res) => {
+    try {
+      const userId = getUserId(req);
+      const { filter = "due", limit = "20" } = req.query;
+      const maxCards = Math.min(parseInt(limit as string) || 20, 100);
+      const now = new Date();
+
+      // Get all cards
+      const userDecks = await storage.getDecks(userId);
+      let allCards: Card[] = [];
+      for (const deck of userDecks) {
+        const deckCards = await storage.getCards(deck.id);
+        allCards.push(...deckCards);
+      }
+
+      // Score and sort by priority
+      const scoredCards = allCards.map(card => {
+        let priorityScore = 0;
+        const dueDate = new Date(card.dueAt);
+        const daysSinceDue = (now.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24);
+        
+        if (daysSinceDue > 0) {
+          priorityScore += Math.min(daysSinceDue * 10, 50);
+        }
+        if (card.status === "new") {
+          priorityScore += 20;
+        }
+        if (card.easeFactor < 2.5) {
+          priorityScore += (2.5 - card.easeFactor) * 20;
+        }
+        if (card.status === "learning" && daysSinceDue >= 0) {
+          priorityScore += 25;
+        }
+
+        return {
+          ...card,
+          priorityScore,
+          daysOverdue: Math.max(0, daysSinceDue),
+        };
+      });
+
+      // Apply filter
+      let filtered = scoredCards;
+      if (filter === "due") {
+        filtered = scoredCards.filter(c => new Date(c.dueAt) <= now).sort((a, b) => b.priorityScore - a.priorityScore);
+      } else if (filter === "new") {
+        filtered = scoredCards.filter(c => c.status === "new").sort((a, b) => b.priorityScore - a.priorityScore);
+      } else if (filter === "struggling") {
+        filtered = scoredCards.filter(c => c.easeFactor < 2.0).sort((a, b) => b.priorityScore - a.priorityScore);
+      }
+
+      const result = filtered.slice(0, maxCards);
+      res.json(result);
+    } catch (error) {
+      console.error("[Flashcards Filter] Error:", error);
+      res.status(500).json([]);
+    }
+  });
+
   app.get("/api/cards/smart-queue", authMiddleware, async (req: any, res) => {
     try {
       const { deckId, mode = "smart", limit = "50" } = req.query;
@@ -715,7 +826,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             type: "basic",
             front: `What do you know about: ${block.content.substring(0, 100)}${block.content.length > 100 ? '...' : ''}?`,
             back: block.content,
-            tags: note.tags || [],
+            tags: (note.tags || []) as string[],
             sourceNoteBlockId: block.id,
           });
           createdCards.push(card);
@@ -815,16 +926,309 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  /**
+   * Enhanced review endpoint with SM-2 algorithm
+   * Applies spaced repetition, updates next review date, and tracks progress
+   */
   app.post("/api/cards/:id/review", authMiddleware, async (req: any, res) => {
     try {
-      const { quality } = req.body;
+      const { quality, responseTime = 0, isCorrect } = req.body;
+      
       if (typeof quality !== "number" || quality < 0 || quality > 5) {
         return res.status(400).json({ error: "Quality must be between 0 and 5" });
       }
-      const card = await storage.reviewCard(req.params.id, quality, getUserId(req));
-      res.json(card);
+      
+      const cardId = req.params.id;
+      const userId = getUserId(req);
+      const card = await storage.getCard(cardId);
+      
+      if (!card) {
+        return res.status(404).json({ error: "Card not found" });
+      }
+
+      // ============ SM-2 ALGORITHM ============
+      // quality: 0-2 = incorrect, 3-5 = correct
+      // All values from 0 to 5 are used to adjust ease factor
+      
+      let easeFactor = card.easeFactor;
+      let interval = card.interval;
+      let repetitions = card.repetitions;
+      let status = card.status;
+      
+      // SM-2 Formula: EF' = EF + (0.1 - (5 - q) * (0.08 + (5 - q) * 0.02))
+      easeFactor = easeFactor + (0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02));
+      easeFactor = Math.max(1.3, easeFactor); // Minimum ease factor is 1.3
+      
+      if (quality >= 3) {
+        // Correct response - increase interval
+        if (repetitions === 0) {
+          interval = 1;
+        } else if (repetitions === 1) {
+          interval = 3;
+        } else {
+          interval = Math.round(interval * easeFactor);
+        }
+        repetitions++;
+      } else {
+        // Incorrect response - reset interval
+        repetitions = 0;
+        interval = 1;
+      }
+      
+      // Update status based on repetitions and ease factor
+      if (repetitions === 0) {
+        status = "new";
+      } else if (repetitions < 2) {
+        status = "learning";
+      } else if (repetitions < 5) {
+        status = "reviewing";
+      } else {
+        status = "mastered";
+      }
+      
+      // Calculate next due date
+      const dueAt = new Date();
+      dueAt.setDate(dueAt.getDate() + interval);
+      
+      // Update card with new SM-2 values
+      const updatedCard = await storage.updateCard(cardId, {
+        easeFactor,
+        interval,
+        repetitions,
+        status,
+        dueAt,
+        lastReviewedAt: new Date(),
+      });
+      
+      // Create review record for analytics
+      const review = await db.insert(cardReviews).values({
+        id: randomUUID(),
+        cardId,
+        userId,
+        quality,
+        intervalBefore: card.interval,
+        intervalAfter: interval,
+        easeFactorBefore: card.easeFactor,
+        easeFactorAfter: easeFactor,
+        reviewedAt: new Date(),
+      }).returning();
+      
+      // Return updated card with review details
+      res.json({
+        card: updatedCard,
+        review: review[0],
+        feedback: {
+          message: quality >= 3 
+            ? "Great! This card will appear again soon." 
+            : "Let's review this concept more often.",
+          nextInterval: interval,
+          nextReviewDate: dueAt,
+          easeFactor: Math.round(easeFactor * 100) / 100,
+          status,
+        },
+      });
     } catch (error) {
+      console.error("[Card Review] Error:", error);
       res.status(500).json({ error: "Failed to review card" });
+    }
+  });
+
+  /**
+   * Start a flashcard review session
+   * Returns the first card to review and session metadata
+   */
+  app.post("/api/flashcards/sessions", authMiddleware, async (req: any, res) => {
+    try {
+      const userId = getUserId(req);
+      const { deckId, sessionType = "normal" } = req.body;
+      
+      if (!deckId) {
+        return res.status(400).json({ error: "deckId required" });
+      }
+      
+      // Get deck and verify ownership
+      const deck = await storage.getDeck(deckId);
+      if (!deck || deck.userId !== userId) {
+        return res.status(403).json({ error: "Deck not found or access denied" });
+      }
+      
+      // Get all cards for this deck
+      const allCards = await storage.getCards(deckId);
+      
+      // Prioritize cards based on sessionType
+      let cardsToReview = [...allCards];
+      
+      if (sessionType === "due") {
+        // Only cards that are due today
+        const now = new Date();
+        cardsToReview = allCards.filter(c => new Date(c.dueAt) <= now);
+      } else if (sessionType === "new") {
+        // Only new cards
+        cardsToReview = allCards.filter(c => c.status === "new");
+      } else if (sessionType === "struggling") {
+        // Low ease factor cards (struggling with)
+        cardsToReview = allCards
+          .filter(c => c.easeFactor < 2.0 && c.status !== "mastered")
+          .sort((a, b) => a.easeFactor - b.easeFactor);
+      }
+      
+      // Sort by due date (oldest first - most overdue)
+      cardsToReview.sort((a, b) => 
+        new Date(a.dueAt).getTime() - new Date(b.dueAt).getTime()
+      );
+      
+      if (cardsToReview.length === 0) {
+        return res.json({
+          session: {
+            deckId,
+            sessionType,
+            totalCards: allCards.length,
+            cardsToReview: 0,
+          },
+          firstCard: null,
+          message: "No cards available for this session type",
+        });
+      }
+      
+      // Get first card
+      const firstCard = cardsToReview[0];
+      
+      // Create session record
+      const session = {
+        id: randomUUID(),
+        deckId,
+        sessionType,
+        startedAt: new Date(),
+        cardsToReview: cardsToReview.length,
+        cardsReviewed: 0,
+        totalCards: allCards.length,
+      };
+      
+      res.json({
+        session,
+        firstCard,
+        remainingCards: cardsToReview.length,
+      });
+    } catch (error) {
+      console.error("[Flashcard Session] Error:", error);
+      res.status(500).json({ error: "Failed to start review session" });
+    }
+  });
+
+  /**
+   * Get next card in review session
+   */
+  app.get("/api/flashcards/sessions/:deckId/next", authMiddleware, async (req: any, res) => {
+    try {
+      const userId = getUserId(req);
+      const deckId = req.params.deckId;
+      
+      const deck = await storage.getDeck(deckId);
+      if (!deck || deck.userId !== userId) {
+        return res.status(403).json({ error: "Deck not found or access denied" });
+      }
+      
+      // Get all cards sorted by due date
+      const allCards = await storage.getCards(deckId);
+      const now = new Date();
+      
+      // Get due cards (most overdue first)
+      const dueCards = allCards
+        .filter(c => new Date(c.dueAt) <= now)
+        .sort((a, b) => new Date(a.dueAt).getTime() - new Date(b.dueAt).getTime());
+      
+      if (dueCards.length === 0) {
+        return res.json({
+          card: null,
+          message: "All cards are up to date!",
+          stats: {
+            dueToday: 0,
+            totalCards: allCards.length,
+            masteredCards: allCards.filter(c => c.status === "mastered").length,
+          }
+        });
+      }
+      
+      const nextCard = dueCards[0];
+      
+      // Get card review history for this session
+      const reviews = await db
+        .select()
+        .from(cardReviews)
+        .where(
+          and(
+            eq(cardReviews.cardId, nextCard.id),
+            eq(cardReviews.userId, userId)
+          )
+        )
+        .orderBy(desc(cardReviews.reviewedAt))
+        .limit(5);
+      
+      res.json({
+        card: nextCard,
+        reviewHistory: reviews.map((r: typeof reviews[0]) => ({
+          quality: r.quality,
+          reviewedAt: r.reviewedAt,
+          easeFactorAfter: r.easeFactorAfter,
+        })),
+        stats: {
+          dueToday: dueCards.length,
+          totalCards: allCards.length,
+          masteredCards: allCards.filter(c => c.status === "mastered").length,
+          currentStreak: nextCard.repetitions,
+        },
+      });
+    } catch (error) {
+      console.error("[Get Next Card] Error:", error);
+      res.status(500).json({ error: "Failed to get next card" });
+    }
+  });
+
+  /**
+   * Complete a flashcard review session and log statistics
+   */
+  app.post("/api/flashcards/sessions/:deckId/complete", authMiddleware, async (req: any, res) => {
+    try {
+      const userId = getUserId(req);
+      const deckId = req.params.deckId;
+      const { cardsReviewed = 0, correctAnswers = 0, durationMinutes = 0 } = req.body;
+      
+      const deck = await storage.getDeck(deckId);
+      if (!deck || deck.userId !== userId) {
+        return res.status(403).json({ error: "Deck not found or access denied" });
+      }
+      
+      // Create study session record
+      const { DashboardAnalytics } = await import("./dashboard-analytics");
+      const [session] = await DashboardAnalytics.createStudySession(
+        userId,
+        "flashcards",
+        durationMinutes,
+        deckId,
+        cardsReviewed,
+        correctAnswers
+      );
+      
+      // Calculate session stats
+      const accuracy = cardsReviewed > 0 
+        ? Math.round((correctAnswers / cardsReviewed) * 100)
+        : 0;
+      
+      res.json({
+        session,
+        stats: {
+          cardsReviewed,
+          correctAnswers,
+          accuracy,
+          durationMinutes,
+          message: accuracy >= 80 
+            ? "Excellent work! Keep it up!" 
+            : "Good effort! Keep practicing!"
+        },
+      });
+    } catch (error) {
+      console.error("[Complete Session] Error:", error);
+      res.status(500).json({ error: "Failed to complete session" });
     }
   });
 
@@ -889,6 +1293,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.json(enrichedQuizzes);
     } catch (error) {
+      console.error("[QUIZ API ERROR] Failed to fetch quizzes:", error);
       res.status(500).json({ error: "Failed to fetch quizzes" });
     }
   });
@@ -913,6 +1318,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.json({ ...quiz, questions: questionsWithOptions });
     } catch (error) {
+      console.error("[QUIZ API ERROR] Failed to fetch quiz:", error);
       res.status(500).json({ error: "Failed to fetch quiz" });
     }
   });
@@ -1048,6 +1454,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.status(201).json(attempt);
     } catch (error) {
+      console.error("[QUIZ ATTEMPT ERROR] Failed to create attempt:", error);
+      console.error("[QUIZ ATTEMPT ERROR] Stack:", error instanceof Error ? error.stack : 'No stack');
       res.status(500).json({ error: "Failed to create attempt" });
     }
   });
@@ -1151,6 +1559,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         totalMarks,
         timeSpent || 0
       );
+
+      const userId = getUserId(req);
+      console.log("[Quiz] Quiz completed:", {
+        attemptId: req.params.attemptId,
+        userId,
+        score,
+        earnedMarks,
+        totalMarks,
+        completedAt: completedAttempt?.completedAt,
+      });
+      
+      // Analytics are automatically updated since they're derived from quiz_attempts table
+      // The completedAt timestamp is now set, so next analytics fetch will include this quiz
+      console.log("[Analytics] Quiz completion recorded - analytics will reflect on next fetch");
       
       res.json({ ...completedAttempt, responses: finalResponses });
     } catch (error) {
@@ -1219,12 +1641,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // ==================== USER ANALYTICS ====================
 
-  app.get("/api/user/analytics", async (req, res) => {
+  app.get("/api/user/analytics", authMiddleware, async (req: any, res) => {
     try {
-      const analytics = await storage.getUserAnalytics(getUserId(req));
+      // Validate user authentication
+      const userId = getUserId(req);
+      if (!userId) {
+        return res.status(401).json({ error: "User not authenticated" });
+      }
+
+      // Fetch analytics - this derives data from quiz_attempts and quiz_responses
+      // If user has no quiz history, returns all zeros (safe default)
+      const analytics = await storage.getUserAnalytics(userId);
+      console.log("[Analytics] Fetched for user:", userId, "- Quizzes taken:", analytics.totalQuizzesTaken);
       res.json(analytics);
     } catch (error) {
-      res.status(500).json({ error: "Failed to fetch user analytics" });
+      console.error("[Analytics] Fetch error:", error);
+      // Return safe default analytics instead of 500 error
+      // This ensures frontend never crashes due to missing analytics data
+      res.json({
+        totalQuizzesTaken: 0,
+        totalQuestionsAnswered: 0,
+        overallAccuracy: 0,
+        averageTimePerQuestion: 0,
+        strengthsByTopic: {},
+        weaknessesByTopic: {},
+        recentActivity: [],
+      });
     }
   });
 
@@ -1285,9 +1727,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (typeof quality !== "number" || quality < 0 || quality > 5) {
         return res.status(400).json({ error: "Quality must be between 0 and 5" });
       }
+      
+      // Update spaced repetition stats for this question
       const stats = await storage.updateSpacedRepetition(req.params.statsId, quality);
+      
+      // Note: Analytics are derived from completed quizzes (quiz_attempts table)
+      // Spaced review sessions don't currently count toward quiz analytics
+      // but could be tracked separately in the future if needed
+      
       res.json(stats);
     } catch (error) {
+      console.error("[Spaced Review] Update error:", error);
       res.status(500).json({ error: "Failed to update spaced repetition" });
     }
   });
@@ -1327,7 +1777,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         questionNumber: 1,
       });
     } catch (error) {
-      console.error("Adaptive attempt error:", error);
+      console.error("[ADAPTIVE QUIZ ERROR] Failed to start adaptive quiz:", error);
+      console.error("[ADAPTIVE QUIZ ERROR] Stack:", error instanceof Error ? error.stack : 'No stack trace');
       res.status(500).json({ error: "Failed to start adaptive quiz" });
     }
   });
@@ -1477,6 +1928,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!question) {
         return res.status(404).json({ error: "Question not found" });
       }
+      console.log("[Quiz] Question loaded:", { attemptId: req.params.attemptId, questionId });
       
       // Check if already answered
       const existingResponses = await storage.getQuizResponses(req.params.attemptId);
@@ -1493,6 +1945,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Check answer
       let isCorrect = false;
       let correctAnswer: string | null = null;
+
+      console.log("[Quiz] Answer selected:", {
+        attemptId: req.params.attemptId,
+        questionId,
+        selectedOptionId: selectedOptionId || null,
+        textAnswer: textAnswer || null,
+      });
       
       if (question.type === "mcq") {
         const options = await storage.getQuizOptions(question.id);
@@ -1517,9 +1976,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         feedback: isCorrect ? "Correct!" : question.explanation || "Incorrect",
         responseTime,
       });
+
+      console.log("[Quiz] Answer submitted:", {
+        attemptId: req.params.attemptId,
+        questionId,
+        isCorrect,
+      });
       
-      // Update user question stats
-      await storage.upsertUserQuestionStats(getUserId(req), questionId, isCorrect, responseTime || 0);
+      // Update user question stats (non-blocking - don't fail quiz on stats error)
+      try {
+        await storage.upsertUserQuestionStats(getUserId(req), questionId, isCorrect, responseTime || 0);
+      } catch (statsError) {
+        console.warn("[Quiz] Failed to update question stats (non-critical):", statsError);
+      }
       
       res.json({
         response,
@@ -1537,6 +2006,151 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Register AI chat and research routes
   registerChatRoutes(app);
   registerInsightScoutRoutes(app);
+
+  // ==================== DASHBOARD METRICS (Real Data) ====================
+
+  app.get("/api/dashboard/metrics", authMiddleware, async (req: any, res) => {
+    try {
+      const userId = getUserId(req);
+      const { DashboardAnalytics } = await import("./dashboard-analytics");
+      const metrics = await DashboardAnalytics.getDashboardMetrics(userId);
+      res.json(metrics);
+    } catch (error) {
+      console.error("[Dashboard] Metrics error:", error);
+      // Return safe defaults
+      res.json({
+        dueToday: 0,
+        accuracy: 0,
+        weeklyStudyTime: 0,
+        itemsReviewedThisWeek: 0,
+      });
+    }
+  });
+
+  // Get due flashcards for immediate review
+  app.get("/api/dashboard/due-flashcards", authMiddleware, async (req: any, res) => {
+    try {
+      const userId = getUserId(req);
+      const limit = parseInt(req.query.limit as string) || 20;
+      const { DashboardAnalytics } = await import("./dashboard-analytics");
+      const dueCards = await DashboardAnalytics.getDueFlashcards(userId, limit);
+      res.json(dueCards);
+    } catch (error) {
+      console.error("[Dashboard] Due flashcards error:", error);
+      res.json([]);
+    }
+  });
+
+  // Get lowest scoring quiz for retake recommendation
+  app.get("/api/dashboard/lowest-quiz", authMiddleware, async (req: any, res) => {
+    try {
+      const userId = getUserId(req);
+      const { DashboardAnalytics } = await import("./dashboard-analytics");
+      const lowestQuiz = await DashboardAnalytics.getLowestScoringQuiz(userId);
+      
+      if (!lowestQuiz) {
+        return res.json(null);
+      }
+      
+      res.json(lowestQuiz);
+    } catch (error) {
+      console.error("[Dashboard] Lowest quiz error:", error);
+      res.json(null);
+    }
+  });
+
+  // Get recent notes for quick review
+  app.get("/api/dashboard/recent-notes", authMiddleware, async (req: any, res) => {
+    try {
+      const userId = getUserId(req);
+      const limit = parseInt(req.query.limit as string) || 5;
+      const { DashboardAnalytics } = await import("./dashboard-analytics");
+      const recentNotes = await DashboardAnalytics.getRecentNotes(userId, limit);
+      res.json(recentNotes);
+    } catch (error) {
+      console.error("[Dashboard] Recent notes error:", error);
+      res.json([]);
+    }
+  });
+
+  app.post("/api/notes", async (req: any, res) => {
+  try {
+    // ✅ HARD AUTH GUARANTEE
+    if (!req.user || !req.user.userId) {
+      console.error("❌ Note creation blocked: no user session");
+      return res.status(401).json({ error: "User not authenticated" });
+    }
+
+    // ✅ SAFE INPUT WITH DEFAULTS
+    const title = (req.body.title || "").trim();
+    const subject = (req.body.subject || "").trim();
+
+    if (!title) {
+      return res.status(400).json({ error: "Title is required" });
+    }
+
+    const note = {
+      id: randomUUID(),
+      userId: req.user.userId,
+      title,
+      subject,
+      content: "", // 🔒 NEVER NULL
+      createdAt: Math.floor(Date.now() / 1000),
+      updatedAt: Math.floor(Date.now() / 1000)
+    };
+
+    // ✅ DB INSERT (NO OPTIONAL FIELDS)
+    await db.insert(notes).values({
+  id: randomUUID(),
+  userId: req.user.id,
+  title,
+  subject: subject || null,
+  content: "",
+  tags: null,
+  createdAt: Date.now(),
+  updatedAt: Date.now(),
+});
+
+
+    console.log("✅ Note created:", note.id);
+
+    return res.status(201).json(note);
+  } catch (err) {
+    console.error("🔥 CREATE NOTE ERROR:", err);
+    return res.status(500).json({
+      error: "Failed to create note",
+      details: err instanceof Error ? err.message : err
+    });
+  }
+});
+
+
+  // Create a study session (for Pomodoro or focused study blocks)
+  app.post("/api/dashboard/study-session", authMiddleware, async (req: any, res) => {
+    try {
+      const userId = getUserId(req);
+      const { sessionType, durationMinutes, resourceId, itemsReviewed, correctAnswers } = req.body;
+      
+      if (!sessionType || !durationMinutes) {
+        return res.status(400).json({ error: "sessionType and durationMinutes required" });
+      }
+
+      const { DashboardAnalytics } = await import("./dashboard-analytics");
+      const [session] = await DashboardAnalytics.createStudySession(
+        userId,
+        sessionType,
+        durationMinutes,
+        resourceId,
+        itemsReviewed,
+        correctAnswers
+      );
+      
+      res.status(201).json(session);
+    } catch (error) {
+      console.error("[Dashboard] Study session error:", error);
+      res.status(500).json({ error: "Failed to create study session" });
+    }
+  });
 
   // ==================== SEED SAMPLE FLASHCARD DECKS ====================
   

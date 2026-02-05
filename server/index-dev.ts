@@ -1,6 +1,7 @@
 import "dotenv/config"; // Load .env variables FIRST before other imports
 import runApp from "./app";
 import { seedComputerScienceData } from "./seed-computer-science";
+import { seedCompletedQuizzes } from "./seed-completed-quizzes";
 import type { Express } from "express";
 import type { Server } from "http";
 
@@ -10,10 +11,15 @@ const setup = async (_app: Express, _server: Server) => {
     // Use a default demo user ID for seeding
     const demoUserId = "demo-user";
     await seedComputerScienceData(demoUserId);
+    
+    // Seed completed quizzes for analytics display
+    await seedCompletedQuizzes(demoUserId);
   } catch (error) {
     console.error("Error during setup:", error);
   }
 };
+
+
 
 // Start with error handling
 runApp(setup).catch((error) => {
@@ -31,4 +37,6 @@ process.on("SIGINT", () => {
   console.log("SIGINT received, shutting down gracefully");
   process.exit(0);
 });
+
+
 

@@ -17,6 +17,9 @@ import { Switch } from "@/components/ui/switch";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useSoundEffect, useConfetti, useKeyboardShortcuts } from "@/hooks/use-ui-effects";
+import { DifficultyBadge } from "@/components/ui/difficulty-badge";
+import { ProgressRing } from "@/components/ui/progress-ring";
 import type { Deck, Card as FlashCard } from "@shared/schema";
 
 interface DeckWithStats extends Deck {
@@ -116,15 +119,7 @@ export default function Flashcards() {
     sessionSize: "20",
   });
 
-  const { data: decks = [], isLoading: isLoadingDecks } = useQuery<DeckWithStats[]>({
-    queryKey: ["/api/decks"],
-  });
-
-  const { data: selectedDeck } = useQuery<DeckWithCards>({
-    queryKey: ["/api/decks", selectedDeckId],
-    enabled: !!selectedDeckId && (view === "studying" || view === "create-card" || view === "bulk-import"),
-  });
-
+  // Get smart queue data BEFORE useEffect hooks that reference it
   const { data: smartQueue, refetch: refetchSmartQueue } = useQuery<SmartQueueResponse>({
     queryKey: ["/api/cards/smart-queue", studyMode, selectedDeckId],
     queryFn: async () => {
@@ -140,21 +135,98 @@ export default function Flashcards() {
       return res.json();
     },
     enabled: view === "smart-study" || view === "decks",
+    retry: 1,
+  });
+
+  // Keyboard shortcuts for smart study
+  useEffect(() => {
+    if (view !== "smart-study") return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const cards = smartCards.length > 0 ? smartCards : (smartQueue?.cards || []);
+      if (cards.length === 0) return;
+
+      switch (e.key.toLowerCase()) {
+        case " ":
+        case "enter":
+          e.preventDefault();
+          setFlipped((prev) => !prev);
+          break;
+        case "1":
+          e.preventDefault();
+          if (flipped && !reviewCardMutation.isPending) handleReview(1);
+          break;
+        case "2":
+          e.preventDefault();
+          if (flipped && !reviewCardMutation.isPending) handleReview(2);
+          break;
+        case "3":
+          e.preventDefault();
+          if (flipped && !reviewCardMutation.isPending) handleReview(3);
+          break;
+        case "4":
+          e.preventDefault();
+          if (flipped && !reviewCardMutation.isPending) handleReview(5);
+          break;
+        case "escape":
+          e.preventDefault();
+          if (sessionCardIds.length > 0) {
+            getSessionSummaryMutation.mutate({
+              cardIds: sessionCardIds,
+              responses: sessionResponses,
+            });
+          } else {
+            setView("decks");
+          }
+          break;
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [view, flipped, currentCard, smartCards, smartQueue?.cards, sessionCardIds, sessionResponses]);
+
+  const { data: decks = [], isLoading: isLoadingDecks } = useQuery<DeckWithStats[]>({
+    queryKey: ["/api/decks"],
+    retry: 1,
+  });
+
+  const { data: selectedDeck } = useQuery<DeckWithCards>({
+    queryKey: ["/api/decks", selectedDeckId],
+    enabled: !!selectedDeckId && (view === "studying" || view === "create-card" || view === "bulk-import"),
+    retry: 1,
+  });
+
+  // Real stats from backend
+  const { data: flashcardStats } = useQuery({
+    queryKey: ["/api/flashcards/stats"],
+    queryFn: async () => {
+      const res = await apiRequest("GET", "/api/flashcards/stats");
+      return res.json();
+    },
+    enabled: view === "decks",
+    retry: 1,
   });
 
   const createDeckMutation = useMutation({
     mutationFn: async (data: { title: string; subject?: string; description?: string; tags?: string[] }) => {
+      console.log("[FLASHCARDS API] Sending POST /api/decks", data);
       const res = await apiRequest("POST", "/api/decks", data);
-      return res.json();
+      console.log("[FLASHCARDS API] Response status:", res.status);
+      const result = await res.json();
+      console.log("[FLASHCARDS API] Response data:", result);
+      return result;
     },
     onSuccess: (newDeck) => {
+      console.log("[FLASHCARDS] Create deck SUCCESS:", newDeck.id);
       queryClient.invalidateQueries({ queryKey: ["/api/decks"] });
       setSelectedDeckId(newDeck.id);
       setView("create-card");
       setDeckForm({ title: "", subject: "", description: "", tags: "" });
       toast({ title: "Deck created!", description: "Now add some flashcards." });
     },
-    onError: () => {
+    onError: (error) => {
+      console.error("[FLASHCARDS] Create deck ERROR:", error);
       toast({ title: "Error", description: "Failed to create deck", variant: "destructive" });
     },
   });
@@ -174,29 +246,43 @@ export default function Flashcards() {
 
   const createCardMutation = useMutation({
     mutationFn: async (data: { deckId: string; front: string; back: string }) => {
+      console.log("[FLASHCARDS API] Sending POST /api/cards", data);
       const res = await apiRequest("POST", "/api/cards", data);
-      return res.json();
+      console.log("[FLASHCARDS API] Response status:", res.status);
+      const result = await res.json();
+      console.log("[FLASHCARDS API] Response data:", result);
+      return result;
     },
     onSuccess: () => {
+      console.log("[FLASHCARDS] Create card SUCCESS");
       queryClient.invalidateQueries({ queryKey: ["/api/decks", selectedDeckId] });
       queryClient.invalidateQueries({ queryKey: ["/api/decks"] });
       setCardForm({ front: "", back: "" });
       toast({ title: "Card added!" });
     },
-    onError: () => {
+    onError: (error) => {
+      console.error("[FLASHCARDS] Create card ERROR:", error);
       toast({ title: "Error", description: "Failed to add card", variant: "destructive" });
     },
   });
 
   const reviewCardMutation = useMutation({
     mutationFn: async ({ cardId, quality }: { cardId: string; quality: number }) => {
+      console.log("[FLASHCARDS API] Sending POST /api/cards/:id/review", { cardId, quality });
       const res = await apiRequest("POST", `/api/cards/${cardId}/review`, { quality });
-      return res.json();
+      console.log("[FLASHCARDS API] Response status:", res.status);
+      const result = await res.json();
+      console.log("[FLASHCARDS API] Response data:", result);
+      return result;
     },
     onSuccess: () => {
+      console.log("[FLASHCARDS] Review card SUCCESS");
       queryClient.invalidateQueries({ queryKey: ["/api/decks", selectedDeckId] });
       queryClient.invalidateQueries({ queryKey: ["/api/decks"] });
       queryClient.invalidateQueries({ queryKey: ["/api/cards/smart-queue"] });
+    },
+    onError: (error) => {
+      console.error("[FLASHCARDS] Review card ERROR:", error);
     },
   });
 
@@ -212,7 +298,13 @@ export default function Flashcards() {
   });
 
   const handleCreateDeck = () => {
+    console.log("[FLASHCARDS] Create Deck button clicked");
+    console.log("[FLASHCARDS] Handler entered - deck form:", deckForm);
+    const token = localStorage.getItem("token");
+    console.log("[FLASHCARDS] Auth check - token exists:", !!token);
+    
     const tags = deckForm.tags.split(",").map(t => t.trim()).filter(Boolean);
+    console.log("[FLASHCARDS] Calling createDeck mutation");
     createDeckMutation.mutate({
       title: deckForm.title,
       subject: deckForm.subject || undefined,
@@ -222,10 +314,19 @@ export default function Flashcards() {
   };
 
   const handleAddCard = () => {
+    console.log("[FLASHCARDS] Add Card button clicked");
+    console.log("[FLASHCARDS] Handler entered - card form:", cardForm);
+    
     if (!cardForm.front.trim() || !cardForm.back.trim()) {
+      console.log("[FLASHCARDS] Validation failed - missing front/back");
       toast({ title: "Error", description: "Both front and back are required", variant: "destructive" });
       return;
     }
+    
+    const token = localStorage.getItem("token");
+    console.log("[FLASHCARDS] Auth check - token exists:", !!token);
+    console.log("[FLASHCARDS] Calling createCard mutation for deck:", selectedDeckId);
+    
     createCardMutation.mutate({
       deckId: selectedDeckId,
       front: cardForm.front.trim(),
@@ -234,6 +335,11 @@ export default function Flashcards() {
   };
 
   const startSmartStudy = (mode: StudyMode, deckId?: string) => {
+    console.log("[FLASHCARDS] Study Deck button clicked");
+    console.log("[FLASHCARDS] Handler entered - mode:", mode, "deckId:", deckId);
+    const token = localStorage.getItem("token");
+    console.log("[FLASHCARDS] Auth check - token exists:", !!token);
+    
     setStudyMode(mode);
     if (deckId) setSelectedDeckId(deckId);
     setCurrentCard(0);
@@ -242,15 +348,31 @@ export default function Flashcards() {
     setSessionResponses([]);
     setSessionCardIds([]);
     setView("smart-study");
+    console.log("[FLASHCARDS] Refetching smart queue");
     refetchSmartQueue();
   };
 
   const handleReview = useCallback((quality: number) => {
+    const { playSound } = useSoundEffect();
+    const { confetti } = useConfetti();
+    
+    console.log("[FLASHCARDS] Review button clicked - quality:", quality);
     const cards = smartCards.length > 0 ? smartCards : (smartQueue?.cards || []);
-    if (cards.length === 0) return;
+    console.log("[FLASHCARDS] Handler entered - cards available:", cards.length);
+    
+    if (cards.length === 0) {
+      console.log("[FLASHCARDS] No cards available - aborting");
+      return;
+    }
     
     const card = cards[currentCard];
+    const token = localStorage.getItem("token");
+    console.log("[FLASHCARDS] Auth check - token exists:", !!token);
+    console.log("[FLASHCARDS] Calling reviewCard mutation for card:", card.id);
     reviewCardMutation.mutate({ cardId: card.id, quality });
+    
+    // Play sound feedback
+    playSound(quality >= 3 ? "success" : "click");
     
     // Track session data
     setSessionResponses(prev => [...prev, quality]);
@@ -261,9 +383,15 @@ export default function Flashcards() {
       setFlipped(false);
       setShowThinkingPrompt(studyPreferences.showThinkingPrompt);
     } else {
-      // Session complete - get summary
+      // Session complete - get summary and show confetti if good performance
       const allCardIds = [...sessionCardIds, card.id];
       const allResponses = [...sessionResponses, quality];
+      const avgQuality = (allResponses.reduce((a, b) => a + b, 0) / allResponses.length);
+      
+      if (avgQuality >= 3) {
+        confetti();
+      }
+      
       getSessionSummaryMutation.mutate({ cardIds: allCardIds, responses: allResponses });
     }
   }, [smartCards, smartQueue?.cards, currentCard, reviewCardMutation, sessionCardIds, sessionResponses, studyPreferences.showThinkingPrompt, getSessionSummaryMutation]);
@@ -613,38 +741,80 @@ export default function Flashcards() {
             {!showThinkingPrompt && (
               <>
                 <div
-                  className="relative min-h-[300px] cursor-pointer"
+                  className="relative min-h-[300px] cursor-pointer perspective"
                   onClick={() => setFlipped(!flipped)}
                   data-testid="flashcard-container"
+                  style={{
+                    perspective: "1000px",
+                  }}
                 >
-                  <Card className="absolute inset-0 flex items-center justify-center transition-all hover-elevate bg-gradient-to-br from-white to-emerald-50 dark:from-slate-800 dark:to-emerald-950 border-2 border-emerald-300 dark:border-emerald-700 shadow-lg">
-                    <CardContent className="p-8 text-center w-full">
-                      <div className={`text-sm font-semibold mb-4 ${flipped ? 'text-teal-600 dark:text-teal-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
-                        {flipped ? "ANSWER" : "QUESTION"}
-                      </div>
-                      <p className="text-xl md:text-2xl font-medium leading-relaxed">
-                        {flipped ? card.back : card.front}
-                      </p>
-                      {!flipped && (
-                        <div className="mt-8">
-                          <RotateCw className="h-5 w-5 mx-auto text-muted-foreground" />
-                          <p className="text-xs text-muted-foreground mt-2">Click or press Space to reveal</p>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
+                  <div
+                    className="absolute inset-0 transition-transform duration-500 flex items-center justify-center"
+                    style={{
+                      transformStyle: "preserve-3d" as const,
+                      transform: flipped ? "rotateY(180deg)" : "rotateY(0deg)",
+                    }}
+                  >
+                    {/* Front of card */}
+                    <div
+                      className="absolute inset-0 w-full"
+                      style={{
+                        backfaceVisibility: "hidden" as const,
+                      }}
+                    >
+                      <Card className="h-full flex items-center justify-center glassmorphic hover-lift bg-gradient-to-br from-white/80 to-emerald-50/80 dark:from-slate-800/80 dark:to-emerald-950/80 border border-white/20 dark:border-white/10 shadow-2xl">
+                        <CardContent className="p-8 text-center w-full">
+                          <div className="text-sm font-semibold mb-4 text-emerald-600 dark:text-emerald-400">
+                            QUESTION
+                          </div>
+                          <p className="text-xl md:text-2xl font-medium leading-relaxed">
+                            {card.front}
+                          </p>
+                          <div className="mt-8">
+                            <RotateCw className="h-5 w-5 mx-auto text-muted-foreground animate-spin-fast" />
+                            <p className="text-xs text-muted-foreground mt-2">Click or press Space to reveal</p>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </div>
+
+                    {/* Back of card */}
+                    <div
+                      className="absolute inset-0 w-full"
+                      style={{
+                        backfaceVisibility: "hidden" as const,
+                        transform: "rotateY(180deg)",
+                      }}
+                    >
+                      <Card className="h-full flex items-center justify-center glassmorphic hover-lift bg-gradient-to-br from-white/80 to-teal-50/80 dark:from-slate-800/80 dark:to-teal-950/80 border border-white/20 dark:border-white/10 shadow-2xl">
+                        <CardContent className="p-8 text-center w-full">
+                          <div className="text-sm font-semibold mb-4 text-teal-600 dark:text-teal-400">
+                            ANSWER
+                          </div>
+                          <p className="text-xl md:text-2xl font-medium leading-relaxed">
+                            {card.back}
+                          </p>
+                          <div className="mt-8">
+                            <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+                              <DifficultyBadge status={card.status} easeFactor={card.easeFactor} />
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </div>
+                  </div>
                 </div>
 
                 {/* Rating Buttons */}
                 {flipped && (
-                  <div className="space-y-4">
+                  <div className="space-y-4 animate-scale-in">
                     <p className="text-center text-sm font-medium">How well did you know this?</p>
                     <div className="flex justify-center gap-2 md:gap-3 flex-wrap">
                       <Button
                         size="lg"
                         onClick={() => handleReview(1)}
                         disabled={reviewCardMutation.isPending}
-                        className="bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 text-white min-w-[80px]"
+                        className="bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 text-white min-w-[80px] button-hover-scale"
                         data-testid="button-again"
                       >
                         <span className="font-semibold">Again</span>
@@ -654,7 +824,7 @@ export default function Flashcards() {
                         size="lg"
                         onClick={() => handleReview(2)}
                         disabled={reviewCardMutation.isPending}
-                        className="bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white min-w-[80px]"
+                        className="bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white min-w-[80px] button-hover-scale"
                         data-testid="button-hard"
                       >
                         <span className="font-semibold">Hard</span>
@@ -664,7 +834,7 @@ export default function Flashcards() {
                         size="lg"
                         onClick={() => handleReview(3)}
                         disabled={reviewCardMutation.isPending}
-                        className="bg-gradient-to-r from-blue-500 to-cyan-600 hover:from-blue-600 hover:to-cyan-700 text-white min-w-[80px]"
+                        className="bg-gradient-to-r from-blue-500 to-cyan-600 hover:from-blue-600 hover:to-cyan-700 text-white min-w-[80px] button-hover-scale"
                         data-testid="button-good"
                       >
                         <span className="font-semibold">Good</span>
@@ -674,7 +844,7 @@ export default function Flashcards() {
                         size="lg"
                         onClick={() => handleReview(5)}
                         disabled={reviewCardMutation.isPending}
-                        className="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white min-w-[80px]"
+                        className="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white min-w-[80px] button-hover-scale"
                         data-testid="button-easy"
                       >
                         <span className="font-semibold">Easy</span>
@@ -704,7 +874,8 @@ export default function Flashcards() {
 
   // Deck View
   if (view === "decks") {
-    const stats = smartQueue?.stats;
+    // Use real stats from the API, fallback to smartQueue stats
+    const stats = flashcardStats || smartQueue?.stats;
     
     return (
       <div className="flex-1 overflow-auto bg-gradient-to-b from-emerald-50 to-teal-50 dark:from-emerald-950 dark:to-teal-950">
@@ -733,23 +904,23 @@ export default function Flashcards() {
               <CardContent className="p-6">
                 <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
                   <div className="text-center p-3 bg-slate-100 dark:bg-slate-800 rounded-lg">
-                    <p className="text-2xl font-bold text-slate-700 dark:text-slate-200">{stats.totalCards}</p>
+                    <p className="text-2xl font-bold text-slate-700 dark:text-slate-200">{stats?.totalCards ?? 0}</p>
                     <p className="text-xs text-muted-foreground">Total Cards</p>
                   </div>
                   <div className="text-center p-3 bg-red-100 dark:bg-red-900/30 rounded-lg">
-                    <p className="text-2xl font-bold text-red-600">{stats.dueNow}</p>
+                    <p className="text-2xl font-bold text-red-600">{stats?.dueNow ?? 0}</p>
                     <p className="text-xs text-muted-foreground">Due Now</p>
                   </div>
                   <div className="text-center p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                    <p className="text-2xl font-bold text-blue-600">{stats.newCards}</p>
+                    <p className="text-2xl font-bold text-blue-600">{stats?.new ?? 0}</p>
                     <p className="text-xs text-muted-foreground">New</p>
                   </div>
                   <div className="text-center p-3 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
-                    <p className="text-2xl font-bold text-orange-600">{stats.strugglingCards}</p>
+                    <p className="text-2xl font-bold text-orange-600">{stats?.struggling ?? 0}</p>
                     <p className="text-xs text-muted-foreground">Struggling</p>
                   </div>
                   <div className="text-center p-3 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg">
-                    <p className="text-2xl font-bold text-emerald-600">{stats.masteredCards}</p>
+                    <p className="text-2xl font-bold text-emerald-600">{stats?.mastered ?? 0}</p>
                     <p className="text-xs text-muted-foreground">Mastered</p>
                   </div>
                 </div>
@@ -770,39 +941,39 @@ export default function Flashcards() {
                     onClick={() => startSmartStudy("due-only")}
                     variant="outline"
                     className="h-auto py-4 border-2"
-                    disabled={stats.dueNow === 0}
+                    disabled={(stats?.dueNow ?? 0) === 0}
                     data-testid="button-due-only"
                   >
                     <div className="text-center">
                       <Clock className="h-6 w-6 mx-auto mb-1 text-red-500" />
                       <span className="font-semibold">Due Cards</span>
-                      <p className="text-xs text-muted-foreground mt-1">{stats.dueNow} cards</p>
+                      <p className="text-xs text-muted-foreground mt-1">{stats?.dueNow ?? 0} cards</p>
                     </div>
                   </Button>
                   <Button
                     onClick={() => startSmartStudy("new-only")}
                     variant="outline"
                     className="h-auto py-4 border-2"
-                    disabled={stats.newCards === 0}
+                    disabled={(stats?.new ?? 0) === 0}
                     data-testid="button-new-only"
                   >
                     <div className="text-center">
                       <Sparkles className="h-6 w-6 mx-auto mb-1 text-blue-500" />
                       <span className="font-semibold">New Cards</span>
-                      <p className="text-xs text-muted-foreground mt-1">{stats.newCards} cards</p>
+                      <p className="text-xs text-muted-foreground mt-1">{stats?.new ?? 0} cards</p>
                     </div>
                   </Button>
                   <Button
                     onClick={() => startSmartStudy("struggling")}
                     variant="outline"
                     className="h-auto py-4 border-2"
-                    disabled={stats.strugglingCards === 0}
+                    disabled={(stats?.struggling ?? 0) === 0}
                     data-testid="button-struggling"
                   >
                     <div className="text-center">
                       <Target className="h-6 w-6 mx-auto mb-1 text-orange-500" />
                       <span className="font-semibold">Struggling</span>
-                      <p className="text-xs text-muted-foreground mt-1">{stats.strugglingCards} cards</p>
+                      <p className="text-xs text-muted-foreground mt-1">{stats?.struggling ?? 0} cards</p>
                     </div>
                   </Button>
                 </div>

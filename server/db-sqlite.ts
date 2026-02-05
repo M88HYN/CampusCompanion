@@ -24,10 +24,33 @@ export function initializeDatabase(): BetterSQLite3Database<typeof schema> {
     schema,
   });
 
-  // Create tables
+  // Drop and recreate tables (fresh reset on every startup)
+  dropTables();
   createTables();
 
   return db;
+}
+
+function dropTables() {
+  // Drop all tables in reverse order of dependencies
+  const tables = [
+    'card_reviews', 'cards', 'decks',
+    'quiz_responses', 'quiz_attempts', 'quiz_options', 'quiz_questions', 'quizzes',
+    'user_question_stats', 'user_achievements', 'user_preferences',
+    'note_blocks', 'notes',
+    'research_conversations', 'sessions', 'users'
+  ];
+  
+  sqlite.exec('PRAGMA foreign_keys = OFF');
+  for (const table of tables) {
+    try {
+      sqlite.exec(`DROP TABLE IF EXISTS ${table}`);
+    } catch (e) {
+      // Ignore errors for non-existent tables
+    }
+  }
+  sqlite.exec('PRAGMA foreign_keys = ON');
+  console.log('Database tables dropped and reset');
 }
 
 function createTables() {
@@ -46,18 +69,20 @@ function createTables() {
     )
   `);
 
-  // Create notes table
-  sqlite.exec(`
-    CREATE TABLE IF NOT EXISTS notes (
-      id VARCHAR PRIMARY KEY,
-      user_id VARCHAR NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-      title TEXT NOT NULL,
-      subject TEXT,
-      tags TEXT,
-      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
-    )
-  `);
+// Create notes table - Drizzle-compatible
+sqlite.exec(`
+  CREATE TABLE IF NOT EXISTS notes (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    title TEXT NOT NULL,
+    subject TEXT,
+    content TEXT NOT NULL DEFAULT '',
+    tags TEXT,
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL
+  )
+`);
+
 
   // Create note_blocks table
   sqlite.exec(`
@@ -114,6 +139,8 @@ function createTables() {
     )
   `);
 
+
+  
   // Create card_reviews table
   sqlite.exec(`
     CREATE TABLE IF NOT EXISTS card_reviews (
@@ -147,11 +174,17 @@ function createTables() {
     CREATE TABLE IF NOT EXISTS quiz_questions (
       id VARCHAR PRIMARY KEY,
       quiz_id VARCHAR NOT NULL REFERENCES quizzes(id) ON DELETE CASCADE,
-      question TEXT NOT NULL,
       type TEXT NOT NULL DEFAULT 'mcq',
-      difficulty INTEGER DEFAULT 1,
+      question TEXT NOT NULL,
+      difficulty INTEGER DEFAULT 3,
       marks INTEGER DEFAULT 1,
-      explanation TEXT
+      explanation TEXT,
+      mark_scheme TEXT,
+      "order" INTEGER NOT NULL DEFAULT 0,
+      tags TEXT,
+      estimated_time INTEGER,
+      correct_answer TEXT,
+      source_note_block_id VARCHAR
     )
   `);
 
@@ -161,7 +194,8 @@ function createTables() {
       id VARCHAR PRIMARY KEY,
       question_id VARCHAR NOT NULL REFERENCES quiz_questions(id) ON DELETE CASCADE,
       text TEXT NOT NULL,
-      is_correct BOOLEAN DEFAULT false
+      is_correct BOOLEAN DEFAULT false,
+      "order" INTEGER NOT NULL DEFAULT 0
     )
   `);
 
@@ -192,7 +226,15 @@ function createTables() {
       attempt_id VARCHAR NOT NULL REFERENCES quiz_attempts(id) ON DELETE CASCADE,
       question_id VARCHAR NOT NULL REFERENCES quiz_questions(id) ON DELETE CASCADE,
       selected_option_id VARCHAR,
-      is_correct BOOLEAN
+      text_answer TEXT,
+      is_correct BOOLEAN,
+      marks_awarded INTEGER,
+      feedback TEXT,
+      response_time INTEGER,
+      confidence_level INTEGER,
+      converted_to_flashcard BOOLEAN NOT NULL DEFAULT 0,
+      flashcard_id VARCHAR,
+      answered_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
     )
   `);
 
@@ -202,8 +244,15 @@ function createTables() {
       id VARCHAR PRIMARY KEY,
       user_id VARCHAR NOT NULL REFERENCES users(id) ON DELETE CASCADE,
       question_id VARCHAR NOT NULL REFERENCES quiz_questions(id) ON DELETE CASCADE,
-      attempts INTEGER DEFAULT 0,
-      correct INTEGER DEFAULT 0
+      times_answered INTEGER NOT NULL DEFAULT 0,
+      times_correct INTEGER NOT NULL DEFAULT 0,
+      average_response_time REAL,
+      last_attempted_at DATETIME,
+      next_review_date DATETIME,
+      review_interval INTEGER DEFAULT 1,
+      ease_factor REAL DEFAULT 2.5,
+      consecutive_correct INTEGER DEFAULT 0,
+      needs_review BOOLEAN DEFAULT 1
     )
   `);
 

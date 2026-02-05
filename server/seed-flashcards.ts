@@ -1,5 +1,6 @@
 import { db } from "./db";
 import { decks, cards } from "@shared/schema";
+import { eq } from "drizzle-orm";
 
 export async function seedFlashcards(userId: string) {
   const sampleDecks = [
@@ -63,6 +64,24 @@ export async function seedFlashcards(userId: string) {
     { front: "Array vs Linked List: When to use each?", back: "Array: Fast random access, fixed size, memory-efficient.\nLinked List: Frequent insertions/deletions, dynamic size, no wasted space." },
     { front: "What is a Trie?", back: "A tree-like data structure for storing strings where each node represents a character. Excellent for prefix-based searches and autocomplete." },
     { front: "Time complexity of common operations on a balanced BST?", back: "Search, Insert, Delete: O(log n) because the tree height is log(n) when balanced." },
+    { front: "What is a Priority Queue?", back: "An abstract data type where elements are associated with priorities. Elements with higher priority are served before lower priority elements. Implemented using heaps." },
+    { front: "Explain collision handling in Hash Tables.", back: "Chaining: Each bucket stores a list of entries with the same hash.\nOpen Addressing: Find another empty bucket (linear probing, quadratic probing, double hashing)." },
+    { front: "What is a Doubly Linked List?", back: "A linked list where each node has pointers to both the next and previous nodes. Allows traversal in both directions but uses more memory." },
+    { front: "Time and space complexity of common data structures?", back: "Array: O(1) access, O(n) insert/delete\nLinked List: O(n) access, O(1) insert/delete\nHash Table: O(1) avg all ops\nBST: O(log n) avg, O(n) worst" },
+    { front: "What is an AVL Tree?", back: "A self-balancing BST that maintains balance through rotations. Height difference between left and right subtrees is at most 1. Guarantees O(log n) operations." },
+    { front: "Difference between Set and Array?", back: "Set: Unordered, unique elements only, O(1) lookup, used for membership testing.\nArray: Ordered, allows duplicates, O(n) lookup by value." },
+    { front: "What is a Skip List?", back: "A probabilistic data structure providing O(log n) search, insertion, and deletion. Simpler to implement than balanced trees but slightly slower in practice." },
+    { front: "Explain the concept of Adjacency List vs Adjacency Matrix.", back: "List: Space-efficient O(V+E), better for sparse graphs.\nMatrix: O(V²) space, fast lookup O(1) for edge existence, better for dense graphs." },
+    { front: "What is Hashing and why is it important?", back: "Converting input data into fixed-size hash codes for quick lookup. Used in hash tables, checksums, caching. Properties: deterministic, uniform distribution, avalanche effect." },
+    { front: "What is a Segment Tree?", back: "A binary tree data structure for efficient range queries and updates on arrays. Each node represents an interval. Supports O(log n) range sum/min/max queries." },
+    { front: "Difference between Stack and Heap memory?", back: "Stack: LIFO, fast, limited size, automatic cleanup, stores primitives and references.\nHeap: Dynamic allocation, slower, larger capacity, manual/garbage collected, stores objects." },
+    { front: "What is a B-Tree?", back: "A self-balancing tree optimized for disk-based storage. All leaves at same level. Minimizes disk I/O by storing multiple keys per node. Used in databases and file systems." },
+    { front: "Explain the concept of Space Complexity.", back: "Measure of memory an algorithm uses relative to input size. Includes auxiliary space (temporary variables, recursion stack). Important for large-scale applications." },
+    { front: "What is a Circular Linked List?", back: "A linked list where the last node points back to the first node, forming a circle. No null reference. Useful for round-robin scheduling and circular buffers." },
+    { front: "Define a Sparse Matrix and how to represent it efficiently.", back: "Matrix with mostly zeros. Efficient representations: COO (coordinate list), CSR (compressed sparse row), storing only non-zero elements to save space." },
+    { front: "What is the difference between Static and Dynamic arrays?", back: "Static: Fixed size, allocated at compile time, faster allocation.\nDynamic: Resizable, allocated at runtime, flexible but slower growth (amortized O(1) insertion)." },
+    { front: "Explain the concept of Tree Traversal methods.", back: "Preorder: Root-Left-Right\nInorder: Left-Root-Right (BST in sorted order)\nPostorder: Left-Right-Root\nLevel-order: BFS by levels" },
+    { front: "What is a Multiset/Multimap?", back: "Like a Set/Map but allows duplicate keys. Maintains count of occurrences. Useful for frequency counting and duplicate handling." },
   ];
 
   const jsCards = [
@@ -76,6 +95,24 @@ export async function seedFlashcards(userId: string) {
     { front: "What is async/await?", back: "Syntactic sugar over Promises. 'async' marks a function as returning a Promise. 'await' pauses execution until a Promise resolves." },
     { front: "What is the Spread Operator (...)?", back: "Expands an iterable into individual elements.\nArrays: [...arr1, ...arr2]\nObjects: {...obj1, ...obj2}\nFunction args: fn(...args)" },
     { front: "What is Destructuring?", back: "Syntax for unpacking values from arrays or properties from objects:\nconst [a, b] = [1, 2]\nconst {name, age} = person" },
+    { front: "Explain Prototype and Prototypal Inheritance.", back: "Every JavaScript object has a [[Prototype]]. Prototypal inheritance: objects inherit from other objects through the prototype chain. 'prototype' property on functions." },
+    { front: "What is a Callback?", back: "A function passed as argument to another function, executed after some operation. Used for async operations before Promises/async-await. Can lead to callback hell." },
+    { front: "What is the call(), apply(), and bind() method?", back: "All methods allow explicit 'this' binding.\ncall(thisArg, args): Invoke immediately with individual args\napply(thisArg, [args]): Invoke with array of args\nbind(thisArg): Returns new function with bound this" },
+    { front: "What is Currying?", back: "Transforming a function with multiple arguments into a sequence of functions with single arguments. f(a,b,c) → f(a)(b)(c). Enables partial application." },
+    { front: "Explain the difference between .map(), .filter(), and .reduce().", back: ".map(): Transform each element, return new array of same length\n.filter(): Keep elements matching condition, shorter array\n.reduce(): Accumulate values into single result" },
+    { front: "What is the 'new' keyword in JavaScript?", back: "Creates a new object, sets its [[Prototype]] to constructor.prototype, calls constructor with 'this' bound to new object, returns the object." },
+    { front: "What is Memoization?", back: "Optimization technique storing results of expensive function calls. Return cached result for same inputs. Trade-off: memory for speed." },
+    { front: "Explain Temporal Dead Zone (TDZ).", back: "Time between entering scope and declaration of let/const variables. References throw ReferenceError. var doesn't have TDZ (hoisted and initialized with undefined)." },
+    { front: "What is a Generator function?", back: "Function yielding multiple values over time using 'yield' keyword. Returns Iterator object. Lazy evaluation, memory efficient for large sequences." },
+    { front: "What is Set and how does it differ from Array?", back: "Set: Unique values only, O(1) lookup/add/delete, insertion order preserved, no duplicates.\nArray: Allows duplicates, O(n) indexOf, good for ordered data." },
+    { front: "Explain WeakMap and WeakSet.", back: "Weak collections holding weak references to objects. Objects can be garbage collected even if in WeakMap/WeakSet. No iteration, no size property. Used for private data." },
+    { front: "What is the Symbol type?", back: "Primitive type for unique identifiers. Each Symbol is unique even with same description. Used for object property keys, well-known symbols (Symbol.iterator)." },
+    { front: "What is Proxy and Reflect API?", back: "Proxy: Intercept and customize operations on objects (get, set, delete, etc).\nReflect: Provides methods for metaprogramming operations (reflect.get, reflect.set)." },
+    { front: "Explain Microtasks vs Macrotasks.", back: "Microtasks (higher priority): Promise callbacks, process.nextTick, queueMicrotask\nMacrotasks (lower priority): setTimeout, setInterval, I/O\nAll microtasks run before next macrotask." },
+    { front: "What is the Optional Chaining operator (?.) and Nullish Coalescing (??)?", back: "Optional Chaining: obj?.prop?.method?.() - safely access nested properties\nNullish Coalescing: value ?? default - returns right if left is null/undefined (not falsy)" },
+    { front: "Explain Event Delegation.", back: "Technique adding single event listener to parent handling events from multiple children. Reduces listeners, enables handling dynamic elements. Uses event.target." },
+    { front: "What is the difference between Object.freeze() and Object.seal()?", back: "freeze(): No property modification, addition, deletion\nseal(): No property addition/deletion, but can modify existing properties" },
+    { front: "Explain Module Pattern and ES6 Modules.", back: "Module Pattern: IIFE wrapping code creating private scope with exported API.\nES6 Modules: Import/export syntax, static analysis, better tree-shaking, async loading." },
   ];
 
   const sqlCards = [
@@ -89,6 +126,24 @@ export async function seedFlashcards(userId: string) {
     { front: "HAVING vs WHERE", back: "WHERE: Filters rows before grouping\nHAVING: Filters groups after GROUP BY\nExample: HAVING COUNT(*) > 5" },
     { front: "What is a Transaction?", back: "A sequence of database operations treated as a single unit. Either all succeed (COMMIT) or all fail (ROLLBACK). Ensures ACID properties." },
     { front: "ACID properties", back: "Atomicity: All or nothing\nConsistency: Valid state to valid state\nIsolation: Transactions don't interfere\nDurability: Committed data persists" },
+    { front: "Explain RIGHT JOIN and FULL OUTER JOIN.", back: "RIGHT JOIN: All rows from right table + matching from left (opposite of LEFT)\nFULL OUTER JOIN: All rows from both tables (combines LEFT and RIGHT)" },
+    { front: "What is a View?", back: "Virtual table based on SELECT query result. Stored in database schema but doesn't store data. Used for security (limit columns), simplicity, and reusability." },
+    { front: "Difference between DISTINCT and GROUP BY.", back: "DISTINCT: Returns unique rows, simple\nGROUP BY: Groups rows, requires aggregate function for other columns, more powerful." },
+    { front: "What is a Subquery?", back: "Query nested inside another query. Can be in SELECT, FROM, WHERE, HAVING clauses. Correlated subquery references outer query columns." },
+    { front: "Explain UNION and UNION ALL.", back: "UNION: Combines results from multiple queries, removes duplicates, slower\nUNION ALL: Combines results keeping duplicates, faster" },
+    { front: "What is a Trigger?", back: "Database object executing automatically on specific events (INSERT, UPDATE, DELETE). Used for enforcing business logic, auditing, maintaining calculated columns." },
+    { front: "What is a Stored Procedure?", back: "Precompiled SQL code stored in database. Can accept parameters, control flow, return values. Used for complex operations, security, performance." },
+    { front: "Explain Denormalization and when to use it.", back: "Combining normalized tables to reduce joins and improve read performance. Trade-off: faster reads, slower writes, data redundancy, update complexity." },
+    { front: "What is a Composite Key?", back: "PRIMARY KEY composed of multiple columns. Each column can be non-unique, but combination must be unique. Example: (student_id, course_id)." },
+    { front: "Explain LIKE and wildcard patterns.", back: "LIKE 'pattern' for string matching.\n%: Any number of characters\n_: Single character\nExample: WHERE name LIKE 'J%' finds names starting with J" },
+    { front: "What is CASCADE in Foreign Keys?", back: "Option to automatically delete/update child records when parent record is deleted/updated. Maintains referential integrity automatically." },
+    { front: "Explain the difference between COUNT(*), COUNT(column), and COUNT(DISTINCT column).", back: "COUNT(*): Total rows including NULLs\nCOUNT(column): Non-NULL values in column\nCOUNT(DISTINCT column): Unique non-NULL values" },
+    { front: "What is a Cross Join?", back: "Cartesian product of two tables. Returns all combinations of rows. Result size: rows1 × rows2. Rarely used intentionally." },
+    { front: "Explain Query Optimization techniques.", back: "Use indexes, avoid SELECT *, write efficient WHERE clauses, use JOINs over subqueries, denormalize strategically, analyze query execution plans." },
+    { front: "What is Database Sharding?", back: "Partitioning data across multiple database instances (shards). Each shard holds subset of data. Enables horizontal scaling for large datasets." },
+    { front: "Explain the difference between Clustered and Non-Clustered Index.", back: "Clustered: Determines physical order of rows, one per table, usually PRIMARY KEY.\nNon-Clustered: Separate structure pointing to data, multiple per table, used for faster lookups." },
+    { front: "What is a Window Function?", back: "Performs calculations across related rows. Functions: ROW_NUMBER(), RANK(), DENSE_RANK(), LAG(), LEAD(), SUM() OVER (...). Useful for analytics." },
+    { front: "Explain CASE statement in SQL.", back: "Conditional logic: CASE WHEN condition1 THEN result1 WHEN condition2 THEN result2 ELSE result3 END. Used in SELECT, WHERE, ORDER BY clauses." },
   ];
 
   const algoCards = [
@@ -102,6 +157,24 @@ export async function seedFlashcards(userId: string) {
     { front: "Time complexity of accessing an element in a Hash Table", back: "Average: O(1)\nWorst case: O(n) when many collisions occur" },
     { front: "What is the Two Pointer technique?", back: "Using two pointers to traverse data, typically from both ends or at different speeds. Useful for sorted arrays, linked lists, and finding pairs." },
     { front: "Space complexity of Merge Sort vs Quick Sort", back: "Merge Sort: O(n) - needs auxiliary array\nQuick Sort: O(log n) - in-place, only stack space for recursion" },
+    { front: "What is Divide and Conquer?", back: "Algorithm paradigm: divide problem into subproblems, solve independently, combine solutions. Examples: Merge Sort, Quick Sort, Binary Search." },
+    { front: "Explain Linear Search vs Binary Search.", back: "Linear: O(n) time, works on unsorted data, simple.\nBinary: O(log n) time, requires sorted data, much faster for large datasets." },
+    { front: "What is the Master Theorem?", back: "Method for analyzing divide-and-conquer algorithms. Determines time complexity T(n) = aT(n/b) + f(n). Three cases based on f(n) relative to n^(log_b a)." },
+    { front: "Explain Backtracking.", back: "Technique exploring all possible solutions by incrementally building candidates, abandoning those failing constraints. Used for puzzles, permutations, combinatorics." },
+    { front: "What is Memoization vs Tabulation?", back: "Memoization: Top-down DP, recursion with caching, easier to understand.\nTabulation: Bottom-up DP, iteration with array, more efficient, avoids recursion overhead." },
+    { front: "Time complexity of Bubble Sort and when to use it.", back: "O(n²) worst/average, O(n) best. Simple but slow. Use only for: nearly sorted data, small arrays, educational purposes." },
+    { front: "Explain the concept of Amortized Time Complexity.", back: "Average time per operation over sequence of operations, not individual operation. Example: Dynamic array append O(n) occasionally, but O(1) amortized." },
+    { front: "What is a Sliding Window algorithm?", back: "Efficient technique for problems involving subarrays/substrings. Maintain fixed-size window, slide across data, update window in O(1). Examples: max subarray sum." },
+    { front: "Explain Interval Scheduling and Greedy approach.", back: "Greedy: Sort by end time, select non-overlapping intervals. Optimal solution guaranteed. Used for room allocation, meeting scheduling." },
+    { front: "What is the Traveling Salesman Problem (TSP)?", back: "NP-hard problem finding shortest route visiting each city once. No known polynomial solution. Solvable with DP (exponential), heuristics (approximations)." },
+    { front: "Explain Topological Sorting.", back: "Linear ordering of DAG (Directed Acyclic Graph) vertices where every edge u→v has u before v. Used for: task scheduling, dependency resolution." },
+    { front: "What is the Longest Common Subsequence (LCS) problem?", back: "Find longest sequence appearing in same order in two strings. Solved with DP O(m×n). Related: edit distance, sequence alignment." },
+    { front: "Explain the Floyd-Warshall Algorithm.", back: "All-pairs shortest path algorithm. Time: O(n³), Space: O(n²). Works with negative weights (no negative cycles). Returns shortest path matrix." },
+    { front: "What is Dijkstra's Algorithm?", back: "Single-source shortest path algorithm. Time: O(E log V) with min-heap. Greedy approach. Cannot handle negative edge weights. Used in GPS, routing." },
+    { front: "Explain the concept of NP-Completeness.", back: "NP-Complete problems: verifiable in polynomial time, as hard as any NP problem. If one solved in polynomial time, all solved. Examples: 3-SAT, TSP, Hamiltonian Cycle." },
+    { front: "What is the Knapsack Problem?", back: "Given items with weights and values, pack maximum value into limited capacity. 0/1 variant solved with DP O(nW). Pseudo-polynomial, not strongly polynomial." },
+    { front: "Explain Rabin-Karp Algorithm for string matching.", back: "Pattern matching using rolling hash. Time: O(n+m) average, O(nm) worst. Efficient for multiple pattern search, plagiarism detection." },
+    { front: "What is a Huffman Coding?", back: "Greedy algorithm for optimal prefix-free encoding. Frequently occurring characters get shorter codes. Used for compression. Builds binary tree bottom-up." },
   ];
 
   const oopCards = [
@@ -115,17 +188,122 @@ export async function seedFlashcards(userId: string) {
     { front: "Composition vs Inheritance", back: "Composition: 'has-a' relationship, more flexible, combine behaviors\nInheritance: 'is-a' relationship, can lead to tight coupling\nPrefer composition over inheritance." },
     { front: "What is the Dependency Inversion Principle?", back: "High-level modules should not depend on low-level modules. Both should depend on abstractions. Enables easier testing and swapping implementations." },
     { front: "What is a Design Pattern?", back: "A reusable solution to common software design problems. Categories: Creational (Factory, Singleton), Structural (Adapter, Decorator), Behavioral (Observer, Strategy)." },
+    { front: "Explain the Liskov Substitution Principle.", back: "Objects of subclass should be substitutable for objects of superclass without breaking functionality. Maintain contract of parent class. Prevents incorrect inheritance hierarchies." },
+    { front: "What is the Interface Segregation Principle?", back: "Clients shouldn't depend on interfaces they don't use. Split large interfaces into smaller, specific ones. Reduces coupling, improves flexibility." },
+    { front: "What is the Singleton Pattern?", back: "Ensures only one instance of class exists. Provides global access point. Useful for: loggers, database connections, configuration managers. Thread-safe implementation important." },
+    { front: "What is the Factory Pattern?", back: "Creational pattern creating objects without specifying exact classes. Factory method hides object creation logic. Useful when object creation is complex or class varies." },
+    { front: "What is the Observer Pattern?", back: "Behavioral pattern where observers register with subject to receive notifications of changes. Decouples subject from observers. Used in: event systems, MVC, reactive programming." },
+    { front: "What is the Strategy Pattern?", back: "Behavioral pattern defining family of algorithms, encapsulating each, making interchangeable. Eliminates conditional statements. Example: different sorting algorithms." },
+    { front: "What is the Decorator Pattern?", back: "Structural pattern dynamically adding functionality to objects without modifying class. Alternative to subclassing. Example: adding features to I/O streams." },
+    { front: "Explain Method Overloading vs Method Overriding.", back: "Overloading: Same method name, different parameters, compile-time (static) polymorphism.\nOverriding: Same method signature, different implementation, runtime (dynamic) polymorphism." },
+    { front: "What is the Template Method Pattern?", back: "Behavioral pattern defining algorithm skeleton, letting subclasses override specific steps. Enforces algorithm structure while allowing variation." },
+    { front: "What is the Adapter Pattern?", back: "Structural pattern converting interface of class to another interface clients expect. Used to make incompatible interfaces work together." },
+    { front: "What is the Builder Pattern?", back: "Creational pattern constructing complex objects step-by-step. Separates object construction from representation. Useful for objects with many parameters." },
+    { front: "Explain Cohesion and Coupling.", back: "High Cohesion: Elements within module are strongly related. Desirable.\nLow Coupling: Minimal dependencies between modules. Desirable. Goal: high cohesion, low coupling." },
+    { front: "What is the MVC Pattern?", back: "Model: Data and business logic\nView: Presentation layer\nController: Handles user input\nSeparates concerns, enables independent development and testing." },
+    { front: "What is the Facade Pattern?", back: "Structural pattern providing simplified interface to complex subsystem. Hides complexity, provides convenient API. Improves usability." },
+    { front: "Explain the concept of Immutability.", back: "Objects cannot be modified after creation. Benefits: thread-safety, predictability, caching. Example: strings in many languages are immutable." },
+    { front: "What is the Proxy Pattern?", back: "Structural pattern providing surrogate/placeholder for another object. Controls access, adds functionality (logging, caching). Example: lazy loading, access control." },
+    { front: "What are Access Modifiers?", back: "public: Accessible everywhere\nprivate: Accessible only within class\nprotected: Accessible in class and subclasses\npackage/internal: Within same package" },
   ];
 
-  const allCards = [
-    ...dsCards.map(c => ({ ...c, deckId: createdDecks[0].id, type: "basic" as const, tags: ["data-structures"] })),
-    ...jsCards.map(c => ({ ...c, deckId: createdDecks[1].id, type: "basic" as const, tags: ["javascript"] })),
-    ...sqlCards.map(c => ({ ...c, deckId: createdDecks[2].id, type: "basic" as const, tags: ["sql", "database"] })),
-    ...algoCards.map(c => ({ ...c, deckId: createdDecks[3].id, type: "basic" as const, tags: ["algorithms"] })),
-    ...oopCards.map(c => ({ ...c, deckId: createdDecks[4].id, type: "basic" as const, tags: ["oop"] })),
+  // Helper function to generate realistic learning states
+  const getRandomLearningState = () => {
+    const rand = Math.random();
+    const now = new Date();
+    
+    // 30% mastered cards (reviewed many times, long intervals)
+    if (rand < 0.30) {
+      return {
+        reviewCount: 10 + Math.floor(Math.random() * 10),
+        easeFactor: 2.2 + Math.random() * 0.6,
+        interval: 40 + Math.floor(Math.random() * 40),
+        dueAt: new Date(now.getTime() + (30 + Math.floor(Math.random() * 60)) * 24 * 60 * 60 * 1000),
+        status: "mastered" as const,
+      };
+    }
+    // 25% learning cards (moderate reviews, short intervals)
+    else if (rand < 0.55) {
+      return {
+        reviewCount: 3 + Math.floor(Math.random() * 4),
+        easeFactor: 1.8 + Math.random() * 0.5,
+        interval: 3 + Math.floor(Math.random() * 10),
+        dueAt: new Date(now.getTime() - Math.random() * 3 * 24 * 60 * 60 * 1000), // Some overdue
+        status: "learning" as const,
+      };
+    }
+    // 20% struggling cards (few reviews, very short intervals, low ease)
+    else if (rand < 0.75) {
+      return {
+        reviewCount: 1 + Math.floor(Math.random() * 3),
+        easeFactor: 1.3 + Math.random() * 0.4,
+        interval: 1 + Math.floor(Math.random() * 3),
+        dueAt: new Date(now.getTime() - (1 + Math.floor(Math.random() * 5)) * 24 * 60 * 60 * 1000), // Overdue
+        status: "learning" as const,
+      };
+    }
+    // 25% new cards (no reviews)
+    else {
+      return {
+        reviewCount: 0,
+        easeFactor: 2.5,
+        interval: 0,
+        dueAt: now,
+        status: "new" as const,
+      };
+    }
+  };
+
+  // Prepare card data by deck
+  const cardsByDeck = [
+    { cards: dsCards, deckId: createdDecks[0].id, tags: ["data-structures"] },
+    { cards: jsCards, deckId: createdDecks[1].id, tags: ["javascript"] },
+    { cards: sqlCards, deckId: createdDecks[2].id, tags: ["sql", "database"] },
+    { cards: algoCards, deckId: createdDecks[3].id, tags: ["algorithms"] },
+    { cards: oopCards, deckId: createdDecks[4].id, tags: ["oop"] },
   ];
 
-  await db.insert(cards).values(allCards);
+  // First pass: Insert base card data with required fields only
+  const baseCards = cardsByDeck.flatMap(({ cards, deckId, tags }) =>
+    cards.map(c => ({
+      ...c,
+      deckId,
+      type: "basic" as const,
+      tags,
+    }))
+  );
 
-  return { decksCreated: createdDecks.length, cardsCreated: allCards.length };
+  // Insert base cards and get them back with IDs
+  const insertedCards = await db.insert(cards).values(baseCards).returning();
+
+  // Second pass: Update cards with learning state data
+  // Group by state for efficient batch updates
+  const cardsWithStates = insertedCards.map(card => {
+    const state = getRandomLearningState();
+    return {
+      id: card.id,
+      repetitions: state.reviewCount,
+      easeFactor: state.easeFactor,
+      interval: state.interval,
+      dueAt: state.dueAt,
+      status: state.status,
+      lastReviewedAt: state.reviewCount > 0 ? new Date(state.dueAt.getTime() - state.interval * 24 * 60 * 60 * 1000) : null,
+    };
+  });
+
+  // Update all cards with learning state
+  for (const cardUpdate of cardsWithStates) {
+    await db.update(cards)
+      .set({
+        repetitions: cardUpdate.repetitions,
+        easeFactor: cardUpdate.easeFactor,
+        interval: cardUpdate.interval,
+        dueAt: cardUpdate.dueAt,
+        status: cardUpdate.status,
+        lastReviewedAt: cardUpdate.lastReviewedAt,
+      })
+      .where(eq(cards.id, cardUpdate.id));
+  }
+
+  return { decksCreated: createdDecks.length, cardsCreated: insertedCards.length };
 }

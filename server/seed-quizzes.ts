@@ -832,12 +832,13 @@ const sampleQuizzes = [
 ];
 
 export async function seedQuizzes(userId: string) {
-  console.log("Starting quiz seed for user:", userId);
+  console.log(`[QUIZ SEED] Starting quiz seed for userId: ${userId}`);
   const createdQuizzes = [];
 
   for (const quizData of sampleQuizzes) {
     try {
       const quizId = randomUUID();
+      console.log(`[QUIZ SEED] Creating quiz: ${quizData.title} with ID: ${quizId}`);
       // Use raw SQL insert to avoid pg-core timestamp/boolean mapping in SQLite
       await db.run(sql`
         INSERT INTO quizzes (id, user_id, title, subject, description, mode, passing_score, is_published, created_at)
@@ -849,14 +850,14 @@ export async function seedQuizzes(userId: string) {
         throw new Error("Failed to read created quiz");
       }
 
-      console.log(`Created quiz: ${quiz.title} (${quiz.id})`);
+      console.log(`[QUIZ SEED] ✓ Created quiz: ${quiz.title} (${quiz.id})`);
 
       for (let i = 0; i < quizData.questions.length; i++) {
         const questionData = quizData.questions[i];
         const questionId = randomUUID();
         // Raw insert to avoid pg array mapping in SQLite
         await db.run(sql`
-          INSERT INTO quiz_questions (id, quiz_id, type, question, difficulty, marks, explanation)
+          INSERT INTO quiz_questions (id, quiz_id, type, question, difficulty, marks, explanation, "order")
           VALUES (
             ${questionId},
             ${quiz.id},
@@ -864,7 +865,8 @@ export async function seedQuizzes(userId: string) {
             ${questionData.question},
             ${questionData.difficulty},
             ${questionData.marks},
-            ${questionData.explanation}
+            ${questionData.explanation},
+            ${i}
           )
         `);
 
@@ -872,12 +874,13 @@ export async function seedQuizzes(userId: string) {
           for (let j = 0; j < questionData.options.length; j++) {
             const optionData = questionData.options[j];
             await db.run(sql`
-              INSERT INTO quiz_options (id, question_id, text, is_correct)
+              INSERT INTO quiz_options (id, question_id, text, is_correct, "order")
               VALUES (
                 ${randomUUID()},
                 ${questionId},
                 ${optionData.text},
-                ${optionData.isCorrect ? 1 : 0}
+                ${optionData.isCorrect ? 1 : 0},
+                ${j}
               )
             `);
           }
@@ -885,12 +888,19 @@ export async function seedQuizzes(userId: string) {
       }
 
       createdQuizzes.push(quiz);
+      console.log(`[QUIZ SEED] ✓ Added ${quizData.questions.length} questions for ${quiz.title}`);
     } catch (error) {
-      console.error(`Failed to create quiz ${quizData.title}:`, error);
+      console.error(`[QUIZ SEED] ❌ Failed to create quiz ${quizData.title}:`, error);
+      throw error; // Re-throw to prevent silent failures
     }
   }
 
-  console.log(`Seed complete. Created ${createdQuizzes.length} quizzes.`);
+  console.log(`[QUIZ SEED] ✅ Seed complete. Created ${createdQuizzes.length} quizzes for userId: ${userId}`);
+  
+  // Verify data was actually saved
+  const verifyQuizzes = await db.select().from(quizzes).where(eq(quizzes.userId, userId));
+  console.log(`[QUIZ SEED] Verification: Found ${verifyQuizzes.length} quizzes in database for userId: ${userId}`);
+  
   return createdQuizzes;
 }
 
