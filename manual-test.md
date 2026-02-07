@@ -39,7 +39,7 @@ $registerBody = @{
     lastName = "User"
 } | ConvertTo-Json
 
-$response = Invoke-RestMethod -Uri "http://127.0.0.1:5000/api/auth/register" `
+$response = Invoke-RestMethod -Uri "http://127.0.0.1:3000/api/auth/register" `
     -Method POST `
     -Body $registerBody `
     -ContentType "application/json"
@@ -53,7 +53,7 @@ $loginBody = @{
     password = "password123"
 } | ConvertTo-Json
 
-$response = Invoke-RestMethod -Uri "http://127.0.0.1:5000/api/auth/login" `
+$response = Invoke-RestMethod -Uri "http://127.0.0.1:3000/api/auth/login" `
     -Method POST `
     -Body $loginBody `
     -ContentType "application/json"
@@ -67,7 +67,7 @@ $loginBody = @{
     password = "password123"
 } | ConvertTo-Json
 
-$response = Invoke-RestMethod -Uri "http://127.0.0.1:5000/api/auth/login" `
+$response = Invoke-RestMethod -Uri "http://127.0.0.1:3000/api/auth/login" `
     -Method POST `
     -Body $loginBody `
     -ContentType "application/json"
@@ -79,7 +79,7 @@ $headers = @{
     "Authorization" = "Bearer $token"
 }
 
-$notes = Invoke-RestMethod -Uri "http://127.0.0.1:5000/api/notes" `
+$notes = Invoke-RestMethod -Uri "http://127.0.0.1:3000/api/notes" `
     -Method GET `
     -Headers $headers
 

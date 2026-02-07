@@ -1,8 +1,9 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { 
   Play, Pause, RotateCcw, Plus, Trash2, BarChart3, Clock, 
   Zap, Coffee, Brain, Target, Sparkles, CheckCircle2, 
-  ArrowRight, Lightbulb, Timer, ListTodo, PenLine
+  ArrowRight, Lightbulb, Timer, ListTodo, PenLine,
+  AlertTriangle, RefreshCw, BookOpen, ChevronRight, XCircle
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,6 +12,8 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
+import { useSpacedRepetition, type SpacedReviewQuestion } from "@/hooks/use-spaced-repetition";
+import { useToast } from "@/hooks/use-toast";
 
 interface Task {
   id: string;
@@ -58,6 +61,86 @@ export default function Revision() {
   const [whiteboard, setWhiteboard] = useState("");
   const [newTask, setNewTask] = useState("");
   const [activeTab, setActiveTab] = useState("pomodoro");
+
+  // Spaced Review state
+  const {
+    reviewQueue,
+    totalDue,
+    needsReviewCount,
+    weakTopicCount,
+    dueForReviewCount,
+    isLoading: reviewLoading,
+    isError: reviewError,
+    submitReview,
+    isSubmitting,
+    refetch: refetchReview,
+  } = useSpacedRepetition(20);
+  const { toast } = useToast();
+
+  const [currentReviewIndex, setCurrentReviewIndex] = useState(0);
+  const [selectedOptionId, setSelectedOptionId] = useState<string | null>(null);
+  const [reviewAnswered, setReviewAnswered] = useState(false);
+  const [reviewCorrect, setReviewCorrect] = useState<boolean | null>(null);
+  const [reviewSessionScore, setReviewSessionScore] = useState({ correct: 0, total: 0 });
+  const [reviewStartTime, setReviewStartTime] = useState(Date.now());
+
+  const currentReviewQuestion: SpacedReviewQuestion | undefined = reviewQueue[currentReviewIndex];
+
+  const handleReviewAnswer = useCallback(async (optionId: string) => {
+    if (reviewAnswered || !currentReviewQuestion?.question) return;
+    setSelectedOptionId(optionId);
+    setReviewAnswered(true);
+
+    const correctOption = currentReviewQuestion.question.options?.find((o: any) => o.isCorrect === 1);
+    const isCorrect = optionId === correctOption?.id;
+    setReviewCorrect(isCorrect);
+    setReviewSessionScore(prev => ({
+      correct: prev.correct + (isCorrect ? 1 : 0),
+      total: prev.total + 1,
+    }));
+
+    const responseTime = Math.round((Date.now() - reviewStartTime) / 1000);
+
+    try {
+      await submitReview({
+        questionId: currentReviewQuestion.questionId,
+        selectedOptionId: optionId,
+        isCorrect,
+        responseTime,
+      });
+    } catch {
+      // Non-fatal — UI already shows result
+    }
+  }, [reviewAnswered, currentReviewQuestion, reviewStartTime, submitReview]);
+
+  const handleNextReviewQuestion = useCallback(() => {
+    setSelectedOptionId(null);
+    setReviewAnswered(false);
+    setReviewCorrect(null);
+    setReviewStartTime(Date.now());
+    if (currentReviewIndex < reviewQueue.length - 1) {
+      setCurrentReviewIndex(prev => prev + 1);
+    } else {
+      // Session complete
+      toast({
+        title: "Review Session Complete!",
+        description: `You reviewed ${reviewSessionScore.total} questions with ${reviewSessionScore.correct} correct.`,
+      });
+      setCurrentReviewIndex(0);
+      setReviewSessionScore({ correct: 0, total: 0 });
+      refetchReview();
+    }
+  }, [currentReviewIndex, reviewQueue.length, reviewSessionScore, toast, refetchReview]);
+
+  const handleRestartReview = useCallback(() => {
+    setCurrentReviewIndex(0);
+    setSelectedOptionId(null);
+    setReviewAnswered(false);
+    setReviewCorrect(null);
+    setReviewSessionScore({ correct: 0, total: 0 });
+    setReviewStartTime(Date.now());
+    refetchReview();
+  }, [refetchReview]);
 
   const getTimeOfDayGreeting = () => {
     const hour = new Date().getHours();
@@ -132,7 +215,7 @@ export default function Revision() {
   };
 
   const QuickActions = () => (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+    <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
       <Button
         variant="outline"
         className="h-auto py-4 flex flex-col items-center gap-2 hover-elevate border-2 border-amber-200 dark:border-amber-800 bg-gradient-to-br from-amber-50 to-yellow-50 dark:from-amber-950 dark:to-yellow-950"
@@ -144,12 +227,17 @@ export default function Revision() {
       </Button>
       <Button
         variant="outline"
-        className="h-auto py-4 flex flex-col items-center gap-2 hover-elevate border-2 border-green-200 dark:border-green-800 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950 dark:to-emerald-950"
-        onClick={() => { setActiveTab("pomodoro"); handlePresetChange(1); }}
-        data-testid="quick-action-break"
+        className="h-auto py-4 flex flex-col items-center gap-2 hover-elevate border-2 border-purple-200 dark:border-purple-800 bg-gradient-to-br from-purple-50 to-violet-50 dark:from-purple-950 dark:to-violet-950 relative"
+        onClick={() => { setActiveTab("review"); handleRestartReview(); }}
+        data-testid="quick-action-review"
       >
-        <Coffee className="h-6 w-6 text-green-600" />
-        <span className="text-sm font-medium">Take Break</span>
+        <Brain className="h-6 w-6 text-purple-600" />
+        <span className="text-sm font-medium">Review</span>
+        {totalDue > 0 && (
+          <span className="absolute top-1 right-1 bg-purple-500 text-white text-[10px] rounded-full h-4 w-4 flex items-center justify-center font-bold">
+            {totalDue > 9 ? "9+" : totalDue}
+          </span>
+        )}
       </Button>
       <Button
         variant="outline"
@@ -168,6 +256,15 @@ export default function Revision() {
       >
         <PenLine className="h-6 w-6 text-rose-600" />
         <span className="text-sm font-medium">Quick Notes</span>
+      </Button>
+      <Button
+        variant="outline"
+        className="h-auto py-4 flex flex-col items-center gap-2 hover-elevate border-2 border-green-200 dark:border-green-800 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950 dark:to-emerald-950"
+        onClick={() => { setActiveTab("pomodoro"); handlePresetChange(1); }}
+        data-testid="quick-action-break"
+      >
+        <Coffee className="h-6 w-6 text-green-600" />
+        <span className="text-sm font-medium">Take Break</span>
       </Button>
     </div>
   );
@@ -233,10 +330,19 @@ export default function Revision() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-4 gap-1 bg-white dark:bg-slate-900 border-2 border-amber-200 dark:border-amber-800 p-1">
+          <TabsList className="grid w-full grid-cols-5 gap-1 bg-white dark:bg-slate-900 border-2 border-amber-200 dark:border-amber-800 p-1">
             <TabsTrigger value="pomodoro" className="text-xs sm:text-sm data-[state=active]:bg-amber-100 dark:data-[state=active]:bg-amber-900">
               <Timer className="h-4 w-4 mr-1.5 hidden sm:block" />
               Pomodoro
+            </TabsTrigger>
+            <TabsTrigger value="review" className="text-xs sm:text-sm data-[state=active]:bg-purple-100 dark:data-[state=active]:bg-purple-900 relative">
+              <Brain className="h-4 w-4 mr-1.5 hidden sm:block" />
+              Review
+              {totalDue > 0 && (
+                <span className="absolute -top-1 -right-1 bg-purple-500 text-white text-[10px] rounded-full h-4 w-4 flex items-center justify-center font-bold">
+                  {totalDue > 9 ? "9+" : totalDue}
+                </span>
+              )}
             </TabsTrigger>
             <TabsTrigger value="kanban" className="text-xs sm:text-sm data-[state=active]:bg-blue-100 dark:data-[state=active]:bg-blue-900">
               <ListTodo className="h-4 w-4 mr-1.5 hidden sm:block" />
@@ -373,6 +479,268 @@ export default function Revision() {
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* ========== SPACED REVIEW TAB ========== */}
+          <TabsContent value="review" className="space-y-6 mt-6">
+            {reviewLoading ? (
+              <Card className="border-2 border-purple-200 dark:border-purple-800">
+                <CardContent className="py-16 text-center">
+                  <RefreshCw className="h-8 w-8 mx-auto mb-3 text-purple-500 animate-spin" />
+                  <p className="text-muted-foreground">Loading review queue...</p>
+                </CardContent>
+              </Card>
+            ) : reviewQueue.length === 0 ? (
+              /* Empty state — no questions due */
+              <Card className="border-2 border-purple-200 dark:border-purple-800 shadow-lg">
+                <CardContent className="py-16 text-center space-y-4">
+                  <CheckCircle2 className="h-12 w-12 mx-auto text-green-500" />
+                  <h3 className="text-xl font-bold">You're all caught up!</h3>
+                  <p className="text-muted-foreground max-w-md mx-auto">
+                    No questions need review right now. Complete more quizzes to populate your spaced review queue.
+                  </p>
+                  <Button
+                    variant="outline"
+                    onClick={() => refetchReview()}
+                    className="mt-4"
+                  >
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Refresh Queue
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-4">
+                {/* Review summary bar */}
+                <div className="grid grid-cols-3 gap-3">
+                  <Card className="border-2 border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950">
+                    <CardContent className="py-3 text-center">
+                      <AlertTriangle className="h-5 w-5 mx-auto mb-1 text-red-500" />
+                      <div className="text-2xl font-bold text-red-700 dark:text-red-300">{needsReviewCount}</div>
+                      <p className="text-xs text-red-600 dark:text-red-400">Needs Review</p>
+                    </CardContent>
+                  </Card>
+                  <Card className="border-2 border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950">
+                    <CardContent className="py-3 text-center">
+                      <Target className="h-5 w-5 mx-auto mb-1 text-amber-500" />
+                      <div className="text-2xl font-bold text-amber-700 dark:text-amber-300">{weakTopicCount}</div>
+                      <p className="text-xs text-amber-600 dark:text-amber-400">Weak Topic</p>
+                    </CardContent>
+                  </Card>
+                  <Card className="border-2 border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950">
+                    <CardContent className="py-3 text-center">
+                      <Clock className="h-5 w-5 mx-auto mb-1 text-blue-500" />
+                      <div className="text-2xl font-bold text-blue-700 dark:text-blue-300">{dueForReviewCount}</div>
+                      <p className="text-xs text-blue-600 dark:text-blue-400">Due for Review</p>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Session progress */}
+                {reviewSessionScore.total > 0 && (
+                  <div className="flex items-center gap-3 bg-purple-50 dark:bg-purple-950 rounded-lg p-3 border border-purple-200 dark:border-purple-800">
+                    <BookOpen className="h-5 w-5 text-purple-500" />
+                    <div className="flex-1">
+                      <div className="text-sm font-medium">
+                        Session: {reviewSessionScore.correct}/{reviewSessionScore.total} correct
+                      </div>
+                      <Progress
+                        value={reviewSessionScore.total > 0 ? (reviewSessionScore.correct / reviewSessionScore.total) * 100 : 0}
+                        className="h-1.5 mt-1"
+                      />
+                    </div>
+                    <span className="text-sm font-bold text-purple-600 dark:text-purple-400">
+                      {currentReviewIndex + 1}/{reviewQueue.length}
+                    </span>
+                  </div>
+                )}
+
+                {/* Current question card */}
+                {currentReviewQuestion?.question ? (
+                  <Card className="border-2 border-purple-200 dark:border-purple-800 shadow-lg">
+                    <CardHeader className="bg-gradient-to-r from-purple-100 to-violet-100 dark:from-purple-900 dark:to-violet-900">
+                      <div className="flex items-center justify-between flex-wrap gap-2">
+                        <CardTitle className="text-lg flex items-center gap-2">
+                          <Brain className="h-5 w-5" />
+                          Spaced Review
+                        </CardTitle>
+                        <div className="flex items-center gap-2">
+                          <Badge
+                            className={
+                              currentReviewQuestion.label === "Needs Review"
+                                ? "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 border-0"
+                                : currentReviewQuestion.label === "Weak Topic"
+                                ? "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200 border-0"
+                                : "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 border-0"
+                            }
+                          >
+                            {currentReviewQuestion.label}
+                          </Badge>
+                          <Badge variant="secondary" className="text-xs">
+                            {currentReviewQuestion.topic}
+                          </Badge>
+                        </div>
+                      </div>
+                      <CardDescription>
+                        From: {currentReviewQuestion.quizTitle} • Accuracy: {currentReviewQuestion.accuracy}% •
+                        Attempted {currentReviewQuestion.timesAnswered}x
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="pt-6 space-y-4">
+                      {/* Question text */}
+                      <div className="text-base font-medium leading-relaxed">
+                        {currentReviewQuestion.question.question}
+                      </div>
+
+                      {/* MCQ Options */}
+                      {currentReviewQuestion.question.type === "mcq" && currentReviewQuestion.question.options?.length > 0 && (
+                        <div className="space-y-2">
+                          {currentReviewQuestion.question.options
+                            .sort((a: any, b: any) => a.order - b.order)
+                            .map((option: any) => {
+                              const isSelected = selectedOptionId === option.id;
+                              const isCorrectOption = option.isCorrect === 1;
+                              let optionClass = "border-2 p-3 rounded-lg cursor-pointer transition-all text-left w-full ";
+
+                              if (reviewAnswered) {
+                                if (isCorrectOption) {
+                                  optionClass += "border-green-500 bg-green-50 dark:bg-green-950";
+                                } else if (isSelected && !isCorrectOption) {
+                                  optionClass += "border-red-500 bg-red-50 dark:bg-red-950";
+                                } else {
+                                  optionClass += "border-slate-200 dark:border-slate-700 opacity-50";
+                                }
+                              } else {
+                                optionClass += isSelected
+                                  ? "border-purple-500 bg-purple-50 dark:bg-purple-950"
+                                  : "border-slate-200 dark:border-slate-700 hover:border-purple-300 dark:hover:border-purple-700";
+                              }
+
+                              return (
+                                <button
+                                  key={option.id}
+                                  className={optionClass}
+                                  onClick={() => handleReviewAnswer(option.id)}
+                                  disabled={reviewAnswered}
+                                >
+                                  <span className="text-sm">{option.text}</span>
+                                  {reviewAnswered && isCorrectOption && (
+                                    <CheckCircle2 className="inline h-4 w-4 ml-2 text-green-600" />
+                                  )}
+                                  {reviewAnswered && isSelected && !isCorrectOption && (
+                                    <XCircle className="inline h-4 w-4 ml-2 text-red-600" />
+                                  )}
+                                </button>
+                              );
+                            })}
+                        </div>
+                      )}
+
+                      {/* Non-MCQ placeholder */}
+                      {currentReviewQuestion.question.type !== "mcq" && (
+                        <div className="bg-slate-50 dark:bg-slate-900 rounded-lg p-4 text-sm text-muted-foreground">
+                          <p className="font-medium mb-2">Expected answer:</p>
+                          <p>{currentReviewQuestion.question.correctAnswer || "See explanation"}</p>
+                          {!reviewAnswered && (
+                            <div className="flex gap-2 mt-4">
+                              <Button size="sm" variant="outline" className="border-green-300" onClick={() => {
+                                setReviewAnswered(true);
+                                setReviewCorrect(true);
+                                setReviewSessionScore(prev => ({ correct: prev.correct + 1, total: prev.total + 1 }));
+                                submitReview({ questionId: currentReviewQuestion.questionId, isCorrect: true, responseTime: Math.round((Date.now() - reviewStartTime) / 1000) });
+                              }}>
+                                <CheckCircle2 className="h-4 w-4 mr-1" /> I knew this
+                              </Button>
+                              <Button size="sm" variant="outline" className="border-red-300" onClick={() => {
+                                setReviewAnswered(true);
+                                setReviewCorrect(false);
+                                setReviewSessionScore(prev => ({ correct: prev.correct, total: prev.total + 1 }));
+                                submitReview({ questionId: currentReviewQuestion.questionId, isCorrect: false, responseTime: Math.round((Date.now() - reviewStartTime) / 1000) });
+                              }}>
+                                <XCircle className="h-4 w-4 mr-1" /> Didn't know
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Feedback after answering */}
+                      {reviewAnswered && currentReviewQuestion.question.explanation && (
+                        <div className={`rounded-lg p-4 text-sm ${
+                          reviewCorrect
+                            ? "bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800"
+                            : "bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800"
+                        }`}>
+                          <p className="font-medium mb-1">
+                            {reviewCorrect ? "✓ Correct!" : "✗ Incorrect"}
+                          </p>
+                          <p className="text-muted-foreground">{currentReviewQuestion.question.explanation}</p>
+                        </div>
+                      )}
+
+                      {/* Next / Restart buttons */}
+                      {reviewAnswered && (
+                        <div className="flex items-center justify-between pt-2">
+                          <Button variant="outline" size="sm" onClick={handleRestartReview}>
+                            <RotateCcw className="h-4 w-4 mr-1" />
+                            Restart
+                          </Button>
+                          <Button
+                            onClick={handleNextReviewQuestion}
+                            className="bg-purple-600 hover:bg-purple-700 text-white"
+                          >
+                            {currentReviewIndex < reviewQueue.length - 1 ? (
+                              <>Next Question <ChevronRight className="h-4 w-4 ml-1" /></>
+                            ) : (
+                              <>Finish Session <CheckCircle2 className="h-4 w-4 ml-1" /></>
+                            )}
+                          </Button>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <Card className="border-2 border-purple-200 dark:border-purple-800">
+                    <CardContent className="py-12 text-center">
+                      <p className="text-muted-foreground">Loading question...</p>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Upcoming queue preview */}
+                {reviewQueue.length > 1 && (
+                  <Card className="border border-slate-200 dark:border-slate-700">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm font-medium text-muted-foreground">
+                        Upcoming ({reviewQueue.length - currentReviewIndex - 1} remaining)
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-1.5">
+                      {reviewQueue.slice(currentReviewIndex + 1, currentReviewIndex + 4).map((item, idx) => (
+                        <div
+                          key={item.questionId + idx}
+                          className="flex items-center justify-between p-2 rounded-lg bg-slate-50 dark:bg-slate-900 text-sm"
+                        >
+                          <span className="truncate flex-1 mr-2">{item.questionText}</span>
+                          <Badge
+                            variant="secondary"
+                            className={`text-[10px] shrink-0 ${
+                              item.label === "Needs Review"
+                                ? "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300"
+                                : item.label === "Weak Topic"
+                                ? "bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300"
+                                : "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300"
+                            }`}
+                          >
+                            {item.label}
+                          </Badge>
+                        </div>
+                      ))}
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value="kanban" className="space-y-6 mt-6">

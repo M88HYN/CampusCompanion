@@ -1,12 +1,14 @@
 import "dotenv/config";
 import Database, { type Database as DatabaseType } from "better-sqlite3";
 import { drizzle, type BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
-import * as schema from "@shared/schema";
 
-let db: BetterSQLite3Database<typeof schema>;
+// No schema import needed - tables are created manually via SQL
+type EmptySchema = Record<string, never>;
+
+let db: BetterSQLite3Database<EmptySchema>;
 let sqlite: DatabaseType;
 
-export function initializeDatabase(): BetterSQLite3Database<typeof schema> {
+export function initializeDatabase(): BetterSQLite3Database<EmptySchema> {
   // Use in-memory database by default or file-based if specified
   const dbPath = process.env.DATABASE_URL === "sqlite:memory" || !process.env.DATABASE_URL 
     ? ":memory:" 
@@ -19,9 +21,9 @@ export function initializeDatabase(): BetterSQLite3Database<typeof schema> {
   // Enable foreign keys
   sqlite.pragma("foreign_keys = ON");
 
+  // Initialize drizzle without schema since we create tables manually
   db = drizzle({
     client: sqlite,
-    schema,
   });
 
   // Drop and recreate tables (fresh reset on every startup)
@@ -37,7 +39,7 @@ function dropTables() {
     'card_reviews', 'cards', 'decks',
     'quiz_responses', 'quiz_attempts', 'quiz_options', 'quiz_questions', 'quizzes',
     'user_question_stats', 'user_achievements', 'user_preferences',
-    'note_blocks', 'notes',
+    'study_sessions', 'note_blocks', 'notes',
     'research_conversations', 'sessions', 'users'
   ];
   
@@ -267,6 +269,21 @@ sqlite.exec(`
     )
   `);
 
+  // Create study_sessions table for dashboard metrics
+  sqlite.exec(`
+    CREATE TABLE IF NOT EXISTS study_sessions (
+      id VARCHAR PRIMARY KEY,
+      user_id VARCHAR NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      session_type TEXT NOT NULL,
+      resource_id VARCHAR,
+      duration_minutes INTEGER NOT NULL,
+      items_reviewed INTEGER DEFAULT 0,
+      correct_answers INTEGER DEFAULT 0,
+      started_at INTEGER NOT NULL,
+      ended_at INTEGER
+    )
+  `);
+
   // Create messages table
   sqlite.exec(`
     CREATE TABLE IF NOT EXISTS messages (
@@ -281,7 +298,7 @@ sqlite.exec(`
   console.log("Database tables created successfully");
 }
 
-export function getDatabase(): BetterSQLite3Database<typeof schema> {
+export function getDatabase(): BetterSQLite3Database<EmptySchema> {
   if (!db) {
     throw new Error("Database not initialized. Call initializeDatabase() first.");
   }

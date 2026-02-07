@@ -97,15 +97,13 @@ function AuthenticatedApp() {
   // Not authenticated - show login only
   if (!isAuthenticated) {
     console.log("[AuthenticatedApp] User not authenticated, showing login");
+    // Only redirect if not already on login page to prevent loops
+    if (location !== "/login") {
+      return <Redirect to="/login" />;
+    }
     return (
       <div className="w-full min-h-screen bg-white">
-        <Switch>
-          <Route path="/login" component={() => <Login />} />
-          {/* Catch-all: redirect to login for all unauthenticated users */}
-          <Route>
-            {() => <Redirect to="/login" />}
-          </Route>
-        </Switch>
+        <Login />
       </div>
     );
   }

@@ -190,7 +190,11 @@ export function useAuth() {
   // Listen for custom auth event from login component
   useEffect(() => {
     const handleAuthUpdate = () => {
-      verifyAuth();
+      // Debounce auth updates to prevent rapid re-renders
+      setIsLoading(true);
+      setTimeout(() => {
+        verifyAuth();
+      }, 100);
     };
 
     window.addEventListener("auth-update", handleAuthUpdate);

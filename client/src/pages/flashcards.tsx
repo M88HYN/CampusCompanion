@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { Plus, Play, RotateCw, Upload, Trash2, Eye, EyeOff, Tags, Settings, Loader2, ArrowLeft, Search, Brain, Target, Zap, Clock, TrendingUp, CheckCircle2, AlertTriangle, Lightbulb, Keyboard, ChevronRight, Sparkles, BarChart3, BookOpen } from "lucide-react";
+import { normalizeTags } from "@/lib/tag-utils";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -188,6 +189,38 @@ export default function Flashcards() {
 
   const { data: decks = [], isLoading: isLoadingDecks } = useQuery<DeckWithStats[]>({
     queryKey: ["/api/decks"],
+    queryFn: async () => {
+      const res = await apiRequest("GET", "/api/decks");
+      const data = await res.json();
+      
+      // DEFENSIVE: Deduplicate by ID
+      const seenIds = new Set<string>();
+      const uniqueDecks = data.filter((deck: DeckWithStats) => {
+        if (seenIds.has(deck.id)) {
+          console.warn(`[FLASHCARDS] ⚠️  Duplicate deck detected: ${deck.title} (${deck.id})`);
+          return false;
+        }
+        seenIds.add(deck.id);
+        return true;
+      });
+      
+      // VALIDATION: Check count constraints
+      if (uniqueDecks.length > 10) {
+        console.warn(`[FLASHCARDS] ⚠️  WARNING: ${uniqueDecks.length} decks found (max 10 expected)`);
+      } else if (uniqueDecks.length < 5 && uniqueDecks.length > 0) {
+        console.warn(`[FLASHCARDS] ⚠️  WARNING: Only ${uniqueDecks.length} decks found (5-10 expected)`);
+      }
+      
+      // Validate each deck has 10-30 cards
+      uniqueDecks.forEach((deck: DeckWithStats) => {
+        if (deck.cards < 10 || deck.cards > 30) {
+          console.warn(`[FLASHCARDS] ⚠️  WARNING: Deck "${deck.title}" has ${deck.cards} cards (10-30 expected)`);
+        }
+      });
+      
+      console.log(`[FLASHCARDS] ✅ Loaded ${uniqueDecks.length} unique decks`);
+      return uniqueDecks;
+    },
     retry: 1,
   });
 
@@ -431,11 +464,14 @@ export default function Flashcards() {
   const filteredDecks = useMemo(() => {
     if (!searchQuery.trim()) return decks;
     const query = searchQuery.toLowerCase();
-    return decks.filter(deck =>
-      deck.title.toLowerCase().includes(query) ||
-      deck.subject?.toLowerCase().includes(query) ||
-      deck.tags?.some(tag => tag.toLowerCase().includes(query))
-    );
+    return decks.filter(deck => {
+      const normalizedTags = normalizeTags(deck.tags);
+      return (
+        deck.title.toLowerCase().includes(query) ||
+        deck.subject?.toLowerCase().includes(query) ||
+        normalizedTags.some(tag => tag.toLowerCase().includes(query))
+      );
+    });
   }, [decks, searchQuery]);
 
   const urgencyColors = {
@@ -1088,7 +1124,12 @@ export default function Flashcards() {
               </Card>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredDecks.map((deck) => {
+                {/* DEFENSIVE: Ensure unique keys and prevent duplicate rendering */}
+                {filteredDecks
+                  .filter((deck, index, self) => 
+                    index === self.findIndex((d) => d.id === deck.id)
+                  )
+                  .map((deck) => {
                   const progressPct = deck.cards > 0 ? (deck.mastered / deck.cards) * 100 : 0;
                   return (
                     <Card
@@ -1130,15 +1171,18 @@ export default function Flashcards() {
                             </Button>
                           </div>
                         </div>
-                        {deck.tags && deck.tags.length > 0 && (
-                          <div className="flex flex-wrap gap-1">
-                            {deck.tags.map((tag) => (
-                              <Badge key={tag} variant="secondary" className="text-xs">
-                                {tag}
-                              </Badge>
-                            ))}
-                          </div>
-                        )}
+                        {(() => {
+                          const normalizedTags = normalizeTags(deck.tags);
+                          return normalizedTags.length > 0 && (
+                            <div className="flex flex-wrap gap-1">
+                              {normalizedTags.map((tag) => (
+                                <Badge key={tag} variant="secondary" className="text-xs">
+                                  {tag}
+                                </Badge>
+                              ))}
+                            </div>
+                          );
+                        })()}
                       </CardHeader>
                       <CardContent className="space-y-4">
                         <div className="space-y-2">
