@@ -82,10 +82,10 @@ export default function Login() {
       // Trigger auth update event
       window.dispatchEvent(new CustomEvent("auth-update"));
       
-      // Redirect to dashboard
+      // Redirect to dashboard after a brief delay to allow auth state to update
       setTimeout(() => {
         setLocation("/dashboard");
-      }, 100);
+      }, 300);
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
       setLoading(false);

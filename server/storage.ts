@@ -86,6 +86,8 @@ export interface IStorage {
   upsertUserQuestionStats(userId: string, questionId: string, isCorrect: boolean, responseTime: number): Promise<UserQuestionStats>;
   getDueQuestionsForReview(userId: string, limit?: number): Promise<UserQuestionStats[]>;
   updateSpacedRepetition(statsId: string, quality: number): Promise<UserQuestionStats>;
+  getSpacedReviewQueue(userId: string, limit?: number): Promise<any[]>;
+  updateQuestionReviewSchedule(questionId: string, userId: string, quality: number): Promise<void>;
   
   // Adaptive Engine
   getNextAdaptiveQuestion(quizId: string, userId: string, currentDifficulty: number, currentAttemptId?: string): Promise<QuizQuestion | undefined>;
@@ -150,8 +152,8 @@ export class DatabaseStorage implements IStorage {
       .values({ 
         id: randomUUID(), 
         ...insertUser,
-        createdAt: sql`CURRENT_TIMESTAMP` as any,
-        updatedAt: sql`CURRENT_TIMESTAMP` as any
+        createdAt: Date.now(),
+        updatedAt: Date.now()
       })
       .returning();
     return user;
@@ -182,8 +184,8 @@ export class DatabaseStorage implements IStorage {
     title: note.title,
     subject: note.subject ?? null,
     tags: note.tags ? JSON.stringify(note.tags) : null,
-    createdAt: new Date(),
-    updatedAt: new Date(),
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
   });
 
   // 🔥 RE-SELECT (THIS IS THE KEY FIX)
@@ -202,16 +204,21 @@ export class DatabaseStorage implements IStorage {
   async updateNote(id: string, note: Partial<InsertNote>): Promise<Note | undefined> {
     const updateData: any = { 
       ...note,
-      updatedAt: sql`CURRENT_TIMESTAMP` as any
+      updatedAt: Date.now()
     };
     if (note.tags !== undefined) {
       updateData.tags = note.tags ? JSON.stringify(note.tags) : null;
     }
-    const [updated] = await db
+    await db
       .update(notes)
       .set(updateData)
-      .where(eq(notes.id, id))
-      .returning();
+      .where(eq(notes.id, id));
+    
+    // Re-select to get the updated note (SQLite-safe)
+    const [updated] = await db
+      .select()
+      .from(notes)
+      .where(eq(notes.id, id));
     return updated || undefined;
   }
 
@@ -277,7 +284,7 @@ export class DatabaseStorage implements IStorage {
       id: randomUUID(), 
       ...deck, 
       tags: deck.tags ? JSON.stringify(deck.tags) : null,
-      createdAt: sql`CURRENT_TIMESTAMP` as any
+      createdAt: Date.now()
     }).returning();
     return created;
   }
@@ -313,8 +320,8 @@ export class DatabaseStorage implements IStorage {
     const [created] = await db.insert(cards).values({ 
       id: randomUUID(), 
       ...card, 
-      createdAt: sql`CURRENT_TIMESTAMP` as any,
-      dueAt: sql`CURRENT_TIMESTAMP` as any
+      createdAt: Date.now(),
+      dueAt: Date.now()
     }).returning();
     return created;
   }
@@ -346,7 +353,7 @@ export class DatabaseStorage implements IStorage {
       .where(
         and(
           inArray(cards.deckId, deckIds),
-          lt(cards.dueAt, new Date())
+          lt(cards.dueAt, Date.now())
         )
       )
       .orderBy(cards.dueAt);
@@ -380,8 +387,7 @@ export class DatabaseStorage implements IStorage {
 
     easeFactor = Math.max(1.3, easeFactor);
     
-    const dueAt = new Date();
-    dueAt.setDate(dueAt.getDate() + interval);
+    const dueAt = Date.now() + (interval * 24 * 60 * 60 * 1000); // Add interval days in milliseconds
 
     const status = 
       repetitions === 0 ? "learning" :
@@ -396,7 +402,7 @@ export class DatabaseStorage implements IStorage {
         repetitions,
         dueAt,
         status,
-        lastReviewedAt: sql`CURRENT_TIMESTAMP` as any,
+        lastReviewedAt: Date.now(),
       })
       .where(eq(cards.id, cardId))
       .returning();
@@ -411,6 +417,7 @@ export class DatabaseStorage implements IStorage {
       intervalAfter: interval,
       easeFactorBefore: oldEaseFactor,
       easeFactorAfter: easeFactor,
+      reviewedAt: Date.now(),
     });
 
     return updated;
@@ -426,15 +433,17 @@ export class DatabaseStorage implements IStorage {
 
   async getDeckStats(deckId: string): Promise<{ total: number; mastered: number; learning: number; new: number; dueToday: number }> {
     const deckCards = await this.getCards(deckId);
-    const now = new Date();
-    const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+    const now = Date.now();
+    const endOfDay = new Date();
+    endOfDay.setHours(23, 59, 59, 999);
+    const endOfDayTimestamp = endOfDay.getTime();
     
     return {
       total: deckCards.length,
       mastered: deckCards.filter(c => c.status === "mastered").length,
       learning: deckCards.filter(c => c.status === "learning" || c.status === "reviewing").length,
       new: deckCards.filter(c => c.status === "new").length,
-      dueToday: deckCards.filter(c => c.dueAt <= endOfDay).length,
+      dueToday: deckCards.filter(c => c.dueAt <= endOfDayTimestamp).length,
     };
   }
 
@@ -528,11 +537,12 @@ export class DatabaseStorage implements IStorage {
     const [updated] = await db
       .update(quizAttempts)
       .set({
-        completedAt: sql`CURRENT_TIMESTAMP` as any,
+        completedAt: Date.now(),
         score,
         earnedMarks,
         totalMarks,
         timeSpent,
+        status: "completed", // Mark attempt as completed for analytics
       })
       .where(eq(quizAttempts.id, id))
       .returning();
@@ -686,11 +696,34 @@ export class DatabaseStorage implements IStorage {
   // ==================== USER QUESTION STATS ====================
 
   async getUserQuestionStats(userId: string, questionId: string): Promise<UserQuestionStats | undefined> {
-    const [stats] = await db
-      .select()
-      .from(userQuestionStats)
-      .where(and(eq(userQuestionStats.userId, userId), eq(userQuestionStats.questionId, questionId)));
-    return stats || undefined;
+    // Use raw SQL because the Drizzle schema uses pgTable column names (lastAnsweredAt)
+    // but the actual SQLite table has different column names (last_attempted_at)
+    const rows: any[] = db.all(sql`
+      SELECT id, user_id, question_id, times_answered, times_correct,
+             average_response_time, last_attempted_at, consecutive_correct as streak,
+             ease_factor, review_interval as interval, next_review_date,
+             needs_review
+      FROM user_question_stats
+      WHERE user_id = ${userId} AND question_id = ${questionId}
+      LIMIT 1
+    `);
+    if (!rows || rows.length === 0) return undefined;
+    const r = rows[0];
+    return {
+      id: r.id,
+      userId: r.user_id,
+      questionId: r.question_id,
+      timesAnswered: r.times_answered || 0,
+      timesCorrect: r.times_correct || 0,
+      averageResponseTime: r.average_response_time || null,
+      lastAnsweredAt: r.last_attempted_at,
+      streak: r.streak || 0,
+      easeFactor: r.ease_factor || 2.5,
+      interval: r.interval || 0,
+      repetitions: r.streak || 0, // map consecutive_correct to repetitions
+      nextReviewAt: r.next_review_date,
+      status: r.needs_review ? 'learning' : 'reviewing',
+    } as UserQuestionStats;
   }
 
   async upsertUserQuestionStats(userId: string, questionId: string, isCorrect: boolean, responseTime: number): Promise<UserQuestionStats> {
@@ -707,9 +740,9 @@ export class DatabaseStorage implements IStorage {
         UPDATE user_question_stats
         SET times_answered = ${newTimesAnswered},
             times_correct = ${newTimesCorrect},
-            streak = ${newStreak},
+            consecutive_correct = ${newStreak},
             average_response_time = ${newAvgTime},
-            last_attempted_at = ${new Date().toISOString()}
+            last_attempted_at = ${Date.now()}
         WHERE id = ${existing.id}
       `);
       
@@ -719,20 +752,22 @@ export class DatabaseStorage implements IStorage {
         timesCorrect: newTimesCorrect,
         streak: newStreak,
         averageResponseTime: newAvgTime,
-        lastAnsweredAt: new Date(),
+        lastAnsweredAt: Date.now(),
       };
     } else {
       const newId = randomUUID();
-      const now = new Date().toISOString();
+      const now = Date.now();
       
       // Use raw SQL to avoid column name mismatch
       await db.run(sql`
         INSERT INTO user_question_stats (
           id, user_id, question_id, times_answered, times_correct,
-          average_response_time, last_attempted_at, streak, next_review_date
+          average_response_time, last_attempted_at, consecutive_correct,
+          ease_factor, review_interval, next_review_date, needs_review
         ) VALUES (
           ${newId}, ${userId}, ${questionId}, 1, ${isCorrect ? 1 : 0},
-          ${responseTime}, ${now}, ${isCorrect ? 1 : 0}, ${now}
+          ${responseTime}, ${now}, ${isCorrect ? 1 : 0},
+          ${2.5}, ${0}, ${now}, ${1}
         )
       `);
       
@@ -743,12 +778,12 @@ export class DatabaseStorage implements IStorage {
         timesAnswered: 1,
         timesCorrect: isCorrect ? 1 : 0,
         averageResponseTime: responseTime,
-        lastAnsweredAt: new Date(),
+        lastAnsweredAt: now,
         streak: isCorrect ? 1 : 0,
         easeFactor: 2.5,
         interval: 0,
         repetitions: 0,
-        nextReviewAt: new Date(),
+        nextReviewAt: now,
         status: 'new',
       };
     }
@@ -847,6 +882,286 @@ export class DatabaseStorage implements IStorage {
     return updated;
   }
 
+  // ==================== ANALYTICS-DRIVEN SPACED REVIEW ====================
+
+  /**
+   * Build a prioritised review queue from quiz_attempts + quiz_responses.
+   * Uses the SAME data source as Analytics and My Quizzes.
+   * 
+   * Priority scoring per question:
+   *   +50 last answer was incorrect
+   *   +30 topic accuracy < 70%
+   *   +20 last attempted > 3 days ago
+   *   +10 response time < 3s (likely guessing)
+   *   +15 fewer than 3 total attempts
+   *   +25 question-level accuracy < 50%
+   */
+  async getSpacedReviewQueue(userId: string, limit: number = 20): Promise<any[]> {
+    try {
+      // 1. Get all responses for this user's completed quiz attempts
+      //    JOIN with questions to get text/tags/difficulty, JOIN with quizzes for title/topic
+      const allResponses: any[] = db.all(sql`
+        SELECT 
+          qr.question_id,
+          qr.is_correct,
+          qr.response_time,
+          qr.answered_at,
+          qq.question as question_text,
+          qq.type as question_type,
+          qq.difficulty,
+          qq.marks,
+          qq.explanation,
+          qq.correct_answer,
+          qq.tags,
+          qq.quiz_id,
+          q.title as quiz_title,
+          q.subject as topic
+        FROM quiz_responses qr
+        INNER JOIN quiz_attempts qa ON qr.attempt_id = qa.id
+        INNER JOIN quiz_questions qq ON qr.question_id = qq.id
+        INNER JOIN quizzes q ON qa.quiz_id = q.id
+        WHERE qa.user_id = ${userId} AND qa.completed_at IS NOT NULL
+        ORDER BY qr.answered_at DESC
+      `);
+
+      if (!allResponses || allResponses.length === 0) {
+        return [];
+      }
+
+      // 2. Aggregate per-question stats
+      const questionStats = new Map<string, {
+        questionId: string;
+        quizId: string;
+        quizTitle: string;
+        questionText: string;
+        questionType: string;
+        topic: string;
+        difficulty: number;
+        marks: number;
+        explanation: string | null;
+        correctAnswer: string | null;
+        tags: string[];
+        timesAnswered: number;
+        timesCorrect: number;
+        lastAnsweredAt: number;
+        lastWasCorrect: boolean;
+        totalResponseTime: number;
+        avgResponseTime: number;
+      }>();
+
+      for (const r of allResponses) {
+        const qid = r.question_id;
+        const isCorrect = r.is_correct === 1;
+        const answeredAt = typeof r.answered_at === 'number' ? r.answered_at : Date.now();
+        const responseTime = r.response_time || 0;
+
+        let parsedTags: string[] = [];
+        if (r.tags) {
+          try {
+            parsedTags = typeof r.tags === 'string' ? JSON.parse(r.tags) : (r.tags || []);
+          } catch { parsedTags = []; }
+        }
+
+        const existing = questionStats.get(qid);
+        if (existing) {
+          existing.timesAnswered++;
+          if (isCorrect) existing.timesCorrect++;
+          existing.totalResponseTime += responseTime;
+          existing.avgResponseTime = existing.totalResponseTime / existing.timesAnswered;
+          // Keep the most recent answer info
+          if (answeredAt > existing.lastAnsweredAt) {
+            existing.lastAnsweredAt = answeredAt;
+            existing.lastWasCorrect = isCorrect;
+          }
+        } else {
+          questionStats.set(qid, {
+            questionId: qid,
+            quizId: r.quiz_id,
+            quizTitle: r.quiz_title || "Untitled Quiz",
+            questionText: r.question_text || "",
+            questionType: r.question_type || "mcq",
+            topic: r.topic || "General",
+            difficulty: r.difficulty || 3,
+            marks: r.marks || 1,
+            explanation: r.explanation || null,
+            correctAnswer: r.correct_answer || null,
+            tags: parsedTags,
+            timesAnswered: 1,
+            timesCorrect: isCorrect ? 1 : 0,
+            lastAnsweredAt: answeredAt,
+            lastWasCorrect: isCorrect,
+            totalResponseTime: responseTime,
+            avgResponseTime: responseTime,
+          });
+        }
+      }
+
+      // 3. Compute per-topic accuracy
+      const topicAccuracy = new Map<string, { correct: number; total: number }>();
+      for (const stats of questionStats.values()) {
+        const topic = stats.topic;
+        const ta = topicAccuracy.get(topic) || { correct: 0, total: 0 };
+        ta.total += stats.timesAnswered;
+        ta.correct += stats.timesCorrect;
+        topicAccuracy.set(topic, ta);
+      }
+
+      const topicAccuracyPct = new Map<string, number>();
+      for (const [topic, ta] of topicAccuracy) {
+        topicAccuracyPct.set(topic, ta.total > 0 ? Math.round((ta.correct / ta.total) * 100) : 0);
+      }
+
+      // 4. Score each question
+      const now = Date.now();
+      const scored: Array<{ item: any; score: number }> = [];
+
+      for (const stats of questionStats.values()) {
+        let score = 0;
+
+        // +50 if last answer was incorrect
+        if (!stats.lastWasCorrect) score += 50;
+
+        // +30 if topic accuracy < 70%
+        const tAcc = topicAccuracyPct.get(stats.topic) ?? 100;
+        if (tAcc < 70) score += 30;
+
+        // +20 if last attempted > 3 days ago
+        const daysSince = (now - stats.lastAnsweredAt) / (1000 * 60 * 60 * 24);
+        if (daysSince > 3) score += 20;
+
+        // +10 if avg response time < 3s (likely guessing)
+        if (stats.avgResponseTime > 0 && stats.avgResponseTime < 3) score += 10;
+
+        // +15 if fewer than 3 total attempts
+        if (stats.timesAnswered < 3) score += 15;
+
+        // +25 if question-level accuracy < 50%
+        const qAcc = stats.timesAnswered > 0
+          ? (stats.timesCorrect / stats.timesAnswered) * 100
+          : 0;
+        if (qAcc < 50) score += 25;
+
+        // Skip questions with score 0 (mastered / no review needed)
+        if (score <= 0) continue;
+
+        // Determine label
+        let label: string;
+        if (!stats.lastWasCorrect) {
+          label = "Needs Review";
+        } else if (tAcc < 70) {
+          label = "Weak Topic";
+        } else {
+          label = "Due for Review";
+        }
+
+        scored.push({
+          score,
+          item: {
+            questionId: stats.questionId,
+            quizId: stats.quizId,
+            quizTitle: stats.quizTitle,
+            questionText: stats.questionText,
+            topic: stats.topic,
+            difficulty: stats.difficulty,
+            priorityScore: score,
+            label,
+            lastAnsweredAt: stats.lastAnsweredAt,
+            accuracy: Math.round(qAcc),
+            timesAnswered: stats.timesAnswered,
+            tags: stats.tags,
+            question: null as any, // Will be populated below
+          },
+        });
+      }
+
+      // 5. Sort by priority descending, then by oldest first
+      scored.sort((a, b) => {
+        if (b.score !== a.score) return b.score - a.score;
+        return a.item.lastAnsweredAt - b.item.lastAnsweredAt;
+      });
+
+      // 6. Take top N and hydrate with full question + options for practice
+      const topItems = scored.slice(0, limit);
+
+      for (const entry of topItems) {
+        const qid = entry.item.questionId;
+        const stats = questionStats.get(qid)!;
+
+        // Get options for MCQ questions
+        let options: any[] = [];
+        if (stats.questionType === "mcq") {
+          try {
+            options = await this.getQuizOptions(qid);
+          } catch { options = []; }
+        }
+
+        entry.item.question = {
+          id: qid,
+          quizId: stats.quizId,
+          type: stats.questionType,
+          question: stats.questionText,
+          difficulty: stats.difficulty,
+          marks: stats.marks,
+          explanation: stats.explanation,
+          correctAnswer: stats.correctAnswer,
+          tags: stats.tags,
+          options,
+        };
+      }
+
+      return topItems.map(e => e.item);
+    } catch (error) {
+      console.error("[Spaced Review] Queue build error:", error);
+      return [];
+    }
+  }
+
+  /**
+   * Update the SM-2 review schedule for a question in user_question_stats.
+   * Called after a spaced review submission.
+   */
+  async updateQuestionReviewSchedule(questionId: string, userId: string, quality: number): Promise<void> {
+    try {
+      const existing = await this.getUserQuestionStats(userId, questionId);
+      if (!existing) return; // Stats will be created by upsertUserQuestionStats
+
+      // SM-2 algorithm on the user_question_stats row
+      let easeFactor = existing.easeFactor || 2.5;
+      let interval = existing.interval || 0;
+      let repetitions = existing.repetitions || 0;
+
+      if (quality >= 3) {
+        // Correct: increase interval
+        if (repetitions === 0) interval = 1;
+        else if (repetitions === 1) interval = 6;
+        else interval = Math.round(interval * easeFactor);
+
+        repetitions++;
+        easeFactor = easeFactor + (0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02));
+      } else {
+        // Incorrect: reset
+        repetitions = 0;
+        interval = 1;
+      }
+
+      easeFactor = Math.max(1.3, easeFactor);
+      const nextReviewDate = Date.now() + interval * 24 * 60 * 60 * 1000;
+
+      await db.run(sql`
+        UPDATE user_question_stats
+        SET ease_factor = ${easeFactor},
+            review_interval = ${interval},
+            consecutive_correct = ${repetitions},
+            next_review_date = ${nextReviewDate},
+            needs_review = ${quality < 3 ? 1 : 0}
+        WHERE id = ${existing.id}
+      `);
+    } catch (error) {
+      console.warn("[Spaced Review] Schedule update error:", error);
+      // Non-fatal — don't crash the review flow
+    }
+  }
+
   // ==================== ADAPTIVE ENGINE ====================
 
   async getNextAdaptiveQuestion(quizId: string, userId: string, currentDifficulty: number, currentAttemptId?: string): Promise<QuizQuestion | undefined> {
@@ -916,7 +1231,8 @@ export class DatabaseStorage implements IStorage {
     
     try {
       // Get all completed quiz attempts with quiz details
-      const attemptsResult = await db.run(sql`
+      // CRITICAL: Use db.all() for SELECT queries — db.run() only returns { changes, lastInsertRowid }
+      const attempts: any[] = db.all(sql`
         SELECT 
           qa.id,
           qa.quiz_id,
@@ -933,8 +1249,7 @@ export class DatabaseStorage implements IStorage {
         ORDER BY qa.completed_at DESC
       `);
 
-      // Ensure attemptsResult is an array
-      const attempts = Array.isArray(attemptsResult) ? attemptsResult : [];
+      console.log(`[Analytics] Query returned ${attempts.length} completed attempts for user ${userId}`);
 
       // Safe default for users with no quiz history
       if (!attempts || attempts.length === 0) {
@@ -952,7 +1267,13 @@ export class DatabaseStorage implements IStorage {
           weaknesses: [],
           performanceByDifficulty: [],
           topicBreakdown: [],
+          quizPerformance: [],
           recentActivity: [],
+          noteCount: 0,
+          flashcardCount: 0,
+          deckCount: 0,
+          masteredCardCount: 0,
+          reviewQueueSize: 0,
         };
       }
 
@@ -969,14 +1290,12 @@ export class DatabaseStorage implements IStorage {
 
       for (const attempt of attempts) {
         try {
-          const responsesResult = await db.run(sql`
+          const responses: any[] = db.all(sql`
             SELECT qr.*, qq.tags, qq.difficulty as question_difficulty
             FROM quiz_responses qr
             LEFT JOIN quiz_questions qq ON qr.question_id = qq.id
             WHERE qr.attempt_id = ${attempt.id}
           `);
-          
-          const responses = Array.isArray(responsesResult) ? responsesResult : [];
           
           // Safely handle empty or null responses
           if (!responses || responses.length === 0) continue;
@@ -1069,7 +1388,14 @@ export class DatabaseStorage implements IStorage {
       // Study streak calculation
       const studyDates = [...new Set(
         attempts
-          .map((a: any) => a.completed_at?.split('T')[0])
+          .map((a: any) => {
+            if (!a.completed_at) return null;
+            // completed_at may be integer timestamp or ISO string
+            const date = typeof a.completed_at === 'number'
+              ? new Date(a.completed_at)
+              : new Date(a.completed_at);
+            return isNaN(date.getTime()) ? null : date.toISOString().split('T')[0];
+          })
           .filter(Boolean)
       )].sort().reverse();
 
@@ -1102,7 +1428,11 @@ export class DatabaseStorage implements IStorage {
         let date = '';
         try {
           if (a.completed_at) {
-            date = a.completed_at.split('T')[0].split(' ')[0];
+            // completed_at may be integer timestamp or ISO string
+            const d = typeof a.completed_at === 'number'
+              ? new Date(a.completed_at)
+              : new Date(a.completed_at);
+            date = isNaN(d.getTime()) ? '' : d.toISOString().split('T')[0];
           }
         } catch {
           date = '';
@@ -1124,8 +1454,87 @@ export class DatabaseStorage implements IStorage {
       // Total study time in minutes
       const totalStudyTimeMinutes = Math.round(totalTime / 60);
 
+      // Per-quiz aggregated performance (handles multiple attempts of same quiz)
+      const quizMap = new Map<string, {
+        quizId: string; quizTitle: string; topic: string;
+        totalAttempts: number; totalEarned: number; totalMarks: number;
+        bestAccuracy: number; latestAccuracy: number;
+      }>();
+      for (const a of attempts) {
+        const totalMarks = typeof a.total_marks === 'number' ? a.total_marks : 0;
+        const earnedMarks = typeof a.earned_marks === 'number' ? a.earned_marks : 0;
+        const acc = totalMarks > 0 ? Math.round((earnedMarks / totalMarks) * 100) : 0;
+        const existing = quizMap.get(a.quiz_id);
+        if (existing) {
+          existing.totalAttempts++;
+          existing.totalEarned += earnedMarks;
+          existing.totalMarks += totalMarks;
+          existing.bestAccuracy = Math.max(existing.bestAccuracy, acc);
+          existing.latestAccuracy = acc; // attempts are ordered DESC, so first = latest
+        } else {
+          quizMap.set(a.quiz_id, {
+            quizId: a.quiz_id,
+            quizTitle: a.quiz_title || 'Untitled Quiz',
+            topic: a.topic || 'General',
+            totalAttempts: 1,
+            totalEarned: earnedMarks,
+            totalMarks: totalMarks,
+            bestAccuracy: acc,
+            latestAccuracy: acc,
+          });
+        }
+      }
+      const quizPerformance = Array.from(quizMap.values()).map(q => ({
+        quizId: q.quizId,
+        quizTitle: q.quizTitle,
+        topic: q.topic,
+        attempts: q.totalAttempts,
+        averageAccuracy: q.totalMarks > 0 ? Math.round((q.totalEarned / q.totalMarks) * 100) : 0,
+        bestAccuracy: q.bestAccuracy,
+        latestAccuracy: q.latestAccuracy,
+      }));
+
+      // Note & flashcard stats for comprehensive analytics
+      let noteCount = 0;
+      let flashcardCount = 0;
+      let deckCount = 0;
+      let masteredCardCount = 0;
+      let reviewQueueSize = 0;
+      
+      try {
+        const noteRows: any[] = db.all(sql`SELECT COUNT(*) as count FROM notes WHERE user_id = ${userId}`);
+        noteCount = noteRows[0]?.count ?? 0;
+      } catch { /* ignore */ }
+      
+      try {
+        const deckRows: any[] = db.all(sql`SELECT COUNT(*) as count FROM decks WHERE user_id = ${userId}`);
+        deckCount = deckRows[0]?.count ?? 0;
+        const cardRows: any[] = db.all(sql`
+          SELECT COUNT(*) as count FROM cards c 
+          JOIN decks d ON c.deck_id = d.id 
+          WHERE d.user_id = ${userId}
+        `);
+        flashcardCount = cardRows[0]?.count ?? 0;
+        const masteredRows: any[] = db.all(sql`
+          SELECT COUNT(*) as count FROM cards c 
+          JOIN decks d ON c.deck_id = d.id 
+          WHERE d.user_id = ${userId} AND c.status = 'mastered'
+        `);
+        masteredCardCount = masteredRows[0]?.count ?? 0;
+      } catch { /* ignore */ }
+      
+      try {
+        const reviewRows: any[] = db.all(sql`
+          SELECT COUNT(*) as count FROM user_question_stats 
+          WHERE user_id = ${userId} AND needs_review = 1
+        `);
+        reviewQueueSize = reviewRows[0]?.count ?? 0;
+      } catch { /* ignore */ }
+
+      console.log(`[Analytics] Fetched for user: ${userId} - Quizzes taken: ${attempts.length}`);
+
       return {
-        totalQuizzesTaken: attemptsResult.length,
+        totalQuizzesTaken: attempts.length,
         totalQuestionsAnswered: totalQuestions,
         correctAnswers: totalCorrect,
         incorrectAnswers,
@@ -1138,7 +1547,13 @@ export class DatabaseStorage implements IStorage {
         weaknesses,
         performanceByDifficulty,
         topicBreakdown,
+        quizPerformance,
         recentActivity,
+        noteCount,
+        flashcardCount,
+        deckCount,
+        masteredCardCount,
+        reviewQueueSize,
       };
     } catch (error) {
       // If any error occurs, return safe defaults instead of crashing
@@ -1157,7 +1572,13 @@ export class DatabaseStorage implements IStorage {
         weaknesses: [],
         performanceByDifficulty: [],
         topicBreakdown: [],
+        quizPerformance: [],
         recentActivity: [],
+        noteCount: 0,
+        flashcardCount: 0,
+        deckCount: 0,
+        masteredCardCount: 0,
+        reviewQueueSize: 0,
       };
     }
   }
@@ -1203,7 +1624,7 @@ export class DatabaseStorage implements IStorage {
         totalCards++;
         if (card.status === 'mastered') masteredCards++;
         // Count actual reviews from cardReviews table
-        const reviews = await db.run(sql`
+        const reviews: any[] = db.all(sql`
           SELECT review_date, quality FROM card_reviews WHERE card_id = ${card.id}
         `);
         totalCardReviews += reviews.length;
@@ -1405,7 +1826,7 @@ export class DatabaseStorage implements IStorage {
       const deckCards = await this.getCards(deck.id);
       for (const card of deckCards) {
         // Get actual reviews for this card
-        const reviews = await db.run(sql`
+        const reviews: any[] = db.all(sql`
           SELECT review_date, quality FROM card_reviews WHERE card_id = ${card.id}
         `);
         for (const review of reviews) {

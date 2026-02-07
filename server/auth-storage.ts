@@ -20,8 +20,8 @@ export const storage = {
         firstName: user.firstName || null,
         lastName: user.lastName || null,
         profileImageUrl: null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
       });
     } catch (error) {
       // User might already exist
@@ -41,7 +41,7 @@ export const storage = {
           passwordHash: user.password || null,
           firstName: user.firstName || null,
           lastName: user.lastName || null,
-          updatedAt: new Date(),
+          updatedAt: Date.now(),
         })
         .where(eq(users.id, user.id));
     } catch (error) {
@@ -59,6 +59,23 @@ export const storage = {
         return user;
       }
     }
+    // Fallback: check database (user may have been created by seed scripts)
+    try {
+      const rows = await db.select().from(users).where(eq(users.email, email));
+      if (rows.length > 0) {
+        const row = rows[0];
+        const authUser: AuthUser = {
+          id: row.id,
+          email: row.email,
+          username: row.username || undefined,
+          password: row.passwordHash || undefined,
+          firstName: row.firstName || undefined,
+          lastName: row.lastName || undefined,
+        };
+        userCache.set(authUser.id, authUser);
+        return authUser;
+      }
+    } catch (e) { /* ignore */ }
     return null;
   },
 
@@ -68,6 +85,23 @@ export const storage = {
         return user;
       }
     }
+    // Fallback: check database (user may have been created by seed scripts)
+    try {
+      const rows = await db.select().from(users).where(eq(users.username, username));
+      if (rows.length > 0) {
+        const row = rows[0];
+        const authUser: AuthUser = {
+          id: row.id,
+          email: row.email,
+          username: row.username || undefined,
+          password: row.passwordHash || undefined,
+          firstName: row.firstName || undefined,
+          lastName: row.lastName || undefined,
+        };
+        userCache.set(authUser.id, authUser);
+        return authUser;
+      }
+    } catch (e) { /* ignore */ }
     return null;
   },
 

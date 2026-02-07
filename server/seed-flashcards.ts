@@ -3,6 +3,15 @@ import { decks, cards } from "@shared/schema";
 import { eq } from "drizzle-orm";
 
 export async function seedFlashcards(userId: string) {
+  // IDEMPOTENT CHECK: Skip if user already has decks
+  const existingDecks = await db.select().from(decks).where(eq(decks.userId, userId));
+  if (existingDecks.length > 0) {
+    console.log(`[FLASHCARD SEED] ⏭️  Skipping - User already has ${existingDecks.length} decks`);
+    return { decksCreated: existingDecks.length, cardsCreated: 0 };
+  }
+  
+  // ENFORCE CONSTRAINT: Limit to 5-10 decks only (we'll create exactly 5)
+  const now = Date.now();
   const sampleDecks = [
     {
       id: crypto.randomUUID(),
@@ -10,8 +19,9 @@ export async function seedFlashcards(userId: string) {
       title: "Data Structures Essentials",
       subject: "Computer Science",
       description: "Master fundamental data structures - arrays, linked lists, trees, and more",
-      tags: ["CS", "programming", "algorithms"],
+      tags: JSON.stringify(["CS", "programming", "algorithms"]),
       difficulty: "medium",
+      createdAt: now,
     },
     {
       id: crypto.randomUUID(),
@@ -19,8 +29,9 @@ export async function seedFlashcards(userId: string) {
       title: "JavaScript Core Concepts",
       subject: "Web Development",
       description: "Essential JavaScript concepts including closures, promises, and the event loop",
-      tags: ["JavaScript", "web", "programming"],
+      tags: JSON.stringify(["JavaScript", "web", "programming"]),
       difficulty: "medium",
+      createdAt: now,
     },
     {
       id: crypto.randomUUID(),
@@ -28,8 +39,9 @@ export async function seedFlashcards(userId: string) {
       title: "SQL & Database Fundamentals",
       subject: "Databases",
       description: "Core SQL commands and database concepts for efficient data management",
-      tags: ["SQL", "database", "backend"],
+      tags: JSON.stringify(["SQL", "database", "backend"]),
       difficulty: "easy",
+      createdAt: now,
     },
     {
       id: crypto.randomUUID(),
@@ -37,8 +49,9 @@ export async function seedFlashcards(userId: string) {
       title: "Algorithms & Big O",
       subject: "Computer Science",
       description: "Algorithm analysis, time complexity, and common algorithmic patterns",
-      tags: ["algorithms", "Big O", "CS"],
+      tags: JSON.stringify(["algorithms", "Big O", "CS"]),
       difficulty: "hard",
+      createdAt: now,
     },
     {
       id: crypto.randomUUID(),
@@ -46,11 +59,13 @@ export async function seedFlashcards(userId: string) {
       title: "Object-Oriented Programming",
       subject: "Software Engineering",
       description: "OOP principles including encapsulation, inheritance, polymorphism, and SOLID",
-      tags: ["OOP", "design", "programming"],
+      tags: JSON.stringify(["OOP", "design", "programming"]),
       difficulty: "medium",
+      createdAt: now,
     },
   ];
 
+  console.log(`[FLASHCARD SEED] Creating ${sampleDecks.length} decks for userId: ${userId}`);
   const createdDecks = await db.insert(decks).values(sampleDecks).returning();
 
   const dsCards = [
@@ -256,28 +271,34 @@ export async function seedFlashcards(userId: string) {
 
   // Prepare card data by deck
   const cardsByDeck = [
-    { cards: dsCards, deckId: createdDecks[0].id, tags: ["data-structures"] },
-    { cards: jsCards, deckId: createdDecks[1].id, tags: ["javascript"] },
-    { cards: sqlCards, deckId: createdDecks[2].id, tags: ["sql", "database"] },
-    { cards: algoCards, deckId: createdDecks[3].id, tags: ["algorithms"] },
-    { cards: oopCards, deckId: createdDecks[4].id, tags: ["oop"] },
+    { cards: dsCards, deckId: createdDecks[0].id, tags: JSON.stringify(["data-structures"]) },
+    { cards: jsCards, deckId: createdDecks[1].id, tags: JSON.stringify(["javascript"]) },
+    { cards: sqlCards, deckId: createdDecks[2].id, tags: JSON.stringify(["sql", "database"]) },
+    { cards: algoCards, deckId: createdDecks[3].id, tags: JSON.stringify(["algorithms"]) },
+    { cards: oopCards, deckId: createdDecks[4].id, tags: JSON.stringify(["oop"]) },
   ];
 
-  // First pass: Insert base card data with required fields only
+  // First pass: Insert base card data with required fields
   const baseCards = cardsByDeck.flatMap(({ cards, deckId, tags }) =>
     cards.map(c => ({
+      id: crypto.randomUUID(),
       ...c,
       deckId,
       type: "basic" as const,
       tags,
+      easeFactor: 2.5,
+      interval: 0,
+      repetitions: 0,
+      dueAt: now,
+      status: "new" as const,
+      createdAt: now,
     }))
   );
 
-  // Insert base cards and get them back with IDs
+  // Insert all cards
   const insertedCards = await db.insert(cards).values(baseCards).returning();
 
-  // Second pass: Update cards with learning state data
-  // Group by state for efficient batch updates
+  // Second pass: Update cards with varied learning states (30% mastered, 25% learning, 20% struggling, 25% new)
   const cardsWithStates = insertedCards.map(card => {
     const state = getRandomLearningState();
     return {
@@ -285,9 +306,9 @@ export async function seedFlashcards(userId: string) {
       repetitions: state.reviewCount,
       easeFactor: state.easeFactor,
       interval: state.interval,
-      dueAt: state.dueAt,
+      dueAt: state.dueAt.getTime(), // Convert to timestamp
       status: state.status,
-      lastReviewedAt: state.reviewCount > 0 ? new Date(state.dueAt.getTime() - state.interval * 24 * 60 * 60 * 1000) : null,
+      lastReviewedAt: state.reviewCount > 0 ? state.dueAt.getTime() - (state.interval * 24 * 60 * 60 * 1000) : null,
     };
   });
 
@@ -303,6 +324,26 @@ export async function seedFlashcards(userId: string) {
         lastReviewedAt: cardUpdate.lastReviewedAt,
       })
       .where(eq(cards.id, cardUpdate.id));
+  }
+
+  // VALIDATION: Check constraints
+  const finalDecks = await db.select().from(decks).where(eq(decks.userId, userId));
+  const finalCards = await db.select().from(cards);
+  
+  console.log(`[FLASHCARD SEED] ✅ Seed complete. Created ${createdDecks.length} decks, ${insertedCards.length} cards`);
+  
+  if (finalDecks.length > 10) {
+    console.warn(`[FLASHCARD SEED] ⚠️  WARNING: User has ${finalDecks.length} decks (max should be 10)`);
+  } else if (finalDecks.length < 5) {
+    console.warn(`[FLASHCARD SEED] ⚠️  WARNING: User has ${finalDecks.length} decks (min should be 5)`);
+  }
+  
+  // Verify each deck has 10-30 cards
+  for (const deck of finalDecks) {
+    const deckCards = finalCards.filter(c => c.deckId === deck.id);
+    if (deckCards.length < 10 || deckCards.length > 30) {
+      console.warn(`[FLASHCARD SEED] ⚠️  WARNING: Deck "${deck.title}" has ${deckCards.length} cards (should be 10-30)`);
+    }
   }
 
   return { decksCreated: createdDecks.length, cardsCreated: insertedCards.length };

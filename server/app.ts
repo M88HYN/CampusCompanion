@@ -28,7 +28,7 @@ declare module 'http' {
   }
 }
 
-// CORS configuration for local dev (allows vite dev server on 5173 to reach backend on 5000)
+// CORS configuration for local dev (allows vite dev server on 5173 to reach backend on 3000)
 app.use((req, res, next) => {
   res.header("Access-Control-Allow-Origin", req.headers.origin || "*");
   res.header("Access-Control-Allow-Credentials", "true");
@@ -128,56 +128,30 @@ export default async function runApp(
   await setup(app, server);
 
   const host = process.env.NODE_ENV === 'production' ? '0.0.0.0' : '127.0.0.1';
-  let port = parseInt(process.env.PORT || '5000', 10);
-  let attempts = 0;
-  const maxAttempts = 10;
+  const PORT = 3000; // FIXED PORT - NO AUTO-INCREMENT
 
-  // Function to attempt starting the server on a port
-  const startServer = async (currentPort: number): Promise<boolean> => {
-    return new Promise((resolve) => {
-      const errorHandler = (error: any) => {
-        if (error.code === 'EADDRINUSE') {
-          log(`Port ${currentPort} is in use, trying another one...`, "express");
-          resolve(false);
-        } else {
-          log(`Server error: ${error.message}`, "express");
-          console.error('Server Error:', error);
-          resolve(false);
-        }
-      };
-
-      server.once('error', errorHandler);
-
-      server.listen(currentPort, host, () => {
-        server.removeListener('error', errorHandler);
-        log(`✅ Backend API server ready at http://${host}:${currentPort}`);
-        if (process.env.NODE_ENV === 'development') {
-          log(`📱 Frontend will be available at http://127.0.0.1:5173`, "express");
-          log(`🔗 API requests from frontend will be proxied to http://${host}:${currentPort}`, "express");
-        }
-        resolve(true);
-      });
-    });
-  };
-
-  // Try to start server, incrementing port on failure
-  while (attempts < maxAttempts) {
-    const success = await startServer(port);
-    if (success) {
-      break;
-    }
-    port++;
-    attempts++;
-    
-    if (attempts >= maxAttempts) {
-      log(`Failed to find available port after ${maxAttempts} attempts`, "express");
+  // FAIL-FAST: If port is occupied, crash immediately with clear error
+  server.on('error', (error: any) => {
+    if (error.code === 'EADDRINUSE') {
+      console.error(`\n❌ FATAL ERROR: Port ${PORT} is already in use!`);
+      console.error(`❌ Another process is using port ${PORT}.`);
+      console.error(`❌ Kill that process or change the port in shared/ports.ts\n`);
+      process.exit(1);
+    } else if (error.code === 'ECONNREFUSED') {
+      console.error(`\n❌ FATAL ERROR: Connection refused on port ${PORT}!`);
+      process.exit(1);
+    } else {
+      console.error(`\n❌ FATAL ERROR: Server error:`, error);
       process.exit(1);
     }
-  }
+  });
 
-  // Handle server errors after successful start
-  server.on('error', (error) => {
-    log(`Server error: ${error.message}`, "express");
-    console.error('Server Error:', error);
+  // Start server on FIXED PORT ONLY
+  server.listen(PORT, host, () => {
+    log(`✅ Backend API server ready at http://${host}:${PORT}`);
+    if (process.env.NODE_ENV === 'development') {
+      log(`📱 Frontend will be available at http://127.0.0.1:5173`, "express");
+      log(`🔗 API requests from frontend will be proxied to http://${host}:${PORT}`, "express");
+    }
   });
 }

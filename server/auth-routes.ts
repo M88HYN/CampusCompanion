@@ -16,6 +16,7 @@ import { db } from "./db";
 import { users } from "@shared/schema";
 import { eq } from "drizzle-orm";
 import { seedComputerScienceData } from "./seed-computer-science";
+import { seedCompletedQuizzes } from "./seed-completed-quizzes";
 import { storage } from "./storage";
 
 const loginSchema = z.object({
@@ -34,11 +35,11 @@ const registerSchema = z.object({
 // OAuth Configuration
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || "";
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || "";
-const GOOGLE_REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI || "http://localhost:5000/api/auth/google/callback";
+const GOOGLE_REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI || "http://localhost:3000/api/auth/google/callback";
 
 const GITHUB_CLIENT_ID = process.env.GITHUB_CLIENT_ID || "";
 const GITHUB_CLIENT_SECRET = process.env.GITHUB_CLIENT_SECRET || "";
-const GITHUB_REDIRECT_URI = process.env.GITHUB_REDIRECT_URI || "http://localhost:5000/api/auth/github/callback";
+const GITHUB_REDIRECT_URI = process.env.GITHUB_REDIRECT_URI || "http://localhost:3000/api/auth/github/callback";
 
 export function authMiddleware(req: any, res: Response, next: NextFunction) {
   const token = req.headers.authorization?.split(" ")[1] || req.cookies?.token;
@@ -67,8 +68,8 @@ export function authMiddleware(req: any, res: Response, next: NextFunction) {
           firstName: payload.firstName || null,
           lastName: payload.lastName || null,
           profileImageUrl: null,
-          createdAt: new Date(),
-          updatedAt: new Date(),
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
         }).catch(() => {}); // Ignore if already exists due to race condition
       }
       
@@ -78,6 +79,7 @@ export function authMiddleware(req: any, res: Response, next: NextFunction) {
       if (notes.length === 0 || quizzes.length === 0) {
         console.log(`[Auth] User ${payload.userId} has ${notes.length} notes and ${quizzes.length} quizzes - seeding sample content`);
         await seedComputerScienceData(payload.userId);
+        await seedCompletedQuizzes(payload.userId);
       }
     } catch (error) {
       // Silently fail - best-effort seeding
@@ -168,6 +170,7 @@ export function registerAuthRoutes(app: Express) {
           if (notes.length === 0) {
             console.log("User has no data - seeding sample content for userId:", user.id);
             await seedComputerScienceData(user.id);
+            await seedCompletedQuizzes(user.id);
           }
         } catch (seedError) {
           console.log("Note: Could not seed sample data, but login succeeded:", seedError);

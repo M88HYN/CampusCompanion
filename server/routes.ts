@@ -14,12 +14,34 @@ import {
   cardReviews
 } from "@shared/schema";
 import { z } from "zod";
-import { registerChatRoutes } from "./replit_integrations/chat";
+// Removed Replit chat integration import - using standard research endpoints instead
 import { registerInsightScoutRoutes } from "./insight-scout";
 import { registerAuthRoutes, authMiddleware } from "./auth-routes";
 import type { Card } from "@shared/schema";
 import type { JWTPayload } from "./auth";
-import { notes } from "./schema/notes";
+
+/** Concrete card interface — Drizzle's $inferSelect resolves some SQLite columns as unknown */
+interface CardRecord {
+  id: string;
+  deckId: string;
+  type: string;
+  front: string;
+  back: string;
+  imageUrl: string | null;
+  clozeText: string | null;
+  definition: string | null;
+  example: string | null;
+  tags: string | null;
+  easeFactor: number;
+  interval: number;
+  repetitions: number;
+  dueAt: number;
+  status: string;
+  lastReviewedAt: number | null;
+  createdAt: number;
+  sourceQuestionId: string | null;
+  sourceNoteBlockId: string | null;
+}
 
 
 // Helper to get user ID from authenticated request
@@ -31,13 +53,14 @@ function getUserId(req: any): string {
 }
 
 // Helper functions for smart card prioritization
-function getPriorityReason(card: Card, daysSinceDue: number): string {
+function getPriorityReason(card: CardRecord, daysSinceDue: number): string {
+  const easeFactor = card.easeFactor ?? 2.5;
   if (daysSinceDue > 7) return "Overdue by more than a week";
   if (daysSinceDue > 0) return "Due for review";
   if (card.status === "new") return "New card - needs initial learning";
-  if (card.easeFactor < 2.0) return "Struggling - needs extra practice";
+  if (easeFactor < 2.0) return "Struggling - needs extra practice";
   if (card.status === "learning") return "Currently learning";
-  if (card.easeFactor < 2.5) return "Needs reinforcement";
+  if (easeFactor < 2.5) return "Needs reinforcement";
   return "Scheduled review";
 }
 
@@ -107,19 +130,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = getUserId(req);
       console.log("User ID extracted:", userId);
       
-      const noteData = insertNoteSchema.parse({ ...req.body, userId });
+      // Pre-process tags: stringify arrays before Zod validation
+      const bodyForValidation = { ...req.body, userId };
+      if (Array.isArray(bodyForValidation.tags)) {
+        bodyForValidation.tags = JSON.stringify(bodyForValidation.tags);
+      }
+      
+      const noteData = insertNoteSchema.parse(bodyForValidation);
       console.log("Note data after schema validation:", JSON.stringify(noteData, null, 2));
       
-    // 🔥 CREATE NOTE AND RETURN IT IMMEDIATELY
-    const [note] = await db
-    .insert(schema.notes)
-    .values(noteData)
-    .returning();
+      // Use storage layer which handles ID generation, timestamps, and SQLite compatibility
+      const note = await storage.createNote(noteData);
 
-    // Safety check (prevents silent 500s)
-if (!note) {
-  return res.status(500).json({ error: "Note creation failed" });
-}
+      // Safety check (prevents silent 500s)
+      if (!note) {
+        return res.status(500).json({ error: "Note creation failed" });
+      }
 
       
       if (req.body.blocks && Array.isArray(req.body.blocks)) {
@@ -159,10 +185,10 @@ if (!note) {
   app.patch("/api/notes/:id", authMiddleware, async (req, res) => {
     try {
       const { blocks, title, subject, tags } = req.body;
-      const safeNoteData: { title?: string; subject?: string; tags?: string[] } = {};
+      const safeNoteData: { title?: string; subject?: string; tags?: string | null } = {};
       if (title !== undefined) safeNoteData.title = title;
       if (subject !== undefined) safeNoteData.subject = subject;
-      if (tags !== undefined) safeNoteData.tags = tags;
+      if (tags !== undefined) safeNoteData.tags = Array.isArray(tags) ? JSON.stringify(tags) : tags;
       
       const note = await storage.updateNote(req.params.id, safeNoteData);
       if (!note) {
@@ -433,7 +459,7 @@ if (!note) {
   });
   
   // Get note content with recall mode (key terms hidden)
-  app.get("/api/notes/:id/recall", async (req, res) => {
+  app.get("/api/notes/:id/recall", authMiddleware, async (req: any, res) => {
     try {
       const note = await storage.getNote(req.params.id);
       if (!note) {
@@ -479,8 +505,8 @@ if (!note) {
       const enrichedDecks = await Promise.all(
         decks.map(async (deck) => {
           const cards = await storage.getCards(deck.id);
-          const now = new Date();
-          const dueToday = cards.filter(c => new Date(c.dueAt) <= now).length;
+          const now = Date.now();
+          const dueToday = cards.filter(c => (c.dueAt as unknown as number) <= now).length;
           const mastered = cards.filter(c => c.status === "mastered").length;
           
           return {
@@ -607,13 +633,13 @@ if (!note) {
   app.get("/api/flashcards/stats", authMiddleware, async (req: any, res) => {
     try {
       const userId = getUserId(req);
-      const now = new Date();
+      const now = Date.now();
 
       // Get all decks for this user
       const userDecks = await storage.getDecks(userId);
       
       // Collect all cards
-      let allCards: Card[] = [];
+      let allCards: any[] = [];
       for (const deck of userDecks) {
         const deckCards = await storage.getCards(deck.id);
         allCards.push(...deckCards);
@@ -622,10 +648,10 @@ if (!note) {
       // Calculate stats
       const stats = {
         totalCards: allCards.length,
-        dueNow: allCards.filter(c => new Date(c.dueAt) <= now).length,
+        dueNow: allCards.filter(c => ((c.dueAt as any) ?? now) <= now).length,
         new: allCards.filter(c => c.status === "new").length,
-        struggling: allCards.filter(c => c.easeFactor < 2.0).length,
-        mastered: allCards.filter(c => c.interval > 30).length, // interval > 30 days means mastered
+        struggling: allCards.filter(c => ((c.easeFactor as any) ?? 2.5) < 2.0).length,
+        mastered: allCards.filter(c => ((c.interval as any) ?? 0) > 30).length, // interval > 30 days means mastered
       };
 
       res.json(stats);
@@ -647,21 +673,22 @@ if (!note) {
       const userId = getUserId(req);
       const { filter = "due", limit = "20" } = req.query;
       const maxCards = Math.min(parseInt(limit as string) || 20, 100);
-      const now = new Date();
+      const now = Date.now();
 
       // Get all cards
       const userDecks = await storage.getDecks(userId);
-      let allCards: Card[] = [];
+      let allCards: CardRecord[] = [];
       for (const deck of userDecks) {
-        const deckCards = await storage.getCards(deck.id);
+        const deckCards = await storage.getCards(deck.id) as unknown as CardRecord[];
         allCards.push(...deckCards);
       }
 
       // Score and sort by priority
       const scoredCards = allCards.map(card => {
         let priorityScore = 0;
-        const dueDate = new Date(card.dueAt);
-        const daysSinceDue = (now.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24);
+        const dueAtTime = card.dueAt ?? now;
+        const daysSinceDue = (now - dueAtTime) / (1000 * 60 * 60 * 24);
+        const easeFactor = card.easeFactor ?? 2.5;
         
         if (daysSinceDue > 0) {
           priorityScore += Math.min(daysSinceDue * 10, 50);
@@ -669,8 +696,8 @@ if (!note) {
         if (card.status === "new") {
           priorityScore += 20;
         }
-        if (card.easeFactor < 2.5) {
-          priorityScore += (2.5 - card.easeFactor) * 20;
+        if (easeFactor < 2.5) {
+          priorityScore += (2.5 - easeFactor) * 20;
         }
         if (card.status === "learning" && daysSinceDue >= 0) {
           priorityScore += 25;
@@ -686,11 +713,11 @@ if (!note) {
       // Apply filter
       let filtered = scoredCards;
       if (filter === "due") {
-        filtered = scoredCards.filter(c => new Date(c.dueAt) <= now).sort((a, b) => b.priorityScore - a.priorityScore);
+        filtered = scoredCards.filter(c => ((c.dueAt as unknown as number) ?? now) <= now).sort((a, b) => b.priorityScore - a.priorityScore);
       } else if (filter === "new") {
         filtered = scoredCards.filter(c => c.status === "new").sort((a, b) => b.priorityScore - a.priorityScore);
       } else if (filter === "struggling") {
-        filtered = scoredCards.filter(c => c.easeFactor < 2.0).sort((a, b) => b.priorityScore - a.priorityScore);
+        filtered = scoredCards.filter(c => ((c.easeFactor as unknown as number) ?? 2.5) < 2.0).sort((a, b) => b.priorityScore - a.priorityScore);
       }
 
       const result = filtered.slice(0, maxCards);
@@ -707,13 +734,13 @@ if (!note) {
       const maxCards = Math.min(parseInt(limit as string) || 50, 100);
       
       // Get all cards (from specific deck or all decks)
-      let allCards: Card[] = [];
+      let allCards: CardRecord[] = [];
       if (deckId) {
-        allCards = await storage.getCards(deckId as string);
+        allCards = await storage.getCards(deckId as string) as unknown as CardRecord[];
       } else {
         const decks = await storage.getDecks(getUserId(req));
         for (const deck of decks) {
-          const deckCards = await storage.getCards(deck.id);
+          const deckCards = await storage.getCards(deck.id) as unknown as CardRecord[];
           allCards.push(...deckCards);
         }
       }
@@ -940,20 +967,21 @@ if (!note) {
       
       const cardId = req.params.id;
       const userId = getUserId(req);
-      const card = await storage.getCard(cardId);
+      const rawCard = await storage.getCard(cardId);
       
-      if (!card) {
+      if (!rawCard) {
         return res.status(404).json({ error: "Card not found" });
       }
+      const card = rawCard as unknown as CardRecord;
 
       // ============ SM-2 ALGORITHM ============
       // quality: 0-2 = incorrect, 3-5 = correct
       // All values from 0 to 5 are used to adjust ease factor
       
-      let easeFactor = card.easeFactor;
-      let interval = card.interval;
-      let repetitions = card.repetitions;
-      let status = card.status;
+      let easeFactor: number = card.easeFactor;
+      let interval: number = card.interval;
+      let repetitions: number = card.repetitions;
+      let status: string = card.status;
       
       // SM-2 Formula: EF' = EF + (0.1 - (5 - q) * (0.08 + (5 - q) * 0.02))
       easeFactor = easeFactor + (0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02));
@@ -1053,7 +1081,7 @@ if (!note) {
       }
       
       // Get all cards for this deck
-      const allCards = await storage.getCards(deckId);
+      const allCards = await storage.getCards(deckId) as unknown as CardRecord[];
       
       // Prioritize cards based on sessionType
       let cardsToReview = [...allCards];
@@ -1129,7 +1157,7 @@ if (!note) {
       }
       
       // Get all cards sorted by due date
-      const allCards = await storage.getCards(deckId);
+      const allCards = await storage.getCards(deckId) as unknown as CardRecord[];
       const now = new Date();
       
       // Get due cards (most overdue first)
@@ -1542,7 +1570,7 @@ if (!note) {
             questionId: response.questionId,
             selectedOptionId: response.selectedOptionId,
             textAnswer: response.textAnswer,
-            isCorrect,
+            isCorrect: isCorrect ? 1 : 0,
             marksAwarded,
             feedback: isCorrect ? "Correct!" : question.explanation || "Incorrect",
           });
@@ -1561,6 +1589,23 @@ if (!note) {
       );
 
       const userId = getUserId(req);
+
+      // Update per-question stats for spaced repetition tracking
+      // This ensures every quiz completion feeds into the review queue
+      for (const response of finalResponses) {
+        try {
+          await storage.upsertUserQuestionStats(
+            userId,
+            response.questionId,
+            !!(response.isCorrect),
+            response.responseTime || 0
+          );
+        } catch (e) {
+          // Don't fail the whole completion if stats update fails
+          console.warn("[Quiz] Failed to update question stats for", response.questionId);
+        }
+      }
+
       console.log("[Quiz] Quiz completed:", {
         attemptId: req.params.attemptId,
         userId,
@@ -1683,58 +1728,95 @@ if (!note) {
     }
   });
 
-  // ==================== SPACED REPETITION ====================
+  // ==================== SPACED REPETITION (Analytics-Driven) ====================
 
-  app.get("/api/spaced-review/due", async (req, res) => {
+  /**
+   * GET /api/spaced-review/queue
+   * 
+   * Generates a prioritised review queue from the SAME quiz_attempts + quiz_responses
+   * data used by Analytics and My Quizzes. No separate dataset.
+   * 
+   * Priority scoring:
+   *   +50 incorrect answer
+   *   +30 weak topic (<70% accuracy)
+   *   +20 last attempted >3 days ago
+   *   +10 fast guess (<3s)
+   *   +15 fewer than 3 attempts
+   *   +25 question accuracy <50%
+   */
+  app.get("/api/spaced-review/queue", authMiddleware, async (req: any, res) => {
     try {
+      const userId = getUserId(req);
       const limit = parseInt(req.query.limit as string) || 20;
-      const dueQuestions = await storage.getDueQuestionsForReview(getUserId(req), limit);
-      
-      // Get the actual questions for each stat
-      const questionsWithDetails = await Promise.all(
-        dueQuestions.map(async (stat) => {
-          const questions = await storage.getQuizQuestions(stat.questionId);
-          // Find the question in all quizzes
-          const allQuizzes = await storage.getAllQuizzes();
-          for (const quiz of allQuizzes) {
-            const quizQuestions = await storage.getQuizQuestions(quiz.id);
-            const question = quizQuestions.find(q => q.id === stat.questionId);
-            if (question) {
-              const options = question.type === "mcq" 
-                ? await storage.getQuizOptions(question.id) 
-                : [];
-              return {
-                ...stat,
-                question: { ...question, options },
-                quizTitle: quiz.title,
-              };
-            }
-          }
-          return { ...stat, question: null };
-        })
-      );
-      
-      res.json(questionsWithDetails.filter(q => q.question !== null));
+
+      const queue = await storage.getSpacedReviewQueue(userId, limit);
+      res.json(queue);
     } catch (error) {
-      console.error("Spaced review error:", error);
-      res.status(500).json({ error: "Failed to fetch due questions" });
+      console.error("[Spaced Review] Queue error:", error);
+      res.json([]); // Safe fallback — empty queue, no crash
     }
   });
 
+  // Keep legacy endpoint for backward compatibility
+  app.get("/api/spaced-review/due", authMiddleware, async (req: any, res) => {
+    try {
+      const userId = getUserId(req);
+      const limit = parseInt(req.query.limit as string) || 20;
+      const queue = await storage.getSpacedReviewQueue(userId, limit);
+      res.json(queue);
+    } catch (error) {
+      console.error("Spaced review error:", error);
+      res.json([]);
+    }
+  });
+
+  /**
+   * POST /api/spaced-review/submit
+   * 
+   * Submit a spaced review answer. Updates user_question_stats and
+   * feeds back into the priority scoring system.
+   */
+  app.post("/api/spaced-review/submit", authMiddleware, async (req: any, res) => {
+    try {
+      const userId = getUserId(req);
+      const { questionId, isCorrect, responseTime, selectedOptionId, textAnswer } = req.body;
+
+      if (!questionId) {
+        return res.status(400).json({ error: "questionId is required" });
+      }
+
+      // Update per-question stats (same table used by analytics)
+      const stats = await storage.upsertUserQuestionStats(
+        userId,
+        questionId,
+        !!isCorrect,
+        responseTime || 0
+      );
+
+      // Also update the spaced repetition interval fields
+      // SM-2 quality: correct = 4 (good), incorrect = 1 (again)
+      const quality = isCorrect ? 4 : 1;
+      await storage.updateQuestionReviewSchedule(questionId, userId, quality);
+
+      res.json({
+        success: true,
+        stats,
+        message: isCorrect ? "Correct! Review interval increased." : "Incorrect. This will appear again soon.",
+      });
+    } catch (error) {
+      console.error("[Spaced Review] Submit error:", error);
+      res.status(500).json({ error: "Failed to submit review" });
+    }
+  });
+
+  // Keep legacy endpoint for backward compatibility
   app.post("/api/spaced-review/:statsId/review", authMiddleware, async (req: any, res) => {
     try {
       const { quality } = req.body;
       if (typeof quality !== "number" || quality < 0 || quality > 5) {
         return res.status(400).json({ error: "Quality must be between 0 and 5" });
       }
-      
-      // Update spaced repetition stats for this question
       const stats = await storage.updateSpacedRepetition(req.params.statsId, quality);
-      
-      // Note: Analytics are derived from completed quizzes (quiz_attempts table)
-      // Spaced review sessions don't currently count toward quiz analytics
-      // but could be tracked separately in the future if needed
-      
       res.json(stats);
     } catch (error) {
       console.error("[Spaced Review] Update error:", error);
@@ -1820,7 +1902,7 @@ if (!note) {
         questionId,
         selectedOptionId,
         textAnswer,
-        isCorrect,
+        isCorrect: isCorrect ? 1 : 0,
         marksAwarded: isCorrect ? question.marks : 0,
         feedback: isCorrect ? "Correct!" : question.explanation || "Incorrect",
         responseTime,
@@ -1854,7 +1936,7 @@ if (!note) {
         const score = Math.round((correctCount / responses.length) * 100);
         
         await storage.updateQuizAttempt(req.params.attemptId, {
-          completedAt: new Date(),
+          completedAt: Date.now(),
           status: "completed",
           score,
           earnedMarks: correctCount,
@@ -1971,7 +2053,7 @@ if (!note) {
         questionId,
         selectedOptionId,
         textAnswer,
-        isCorrect,
+        isCorrect: isCorrect ? 1 : 0,
         marksAwarded: isCorrect ? question.marks : 0,
         feedback: isCorrect ? "Correct!" : question.explanation || "Incorrect",
         responseTime,
@@ -2003,8 +2085,7 @@ if (!note) {
     }
   });
 
-  // Register AI chat and research routes
-  registerChatRoutes(app);
+  // Register AI research routes (Replit chat integration removed - using standard endpoints)
   registerInsightScoutRoutes(app);
 
   // ==================== DASHBOARD METRICS (Real Data) ====================
@@ -2072,58 +2153,6 @@ if (!note) {
       res.json([]);
     }
   });
-
-  app.post("/api/notes", async (req: any, res) => {
-  try {
-    // ✅ HARD AUTH GUARANTEE
-    if (!req.user || !req.user.userId) {
-      console.error("❌ Note creation blocked: no user session");
-      return res.status(401).json({ error: "User not authenticated" });
-    }
-
-    // ✅ SAFE INPUT WITH DEFAULTS
-    const title = (req.body.title || "").trim();
-    const subject = (req.body.subject || "").trim();
-
-    if (!title) {
-      return res.status(400).json({ error: "Title is required" });
-    }
-
-    const note = {
-      id: randomUUID(),
-      userId: req.user.userId,
-      title,
-      subject,
-      content: "", // 🔒 NEVER NULL
-      createdAt: Math.floor(Date.now() / 1000),
-      updatedAt: Math.floor(Date.now() / 1000)
-    };
-
-    // ✅ DB INSERT (NO OPTIONAL FIELDS)
-    await db.insert(notes).values({
-  id: randomUUID(),
-  userId: req.user.id,
-  title,
-  subject: subject || null,
-  content: "",
-  tags: null,
-  createdAt: Date.now(),
-  updatedAt: Date.now(),
-});
-
-
-    console.log("✅ Note created:", note.id);
-
-    return res.status(201).json(note);
-  } catch (err) {
-    console.error("🔥 CREATE NOTE ERROR:", err);
-    return res.status(500).json({
-      error: "Failed to create note",
-      details: err instanceof Error ? err.message : err
-    });
-  }
-});
-
 
   // Create a study session (for Pomodoro or focused study blocks)
   app.post("/api/dashboard/study-session", authMiddleware, async (req: any, res) => {
@@ -2293,13 +2322,13 @@ if (!note) {
           title: deckData.title,
           subject: deckData.subject,
           description: deckData.description,
-          tags: deckData.tags,
+          tags: JSON.stringify(deckData.tags),
         });
         
         // Create cards for this deck with varied due dates for realistic spaced repetition
         for (let i = 0; i < deckData.cards.length; i++) {
           const cardData = deckData.cards[i];
-          const now = new Date();
+          const now = Date.now();
           
           // Vary the status and due dates to simulate a realistic study history
           let status: "new" | "learning" | "reviewing" | "mastered" = "new";
@@ -2312,13 +2341,13 @@ if (!note) {
             status = "reviewing";
             easeFactor = 2.2;
             interval = 3;
-            dueAt = new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000); // 2 days ago
+            dueAt = now - 2 * 24 * 60 * 60 * 1000; // 2 days ago
           } else if (i % 4 === 0) {
             // Some cards are struggling
             status = "learning";
             easeFactor = 1.8;
             interval = 1;
-            dueAt = new Date(now.getTime() - 12 * 60 * 60 * 1000); // 12 hours ago
+            dueAt = now - 12 * 60 * 60 * 1000; // 12 hours ago
           } else if (i % 3 === 0) {
             // Some cards due today
             status = "reviewing";
@@ -2330,7 +2359,7 @@ if (!note) {
             status = "mastered";
             easeFactor = 2.8;
             interval = 21;
-            dueAt = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000); // 14 days from now
+            dueAt = now + 14 * 24 * 60 * 60 * 1000; // 14 days from now
           }
           // Remaining cards stay as "new"
           
@@ -2339,11 +2368,11 @@ if (!note) {
             type: "basic",
             front: cardData.front,
             back: cardData.back,
-            tags: deckData.tags,
+            tags: JSON.stringify(deckData.tags),
           });
           
           // Update with spaced repetition state (not in insert schema)
-          await storage.updateCard(card.id, {
+          await storage.updateCard(card.id as string, {
             status,
             easeFactor,
             interval,
@@ -2372,7 +2401,7 @@ if (!note) {
       const createdQuizzes = await seedQuizzes(getUserId(req));
       res.json({
         message: "Sample quizzes created successfully",
-        quizzes: createdQuizzes.map(q => ({ id: q.id, title: q.title })),
+        quizzes: createdQuizzes.map((q: any) => ({ id: q.id, title: q.title })),
         count: createdQuizzes.length,
       });
     } catch (error) {

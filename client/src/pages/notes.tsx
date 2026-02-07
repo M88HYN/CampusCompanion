@@ -40,7 +40,14 @@ import {
   Copy,
   Download,
   Edit2,
-  AlertCircle
+  AlertCircle,
+  Underline,
+  MessageSquare,
+  Send,
+  PanelRightClose,
+  RotateCcw,
+  FileQuestion,
+  Wand2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -89,6 +96,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
+import { normalizeTags } from "@/lib/tag-utils";
 import type { Note, Deck } from "@shared/schema";
 
 interface NoteWithBlocks extends Note {
@@ -196,6 +204,18 @@ export default function Notes() {
   const [deleteNoteTrigger, setDeleteNoteTrigger] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   
+  // AI Ask panel state
+  const [showAiPanel, setShowAiPanel] = useState(false);
+  const [aiQuery, setAiQuery] = useState("");
+  const [aiResponse, setAiResponse] = useState("");
+  const [aiLoading, setAiLoading] = useState(false);
+  const aiResponseRef = useRef<HTMLDivElement>(null);
+  
+  // Exam Maker state
+  const [showExamMakerDialog, setShowExamMakerDialog] = useState(false);
+  const [examQuestions, setExamQuestions] = useState<{type: string; question: string; answer: string; marks: number}[]>([]);
+  const [isGeneratingExam, setIsGeneratingExam] = useState(false);
+  
   const [, setLocation] = useLocation();
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -225,7 +245,7 @@ export default function Notes() {
     if (selectedNote) {
       setNoteTitle(selectedNote.title);
       setNoteSubject(selectedNote.subject || "");
-      setNoteTags(selectedNote.tags || []);
+      setNoteTags(normalizeTags(selectedNote.tags));
       const content = selectedNote.blocks?.map(b => b.content).join("\n\n") || "";
       setNoteContent(content);
       setIsSaved(true);
@@ -557,6 +577,10 @@ export default function Notes() {
           e.preventDefault();
           insertFormat('*', '*');
           break;
+        case 'u':
+          e.preventDefault();
+          insertFormat('<u>', '</u>');
+          break;
         case 's':
           e.preventDefault();
           handleSave();
@@ -590,8 +614,203 @@ export default function Notes() {
 
   const askInsightScout = () => {
     const selected = getSelectedText() || noteTitle;
-    const query = encodeURIComponent(`Explain: ${selected}`);
-    setLocation(`/research?query=${query}`);
+    setAiQuery(selected);
+    setAiResponse("");
+    setShowAiPanel(true);
+  };
+
+  const sendAiQuery = async () => {
+    if (!aiQuery.trim()) return;
+    setAiLoading(true);
+    setAiResponse("");
+
+    try {
+      const token = localStorage.getItem("token");
+      const contextPrefix = noteContent
+        ? `Based on the following note content:\n\n${noteContent.substring(0, 1500)}\n\n---\n\n`
+        : "";
+      
+      const response = await fetch("/api/research/query", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          query: `${contextPrefix}${aiQuery}`,
+          searchDepth: "balanced",
+          responseType: "explanation",
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Request failed: ${response.status}`);
+      }
+
+      const reader = response.body?.getReader();
+      if (!reader) throw new Error("No response stream");
+
+      const decoder = new TextDecoder();
+      let accumulated = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value, { stream: true });
+        const lines = chunk.split("\n");
+        
+        for (const line of lines) {
+          if (line.startsWith("data: ")) {
+            try {
+              const data = JSON.parse(line.slice(6));
+              if (data.content) {
+                accumulated += data.content;
+                setAiResponse(accumulated);
+              }
+              if (data.error) {
+                setAiResponse(prev => prev + `\n\nError: ${data.error}`);
+              }
+            } catch {
+              // Skip non-JSON lines
+            }
+          }
+        }
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "AI request failed";
+      setAiResponse(`Error: ${message}. Make sure the AI service is configured with a valid API key.`);
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  const generateExamQuestions = () => {
+    if (!noteContent.trim()) {
+      toast({ title: "No content", description: "Add some note content first to generate exam questions.", variant: "destructive" });
+      return;
+    }
+    
+    setIsGeneratingExam(true);
+    setExamQuestions([]);
+
+    // Parse note content to extract meaningful sections
+    const lines = noteContent.split("\n").filter(l => l.trim().length > 10);
+    const generated: {type: string; question: string; answer: string; marks: number}[] = [];
+
+    // Extract headings and their content
+    const sections: {heading: string; content: string}[] = [];
+    let currentHeading = noteTitle || "General";
+    let currentContent = "";
+
+    for (const line of lines) {
+      if (line.startsWith("# ") || line.startsWith("## ")) {
+        if (currentContent.trim()) {
+          sections.push({ heading: currentHeading, content: currentContent.trim() });
+        }
+        currentHeading = line.replace(/^#+\s*/, "");
+        currentContent = "";
+      } else {
+        currentContent += line + "\n";
+      }
+    }
+    if (currentContent.trim()) {
+      sections.push({ heading: currentHeading, content: currentContent.trim() });
+    }
+
+    // If no sections found, treat entire content as one section
+    if (sections.length === 0) {
+      sections.push({ heading: noteTitle || "General", content: noteContent });
+    }
+
+    for (const section of sections.slice(0, 6)) {
+      const contentSnippet = section.content.substring(0, 300);
+      
+      // Generate SAQ
+      generated.push({
+        type: "SAQ",
+        question: `Define and explain: ${section.heading}`,
+        answer: contentSnippet,
+        marks: 4,
+      });
+
+      // Generate MCQ concept check
+      if (section.content.length > 50) {
+        generated.push({
+          type: "MCQ",
+          question: `Which of the following best describes ${section.heading.toLowerCase()}?`,
+          answer: contentSnippet.split(/[.!?]/)[0] || contentSnippet.substring(0, 100),
+          marks: 1,
+        });
+      }
+
+      // Generate explain question
+      if (section.content.length > 100) {
+        generated.push({
+          type: "Explain",
+          question: `Explain the key concepts related to ${section.heading.toLowerCase()} and their significance.`,
+          answer: contentSnippet,
+          marks: 6,
+        });
+      }
+    }
+
+    setExamQuestions(generated.slice(0, 10));
+    setIsGeneratingExam(false);
+    setShowExamMakerDialog(true);
+  };
+
+  const autoExtractKeyTerms = () => {
+    if (!noteContent.trim()) return;
+    
+    // Extract potential key terms from content
+    const terms: string[] = [];
+    
+    // Extract bold text (**term**)
+    const boldMatches = noteContent.match(/\*\*(.*?)\*\*/g);
+    if (boldMatches) {
+      boldMatches.forEach(m => terms.push(m.replace(/\*\*/g, "")));
+    }
+    
+    // Extract text after "is a", "refers to", "defined as" patterns  
+    const definitionPatterns = [
+      /(\w[\w\s]{2,30})\s+(?:is a|is an|refers to|means|defined as)/gi,
+      /(?:define|concept of|term)\s+["']?(\w[\w\s]{2,30})["']?/gi,
+    ];
+    
+    for (const pattern of definitionPatterns) {
+      let match;
+      while ((match = pattern.exec(noteContent)) !== null) {
+        const term = match[1].trim();
+        if (term.length >= 3 && term.length <= 40) {
+          terms.push(term);
+        }
+      }
+    }
+    
+    // Extract heading text as key terms
+    const headingMatches = noteContent.match(/^#+\s+(.+)$/gm);
+    if (headingMatches) {
+      headingMatches.forEach(h => {
+        const term = h.replace(/^#+\s+/, "").trim();
+        if (term.length >= 3 && term.length <= 50) {
+          terms.push(term);
+        }
+      });
+    }
+    
+    // Deduplicate
+    const unique = [...new Set(terms.map(t => t.toLowerCase()))].map(t =>
+      terms.find(orig => orig.toLowerCase() === t) || t
+    );
+    
+    if (unique.length > 0) {
+      setKeyTermsInput(unique.slice(0, 15).join(", "));
+      setRecallMode(true);
+      toast({ title: "Key terms extracted", description: `Found ${unique.length} key terms from your notes.` });
+    } else {
+      toast({ title: "No terms found", description: "Try adding **bold** terms or headings to your notes.", variant: "destructive" });
+    }
   };
 
   const addTag = () => {
@@ -702,7 +921,7 @@ ${noteContent}`;
   const filteredGroups = Object.entries(groupedNotes).reduce((acc, [subject, subjectNotes]) => {
     const filtered = subjectNotes.filter(note =>
       note.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      note.tags?.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
+      normalizeTags(note.tags).some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
     );
     if (filtered.length > 0) {
       acc[subject] = filtered;
@@ -971,6 +1190,7 @@ ${noteContent}`;
               <div className="flex items-center gap-1">
                 <FormatButton icon={Bold} label="Bold" shortcut="Ctrl+B" onClick={() => insertFormat('**', '**')} disabled={previewMode} />
                 <FormatButton icon={Italic} label="Italic" shortcut="Ctrl+I" onClick={() => insertFormat('*', '*')} disabled={previewMode} />
+                <FormatButton icon={Underline} label="Underline" shortcut="Ctrl+U" onClick={() => insertFormat('<u>', '</u>')} disabled={previewMode} />
               </div>
               <Separator orientation="vertical" className="h-6 mx-1" />
               <div className="flex items-center gap-1">
@@ -1058,7 +1278,24 @@ ${noteContent}`;
                       <span className="hidden sm:inline">Ask AI</span>
                     </Button>
                   </TooltipTrigger>
-                  <TooltipContent>Research with Insight Scout</TooltipContent>
+                  <TooltipContent>Ask AI about your notes</TooltipContent>
+                </Tooltip>
+                
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="gap-2 bg-violet-50 dark:bg-violet-950 border-violet-200 dark:border-violet-800 text-violet-700 dark:text-violet-300 hover:bg-violet-100 dark:hover:bg-violet-900"
+                      onClick={generateExamQuestions}
+                      disabled={!selectedNoteId || !noteContent.trim()}
+                      data-testid="button-exam-maker"
+                    >
+                      <FileQuestion className="h-4 w-4" />
+                      <span className="hidden sm:inline">Exam Maker</span>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Generate exam-style questions from note</TooltipContent>
                 </Tooltip>
               </div>
             </div>
@@ -1174,13 +1411,29 @@ ${noteContent}`;
               </div>
 
               {recallMode && (
-                <Input
-                  value={keyTermsInput}
-                  onChange={(e) => setKeyTermsInput(e.target.value)}
-                  placeholder="Key terms (comma-separated)..."
-                  className="h-7 w-48 text-xs"
-                  data-testid="input-key-terms"
-                />
+                <div className="flex items-center gap-1">
+                  <Input
+                    value={keyTermsInput}
+                    onChange={(e) => setKeyTermsInput(e.target.value)}
+                    placeholder="Key terms (comma-separated)..."
+                    className="h-7 w-48 text-xs"
+                    data-testid="input-key-terms"
+                  />
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        className="h-7 px-2 text-xs gap-1 bg-purple-50 dark:bg-purple-950 border-purple-200 dark:border-purple-800 text-purple-700 dark:text-purple-300"
+                        onClick={autoExtractKeyTerms}
+                      >
+                        <Wand2 className="h-3 w-3" />
+                        Auto
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Auto-extract key terms from note content</TooltipContent>
+                  </Tooltip>
+                </div>
               )}
 
               <Separator orientation="vertical" className="h-6" />
@@ -1226,51 +1479,54 @@ ${noteContent}`;
               </Tooltip>
             </div>
 
-            {/* Editor Area */}
-            <div className="flex-1 p-8 overflow-auto">
-              <div className="max-w-4xl mx-auto">
-                {recallMode && keyTermsInput ? (
-                  <div className="space-y-4">
-                    <div className="bg-purple-50 dark:bg-purple-950/50 border border-purple-200 dark:border-purple-800 rounded-lg p-4">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Brain className="h-5 w-5 text-purple-600" />
-                        <span className="font-medium text-purple-700 dark:text-purple-300">Recall Mode Active</span>
+            {/* Editor Area with AI Panel */}
+            <div className="flex-1 flex overflow-hidden">
+              {/* Main Editor */}
+              <div className={`flex-1 p-8 overflow-auto ${showAiPanel ? 'border-r border-blue-100 dark:border-blue-900' : ''}`}>
+                <div className="max-w-4xl mx-auto">
+                  {recallMode && keyTermsInput ? (
+                    <div className="space-y-4">
+                      <div className="bg-purple-50 dark:bg-purple-950/50 border border-purple-200 dark:border-purple-800 rounded-lg p-4">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Brain className="h-5 w-5 text-purple-600" />
+                          <span className="font-medium text-purple-700 dark:text-purple-300">Recall Mode Active</span>
+                        </div>
+                        <p className="text-sm text-purple-600 dark:text-purple-400">
+                          Key terms are hidden. Try to recall them before revealing!
+                        </p>
                       </div>
-                      <p className="text-sm text-purple-600 dark:text-purple-400">
-                        Key terms are hidden. Try to recall them before revealing!
-                      </p>
+                      <div className="font-mono text-base leading-relaxed whitespace-pre-wrap">
+                        {getRecallContent(noteContent)}
+                      </div>
+                      <Button 
+                        variant="outline" 
+                        onClick={() => setRecallMode(false)}
+                        className="gap-2"
+                      >
+                        <Eye className="h-4 w-4" />
+                        Reveal All Terms
+                      </Button>
                     </div>
-                    <div className="font-mono text-base leading-relaxed whitespace-pre-wrap">
-                      {getRecallContent(noteContent)}
+                  ) : previewMode ? (
+                    <div className="prose dark:prose-invert max-w-none">
+                      <MarkdownPreview content={noteContent} />
                     </div>
-                    <Button 
-                      variant="outline" 
-                      onClick={() => setRecallMode(false)}
-                      className="gap-2"
-                    >
-                      <Eye className="h-4 w-4" />
-                      Reveal All Terms
-                    </Button>
-                  </div>
-                ) : previewMode ? (
-                  <div className="prose dark:prose-invert max-w-none">
-                    <MarkdownPreview content={noteContent} />
-                  </div>
-                ) : (
-                  <Textarea
-                    ref={textareaRef}
-                    value={noteContent}
-                    onChange={(e) => {
-                      setNoteContent(e.target.value);
-                      setIsSaved(false);
-                    }}
-                    onKeyDown={handleKeyDown}
-                    className="min-h-[500px] resize-none border-0 focus-visible:ring-0 font-mono text-base leading-relaxed bg-transparent focus-visible:outline-none"
-                    placeholder="Start typing your notes...
+                  ) : (
+                    <Textarea
+                      ref={textareaRef}
+                      value={noteContent}
+                      onChange={(e) => {
+                        setNoteContent(e.target.value);
+                        setIsSaved(false);
+                      }}
+                      onKeyDown={handleKeyDown}
+                      className="min-h-[500px] resize-none border-0 focus-visible:ring-0 font-mono text-base leading-relaxed bg-transparent focus-visible:outline-none"
+                      placeholder={`Start typing your notes...
 
 Use the formatting toolbar above or keyboard shortcuts:
 • Ctrl+B for **bold**
 • Ctrl+I for *italic*
+• Ctrl+U for underline
 • Ctrl+S to save
 
 Markdown formatting is supported:
@@ -1279,11 +1535,103 @@ Markdown formatting is supported:
 - Bullet list
 1. Numbered list
 > Blockquote
-```code block```"
-                    data-testid="textarea-note-content"
-                  />
-                )}
+\`\`\`code block\`\`\``}
+                      data-testid="textarea-note-content"
+                    />
+                  )}
+                </div>
               </div>
+
+              {/* AI Ask Panel (Side Panel) */}
+              {showAiPanel && (
+                <div className="w-96 flex flex-col bg-gradient-to-b from-amber-50/50 to-white dark:from-amber-950/20 dark:to-slate-900">
+                  <div className="px-4 py-3 border-b border-amber-200 dark:border-amber-800 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Sparkles className="h-4 w-4 text-amber-600" />
+                      <span className="font-medium text-sm text-amber-800 dark:text-amber-300">Ask AI</span>
+                    </div>
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setShowAiPanel(false)}>
+                      <PanelRightClose className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  
+                  <div className="flex-1 overflow-auto p-4 space-y-3" ref={aiResponseRef}>
+                    {aiResponse ? (
+                      <div className="prose prose-sm dark:prose-invert max-w-none">
+                        <MarkdownPreview content={aiResponse} />
+                      </div>
+                    ) : !aiLoading ? (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <MessageSquare className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                        <p className="text-sm">Ask a question about your notes</p>
+                        <p className="text-xs mt-1">Select text or type a question below</p>
+                      </div>
+                    ) : null}
+                    {aiLoading && (
+                      <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <span className="text-sm">Thinking...</span>
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="p-3 border-t border-amber-200 dark:border-amber-800 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Textarea
+                        value={aiQuery}
+                        onChange={(e) => setAiQuery(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" && !e.shiftKey) {
+                            e.preventDefault();
+                            sendAiQuery();
+                          }
+                        }}
+                        placeholder="Ask about this note..."
+                        className="min-h-[60px] max-h-[100px] text-sm resize-none"
+                      />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        size="sm"
+                        onClick={sendAiQuery}
+                        disabled={aiLoading || !aiQuery.trim()}
+                        className="bg-amber-600 hover:bg-amber-700 text-white gap-1"
+                      >
+                        {aiLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Send className="h-3 w-3" />}
+                        Send
+                      </Button>
+                      {aiResponse && (
+                        <>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="gap-1 text-xs"
+                            onClick={async () => {
+                              await navigator.clipboard.writeText(aiResponse);
+                              toast({ title: "Copied", description: "AI response copied to clipboard." });
+                            }}
+                          >
+                            <Copy className="h-3 w-3" />
+                            Copy
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="gap-1 text-xs"
+                            onClick={() => {
+                              setAiResponse("");
+                              setAiQuery("");
+                            }}
+                          >
+                            <RotateCcw className="h-3 w-3" />
+                            Clear
+                          </Button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </>
         ) : (
@@ -1691,6 +2039,79 @@ Markdown formatting is supported:
                 <Zap className="h-4 w-4 mr-2" />
               )}
               {isGenerating ? "Generating..." : `Generate ${autoGenerateType === "quiz" ? "Quiz" : "Flashcards"}`}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Exam Maker Dialog */}
+      <Dialog open={showExamMakerDialog} onOpenChange={setShowExamMakerDialog}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileQuestion className="h-5 w-5 text-violet-600" />
+              Exam-Style Questions
+            </DialogTitle>
+            <DialogDescription>
+              Generated from your note: {noteTitle}. Copy or save these for revision.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex-1 overflow-auto space-y-3 py-4">
+            {isGeneratingExam ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-6 w-6 animate-spin text-violet-600" />
+                <span className="ml-2 text-muted-foreground">Generating questions...</span>
+              </div>
+            ) : examQuestions.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <FileQuestion className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                <p>No questions generated. Add more content to your note.</p>
+              </div>
+            ) : (
+              examQuestions.map((q, idx) => (
+                <div key={idx} className="border rounded-lg p-4 space-y-2 bg-white dark:bg-slate-800">
+                  <div className="flex items-center justify-between">
+                    <Badge variant="secondary" className={
+                      q.type === "SAQ" ? "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300" :
+                      q.type === "MCQ" ? "bg-fuchsia-100 text-fuchsia-700 dark:bg-fuchsia-900 dark:text-fuchsia-300" :
+                      "bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300"
+                    }>
+                      {q.type}
+                    </Badge>
+                    <span className="text-xs text-muted-foreground">{q.marks} marks</span>
+                  </div>
+                  <p className="font-medium text-sm">{q.question}</p>
+                  <details className="text-sm">
+                    <summary className="cursor-pointer text-muted-foreground hover:text-foreground">
+                      Show suggested answer
+                    </summary>
+                    <p className="mt-2 text-muted-foreground bg-slate-50 dark:bg-slate-900 rounded p-3 text-xs whitespace-pre-wrap">
+                      {q.answer}
+                    </p>
+                  </details>
+                </div>
+              ))
+            )}
+          </div>
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1"
+              onClick={async () => {
+                const text = examQuestions
+                  .map((q, i) => `Q${i + 1}. [${q.type} - ${q.marks} marks]\n${q.question}\n\nSuggested Answer:\n${q.answer}`)
+                  .join("\n\n---\n\n");
+                await navigator.clipboard.writeText(text);
+                toast({ title: "Copied", description: "All exam questions copied to clipboard." });
+              }}
+              disabled={examQuestions.length === 0}
+            >
+              <Copy className="h-3 w-3" />
+              Copy All
+            </Button>
+            <Button variant="outline" onClick={() => setShowExamMakerDialog(false)}>
+              Close
             </Button>
           </DialogFooter>
         </DialogContent>

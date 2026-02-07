@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { Plus, Play, Clock, CheckCircle2, AlertCircle, Star, BookMarked, Zap, Trophy, Target, RotateCw, Loader, Trash2, X, Brain, TrendingUp, TrendingDown, BarChart3, RefreshCw, ChevronRight } from "lucide-react";
+import { Plus, Play, Clock, CheckCircle2, AlertCircle, Star, BookMarked, Zap, Trophy, Target, RotateCw, Loader, Trash2, X, Brain, TrendingUp, TrendingDown, BarChart3, RefreshCw, ChevronRight, Lightbulb, FileText, Layers, GraduationCap, Flame, CalendarCheck } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -12,6 +13,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { queryClient, apiRequest, getQueryFn } from "@/lib/queryClient";
+import { useQuizAnalytics } from "@/hooks/use-quiz-analytics";
+import { safeNumberFallback } from "@/lib/analytics-utils";
+import { AnalyticsStatCard, InsightCard, ActivityCard } from "@/components/analytics-cards";
 import {
   Form,
   FormControl,
@@ -180,7 +184,31 @@ export default function Quizzes() {
 
   const { data: quizzes = [], isLoading: isLoadingQuizzes, refetch: refetchQuizzes } = useQuery<Quiz[]>({
     queryKey: ["/api/quizzes"],
-    queryFn: getQueryFn({ on401: "throw" }),
+    queryFn: async () => {
+      const res = await apiRequest("GET", "/api/quizzes");
+      const data = await res.json();
+      
+      // DEFENSIVE: Deduplicate by ID
+      const seenIds = new Set<string>();
+      const uniqueQuizzes = data.filter((quiz: Quiz) => {
+        if (seenIds.has(quiz.id)) {
+          console.warn(`[QUIZZES] ⚠️  Duplicate quiz detected: ${quiz.title} (${quiz.id})`);
+          return false;
+        }
+        seenIds.add(quiz.id);
+        return true;
+      });
+      
+      // VALIDATION: Check count constraints
+      if (uniqueQuizzes.length > 12) {
+        console.warn(`[QUIZZES] ⚠️  WARNING: ${uniqueQuizzes.length} quizzes found (max 12 expected)`);
+      } else if (uniqueQuizzes.length < 10 && uniqueQuizzes.length > 0) {
+        console.warn(`[QUIZZES] ⚠️  WARNING: Only ${uniqueQuizzes.length} quizzes found (10-12 expected)`);
+      }
+      
+      console.log(`[QUIZZES] ✅ Loaded ${uniqueQuizzes.length} unique quizzes`);
+      return uniqueQuizzes;
+    },
     staleTime: 0, // Always refetch to ensure fresh data when navigating back
     refetchOnMount: true,
     retry: 1,
@@ -198,12 +226,19 @@ export default function Quizzes() {
     retry: 1,
   });
 
-  const { data: userAnalytics, isLoading: isLoadingAnalytics } = useQuery<UserAnalytics>({
-    queryKey: ["/api/user/analytics"],
-    enabled: true, // Always enabled so invalidation after quiz completion works
-    staleTime: 30000, // 30 seconds - prevents over-fetching
-    retry: 1,
-  });
+  // Single source of truth for analytics — useQuizAnalytics hook
+  // fetches from /api/user/analytics with staleTime: 0 for live updates
+  const {
+    summary,
+    strengths,
+    areasToImprove,
+    recentActivity,
+    quizPerformance,
+    performanceByDifficulty,
+    smartInsights,
+    studyOverview,
+    isLoading: analyticsFetching,
+  } = useQuizAnalytics();
 
   const { data: spacedReviewItems = [], isLoading: isLoadingReview, refetch: refetchReview } = useQuery<SpacedReviewItem[]>({
     queryKey: ["/api/spaced-review/due"],
@@ -211,10 +246,10 @@ export default function Quizzes() {
     retry: 1,
   });
 
-  // Ensure quizzes are always fetched when component mounts
-  useEffect(() => {
-    refetchQuizzes();
-  }, []);
+  // Remove duplicate refetch - query already fetches on mount
+  // useEffect(() => {
+  //   refetchQuizzes();
+  // }, []);
 
   useEffect(() => {
     if (selectedQuizData?.questions && view === "taking") {
@@ -572,6 +607,7 @@ export default function Quizzes() {
       queryClient.invalidateQueries({ queryKey: ["/api/quizzes"] });
       queryClient.invalidateQueries({ queryKey: ["/api/user/analytics"] });
       queryClient.invalidateQueries({ queryKey: ["/api/spaced-review/due"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/spaced-review/queue"] });
       console.log("[ANALYTICS] Queries invalidated, analytics should refetch");
     } catch (error) {
       console.error("[QUIZZES] Finalize ERROR:", error);
@@ -643,6 +679,7 @@ export default function Quizzes() {
             queryClient.invalidateQueries({ queryKey: ["/api/quizzes"] });
             queryClient.invalidateQueries({ queryKey: ["/api/user/analytics"] });
             queryClient.invalidateQueries({ queryKey: ["/api/spaced-review/due"] });
+            queryClient.invalidateQueries({ queryKey: ["/api/spaced-review/queue"] });
             setUserAnswers(adaptiveAnswers.map((a, i) => ({
               questionId: `adaptive-${i}`,
               answer: "",
@@ -1660,7 +1697,12 @@ export default function Quizzes() {
               </Card>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {quizzes.map((quiz) => (
+                {/* DEFENSIVE: Ensure unique keys and prevent duplicate rendering */}
+                {quizzes
+                  .filter((quiz, index, self) => 
+                    index === self.findIndex((q) => q.id === quiz.id)
+                  )
+                  .map((quiz) => (
                   <Card
                     key={quiz.id}
                     className="border-2 border-teal-200 dark:border-teal-800 hover:shadow-lg transition-shadow"
@@ -1730,237 +1772,323 @@ export default function Quizzes() {
           </TabsContent>
 
           <TabsContent value="analytics">
-            {isLoadingAnalytics ? (
+            {analyticsFetching ? (
               <div className="flex items-center justify-center py-12">
                 <Loader className="h-8 w-8 animate-spin text-teal-600" />
               </div>
-            ) : userAnalytics && userAnalytics.totalQuizzesTaken > 0 ? (
+            ) : summary.totalQuizzesTaken > 0 ? (
               <div className="space-y-6">
                 {/* Overview Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                  <Card className="bg-gradient-to-br from-teal-50 to-teal-100 dark:from-teal-950 dark:to-teal-900 border-teal-200 dark:border-teal-800">
-                    <CardContent className="pt-6 text-center">
-                      <Trophy className="h-8 w-8 text-teal-600 dark:text-teal-400 mx-auto mb-2" />
-                      <div className="text-3xl font-bold text-teal-700 dark:text-teal-300">{userAnalytics.totalQuizzesTaken}</div>
-                      <p className="text-xs text-teal-600 dark:text-teal-400 font-medium mt-1">
-                        {userAnalytics.totalQuestionsAnswered} questions answered
-                      </p>
-                    </CardContent>
-                  </Card>
-
-                  <Card className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950 dark:to-green-900 border-green-200 dark:border-green-800">
-                    <CardContent className="pt-6 text-center">
-                      <Target className="h-8 w-8 text-green-600 dark:text-green-400 mx-auto mb-2" />
-                      <div className="text-3xl font-bold text-green-700 dark:text-green-300">{userAnalytics.accuracy}%</div>
-                      <p className="text-xs text-green-600 dark:text-green-400 font-medium mt-1">
-                        {userAnalytics.correctAnswers} correct · {userAnalytics.incorrectAnswers} incorrect
-                      </p>
-                    </CardContent>
-                  </Card>
-
-                  <Card className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900 border-blue-200 dark:border-blue-800">
-                    <CardContent className="pt-6 text-center">
-                      <Clock className="h-8 w-8 text-blue-600 dark:text-blue-400 mx-auto mb-2" />
-                      <div className="text-3xl font-bold text-blue-700 dark:text-blue-300">{userAnalytics.totalStudyTimeMinutes}m</div>
-                      <p className="text-xs text-blue-600 dark:text-blue-400 font-medium mt-1">
-                        ~{userAnalytics.avgTimePerQuestion}s per question
-                      </p>
-                    </CardContent>
-                  </Card>
-
-                  <Card className="bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-950 dark:to-orange-900 border-orange-200 dark:border-orange-800">
-                    <CardContent className="pt-6 text-center">
-                      <Star className="h-8 w-8 text-orange-600 dark:text-orange-400 mx-auto mb-2" />
-                      <div className="text-3xl font-bold text-orange-700 dark:text-orange-300">
-                        {userAnalytics.currentStreak} {userAnalytics.currentStreak === 1 ? 'day' : 'days'}
-                      </div>
-                      <p className="text-xs text-orange-600 dark:text-orange-400 font-medium mt-1">
-                        Longest: {userAnalytics.longestStreak} {userAnalytics.longestStreak === 1 ? 'day' : 'days'}
-                      </p>
-                    </CardContent>
-                  </Card>
+                  <AnalyticsStatCard
+                    icon={<Trophy className="h-8 w-8" />}
+                    title="Quizzes Taken"
+                    value={summary.totalQuizzesTaken}
+                    subtitle={`${summary.totalQuestionsAnswered} questions answered`}
+                    iconBgColor="bg-teal-100 dark:bg-teal-900"
+                    iconColor="text-teal-600 dark:text-teal-400"
+                    textColor="text-teal-700 dark:text-teal-300"
+                    borderColor="border-teal-200 dark:border-teal-800 bg-gradient-to-br from-teal-50 to-teal-100 dark:from-teal-950 dark:to-teal-900 border"
+                  />
+                  <AnalyticsStatCard
+                    icon={<Target className="h-8 w-8" />}
+                    title="Overall Accuracy"
+                    value={`${summary.overallAccuracy}%`}
+                    subtitle={`Based on ${summary.totalQuestionsAnswered} questions`}
+                    iconBgColor="bg-green-100 dark:bg-green-900"
+                    iconColor="text-green-600 dark:text-green-400"
+                    textColor="text-green-700 dark:text-green-300"
+                    borderColor="border-green-200 dark:border-green-800 bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950 dark:to-green-900 border"
+                  />
+                  <AnalyticsStatCard
+                    icon={<Clock className="h-8 w-8" />}
+                    title="Avg Time / Question"
+                    value={`${summary.avgTimePerQuestion}s`}
+                    subtitle="Across all attempts"
+                    iconBgColor="bg-blue-100 dark:bg-blue-900"
+                    iconColor="text-blue-600 dark:text-blue-400"
+                    textColor="text-blue-700 dark:text-blue-300"
+                    borderColor="border-blue-200 dark:border-blue-800 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900 border"
+                  />
+                  <AnalyticsStatCard
+                    icon={<Star className="h-8 w-8" />}
+                    title="Questions Answered"
+                    value={summary.totalQuestionsAnswered}
+                    subtitle="Total across all quizzes"
+                    iconBgColor="bg-orange-100 dark:bg-orange-900"
+                    iconColor="text-orange-600 dark:text-orange-400"
+                    textColor="text-orange-700 dark:text-orange-300"
+                    borderColor="border-orange-200 dark:border-orange-800 bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-950 dark:to-orange-900 border"
+                  />
                 </div>
 
-                {/* Performance by Difficulty */}
-                {userAnalytics.performanceByDifficulty && userAnalytics.performanceByDifficulty.length > 0 && userAnalytics.performanceByDifficulty.some((d: any) => d.questionsAnswered > 0) && (
-                  <Card>
+                {/* Study Overview — Cross-feature Stats */}
+                <Card className="border-2 border-violet-200 dark:border-violet-800 bg-gradient-to-br from-violet-50/50 to-purple-50/30 dark:from-violet-950/30 dark:to-purple-950/20">
+                  <CardHeader>
+                    <CardTitle className="text-violet-700 dark:text-violet-300 flex items-center gap-2">
+                      <GraduationCap className="h-5 w-5" />
+                      Study Overview
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                      <div className="flex flex-col items-center p-3 rounded-lg bg-blue-50 dark:bg-blue-950/50 border border-blue-200 dark:border-blue-800">
+                        <FileText className="h-6 w-6 text-blue-600 dark:text-blue-400 mb-1" />
+                        <span className="text-2xl font-bold text-blue-700 dark:text-blue-300">{studyOverview.noteCount}</span>
+                        <span className="text-xs text-blue-600/80 dark:text-blue-400/80">Notes</span>
+                      </div>
+                      <div className="flex flex-col items-center p-3 rounded-lg bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800">
+                        <Layers className="h-6 w-6 text-emerald-600 dark:text-emerald-400 mb-1" />
+                        <span className="text-2xl font-bold text-emerald-700 dark:text-emerald-300">{studyOverview.deckCount}</span>
+                        <span className="text-xs text-emerald-600/80 dark:text-emerald-400/80">Decks</span>
+                      </div>
+                      <div className="flex flex-col items-center p-3 rounded-lg bg-teal-50 dark:bg-teal-950/50 border border-teal-200 dark:border-teal-800">
+                        <BookMarked className="h-6 w-6 text-teal-600 dark:text-teal-400 mb-1" />
+                        <span className="text-2xl font-bold text-teal-700 dark:text-teal-300">{studyOverview.flashcardCount}</span>
+                        <span className="text-xs text-teal-600/80 dark:text-teal-400/80">Flashcards</span>
+                      </div>
+                      <div className="flex flex-col items-center p-3 rounded-lg bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800">
+                        <Star className="h-6 w-6 text-amber-600 dark:text-amber-400 mb-1" />
+                        <span className="text-2xl font-bold text-amber-700 dark:text-amber-300">{studyOverview.masteredCardCount}</span>
+                        <span className="text-xs text-amber-600/80 dark:text-amber-400/80">Mastered</span>
+                      </div>
+                      <div className="flex flex-col items-center p-3 rounded-lg bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-800">
+                        <CalendarCheck className="h-6 w-6 text-rose-600 dark:text-rose-400 mb-1" />
+                        <span className="text-2xl font-bold text-rose-700 dark:text-rose-300">{studyOverview.reviewQueueSize}</span>
+                        <span className="text-xs text-rose-600/80 dark:text-rose-400/80">Due for Review</span>
+                      </div>
+                    </div>
+
+                    {/* Accuracy Breakdown */}
+                    {(studyOverview.correctAnswers > 0 || studyOverview.incorrectAnswers > 0) && (
+                      <div className="mt-4 pt-4 border-t border-violet-200 dark:border-violet-800">
+                        <div className="flex items-center justify-between text-sm mb-2">
+                          <span className="text-violet-600 dark:text-violet-400 font-medium">Answer Accuracy</span>
+                          <span className="text-violet-500 dark:text-violet-400">
+                            {studyOverview.correctAnswers + studyOverview.incorrectAnswers > 0
+                              ? Math.round((studyOverview.correctAnswers / (studyOverview.correctAnswers + studyOverview.incorrectAnswers)) * 100)
+                              : 0}%
+                          </span>
+                        </div>
+                        <div className="flex h-3 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700">
+                          <div
+                            className="bg-green-500 dark:bg-green-400 transition-all"
+                            style={{ width: `${studyOverview.correctAnswers + studyOverview.incorrectAnswers > 0 ? (studyOverview.correctAnswers / (studyOverview.correctAnswers + studyOverview.incorrectAnswers)) * 100 : 0}%` }}
+                          />
+                          <div
+                            className="bg-red-400 dark:bg-red-500 transition-all"
+                            style={{ width: `${studyOverview.correctAnswers + studyOverview.incorrectAnswers > 0 ? (studyOverview.incorrectAnswers / (studyOverview.correctAnswers + studyOverview.incorrectAnswers)) * 100 : 0}%` }}
+                          />
+                        </div>
+                        <div className="flex justify-between text-xs mt-1">
+                          <span className="text-green-600 dark:text-green-400">{studyOverview.correctAnswers} correct</span>
+                          <span className="text-red-500 dark:text-red-400">{studyOverview.incorrectAnswers} incorrect</span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Streak */}
+                    {studyOverview.currentStreak > 0 && (
+                      <div className="mt-4 pt-4 border-t border-violet-200 dark:border-violet-800 flex items-center gap-3">
+                        <Flame className="h-6 w-6 text-orange-500" />
+                        <div>
+                          <span className="text-lg font-bold text-orange-600 dark:text-orange-400">{studyOverview.currentStreak}-day streak</span>
+                          {studyOverview.longestStreak > studyOverview.currentStreak && (
+                            <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">(Best: {studyOverview.longestStreak} days)</span>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Performance Insights — Smart Analysis */}
+                {smartInsights.length > 0 && (
+                  <Card className="border-2 border-indigo-200 dark:border-indigo-800 bg-gradient-to-br from-indigo-50/50 to-violet-50/30 dark:from-indigo-950/30 dark:to-violet-950/20">
                     <CardHeader>
-                      <CardTitle>Performance by Difficulty</CardTitle>
-                      <CardDescription>How well you perform across different difficulty levels</CardDescription>
+                      <CardTitle className="text-indigo-700 dark:text-indigo-300 flex items-center gap-2">
+                        <Lightbulb className="h-5 w-5" />
+                        Performance Insights
+                      </CardTitle>
+                      <CardDescription>AI-detected patterns in your quiz performance</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      {smartInsights.map((insight, idx) => (
+                        <div
+                          key={idx}
+                          className={`flex items-start gap-3 p-3 rounded-lg ${
+                            insight.type === "strength"
+                              ? "bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800"
+                              : insight.type === "weakness"
+                              ? "bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-800"
+                              : insight.type === "tip"
+                              ? "bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800"
+                              : "bg-blue-50 dark:bg-blue-950/50 border border-blue-200 dark:border-blue-800"
+                          }`}
+                        >
+                          <div className={`flex-shrink-0 mt-0.5 ${
+                            insight.type === "strength" ? "text-emerald-600 dark:text-emerald-400"
+                              : insight.type === "weakness" ? "text-rose-600 dark:text-rose-400"
+                              : insight.type === "tip" ? "text-amber-600 dark:text-amber-400"
+                              : "text-blue-600 dark:text-blue-400"
+                          }`}>
+                            {insight.type === "strength" ? <TrendingUp className="h-4 w-4" />
+                              : insight.type === "weakness" ? <TrendingDown className="h-4 w-4" />
+                              : insight.type === "tip" ? <Lightbulb className="h-4 w-4" />
+                              : <BarChart3 className="h-4 w-4" />}
+                          </div>
+                          <div className="flex-1">
+                            <span className={`text-xs font-semibold uppercase tracking-wider ${
+                              insight.type === "strength" ? "text-emerald-700 dark:text-emerald-300"
+                                : insight.type === "weakness" ? "text-rose-700 dark:text-rose-300"
+                                : insight.type === "tip" ? "text-amber-700 dark:text-amber-300"
+                                : "text-blue-700 dark:text-blue-300"
+                            }`}>
+                              {insight.type === "strength" ? "Doing Well" : insight.type === "weakness" ? "Needs Work" : insight.type === "tip" ? "Tip" : "Info"}
+                            </span>
+                            <p className="text-sm text-slate-700 dark:text-slate-300 mt-0.5">{insight.text}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Per-Quiz Performance Breakdown */}
+                {quizPerformance.length > 0 && (
+                  <Card className="border border-slate-200 dark:border-slate-700">
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <BarChart3 className="h-5 w-5 text-teal-600 dark:text-teal-400" />
+                        Quiz Performance Breakdown
+                      </CardTitle>
+                      <CardDescription>Your accuracy across different quizzes</CardDescription>
                     </CardHeader>
                     <CardContent>
                       <div className="space-y-4">
-                        {userAnalytics.performanceByDifficulty.filter((item: any) => item.questionsAnswered > 0).map((item: any) => (
-                          <div key={item.level} className="space-y-2">
-                            <div className="flex items-center justify-between">
-                              <span className="text-sm font-medium capitalize">{item.level}</span>
-                              <span className="text-sm text-muted-foreground">
-                                {item.accuracy}% · {item.questionsAnswered} questions
-                              </span>
-                            </div>
-                            <div className="h-2 bg-secondary rounded-full overflow-hidden">
-                              <div
-                                className={`h-full transition-all ${
-                                  item.level === 'easy' ? 'bg-green-500' :
-                                  item.level === 'medium' ? 'bg-yellow-500' :
-                                  'bg-red-500'
-                                }`}
-                                style={{ width: `${item.accuracy}%` }}
-                              />
-                            </div>
-                          </div>
-                        ))}
+                        {quizPerformance
+                          .sort((a, b) => b.averageAccuracy - a.averageAccuracy)
+                          .map((quiz) => {
+                            const isStrong = quiz.averageAccuracy >= 75;
+                            const isWeak = quiz.averageAccuracy < 60;
+                            return (
+                              <div key={quiz.quizId} className="space-y-2">
+                                <div className="flex items-center justify-between">
+                                  <div className="flex-1 min-w-0">
+                                    <p className="font-medium text-sm truncate">{quiz.quizTitle}</p>
+                                    <p className="text-xs text-muted-foreground">
+                                      {quiz.attempts} attempt{quiz.attempts !== 1 ? "s" : ""} · {quiz.topic}
+                                    </p>
+                                  </div>
+                                  <div className="flex items-center gap-2 ml-4">
+                                    {quiz.attempts > 1 && (
+                                      <span className="text-xs text-muted-foreground">
+                                        Best: {quiz.bestAccuracy}%
+                                      </span>
+                                    )}
+                                    <Badge className={`${
+                                      isStrong ? "bg-emerald-600 hover:bg-emerald-700"
+                                        : isWeak ? "bg-rose-600 hover:bg-rose-700"
+                                        : "bg-amber-600 hover:bg-amber-700"
+                                    } text-white`}>
+                                      {quiz.averageAccuracy}%
+                                    </Badge>
+                                  </div>
+                                </div>
+                                <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2">
+                                  <div
+                                    className={`h-2 rounded-full transition-all ${
+                                      isStrong ? "bg-emerald-500"
+                                        : isWeak ? "bg-rose-500"
+                                        : "bg-amber-500"
+                                    }`}
+                                    style={{ width: `${Math.min(quiz.averageAccuracy, 100)}%` }}
+                                  />
+                                </div>
+                              </div>
+                            );
+                          })}
                       </div>
                     </CardContent>
                   </Card>
                 )}
 
-                {/* Strengths & Weaknesses */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {userAnalytics.strengths && userAnalytics.strengths.length > 0 && (
-                    <Card className="border-2 border-green-200 dark:border-green-800">
-                      <CardHeader>
-                        <CardTitle className="text-green-700 dark:text-green-300 flex items-center gap-2">
-                          <TrendingUp className="h-5 w-5" />
-                          Your Strengths
-                        </CardTitle>
-                        <CardDescription>Topics where you excel (≥70% accuracy)</CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="space-y-3">
-                          {userAnalytics.strengths.map((strength: any, idx: number) => (
-                            <div key={idx} className="flex items-center justify-between p-3 bg-green-50 dark:bg-green-950 rounded-lg">
-                              <div className="flex-1">
-                                <p className="font-medium">{strength.topic}</p>
-                                <p className="text-xs text-muted-foreground">
-                                  {strength.questionsAnswered} questions · ~{strength.avgTimeSeconds}s avg
-                                </p>
-                              </div>
-                              <Badge className="bg-green-600 text-white">
-                                {strength.accuracy}%
-                              </Badge>
-                            </div>
-                          ))}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  )}
-
-                  {userAnalytics.weaknesses && userAnalytics.weaknesses.length > 0 && (
-                    <Card className="border-2 border-red-200 dark:border-red-800">
-                      <CardHeader>
-                        <CardTitle className="text-red-700 dark:text-red-300 flex items-center gap-2">
-                          <TrendingDown className="h-5 w-5" />
-                          Areas for Improvement
-                        </CardTitle>
-                        <CardDescription>Topics that need more practice (&lt;70% accuracy)</CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="space-y-3">
-                          {userAnalytics.weaknesses.map((weakness: any, idx: number) => (
-                            <div key={idx} className="flex items-center justify-between p-3 bg-red-50 dark:bg-red-950 rounded-lg">
-                              <div className="flex-1">
-                                <p className="font-medium">{weakness.topic}</p>
-                                <p className="text-xs text-muted-foreground">
-                                  {weakness.questionsAnswered} questions · ~{weakness.avgTimeSeconds}s avg
-                                </p>
-                              </div>
-                              <Badge variant="destructive">
-                                {weakness.accuracy}%
-                              </Badge>
-                            </div>
-                          ))}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  )}
-
-                  {(!userAnalytics.strengths || userAnalytics.strengths.length === 0) && (!userAnalytics.weaknesses || userAnalytics.weaknesses.length === 0) && (
-                    <Card className="lg:col-span-2">
-                      <CardContent className="py-8 text-center">
-                        <p className="text-muted-foreground">Complete more quizzes (with at least 3 questions per topic) to see detailed performance analysis</p>
-                      </CardContent>
-                    </Card>
-                  )}
-                </div>
-
-                {/* Topic Breakdown */}
-                {userAnalytics.topicBreakdown && userAnalytics.topicBreakdown.length > 0 && (
-                  <Card>
+                {/* Difficulty Performance */}
+                {performanceByDifficulty.some(d => d.questionsAnswered > 0) && (
+                  <Card className="border border-slate-200 dark:border-slate-700">
                     <CardHeader>
-                      <CardTitle>Performance by Topic</CardTitle>
-                      <CardDescription>Detailed breakdown across all topics</CardDescription>
+                      <CardTitle className="flex items-center gap-2">
+                        <Target className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                        Performance by Difficulty
+                      </CardTitle>
+                      <CardDescription>How you perform across easy, medium, and hard questions</CardDescription>
                     </CardHeader>
                     <CardContent>
-                      <div className="space-y-4">
-                        {userAnalytics.topicBreakdown.map((topic: any, idx: number) => (
-                          <div key={idx} className="space-y-2">
-                            <div className="flex items-center justify-between">
-                              <div className="flex-1">
-                                <p className="text-sm font-medium">{topic.topic}</p>
-                                <p className="text-xs text-muted-foreground">
-                                  {topic.quizzesTaken} {topic.quizzesTaken === 1 ? 'quiz' : 'quizzes'} · {topic.questionsAnswered} questions · ~{topic.avgTimeSeconds}s avg
-                                </p>
-                              </div>
-                              <Badge variant={topic.accuracy >= 70 ? "default" : "destructive"} className={topic.accuracy >= 70 ? "bg-green-600" : ""}>
-                                {topic.accuracy}%
-                              </Badge>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        {performanceByDifficulty.filter(d => d.questionsAnswered > 0).map((diff) => {
+                          const label = diff.level.charAt(0).toUpperCase() + diff.level.slice(1);
+                          const cardStyle = diff.level === "easy"
+                            ? "from-emerald-50 to-emerald-100/50 dark:from-emerald-950/30 dark:to-emerald-900/20 border-emerald-200 dark:border-emerald-800"
+                            : diff.level === "medium"
+                            ? "from-amber-50 to-amber-100/50 dark:from-amber-950/30 dark:to-amber-900/20 border-amber-200 dark:border-amber-800"
+                            : "from-rose-50 to-rose-100/50 dark:from-rose-950/30 dark:to-rose-900/20 border-rose-200 dark:border-rose-800";
+                          const valueColor = diff.level === "easy"
+                            ? "text-emerald-600 dark:text-emerald-400"
+                            : diff.level === "medium"
+                            ? "text-amber-600 dark:text-amber-400"
+                            : "text-rose-600 dark:text-rose-400";
+                          return (
+                            <div
+                              key={diff.level}
+                              className={`text-center p-4 rounded-xl border bg-gradient-to-br ${cardStyle}`}
+                            >
+                              <p className={`text-3xl font-bold ${valueColor}`}>{diff.accuracy}%</p>
+                              <p className="text-sm font-medium mt-1">{label}</p>
+                              <p className="text-xs text-muted-foreground">{diff.questionsAnswered} questions</p>
                             </div>
-                            <div className="h-2 bg-secondary rounded-full overflow-hidden">
-                              <div
-                                className={`h-full transition-all ${
-                                  topic.accuracy >= 80 ? 'bg-green-500' :
-                                  topic.accuracy >= 70 ? 'bg-blue-500' :
-                                  topic.accuracy >= 50 ? 'bg-yellow-500' :
-                                  'bg-red-500'
-                                }`}
-                                style={{ width: `${topic.accuracy}%` }}
-                              />
-                            </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     </CardContent>
                   </Card>
+                )}
+
+                {/* Strengths & Weaknesses (from topic tags) */}
+                {(strengths.length > 0 || areasToImprove.length > 0) && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {strengths && strengths.length > 0 ? (
+                      <InsightCard
+                        title="Your Strengths"
+                        subtitle="Topics with ≥70% accuracy"
+                        items={strengths}
+                        badgeColor="bg-emerald-600"
+                        icon={<Zap className="h-5 w-5" />}
+                        borderColor="border-2 border-emerald-200 dark:border-emerald-800"
+                        accentColor="text-emerald-700 dark:text-emerald-300"
+                        itemBgColor="bg-emerald-50 dark:bg-emerald-950"
+                        titleColor="text-emerald-700 dark:text-emerald-300"
+                      />
+                    ) : null}
+                    {areasToImprove && areasToImprove.length > 0 ? (
+                      <InsightCard
+                        title="Areas to Improve"
+                        subtitle="Topics with <70% accuracy"
+                        items={areasToImprove}
+                        badgeColor="bg-rose-600"
+                        icon={<Target className="h-5 w-5" />}
+                        borderColor="border-2 border-rose-200 dark:border-rose-800"
+                        accentColor="text-rose-700 dark:text-rose-300"
+                        itemBgColor="bg-rose-50 dark:bg-rose-950"
+                        titleColor="text-rose-700 dark:text-rose-300"
+                      />
+                    ) : null}
+                  </div>
                 )}
 
                 {/* Recent Activity */}
-                {userAnalytics.recentActivity && userAnalytics.recentActivity.length > 0 && (
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Recent Activity</CardTitle>
-                      <CardDescription>Your last {userAnalytics.recentActivity.length} completed quizzes</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-3">
-                        {userAnalytics.recentActivity.map((activity: any, idx: number) => (
-                          <div
-                            key={idx}
-                            className="flex items-center justify-between p-3 border rounded-lg hover:bg-accent transition-colors"
-                          >
-                            <div className="flex-1">
-                              <p className="font-medium">{activity.quizTitle}</p>
-                              <div className="flex items-center gap-2 mt-1">
-                                <Badge variant="outline" className="text-xs">
-                                  {activity.topic}
-                                </Badge>
-                                <span className="text-xs text-muted-foreground">
-                                  {activity.date}
-                                </span>
-                              </div>
-                            </div>
-                            <div className="text-right">
-                              <p className="text-lg font-bold">{activity.score}/{activity.maxScore}</p>
-                              <Badge variant={activity.accuracy >= 70 ? "default" : "destructive"} className={activity.accuracy >= 70 ? "bg-green-600 text-xs" : "text-xs"}>
-                                {activity.accuracy}%
-                              </Badge>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
+                {recentActivity && recentActivity.length > 0 ? (
+                  <ActivityCard activities={recentActivity} />
+                ) : null}
               </div>
             ) : (
               <Card className="border border-teal-200 dark:border-teal-800 bg-gradient-to-br from-teal-50/50 via-white to-blue-50/30 dark:from-teal-950/30 dark:via-slate-900 dark:to-blue-950/20 overflow-hidden">

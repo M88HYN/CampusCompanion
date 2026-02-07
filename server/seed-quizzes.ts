@@ -833,16 +833,27 @@ const sampleQuizzes = [
 
 export async function seedQuizzes(userId: string) {
   console.log(`[QUIZ SEED] Starting quiz seed for userId: ${userId}`);
+  
+  // IDEMPOTENT CHECK: Skip if user already has quizzes
+  const existingQuizzes = await db.select().from(quizzes).where(eq(quizzes.userId, userId));
+  if (existingQuizzes.length > 0) {
+    console.log(`[QUIZ SEED] ⏭️  Skipping - User already has ${existingQuizzes.length} quizzes`);
+    return existingQuizzes;
+  }
+  
+  // ENFORCE CONSTRAINT: Limit to 10-12 quizzes only
+  const quizzesToSeed = sampleQuizzes.slice(0, 10);
   const createdQuizzes = [];
 
-  for (const quizData of sampleQuizzes) {
+  for (const quizData of quizzesToSeed) {
     try {
       const quizId = randomUUID();
       console.log(`[QUIZ SEED] Creating quiz: ${quizData.title} with ID: ${quizId}`);
+      const now = Date.now();
       // Use raw SQL insert to avoid pg-core timestamp/boolean mapping in SQLite
       await db.run(sql`
-        INSERT INTO quizzes (id, user_id, title, subject, description, mode, passing_score, is_published, created_at)
-        VALUES (${quizId}, ${userId}, ${quizData.title}, ${quizData.subject}, ${quizData.description}, ${quizData.mode}, ${quizData.passingScore ?? null}, ${1}, CURRENT_TIMESTAMP)
+        INSERT INTO quizzes (id, user_id, title, subject, description, mode, passing_score, is_published, is_adaptive, created_at)
+        VALUES (${quizId}, ${userId}, ${quizData.title}, ${quizData.subject}, ${quizData.description}, ${quizData.mode}, ${quizData.passingScore ?? null}, ${1}, ${0}, ${now})
       `);
 
       const [quiz] = await db.select().from(quizzes).where(eq(quizzes.id, quizId));
@@ -897,9 +908,16 @@ export async function seedQuizzes(userId: string) {
 
   console.log(`[QUIZ SEED] ✅ Seed complete. Created ${createdQuizzes.length} quizzes for userId: ${userId}`);
   
-  // Verify data was actually saved
+  // Verify data was actually saved and check for constraint violations
   const verifyQuizzes = await db.select().from(quizzes).where(eq(quizzes.userId, userId));
   console.log(`[QUIZ SEED] Verification: Found ${verifyQuizzes.length} quizzes in database for userId: ${userId}`);
+  
+  // VALIDATION: Warn if count is outside acceptable range
+  if (verifyQuizzes.length > 12) {
+    console.warn(`[QUIZ SEED] ⚠️  WARNING: User has ${verifyQuizzes.length} quizzes (max should be 12)`);
+  } else if (verifyQuizzes.length < 10) {
+    console.warn(`[QUIZ SEED] ⚠️  WARNING: User has ${verifyQuizzes.length} quizzes (min should be 10)`);
+  }
   
   return createdQuizzes;
 }

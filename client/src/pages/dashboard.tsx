@@ -3,7 +3,7 @@ import {
   BookOpen, BrainCircuit, GraduationCap, Sparkles, Clock, TrendingUp, 
   Flame, Target, Calendar, Edit2, Save, X, Lightbulb, AlertTriangle,
   Zap, ChevronRight, Play, CheckCircle2, ArrowRight, Award, BarChart3,
-  Timer, Brain, Rocket
+  Timer, Brain, Rocket, Layers, FileText, Activity
 } from "lucide-react";
 import { Link } from "wouter";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -257,45 +257,57 @@ export default function Dashboard({ userRole = "student" }: DashboardProps) {
     retry: 1,
   });
 
+  // Calculate total cards across all decks for the feature card
+  const totalCardsCount = decks.reduce((sum: number, d: any) => sum + (d.cards || 0), 0);
+  const masteredCardsCount = decks.reduce((sum: number, d: any) => sum + (d.mastered || 0), 0);
+  const quizBestScore = quizzes.length > 0 
+    ? Math.max(...quizzes.map((q: any) => q.bestScore || 0))
+    : 0;
+
   const features = [
     {
       title: "Notes",
-      description: "Organize materials",
+      description: notes.length > 0 ? `${notes.length} notes across subjects` : "Start writing notes",
       icon: BookOpen,
       bgGradient: "bg-gradient-to-br from-sky-400 via-blue-500 to-indigo-600",
       href: "/notes",
       count: notes.length,
+      subtitle: notes.length > 0 ? "with rich content & AI tools" : "Organize your study materials",
     },
     {
       title: "Quizzes",
-      description: "Test knowledge",
+      description: quizzes.length > 0 ? `${quizzes.length} quizzes available` : "Create your first quiz",
       icon: BrainCircuit,
       bgGradient: "bg-gradient-to-br from-fuchsia-500 via-pink-500 to-rose-500",
       href: "/quizzes",
       count: quizzes.length,
+      subtitle: quizBestScore > 0 ? `Best score: ${quizBestScore}%` : "Test your knowledge",
     },
     {
       title: "Flashcards",
-      description: "Spaced repetition",
+      description: decks.length > 0 ? `${decks.length} decks` : "Create a deck",
       icon: GraduationCap,
       bgGradient: "bg-gradient-to-br from-emerald-400 via-green-500 to-teal-600",
       href: "/flashcards",
       count: decks.length,
       urgent: dueCards.length > 0,
+      subtitle: dueCards.length > 0 ? `${dueCards.length} cards due now` : "Spaced repetition learning",
     },
     {
       title: "Insight Scout",
-      description: "AI research",
+      description: "AI-powered research",
       icon: Sparkles,
       bgGradient: "bg-gradient-to-br from-amber-400 via-orange-500 to-red-500",
       href: "/research",
+      subtitle: "Ask anything, get explanations",
     },
     {
-      title: "Revision Help",
-      description: "Focus tools",
+      title: "Revision",
+      description: "Spaced review queue",
       icon: Lightbulb,
       bgGradient: "bg-gradient-to-br from-yellow-400 via-lime-500 to-green-500",
       href: "/revision",
+      subtitle: "Focus on weak areas",
     },
   ];
 
@@ -527,7 +539,11 @@ export default function Dashboard({ userRole = "student" }: DashboardProps) {
             <div className="text-3xl font-bold" data-testid="stat-due-today">
               {metrics?.dueToday ?? dueCards.length}
             </div>
-            <p className="text-xs opacity-80 mt-1">cards to review</p>
+            <p className="text-xs opacity-80 mt-1">
+              {(metrics?.dueToday ?? dueCards.length) > 0 
+                ? `flashcards need review` 
+                : "all caught up!"}
+            </p>
           </div>
 
           <div className="bg-gradient-to-br from-emerald-400 via-green-500 to-teal-600 rounded-xl p-4 text-white shadow-lg">
@@ -538,7 +554,11 @@ export default function Dashboard({ userRole = "student" }: DashboardProps) {
             <div className="text-3xl font-bold" data-testid="stat-accuracy">
               {metrics?.accuracy ?? insights?.overview?.overallAccuracy ?? 0}%
             </div>
-            <p className="text-xs opacity-80 mt-1">overall</p>
+            <p className="text-xs opacity-80 mt-1">
+              {(metrics?.accuracy ?? 0) >= 80 ? "excellent performance" 
+                : (metrics?.accuracy ?? 0) >= 60 ? "good, keep improving" 
+                : "across all quizzes"}
+            </p>
           </div>
 
           <div className="bg-gradient-to-br from-fuchsia-500 via-pink-500 to-rose-500 rounded-xl p-4 text-white shadow-lg">
@@ -547,9 +567,13 @@ export default function Dashboard({ userRole = "student" }: DashboardProps) {
               <span className="text-xs font-semibold opacity-90">This Week</span>
             </div>
             <div className="text-3xl font-bold" data-testid="stat-week-time">
-              {Math.round((metrics?.weeklyStudyTime ?? 0) / 60)}h
+              {metrics?.weeklyStudyTime ? `${Math.floor(metrics.weeklyStudyTime / 60)}h ${metrics.weeklyStudyTime % 60}m` : "0h"}
             </div>
-            <p className="text-xs opacity-80 mt-1">study time</p>
+            <p className="text-xs opacity-80 mt-1">
+              {(metrics?.weeklyStudyTime ?? 0) > 120 ? "great dedication!" 
+                : (metrics?.weeklyStudyTime ?? 0) > 0 ? "total study time" 
+                : "start studying today"}
+            </p>
           </div>
 
           <div className="bg-gradient-to-br from-amber-400 via-orange-500 to-red-500 rounded-xl p-4 text-white shadow-lg">
@@ -560,9 +584,59 @@ export default function Dashboard({ userRole = "student" }: DashboardProps) {
             <div className="text-3xl font-bold" data-testid="stat-items-reviewed">
               {metrics?.itemsReviewedThisWeek ?? 0}
             </div>
-            <p className="text-xs opacity-80 mt-1">this week</p>
+            <p className="text-xs opacity-80 mt-1">
+              {(metrics?.itemsReviewedThisWeek ?? 0) > 50 ? "impressive volume!" 
+                : (metrics?.itemsReviewedThisWeek ?? 0) > 0 ? "questions this week" 
+                : "no reviews yet"}
+            </p>
           </div>
         </div>
+
+        {/* Your Library at a Glance */}
+        <Card className="border-0 shadow-lg">
+          <CardContent className="p-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-sky-400 to-blue-600 flex items-center justify-center shrink-0">
+                  <FileText className="h-5 w-5 text-white" />
+                </div>
+                <div>
+                  <p className="text-xl font-bold">{notes.length}</p>
+                  <p className="text-xs text-muted-foreground">Notes</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-emerald-400 to-teal-600 flex items-center justify-center shrink-0">
+                  <Layers className="h-5 w-5 text-white" />
+                </div>
+                <div>
+                  <p className="text-xl font-bold">{totalCardsCount}</p>
+                  <p className="text-xs text-muted-foreground">Flashcards</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-fuchsia-500 to-rose-500 flex items-center justify-center shrink-0">
+                  <BrainCircuit className="h-5 w-5 text-white" />
+                </div>
+                <div>
+                  <p className="text-xl font-bold">{quizzes.length}</p>
+                  <p className="text-xs text-muted-foreground">Quizzes</p>
+                </div>
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs text-muted-foreground">Flashcard Mastery</span>
+                  <span className="text-xs font-bold">{totalCardsCount > 0 ? Math.round((masteredCardsCount / totalCardsCount) * 100) : 0}%</span>
+                </div>
+                <Progress value={totalCardsCount > 0 ? (masteredCardsCount / totalCardsCount) * 100 : 0} className="h-2" />
+                <p className="text-xs text-muted-foreground mt-1">{masteredCardsCount} of {totalCardsCount} cards mastered</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-6">
@@ -621,9 +695,9 @@ export default function Dashboard({ userRole = "student" }: DashboardProps) {
                         <feature.icon className="h-5 w-5 text-white" />
                       </div>
                       <p className="font-bold text-sm">{feature.title}</p>
-                      <p className="text-xs text-white/80">{feature.description}</p>
-                      {feature.count !== undefined && (
-                        <p className="text-xs text-white/60 mt-1">{feature.count} items</p>
+                      <p className="text-xs text-white/90 font-medium">{feature.description}</p>
+                      {feature.subtitle && (
+                        <p className="text-xs text-white/70 mt-1">{feature.subtitle}</p>
                       )}
                     </CardContent>
                   </Card>
@@ -649,6 +723,46 @@ export default function Dashboard({ userRole = "student" }: DashboardProps) {
                 <CardContent className="space-y-3">
                   {insights.weakAreas.slice(0, 3).map((area, index) => (
                     <WeakTopicCard key={index} {...area} />
+                  ))}
+                </CardContent>
+              </Card>
+            )}
+
+            {recentNotes.length > 0 && (
+              <Card className="border-0 shadow-lg">
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-sky-500 to-blue-600 flex items-center justify-center">
+                        <FileText className="h-4 w-4 text-white" />
+                      </div>
+                      <div>
+                        <CardTitle className="text-lg">Recent Notes</CardTitle>
+                        <CardDescription>Your latest study material</CardDescription>
+                      </div>
+                    </div>
+                    <Link href="/notes">
+                      <Button variant="ghost" size="sm" className="text-xs gap-1">
+                        All Notes <ChevronRight className="h-3 w-3" />
+                      </Button>
+                    </Link>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  {recentNotes.slice(0, 4).map((note) => (
+                    <Link href={`/notes/${note.id}`} key={note.id}>
+                      <div className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-muted/50 cursor-pointer transition-colors">
+                        <div className="w-8 h-8 rounded-md bg-sky-100 dark:bg-sky-950/40 flex items-center justify-center shrink-0">
+                          <BookOpen className="h-4 w-4 text-sky-600 dark:text-sky-400" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">{note.title}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {note.subject || "General"} &middot; {new Date(note.updatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                          </p>
+                        </div>
+                      </div>
+                    </Link>
                   ))}
                 </CardContent>
               </Card>
