@@ -120,15 +120,13 @@ app.post("/api/{resource}", authMiddleware, async (req: any, res) => {
 
 ## Integration Points & External Dependencies
 
-### Replit-Specific Features
-- **OpenID Connect Auth** (`server/replit_integrations/auth/`) - If `REPL_ID`, `ISSUER_URL`, `SESSION_SECRET` are set, enable Replit OAuth
-- **Chat Integration** (`server/replit_integrations/chat/`) - Replit AI integration for note analysis
-- **Insight Scout** (`server/insight-scout.ts`) - AI-powered content analysis
+### Local Features
+- **Insight Scout** (`server/insight-scout.ts`) - AI-powered content analysis with mock response fallback
 
 ### Environment Variables Required
 - `DATABASE_URL` - PostgreSQL connection string (required for all environments)
 - `JWT_SECRET` - For signing tokens (defaults to unsafe value in dev)
-- `REPL_ID`, `ISSUER_URL`, `SESSION_SECRET` - Optional, enables Replit OAuth when present
+- `OPENAI_API_KEY` - Optional, enables real OpenAI responses (falls back to mock responses if missing/invalid)
 
 ### Database Migrations
 - Use `drizzle-kit push` to sync schema.ts changes to PostgreSQL

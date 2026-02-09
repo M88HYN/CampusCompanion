@@ -1,7 +1,6 @@
 import { index, sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
 
 // Session storage table.
-// (IMPORTANT) This table is mandatory for Replit Auth, don't drop it.
 export const sessions = sqliteTable(
   "sessions",
   {
@@ -15,7 +14,6 @@ export const sessions = sqliteTable(
 );
 
 // User storage table.
-// (IMPORTANT) This table is mandatory for Replit Auth, don't drop it.
 export const users = sqliteTable("users", {
   id: text("id").primaryKey(),
   username: text("username").unique(),
