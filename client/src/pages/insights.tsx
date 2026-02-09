@@ -53,12 +53,12 @@ function StatCard({
       <div className={`absolute inset-0 ${gradient} opacity-10`} />
       <CardContent className="p-5">
         <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm font-medium text-muted-foreground">{title}</p>
-            <p className="text-2xl font-bold mt-1" data-testid={`${testId}-value`}>{value}</p>
-            {subtitle && <p className="text-xs text-muted-foreground mt-1">{subtitle}</p>}
+          <div className="relative z-10">
+            <p className="text-sm font-medium text-slate-600 dark:text-slate-400">{title}</p>
+            <p className="text-2xl font-bold mt-1 text-slate-900 dark:text-white" data-testid={`${testId}-value`}>{value}</p>
+            {subtitle && <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{subtitle}</p>}
           </div>
-          <div className={`w-12 h-12 rounded-xl ${gradient} flex items-center justify-center`}>
+          <div className={`w-12 h-12 rounded-xl ${gradient} flex items-center justify-center shadow-lg`}>
             <Icon className="w-6 h-6 text-white" />
           </div>
         </div>
@@ -74,32 +74,38 @@ function TopicBar({ topic, accuracy, totalQuestions, improvement }: {
   improvement: number;
 }) {
   const getColor = (acc: number) => {
-    if (acc >= 80) return "bg-emerald-500";
-    if (acc >= 60) return "bg-amber-500";
-    return "bg-rose-500";
+    if (acc >= 80) return "bg-gradient-to-r from-emerald-500 to-teal-500";
+    if (acc >= 60) return "bg-gradient-to-r from-amber-500 to-orange-500";
+    return "bg-gradient-to-r from-rose-500 to-pink-500";
+  };
+
+  const getBadgeColor = (acc: number) => {
+    if (acc >= 80) return "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400";
+    if (acc >= 60) return "bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400";
+    return "bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:text-rose-400";
   };
 
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <span className="font-medium text-sm">{topic}</span>
+          <span className="font-medium text-sm text-slate-900 dark:text-white">{topic}</span>
           <Badge variant="outline" className="text-xs">
             {totalQuestions} questions
           </Badge>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-sm font-semibold">{accuracy}%</span>
+          <Badge className={`text-xs border-0 ${getBadgeColor(accuracy)}`}>{accuracy}%</Badge>
           {improvement !== 0 && (
-            <span className={`flex items-center text-xs ${improvement > 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+            <span className={`flex items-center text-xs font-medium ${improvement > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
               {improvement > 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
               {Math.abs(improvement)}%
             </span>
           )}
         </div>
       </div>
-      <div className="h-2 bg-muted rounded-full overflow-hidden">
-        <div className={`h-full ${getColor(accuracy)} rounded-full transition-all`} style={{ width: `${accuracy}%` }} />
+      <div className="h-2.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+        <div className={`h-full ${getColor(accuracy)} rounded-full transition-all shadow-sm`} style={{ width: `${accuracy}%` }} />
       </div>
     </div>
   );
@@ -119,24 +125,43 @@ function RecommendationCard({ recommendation }: {
     }
   };
 
-  const getPriorityColor = (priority: string) => {
+  const getPriorityStyles = (priority: string) => {
     switch (priority) {
-      case 'high': return 'border-l-rose-500 bg-rose-50 dark:bg-rose-950/30';
-      case 'medium': return 'border-l-amber-500 bg-amber-50 dark:bg-amber-950/30';
-      case 'low': return 'border-l-sky-500 bg-sky-50 dark:bg-sky-950/30';
-      default: return 'border-l-slate-500';
+      case 'high': return {
+        border: 'border-l-4 border-l-rose-500',
+        bg: 'bg-rose-50 dark:bg-rose-950/20',
+        iconBg: 'bg-gradient-to-br from-rose-500 to-pink-600',
+      };
+      case 'medium': return {
+        border: 'border-l-4 border-l-amber-500',
+        bg: 'bg-amber-50 dark:bg-amber-950/20',
+        iconBg: 'bg-gradient-to-br from-amber-500 to-orange-600',
+      };
+      case 'low': return {
+        border: 'border-l-4 border-l-sky-500',
+        bg: 'bg-sky-50 dark:bg-sky-950/20',
+        iconBg: 'bg-gradient-to-br from-sky-500 to-blue-600',
+      };
+      default: return {
+        border: 'border-l-4 border-l-slate-500',
+        bg: 'bg-slate-50 dark:bg-slate-950/20',
+        iconBg: 'bg-gradient-to-br from-slate-500 to-slate-600',
+      };
     }
   };
 
   const Icon = getIcon(recommendation.type);
+  const styles = getPriorityStyles(recommendation.priority);
 
   return (
-    <div className={`p-4 rounded-lg border-l-4 ${getPriorityColor(recommendation.priority)}`}>
+    <div className={`p-4 rounded-lg ${styles.border} ${styles.bg} border shadow-sm`}>
       <div className="flex gap-3">
-        <Icon className="w-5 h-5 text-muted-foreground shrink-0 mt-0.5" />
+        <div className={`w-9 h-9 rounded-lg ${styles.iconBg} flex items-center justify-center shrink-0 shadow-md`}>
+          <Icon className="w-4 h-4 text-white" />
+        </div>
         <div>
-          <p className="font-medium text-sm">{recommendation.title}</p>
-          <p className="text-xs text-muted-foreground mt-1">{recommendation.description}</p>
+          <p className="font-medium text-sm text-slate-900 dark:text-white">{recommendation.title}</p>
+          <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">{recommendation.description}</p>
         </div>
       </div>
     </div>
@@ -150,7 +175,7 @@ export default function Insights() {
 
   if (isLoading) {
     return (
-      <div className="h-full overflow-auto bg-gradient-to-br from-violet-50 via-white to-indigo-50 dark:from-slate-900 dark:via-slate-900 dark:to-violet-950">
+      <div className="h-full overflow-auto bg-gradient-to-br from-violet-50 via-sky-50 to-teal-50 dark:from-slate-900 dark:via-slate-900 dark:to-violet-950">
         <div className="p-6 space-y-6 max-w-7xl mx-auto">
           <Skeleton className="h-10 w-64" />
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -183,17 +208,17 @@ export default function Insights() {
   };
 
   return (
-    <div className="h-full overflow-auto bg-gradient-to-br from-violet-50 via-white to-indigo-50 dark:from-slate-900 dark:via-slate-900 dark:to-violet-950">
+    <div className="h-full overflow-auto bg-gradient-to-br from-violet-50 via-sky-50 to-teal-50 dark:from-slate-900 dark:via-slate-900 dark:to-violet-950">
       <div className="p-6 space-y-6 max-w-7xl mx-auto">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center">
-            <Brain className="w-5 h-5 text-white" />
+          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-500 via-purple-500 to-indigo-600 flex items-center justify-center shadow-lg">
+            <Brain className="w-6 h-6 text-white" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold bg-gradient-to-r from-violet-600 to-indigo-600 dark:from-violet-400 dark:to-indigo-400 bg-clip-text text-transparent">
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 dark:from-violet-400 dark:to-indigo-400 bg-clip-text text-transparent">
               Learning Insights
             </h1>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-slate-600 dark:text-slate-400">
               Data-driven analysis of your study patterns and performance
             </p>
           </div>
@@ -235,10 +260,12 @@ export default function Insights() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card className="shadow-lg border-0" data-testid="card-accuracy-trends">
+          <Card className="border-0 shadow-lg bg-white/80 dark:bg-slate-900/80 backdrop-blur" data-testid="card-accuracy-trends">
             <CardHeader className="pb-2">
               <CardTitle className="text-lg flex items-center gap-2">
-                <TrendingUp className="w-5 h-5 text-emerald-500" />
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center">
+                  <TrendingUp className="w-4 h-4 text-white" />
+                </div>
                 Accuracy Trends
               </CardTitle>
               <CardDescription>Your performance over the last 14 days</CardDescription>
@@ -301,10 +328,12 @@ export default function Insights() {
             </CardContent>
           </Card>
 
-          <Card className="shadow-lg border-0" data-testid="card-weekly-progress">
+          <Card className="border-0 shadow-lg bg-white/80 dark:bg-slate-900/80 backdrop-blur" data-testid="card-weekly-progress">
             <CardHeader className="pb-2">
               <CardTitle className="text-lg flex items-center gap-2">
-                <Calendar className="w-5 h-5 text-sky-500" />
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-sky-500 to-blue-600 flex items-center justify-center">
+                  <Calendar className="w-4 h-4 text-white" />
+                </div>
                 Weekly Progress
               </CardTitle>
               <CardDescription>Study activity over the past week</CardDescription>
@@ -340,10 +369,12 @@ export default function Insights() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <Card className="shadow-lg border-0 lg:col-span-2" data-testid="card-topic-performance">
+          <Card className="border-0 shadow-lg bg-white/80 dark:bg-slate-900/80 backdrop-blur lg:col-span-2" data-testid="card-topic-performance">
             <CardHeader className="pb-2">
               <CardTitle className="text-lg flex items-center gap-2">
-                <BarChart3 className="w-5 h-5 text-violet-500" />
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
+                  <BarChart3 className="w-4 h-4 text-white" />
+                </div>
                 Topic Performance
               </CardTitle>
               <CardDescription>How you're doing in each subject area</CardDescription>
@@ -362,10 +393,12 @@ export default function Insights() {
             </CardContent>
           </Card>
 
-          <Card className="shadow-lg border-0" data-testid="card-peak-study-times">
+          <Card className="border-0 shadow-lg bg-white/80 dark:bg-slate-900/80 backdrop-blur" data-testid="card-peak-study-times">
             <CardHeader className="pb-2">
               <CardTitle className="text-lg flex items-center gap-2">
-                <Clock className="w-5 h-5 text-amber-500" />
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center">
+                  <Clock className="w-4 h-4 text-white" />
+                </div>
                 Peak Study Times
               </CardTitle>
               <CardDescription>When you perform best</CardDescription>
@@ -386,14 +419,14 @@ export default function Insights() {
                           : `${hour - 12}:00 PM`;
                       
                       return (
-                        <div key={i} className="flex items-center justify-between p-2 rounded-lg bg-muted/50">
+                        <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20 border border-amber-200 dark:border-amber-900/30">
                           <div className="flex items-center gap-2">
-                            <div className={`w-2 h-2 rounded-full ${i === 0 ? 'bg-emerald-500' : 'bg-slate-400'}`} />
-                            <span className="text-sm font-medium">{timeLabel}</span>
+                            <div className={`w-2.5 h-2.5 rounded-full ${i === 0 ? 'bg-gradient-to-r from-amber-500 to-orange-600 shadow-lg shadow-amber-500/50' : 'bg-slate-400'}`} />
+                            <span className="text-sm font-medium text-slate-900 dark:text-white">{timeLabel}</span>
                           </div>
                           <div className="flex items-center gap-2">
-                            <span className="text-xs text-muted-foreground">{pattern.sessions} sessions</span>
-                            <Badge variant={i === 0 ? "default" : "outline"} className="text-xs">
+                            <span className="text-xs text-slate-500 dark:text-slate-400">{pattern.sessions} sessions</span>
+                            <Badge variant={i === 0 ? "default" : "outline"} className={`text-xs ${i === 0 ? 'bg-gradient-to-r from-amber-500 to-orange-600 border-0' : ''}`}>
                               {pattern.avgAccuracy}%
                             </Badge>
                           </div>
@@ -417,10 +450,12 @@ export default function Insights() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card className="shadow-lg border-0" data-testid="card-strengths">
+          <Card className="border-0 shadow-lg bg-white/80 dark:bg-slate-900/80 backdrop-blur" data-testid="card-strengths">
             <CardHeader className="pb-2">
               <CardTitle className="text-lg flex items-center gap-2">
-                <Award className="w-5 h-5 text-emerald-500" />
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center">
+                  <Award className="w-4 h-4 text-white" />
+                </div>
                 Your Strengths
               </CardTitle>
               <CardDescription>Topics where you excel</CardDescription>
@@ -429,19 +464,19 @@ export default function Insights() {
               {insights?.strengths && insights.strengths.length > 0 ? (
                 <div className="space-y-3">
                   {insights.strengths.map((strength, i) => (
-                    <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800">
+                    <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950/20 dark:to-teal-950/20 border border-emerald-200 dark:border-emerald-900/30 shadow-sm">
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center text-white font-bold text-sm">
+                        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white font-bold text-sm shadow-lg">
                           {i + 1}
                         </div>
                         <div>
-                          <p className="font-medium text-sm">{strength.topic}</p>
-                          <p className="text-xs text-muted-foreground">
+                          <p className="font-medium text-sm text-slate-900 dark:text-white">{strength.topic}</p>
+                          <p className="text-xs text-slate-500 dark:text-slate-400">
                             {strength.masteredConcepts} concepts mastered
                           </p>
                         </div>
                       </div>
-                      <Badge className="bg-emerald-500 text-white">{strength.accuracy}%</Badge>
+                      <Badge className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white border-0 shadow-md">{strength.accuracy}%</Badge>
                     </div>
                   ))}
                 </div>
@@ -454,10 +489,12 @@ export default function Insights() {
             </CardContent>
           </Card>
 
-          <Card className="shadow-lg border-0" data-testid="card-weak-areas">
+          <Card className="border-0 shadow-lg bg-white/80 dark:bg-slate-900/80 backdrop-blur" data-testid="card-weak-areas">
             <CardHeader className="pb-2">
               <CardTitle className="text-lg flex items-center gap-2">
-                <AlertTriangle className="w-5 h-5 text-amber-500" />
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center">
+                  <AlertTriangle className="w-4 h-4 text-white" />
+                </div>
                 Areas to Improve
               </CardTitle>
               <CardDescription>Topics that need more attention</CardDescription>
@@ -466,14 +503,14 @@ export default function Insights() {
               {insights?.weakAreas && insights.weakAreas.length > 0 ? (
                 <div className="space-y-3">
                   {insights.weakAreas.map((area, i) => (
-                    <div key={i} className="p-3 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800">
-                      <div className="flex items-center justify-between mb-1">
-                        <p className="font-medium text-sm">{area.topic}</p>
-                        <Badge variant="outline" className="border-amber-500 text-amber-700 dark:text-amber-400">
+                    <div key={i} className="p-3 rounded-lg bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20 border border-amber-200 dark:border-amber-900/30 shadow-sm">
+                      <div className="flex items-center justify-between mb-2">
+                        <p className="font-medium text-sm text-slate-900 dark:text-white">{area.topic}</p>
+                        <Badge className="bg-gradient-to-r from-amber-500 to-orange-600 text-white border-0 shadow-md">
                           {area.accuracy}%
                         </Badge>
                       </div>
-                      <p className="text-xs text-muted-foreground">{area.suggestion}</p>
+                      <p className="text-xs text-slate-600 dark:text-slate-400">{area.suggestion}</p>
                     </div>
                   ))}
                 </div>
@@ -487,10 +524,12 @@ export default function Insights() {
           </Card>
         </div>
 
-        <Card className="shadow-lg border-0" data-testid="card-recommendations">
+        <Card className="border-0 shadow-lg bg-white/80 dark:bg-slate-900/80 backdrop-blur" data-testid="card-recommendations">
           <CardHeader className="pb-2">
             <CardTitle className="text-lg flex items-center gap-2">
-              <Lightbulb className="w-5 h-5 text-yellow-500" />
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-yellow-500 to-amber-600 flex items-center justify-center">
+                <Lightbulb className="w-4 h-4 text-white" />
+              </div>
               Personalized Recommendations
             </CardTitle>
             <CardDescription>Suggestions to improve your learning</CardDescription>

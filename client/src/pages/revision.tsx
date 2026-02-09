@@ -214,119 +214,171 @@ export default function Revision() {
     }
   };
 
-  const QuickActions = () => (
-    <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-      <Button
-        variant="outline"
-        className="h-auto py-4 flex flex-col items-center gap-2 hover-elevate border-2 border-amber-200 dark:border-amber-800 bg-gradient-to-br from-amber-50 to-yellow-50 dark:from-amber-950 dark:to-yellow-950"
-        onClick={() => { setActiveTab("pomodoro"); handlePresetChange(0); }}
-        data-testid="quick-action-focus"
-      >
-        <Timer className="h-6 w-6 text-amber-600" />
-        <span className="text-sm font-medium">Start Focus</span>
-      </Button>
-      <Button
-        variant="outline"
-        className="h-auto py-4 flex flex-col items-center gap-2 hover-elevate border-2 border-purple-200 dark:border-purple-800 bg-gradient-to-br from-purple-50 to-violet-50 dark:from-purple-950 dark:to-violet-950 relative"
-        onClick={() => { setActiveTab("review"); handleRestartReview(); }}
-        data-testid="quick-action-review"
-      >
-        <Brain className="h-6 w-6 text-purple-600" />
-        <span className="text-sm font-medium">Review</span>
-        {totalDue > 0 && (
-          <span className="absolute top-1 right-1 bg-purple-500 text-white text-[10px] rounded-full h-4 w-4 flex items-center justify-center font-bold">
-            {totalDue > 9 ? "9+" : totalDue}
-          </span>
-        )}
-      </Button>
-      <Button
-        variant="outline"
-        className="h-auto py-4 flex flex-col items-center gap-2 hover-elevate border-2 border-blue-200 dark:border-blue-800 bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950 dark:to-cyan-950"
-        onClick={() => setActiveTab("kanban")}
-        data-testid="quick-action-tasks"
-      >
-        <ListTodo className="h-6 w-6 text-blue-600" />
-        <span className="text-sm font-medium">View Tasks</span>
-      </Button>
-      <Button
-        variant="outline"
-        className="h-auto py-4 flex flex-col items-center gap-2 hover-elevate border-2 border-rose-200 dark:border-rose-800 bg-gradient-to-br from-rose-50 to-pink-50 dark:from-rose-950 dark:to-pink-950"
-        onClick={() => setActiveTab("whiteboard")}
-        data-testid="quick-action-notes"
-      >
-        <PenLine className="h-6 w-6 text-rose-600" />
-        <span className="text-sm font-medium">Quick Notes</span>
-      </Button>
-      <Button
-        variant="outline"
-        className="h-auto py-4 flex flex-col items-center gap-2 hover-elevate border-2 border-green-200 dark:border-green-800 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950 dark:to-emerald-950"
-        onClick={() => { setActiveTab("pomodoro"); handlePresetChange(1); }}
-        data-testid="quick-action-break"
-      >
-        <Coffee className="h-6 w-6 text-green-600" />
-        <span className="text-sm font-medium">Take Break</span>
-      </Button>
-    </div>
-  );
+  // QuickActions component removed - inline in main layout now
 
   return (
     <div className="flex-1 overflow-auto bg-gradient-to-b from-amber-50 to-yellow-50 dark:from-amber-950 dark:to-yellow-950">
       <div className="max-w-7xl mx-auto p-6 space-y-6">
-        {/* Personalized Hero */}
-        <div className="bg-gradient-to-r from-yellow-400 via-amber-500 to-orange-500 rounded-2xl p-8 text-white shadow-xl relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2" />
-          <div className="absolute bottom-0 left-0 w-32 h-32 bg-white/10 rounded-full translate-y-1/2 -translate-x-1/2" />
-          <div className="relative z-10">
-            <div className="flex items-start justify-between flex-wrap gap-4">
-              <div>
-                <p className="text-amber-100 text-sm font-medium mb-1">{timeContext.emoji}</p>
-                <h1 className="text-3xl md:text-4xl font-bold mb-2">{timeContext.greeting}!</h1>
-                <p className="text-lg opacity-90 max-w-xl">{timeContext.suggestion}</p>
+        {/* Completely Redesigned Help Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          {/* Welcome Card - Takes up 2 columns */}
+          <div className="lg:col-span-2 bg-gradient-to-r from-yellow-400 via-amber-500 to-orange-500 rounded-2xl p-6 text-white shadow-xl relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-48 h-48 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2" />
+            <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/10 rounded-full translate-y-1/2 -translate-x-1/2" />
+            <div className="relative z-10 space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center backdrop-blur-sm">
+                  <Brain className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <p className="text-amber-100 text-xs font-medium">{timeContext.emoji}</p>
+                  <h1 className="text-2xl md:text-3xl font-bold">{timeContext.greeting}!</h1>
+                </div>
               </div>
-              <div className="flex flex-col items-end gap-2">
+              <p className="text-base opacity-95 leading-relaxed">{timeContext.suggestion}</p>
+              
+              {/* Stats Row */}
+              <div className="flex flex-wrap gap-2">
                 {pendingTasksCount > 0 && (
-                  <Badge className="bg-white/20 text-white border-0 px-3 py-1">
+                  <Badge className="bg-white/20 text-white border-0 px-3 py-1.5 backdrop-blur-sm">
+                    <ListTodo className="h-3 w-3 mr-1.5" />
                     {pendingTasksCount} tasks pending
                   </Badge>
                 )}
                 {sessionCount > 0 && (
-                  <Badge className="bg-green-500/80 text-white border-0 px-3 py-1">
+                  <Badge className="bg-green-500/80 text-white border-0 px-3 py-1.5 backdrop-blur-sm">
+                    <CheckCircle2 className="h-3 w-3 mr-1.5" />
                     {sessionCount} sessions today
+                  </Badge>
+                )}
+                {totalDue > 0 && (
+                  <Badge className="bg-purple-500/80 text-white border-0 px-3 py-1.5 backdrop-blur-sm">
+                    <Brain className="h-3 w-3 mr-1.5" />
+                    {totalDue} due for review
                   </Badge>
                 )}
               </div>
             </div>
-            
-            {/* Smart Suggestion */}
-            {highPriorityTasks.length > 0 && (
-              <div className="mt-4 bg-white/20 backdrop-blur-sm rounded-lg p-3 flex items-center gap-3">
-                <Sparkles className="h-5 w-5 text-yellow-200" />
-                <span className="text-sm">
-                  <strong>Suggested:</strong> Work on "{highPriorityTasks[0].title}" - it's marked as high priority
-                </span>
-                <ArrowRight className="h-4 w-4 ml-auto" />
-              </div>
-            )}
           </div>
+
+          {/* Motivational Tip Card */}
+          <Card className="border-2 border-teal-200 dark:border-teal-800 bg-gradient-to-br from-teal-50 to-cyan-50 dark:from-teal-950 dark:to-cyan-950 shadow-lg">
+            <CardContent className="p-6 h-full flex flex-col justify-center space-y-3">
+              <div className="flex items-center gap-2">
+                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-teal-500 to-cyan-600 flex items-center justify-center shadow-md">
+                  <Lightbulb className="h-5 w-5 text-white" />
+                </div>
+                <h3 className="font-bold text-teal-900 dark:text-teal-100">Pro Tip</h3>
+              </div>
+              <p className="text-sm text-teal-700 dark:text-teal-300 leading-relaxed">{randomTip}</p>
+            </CardContent>
+          </Card>
         </div>
 
-        {/* Quick Actions */}
-        <Card className="border-2 border-amber-200 dark:border-amber-800">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Zap className="h-5 w-5 text-amber-600" />
-              Quick Actions
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <QuickActions />
-          </CardContent>
-        </Card>
+        {/* Smart Suggestion Banner */}
+        {highPriorityTasks.length > 0 && (
+          <div className="bg-gradient-to-r from-rose-100 via-pink-100 to-fuchsia-100 dark:from-rose-900 dark:via-pink-900 dark:to-fuchsia-900 rounded-xl p-4 border-2 border-rose-200 dark:border-rose-800 shadow-md">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-rose-500 to-pink-600 flex items-center justify-center shadow-md shrink-0">
+                <Sparkles className="h-5 w-5 text-white" />
+              </div>
+              <div className="flex-1">
+                <h4 className="text-sm font-bold text-rose-900 dark:text-rose-100 mb-0.5">Recommended Next</h4>
+                <p className="text-sm text-rose-700 dark:text-rose-300">
+                  Work on <strong>"{highPriorityTasks[0].title}"</strong> - marked as high priority
+                </p>
+              </div>
+              <ArrowRight className="h-5 w-5 text-rose-600 dark:text-rose-400 shrink-0" />
+            </div>
+          </div>
+        )}
 
-        {/* Motivational Tip */}
-        <div className="flex items-center gap-3 bg-gradient-to-r from-teal-100 to-cyan-100 dark:from-teal-900 dark:to-cyan-900 rounded-xl p-4 border-2 border-teal-200 dark:border-teal-800">
-          <Lightbulb className="h-5 w-5 text-teal-600 dark:text-teal-400 shrink-0" />
-          <p className="text-sm text-teal-800 dark:text-teal-200 font-medium">{randomTip}</p>
+        {/* Quick Actions Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Primary Actions */}
+          <Card className="border-2 border-amber-200 dark:border-amber-800 shadow-lg">
+            <CardHeader className="pb-3 bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-950 dark:to-yellow-950">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Zap className="h-5 w-5 text-amber-600" />
+                Start Your Session
+              </CardTitle>
+              <CardDescription className="text-xs">Choose your focus mode</CardDescription>
+            </CardHeader>
+            <CardContent className="pt-4">
+              <div className="grid grid-cols-2 gap-3">
+                <Button
+                  variant="outline"
+                  className="h-24 flex flex-col items-center justify-center gap-2 border-2 border-amber-200 dark:border-amber-800 bg-gradient-to-br from-amber-50 to-yellow-50 dark:from-amber-950 dark:to-yellow-950 hover:scale-105 transition-transform"
+                  onClick={() => { setActiveTab("pomodoro"); handlePresetChange(0); }}
+                  data-testid="quick-action-focus"
+                >
+                  <Timer className="h-7 w-7 text-amber-600" />
+                  <div className="text-center">
+                    <div className="text-sm font-bold">Focus</div>
+                    <div className="text-xs text-muted-foreground">25 min</div>
+                  </div>
+                </Button>
+                <Button
+                  variant="outline"
+                  className="h-24 flex flex-col items-center justify-center gap-2 border-2 border-rose-200 dark:border-rose-800 bg-gradient-to-br from-rose-50 to-pink-50 dark:from-rose-950 dark:to-pink-950 hover:scale-105 transition-transform"
+                  onClick={() => { setActiveTab("pomodoro"); handlePresetChange(3); }}
+                >
+                  <Brain className="h-7 w-7 text-rose-600" />
+                  <div className="text-center">
+                    <div className="text-sm font-bold">Deep Work</div>
+                    <div className="text-xs text-muted-foreground">50 min</div>
+                  </div>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Secondary Actions */}
+          <Card className="border-2 border-purple-200 dark:border-purple-800 shadow-lg">
+            <CardHeader className="pb-3 bg-gradient-to-r from-purple-50 to-violet-50 dark:from-purple-950 dark:to-violet-950">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Target className="h-5 w-5 text-purple-600" />
+                Organize & Review
+              </CardTitle>
+              <CardDescription className="text-xs">Manage your learning</CardDescription>
+            </CardHeader>
+            <CardContent className="pt-4">
+              <div className="grid grid-cols-3 gap-2">
+                <Button
+                  variant="outline"
+                  className="h-20 flex flex-col items-center justify-center gap-1.5 border-2 border-purple-200 dark:border-purple-800 bg-gradient-to-br from-purple-50 to-violet-50 dark:from-purple-950 dark:to-violet-950 hover:scale-105 transition-transform relative"
+                  onClick={() => { setActiveTab("review"); handleRestartReview(); }}
+                  data-testid="quick-action-review"
+                >
+                  <Brain className="h-6 w-6 text-purple-600" />
+                  <span className="text-xs font-medium">Review</span>
+                  {totalDue > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-purple-500 text-white text-[10px] rounded-full h-5 w-5 flex items-center justify-center font-bold">
+                      {totalDue > 9 ? "9+" : totalDue}
+                    </span>
+                  )}
+                </Button>
+                <Button
+                  variant="outline"
+                  className="h-20 flex flex-col items-center justify-center gap-1.5 border-2 border-blue-200 dark:border-blue-800 bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950 dark:to-cyan-950 hover:scale-105 transition-transform"
+                  onClick={() => setActiveTab("kanban")}
+                  data-testid="quick-action-tasks"
+                >
+                  <ListTodo className="h-6 w-6 text-blue-600" />
+                  <span className="text-xs font-medium">Tasks</span>
+                </Button>
+                <Button
+                  variant="outline"
+                  className="h-20 flex flex-col items-center justify-center gap-1.5 border-2 border-green-200 dark:border-green-800 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950 dark:to-emerald-950 hover:scale-105 transition-transform"
+                  onClick={() => { setActiveTab("pomodoro"); handlePresetChange(1); }}
+                  data-testid="quick-action-break"
+                >
+                  <Coffee className="h-6 w-6 text-green-600" />
+                  <span className="text-xs font-medium">Break</span>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">

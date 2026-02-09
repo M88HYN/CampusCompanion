@@ -866,9 +866,29 @@ export async function seedQuizzes(userId: string) {
       for (let i = 0; i < quizData.questions.length; i++) {
         const questionData = quizData.questions[i];
         const questionId = randomUUID();
-        // Raw insert to avoid pg array mapping in SQLite
+        
+        // Assign tags based on quiz subject and question content
+        let tags: string[] = [];
+        if (quizData.subject === "Computer Science" && quizData.title.includes("Data Structures")) {
+          tags = ["data-structures", "arrays", "complexity"];
+        } else if (quizData.subject === "Computer Science" && quizData.title.includes("Algorithms")) {
+          tags = ["algorithms", "sorting", "big-o"];
+        } else if (quizData.subject === "Computer Science" && quizData.title.includes("OOP")) {
+          tags = ["oop", "design-patterns", "java"];
+        } else if (quizData.subject === "Computer Science" && quizData.title.includes("Web")) {
+          tags = ["web", "html", "css", "javascript"];
+        } else if (quizData.subject === "Computer Science" && quizData.title.includes("Database")) {
+          tags = ["databases", "sql", "queries"];
+        } else if (quizData.subject === "Computer Science" && quizData.title.includes("Operating")) {
+          tags = ["os", "processes", "memory"];
+        } else {
+          // Default tags based on subject
+          tags = [quizData.subject.toLowerCase().replace(/\\s+/g, "-")];
+        }
+        
+        // Raw insert with tags
         await db.run(sql`
-          INSERT INTO quiz_questions (id, quiz_id, type, question, difficulty, marks, explanation, "order")
+          INSERT INTO quiz_questions (id, quiz_id, type, question, difficulty, marks, explanation, tags, "order")
           VALUES (
             ${questionId},
             ${quiz.id},
@@ -877,6 +897,7 @@ export async function seedQuizzes(userId: string) {
             ${questionData.difficulty},
             ${questionData.marks},
             ${questionData.explanation},
+            ${JSON.stringify(tags)},
             ${i}
           )
         `);

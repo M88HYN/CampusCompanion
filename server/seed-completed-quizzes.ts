@@ -23,7 +23,7 @@ export async function seedCompletedQuizzes(userId: string) {
     // Get existing quizzes for this user
     // CRITICAL: db.all() for SELECT — db.run() only returns metadata, not rows
     const quizzes: any[] = db.all(sql`
-      SELECT id, title, subject FROM quizzes WHERE user_id = ${userId} LIMIT 3
+      SELECT id, title, subject FROM quizzes WHERE user_id = ${userId}
     `);
 
     if (quizzes.length === 0) {
@@ -34,28 +34,42 @@ export async function seedCompletedQuizzes(userId: string) {
     // Track all responses so we can seed user_question_stats at the end
     const allResponses: Array<{ questionId: string; isCorrect: boolean; responseTime: number }> = [];
 
-    // Scenario 1: Strong performance on first quiz (85% accuracy)
-    if (quizzes[0]) {
-      const responses = await seedQuizAttempt(userId, quizzes[0], 0.85, 45);
-      allResponses.push(...responses);
-    }
+    // Create multiple quiz attempts with diverse performance across different topics
+    const attemptScenarios = [
+      // Strong performance scenarios (strengths)
+      { accuracy: 0.92, timeSpentMinutes: 35 }, // Excellent
+      { accuracy: 0.88, timeSpentMinutes: 42 }, // Excellent
+      { accuracy: 0.85, timeSpentMinutes: 45 }, // Strong
+      { accuracy: 0.82, timeSpentMinutes: 38 }, // Strong
+      { accuracy: 0.80, timeSpentMinutes: 50 }, // Strong
+      
+      // Medium performance scenarios
+      { accuracy: 0.75, timeSpentMinutes: 55 }, // Good
+      { accuracy: 0.70, timeSpentMinutes: 48 }, // Decent
+      { accuracy: 0.65, timeSpentMinutes: 52 }, // Moderate
+      
+      // Weak performance scenarios (areas to improve)
+      { accuracy: 0.58, timeSpentMinutes: 60 }, // Struggling
+      { accuracy: 0.52, timeSpentMinutes: 65 }, // Struggling
+      { accuracy: 0.45, timeSpentMinutes: 70 }, // Weak
+      { accuracy: 0.38, timeSpentMinutes: 75 }, // Very weak
+    ];
 
-    // Scenario 2: Medium performance on second quiz (65% accuracy)
-    if (quizzes[1]) {
-      const responses = await seedQuizAttempt(userId, quizzes[1], 0.65, 52);
-      allResponses.push(...responses);
-    }
-
-    // Scenario 3: Good performance on third quiz (78% accuracy)
-    if (quizzes[2]) {
-      const responses = await seedQuizAttempt(userId, quizzes[2], 0.78, 38);
+    // Seed attempts across available quizzes with varied performance
+    const numAttempts = Math.min(attemptScenarios.length, quizzes.length * 3); // Up to 3 attempts per quiz
+    
+    for (let i = 0; i < numAttempts; i++) {
+      const quiz = quizzes[i % quizzes.length]; // Cycle through quizzes
+      const scenario = attemptScenarios[i % attemptScenarios.length];
+      
+      const responses = await seedQuizAttempt(userId, quiz, scenario.accuracy, scenario.timeSpentMinutes, i);
       allResponses.push(...responses);
     }
 
     // Seed user_question_stats from all responses so spaced review has data
     await seedQuestionStats(userId, allResponses);
 
-    console.log("[COMPLETED QUIZ SEED] ✅ Completed quiz seed successful!");
+    console.log(`[COMPLETED QUIZ SEED] ✅ Seeded ${numAttempts} quiz attempts with varied performance`);
   } catch (error) {
     console.error("[COMPLETED QUIZ SEED] Error:", error);
   }
@@ -65,10 +79,14 @@ async function seedQuizAttempt(
   userId: string,
   quiz: any,
   targetAccuracy: number,
-  timeSpentMinutes: number
+  timeSpentMinutes: number,
+  attemptIndex: number = 0
 ): Promise<Array<{ questionId: string; isCorrect: boolean; responseTime: number }>> {
   const attemptId = randomUUID();
-  const completedAt = new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000); // Random time in last 7 days
+  
+  // Distribute attempts across the last 14 days for insights trends
+  const daysAgo = attemptIndex % 14;
+  const completedAt = new Date(Date.now() - daysAgo * 24 * 60 * 60 * 1000);
   const startedAt = new Date(completedAt.getTime() - timeSpentMinutes * 60 * 1000);
 
   // Get questions for this quiz
