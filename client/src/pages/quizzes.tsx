@@ -765,24 +765,24 @@ export default function Quizzes() {
 
     return (
       <div className="flex-1 overflow-auto bg-gradient-to-b from-teal-50 to-cyan-50 dark:from-teal-950 dark:to-cyan-950">
-        <div className="max-w-4xl mx-auto p-6 space-y-6">
-          <div className={`bg-gradient-to-r ${scoreColor} rounded-2xl p-8 text-white text-center shadow-lg`}>
+        <div className="max-w-4xl mx-auto p-3 sm:p-6 space-y-4 sm:space-y-6">
+          <div className={`bg-gradient-to-r ${scoreColor} rounded-2xl p-4 sm:p-8 text-white text-center shadow-lg`}>
             <div className="mb-4 flex justify-center gap-2 animate-bounce">
               <Trophy className="h-8 w-8" />
             </div>
-            <h2 className="text-4xl font-bold mb-2">Quiz Complete!</h2>
-            <p className="text-lg opacity-90">You scored {correctAnswers} out of {totalQuestions} questions correctly</p>
+            <h2 className="text-2xl sm:text-4xl font-bold mb-2">Quiz Complete!</h2>
+            <p className="text-sm sm:text-lg opacity-90">You scored {correctAnswers} out of {totalQuestions} questions correctly</p>
           </div>
 
           <Card className="border-2 border-teal-200 dark:border-teal-800 shadow-lg">
-            <CardContent className="pt-8 text-center">
+            <CardContent className="pt-6 sm:pt-8 text-center">
               <div className="space-y-4">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground mb-3">Your Score</p>
-                  <div className={`text-7xl font-bold bg-gradient-to-r ${scoreColor} bg-clip-text text-transparent mb-4`}>
+                  <div className={`text-5xl sm:text-7xl font-bold bg-gradient-to-r ${scoreColor} bg-clip-text text-transparent mb-4`}>
                     {score}%
                   </div>
-                  <p className={`text-2xl font-bold bg-gradient-to-r ${scoreColor} bg-clip-text text-transparent`}>
+                  <p className={`text-xl sm:text-2xl font-bold bg-gradient-to-r ${scoreColor} bg-clip-text text-transparent`}>
                     {scoreLabel}
                   </p>
                 </div>
@@ -791,26 +791,26 @@ export default function Quizzes() {
             </CardContent>
           </Card>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-3 gap-3 sm:gap-4">
             <Card className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950 dark:to-green-900 border-green-200 dark:border-green-800">
-              <CardContent className="pt-6 text-center">
-                <CheckCircle2 className="h-8 w-8 text-green-600 dark:text-green-400 mx-auto mb-2" />
-                <div className="text-3xl font-bold text-green-700 dark:text-green-300">{correctAnswers}</div>
-                <p className="text-sm text-green-600 dark:text-green-400 font-medium">Correct</p>
+              <CardContent className="pt-4 sm:pt-6 text-center">
+                <CheckCircle2 className="h-6 w-6 sm:h-8 sm:w-8 text-green-600 dark:text-green-400 mx-auto mb-2" />
+                <div className="text-2xl sm:text-3xl font-bold text-green-700 dark:text-green-300">{correctAnswers}</div>
+                <p className="text-xs sm:text-sm text-green-600 dark:text-green-400 font-medium">Correct</p>
               </CardContent>
             </Card>
             <Card className="bg-gradient-to-br from-red-50 to-red-100 dark:from-red-950 dark:to-red-900 border-red-200 dark:border-red-800">
-              <CardContent className="pt-6 text-center">
-                <AlertCircle className="h-8 w-8 text-red-600 dark:text-red-400 mx-auto mb-2" />
-                <div className="text-3xl font-bold text-red-700 dark:text-red-300">{totalQuestions - correctAnswers}</div>
-                <p className="text-sm text-red-600 dark:text-red-400 font-medium">Incorrect</p>
+              <CardContent className="pt-4 sm:pt-6 text-center">
+                <AlertCircle className="h-6 w-6 sm:h-8 sm:w-8 text-red-600 dark:text-red-400 mx-auto mb-2" />
+                <div className="text-2xl sm:text-3xl font-bold text-red-700 dark:text-red-300">{totalQuestions - correctAnswers}</div>
+                <p className="text-xs sm:text-sm text-red-600 dark:text-red-400 font-medium">Incorrect</p>
               </CardContent>
             </Card>
             <Card className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900 border-blue-200 dark:border-blue-800">
-              <CardContent className="pt-6 text-center">
-                <Zap className="h-8 w-8 text-blue-600 dark:text-blue-400 mx-auto mb-2" />
-                <div className="text-3xl font-bold text-blue-700 dark:text-blue-300">+{correctAnswers * 10}</div>
-                <p className="text-sm text-blue-600 dark:text-blue-400 font-medium">XP Earned</p>
+              <CardContent className="pt-4 sm:pt-6 text-center">
+                <Zap className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600 dark:text-blue-400 mx-auto mb-2" />
+                <div className="text-2xl sm:text-3xl font-bold text-blue-700 dark:text-blue-300">+{correctAnswers * 10}</div>
+                <p className="text-xs sm:text-sm text-blue-600 dark:text-blue-400 font-medium">XP Earned</p>
               </CardContent>
             </Card>
           </div>
@@ -905,26 +905,27 @@ export default function Quizzes() {
     return (
       <div className="flex-1 flex flex-col bg-gradient-to-b from-teal-50 to-cyan-50 dark:from-teal-950 dark:to-cyan-950">
         <div className="border-b-2 border-teal-200 dark:border-teal-800 bg-white dark:bg-slate-900 shadow-sm sticky top-0 z-10">
-          <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between gap-4">
-            <div className="flex items-center gap-4">
-              <Badge className="bg-gradient-to-r from-orange-500 to-amber-600 text-white gap-1 border-0 px-3 py-1">
+          <div className="max-w-5xl mx-auto px-3 sm:px-6 py-3 sm:py-4 flex items-center justify-between gap-2 sm:gap-4">
+            <div className="flex items-center gap-2 sm:gap-4">
+              <Badge className="bg-gradient-to-r from-orange-500 to-amber-600 text-white gap-1 border-0 px-2 sm:px-3 py-1 text-xs">
                 <Brain className="h-3 w-3" />
-                Adaptive Mode
+                <span className="hidden sm:inline">Adaptive Mode</span>
+                <span className="sm:hidden">Adaptive</span>
               </Badge>
               <div className="text-center">
-                <p className="text-xs text-muted-foreground font-medium">Question</p>
-                <p className="text-lg font-bold text-teal-700 dark:text-teal-300">
+                <p className="text-[10px] sm:text-xs text-muted-foreground font-medium">Question</p>
+                <p className="text-sm sm:text-lg font-bold text-teal-700 dark:text-teal-300">
                   {adaptiveQuestionNumber}/10
                 </p>
               </div>
             </div>
 
-            <div className="flex-1 mx-4">
-              <Progress value={progress} className="h-3 bg-slate-200 dark:bg-slate-800" />
+            <div className="flex-1 mx-2 sm:mx-4">
+              <Progress value={progress} className="h-2 sm:h-3 bg-slate-200 dark:bg-slate-800" />
             </div>
 
             <div className="flex items-center gap-2">
-              <span className="text-sm font-medium">Difficulty:</span>
+              <span className="text-xs sm:text-sm font-medium">Difficulty:</span>
               <div className="flex">
                 {[1, 2, 3, 4, 5].map((level) => (
                   <Star
@@ -941,9 +942,9 @@ export default function Quizzes() {
           </div>
         </div>
 
-        <div className="flex-1 flex items-center justify-center p-8 overflow-auto">
+        <div className="flex-1 flex items-center justify-center p-3 sm:p-8 overflow-auto">
           <div className="w-full max-w-4xl">
-            <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl p-8 mb-6 border-2 border-teal-200 dark:border-teal-800">
+            <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl p-4 sm:p-8 mb-6 border-2 border-teal-200 dark:border-teal-800">
               <div className="flex items-center justify-between mb-6">
                 <Badge variant="outline" className="text-orange-700 dark:text-orange-300 border-orange-300 dark:border-orange-700">
                   {question.type.toUpperCase()}
@@ -962,7 +963,7 @@ export default function Quizzes() {
                 </div>
               </div>
 
-              <h2 className="text-3xl font-bold text-slate-900 dark:text-white leading-relaxed mb-8">
+              <h2 className="text-xl sm:text-3xl font-bold text-slate-900 dark:text-white leading-relaxed mb-6 sm:mb-8">
                 {question.question}
               </h2>
 
@@ -977,7 +978,7 @@ export default function Quizzes() {
                         key={option.id}
                         onClick={() => !showFeedback && handleAdaptiveAnswer(option.id)}
                         disabled={showFeedback || isSubmitting}
-                        className={`w-full p-5 rounded-xl font-semibold text-lg transition-all duration-300 cursor-pointer text-left border-2 flex items-center gap-3 ${
+                        className={`w-full p-3 sm:p-5 rounded-xl font-semibold text-sm sm:text-lg transition-all duration-300 cursor-pointer text-left border-2 flex items-center gap-3 ${
                           showFeedback && isCorrectOption
                             ? 'border-green-500 bg-green-100 dark:bg-green-950 text-green-900 dark:text-green-100 scale-105 shadow-lg'
                             : showFeedback && isSelected && !isCorrectOption
@@ -1088,25 +1089,26 @@ export default function Quizzes() {
     return (
       <div className="flex-1 flex flex-col bg-gradient-to-b from-teal-50 to-cyan-50 dark:from-teal-950 dark:to-cyan-950">
         <div className="border-b-2 border-teal-200 dark:border-teal-800 bg-white dark:bg-slate-900 shadow-sm sticky top-0 z-10">
-          <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between gap-4">
-            <div className="flex items-center gap-4">
-              <Badge className="bg-gradient-to-r from-teal-500 to-cyan-600 text-white gap-1 border-0 px-3 py-1">
+          <div className="max-w-5xl mx-auto px-3 sm:px-6 py-3 sm:py-4 flex items-center justify-between gap-2 sm:gap-4">
+            <div className="flex items-center gap-2 sm:gap-4">
+              <Badge className="bg-gradient-to-r from-teal-500 to-cyan-600 text-white gap-1 border-0 px-2 sm:px-3 py-1 text-xs">
                 <Target className="h-3 w-3" />
-                Practice Mode
+                <span className="hidden sm:inline">Practice Mode</span>
+                <span className="sm:hidden">Practice</span>
               </Badge>
               <div className="text-center">
-                <p className="text-xs text-muted-foreground font-medium">Question</p>
-                <p className="text-lg font-bold text-teal-700 dark:text-teal-300">
+                <p className="text-[10px] sm:text-xs text-muted-foreground font-medium">Question</p>
+                <p className="text-sm sm:text-lg font-bold text-teal-700 dark:text-teal-300">
                   {currentQuestion + 1}/{activeQuestions.length}
                 </p>
               </div>
             </div>
 
-            <div className="flex-1 mx-4">
-              <Progress value={progress} className="h-3 bg-slate-200 dark:bg-slate-800" />
+            <div className="flex-1 mx-2 sm:mx-4">
+              <Progress value={progress} className="h-2 sm:h-3 bg-slate-200 dark:bg-slate-800" />
             </div>
 
-            <div className={`text-center px-4 py-2 rounded-lg font-mono font-bold text-lg ${
+            <div className={`text-center px-2 sm:px-4 py-1 sm:py-2 rounded-lg font-mono font-bold text-sm sm:text-lg ${
               timeLeft < 60 
                 ? 'bg-red-100 dark:bg-red-950 text-red-700 dark:text-red-300' 
                 : 'bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300'
@@ -1117,9 +1119,9 @@ export default function Quizzes() {
           </div>
         </div>
 
-        <div className="flex-1 flex items-center justify-center p-8 overflow-auto">
+        <div className="flex-1 flex items-center justify-center p-3 sm:p-8 overflow-auto">
           <div className="w-full max-w-4xl">
-            <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl p-8 mb-6 border-2 border-teal-200 dark:border-teal-800">
+            <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl p-4 sm:p-8 mb-6 border-2 border-teal-200 dark:border-teal-800">
               <div className="flex items-center justify-between mb-6">
                 <Badge variant="outline" className="text-teal-700 dark:text-teal-300 border-teal-300 dark:border-teal-700">
                   {question.type.toUpperCase()}
@@ -1138,7 +1140,7 @@ export default function Quizzes() {
                 </div>
               </div>
 
-              <h2 className="text-3xl font-bold text-slate-900 dark:text-white leading-relaxed mb-8">
+              <h2 className="text-xl sm:text-3xl font-bold text-slate-900 dark:text-white leading-relaxed mb-6 sm:mb-8">
                 {question.question}
               </h2>
 
@@ -1153,7 +1155,7 @@ export default function Quizzes() {
                         key={option.id}
                         onClick={() => !showFeedback && handleAnswerSubmit(option.id)}
                         disabled={showFeedback || isSubmitting}
-                        className={`w-full p-5 rounded-xl font-semibold text-lg transition-all duration-300 cursor-pointer text-left border-2 flex items-center gap-3 ${
+                        className={`w-full p-3 sm:p-5 rounded-xl font-semibold text-sm sm:text-lg transition-all duration-300 cursor-pointer text-left border-2 flex items-center gap-3 ${
                           showFeedback && isCorrectOption
                             ? 'border-green-500 bg-green-100 dark:bg-green-950 text-green-900 dark:text-green-100 scale-105 shadow-lg'
                             : showFeedback && isSelected && !isCorrectOption
@@ -1638,12 +1640,12 @@ export default function Quizzes() {
 
   return (
     <div className="flex-1 overflow-auto bg-gradient-to-b from-teal-50 to-cyan-50 dark:from-teal-950 dark:to-cyan-950">
-      <div className="max-w-7xl mx-auto p-6 space-y-8">
-        <div className="bg-gradient-to-r from-teal-500 via-cyan-500 to-cyan-600 rounded-2xl p-8 text-white shadow-xl">
+      <div className="max-w-7xl mx-auto p-3 sm:p-6 space-y-6 sm:space-y-8">
+        <div className="bg-gradient-to-r from-teal-500 via-cyan-500 to-cyan-600 rounded-2xl p-4 sm:p-8 text-white shadow-xl">
           <div className="flex items-start justify-between gap-4 flex-wrap">
             <div>
-              <h1 className="text-4xl md:text-5xl font-bold mb-2">Quizzes</h1>
-              <p className="text-lg opacity-90 max-w-2xl">Test your knowledge with interactive quizzes, adaptive learning, and spaced repetition</p>
+              <h1 className="text-2xl sm:text-4xl md:text-5xl font-bold mb-2">Quizzes</h1>
+              <p className="text-sm sm:text-lg opacity-90 max-w-2xl">Test your knowledge with interactive quizzes, adaptive learning, and spaced repetition</p>
             </div>
             <Button
               onClick={() => setView("create")}
@@ -1657,18 +1659,18 @@ export default function Quizzes() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-3 mb-6">
-            <TabsTrigger value="quizzes" className="gap-2" data-testid="tab-quizzes">
-              <BookMarked className="h-4 w-4" />
-              My Quizzes
+          <TabsList className="grid w-full grid-cols-3 mb-4 sm:mb-6">
+            <TabsTrigger value="quizzes" className="gap-1 sm:gap-2 text-xs sm:text-sm" data-testid="tab-quizzes">
+              <BookMarked className="h-4 w-4 hidden sm:block" />
+              Quizzes
             </TabsTrigger>
-            <TabsTrigger value="analytics" className="gap-2" data-testid="tab-analytics">
-              <BarChart3 className="h-4 w-4" />
+            <TabsTrigger value="analytics" className="gap-1 sm:gap-2 text-xs sm:text-sm" data-testid="tab-analytics">
+              <BarChart3 className="h-4 w-4 hidden sm:block" />
               Analytics
             </TabsTrigger>
-            <TabsTrigger value="review" className="gap-2" data-testid="tab-review">
-              <RefreshCw className="h-4 w-4" />
-              Spaced Review
+            <TabsTrigger value="review" className="gap-1 sm:gap-2 text-xs sm:text-sm" data-testid="tab-review">
+              <RefreshCw className="h-4 w-4 hidden sm:block" />
+              Review
             </TabsTrigger>
           </TabsList>
 

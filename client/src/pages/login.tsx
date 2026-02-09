@@ -135,7 +135,7 @@ export default function Login() {
         </div>
       </div>
 
-      <div className="flex-1 flex items-center justify-center p-6 bg-gradient-to-br from-slate-50 to-teal-50/30 dark:from-slate-900 dark:to-teal-950/30">
+      <div className="flex-1 flex items-center justify-center p-4 sm:p-6 bg-gradient-to-br from-slate-50 to-teal-50/30 dark:from-slate-900 dark:to-teal-950/30">
         <Card className="w-full max-w-md border-0 shadow-xl bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm">
           <CardHeader className="text-center pb-6">
             <div className="lg:hidden flex items-center justify-center gap-2 mb-6">

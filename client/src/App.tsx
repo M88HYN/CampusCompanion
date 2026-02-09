@@ -53,10 +53,10 @@ function MainLayout({ onLogout }: { onLogout: () => void }) {
       <div className="flex h-screen w-full">
         <AppSidebar userRole="student" onLogout={onLogout} />
         <div className="flex flex-col flex-1 overflow-hidden">
-          <header className="flex items-center justify-between px-6 py-3 border-b-2 border-teal-200 dark:border-teal-800 bg-gradient-to-r from-white to-teal-50 dark:from-slate-900 dark:to-teal-950 shrink-0 shadow-sm">
-            <div className="flex items-center gap-3">
+          <header className="flex items-center justify-between px-3 sm:px-6 py-2 sm:py-3 border-b-2 border-teal-200 dark:border-teal-800 bg-gradient-to-r from-white to-teal-50 dark:from-slate-900 dark:to-teal-950 shrink-0 shadow-sm">
+            <div className="flex items-center gap-2 sm:gap-3">
               <SidebarTrigger data-testid="button-sidebar-toggle" className="text-teal-600 dark:text-teal-400" />
-              <h1 className="text-lg font-bold bg-gradient-to-r from-teal-600 to-cyan-600 dark:from-teal-400 dark:to-cyan-400 bg-clip-text text-transparent hidden sm:block">
+              <h1 className="text-base sm:text-lg font-bold bg-gradient-to-r from-teal-600 to-cyan-600 dark:from-teal-400 dark:to-cyan-400 bg-clip-text text-transparent hidden sm:block">
                 StudyMate
               </h1>
             </div>

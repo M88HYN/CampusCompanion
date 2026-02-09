@@ -19,7 +19,7 @@ export default defineConfig({
     emptyOutDir: true,
   },
   server: {
-    host: "localhost",
+    host: "0.0.0.0",
     port: 5173,
     strictPort: true, // FAIL if port 5173 is occupied - NO fallback
     fs: {

@@ -20,6 +20,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { useIsMobile } from "@/hooks/use-mobile";
 import type { Deck, Quiz } from "@shared/schema";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -559,7 +560,7 @@ export default function Research() {
   // ── Render ───────────────────────────────────────────────────────────
 
   return (
-    <div className="flex-1 flex h-full overflow-hidden bg-[#FEFCF3] dark:bg-slate-950 relative">
+    <div className="flex-1 flex flex-col md:flex-row h-full overflow-hidden bg-[#FEFCF3] dark:bg-slate-950 relative">
       {/* Subtle paper grid texture */}
       <div className="absolute inset-0 pointer-events-none opacity-[0.035] dark:opacity-[0.02]" style={{
         backgroundImage: `repeating-linear-gradient(0deg, transparent, transparent 23px, rgba(180,160,120,0.3) 24px),
@@ -568,7 +569,7 @@ export default function Research() {
       }} />
 
       {/* ─── LEFT PANEL: Question & Controls ─── */}
-      <div className="w-[380px] min-w-[340px] max-w-[420px] border-r border-slate-200/80 dark:border-slate-700/60 bg-white/90 dark:bg-slate-900/95 backdrop-blur-sm flex flex-col relative z-10">
+      <div className="w-full md:w-[380px] md:min-w-[340px] md:max-w-[420px] border-b md:border-b-0 md:border-r border-slate-200/80 dark:border-slate-700/60 bg-white/90 dark:bg-slate-900/95 backdrop-blur-sm flex flex-col relative z-10 max-h-[50vh] md:max-h-none">
 
         {/* Header */}
         <div className="px-5 pt-5 pb-4 border-b border-slate-100 dark:border-slate-800">
@@ -749,9 +750,9 @@ export default function Research() {
       </div>
 
       {/* ─── RIGHT PANEL: Insight Canvas ─── */}
-      <div className="flex-1 flex flex-col relative z-10">
+      <div className="flex-1 flex flex-col relative z-10 min-h-0">
         {/* Canvas Header */}
-        <div className="px-6 py-3.5 border-b border-slate-200/60 dark:border-slate-700/40 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm">
+        <div className="px-3 sm:px-6 py-3 sm:py-3.5 border-b border-slate-200/60 dark:border-slate-700/40 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <BookMarked className="h-4 w-4 text-amber-600 dark:text-amber-400" />
@@ -782,7 +783,7 @@ export default function Research() {
           <div className="p-6 space-y-5 max-w-3xl mx-auto">
             {/* Empty State */}
             {!isStreaming && insightCards.length === 0 && (
-              <div className="flex flex-col items-center justify-center py-20 px-8 text-center">
+              <div className="flex flex-col items-center justify-center py-10 sm:py-20 px-4 sm:px-8 text-center">
                 <div className="h-20 w-20 rounded-2xl bg-gradient-to-br from-amber-100 to-orange-100 dark:from-amber-900/30 dark:to-orange-900/30 flex items-center justify-center mb-6 shadow-inner">
                   <GraduationCap className="h-10 w-10 text-amber-500 dark:text-amber-400" />
                 </div>

@@ -127,7 +127,7 @@ export default async function runApp(
   // Run setup
   await setup(app, server);
 
-  const host = process.env.NODE_ENV === 'production' ? '0.0.0.0' : 'localhost';
+  const host = '0.0.0.0'; // Allow access from any device on the local network
   const PORT = 3000; // FIXED PORT - NO AUTO-INCREMENT
 
   // FAIL-FAST: If port is occupied, crash immediately with clear error

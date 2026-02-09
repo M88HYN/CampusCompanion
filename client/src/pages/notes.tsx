@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { marked } from "marked";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { 
   ChevronRight, 
   Folder, 
@@ -47,7 +48,10 @@ import {
   PanelRightClose,
   RotateCcw,
   FileQuestion,
-  Wand2
+  Wand2,
+  FolderInput,
+  FileDown,
+  ArrowRightLeft,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -202,7 +206,14 @@ export default function Notes() {
   const [renameTitle, setRenameTitle] = useState("");
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [deleteNoteTrigger, setDeleteNoteTrigger] = useState<string | null>(null);
+  const [showMoveDialog, setShowMoveDialog] = useState(false);
+  const [moveNoteId, setMoveNoteId] = useState<string | null>(null);
+  const [moveTargetFolder, setMoveTargetFolder] = useState("");
+  const [newFolderName, setNewFolderName] = useState("");
+  const [contextNoteId, setContextNoteId] = useState<string | null>(null);
+  const [showMobileSidebar, setShowMobileSidebar] = useState(true);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const isMobile = useIsMobile();
   
   // AI Ask panel state
   const [showAiPanel, setShowAiPanel] = useState(false);
@@ -886,6 +897,119 @@ ${noteContent}`;
     toast({ title: "Exported", description: "Note exported as text file." });
   };
 
+  const handleExportPDF = () => {
+    if (!selectedNoteId || !noteTitle) return;
+
+    // Build a styled HTML document for printing to PDF
+    const htmlContent = marked(noteContent, { breaks: true, gfm: true });
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) {
+      toast({ title: "Blocked", description: "Please allow pop-ups to export as PDF.", variant: "destructive" });
+      return;
+    }
+
+    printWindow.document.write(`<!DOCTYPE html>
+<html><head><title>${noteTitle}</title>
+<style>
+  body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 800px; margin: 40px auto; padding: 0 20px; color: #1a1a1a; line-height: 1.6; }
+  h1 { font-size: 28px; border-bottom: 2px solid #3b82f6; padding-bottom: 8px; color: #1e40af; }
+  h2 { font-size: 22px; color: #1e40af; margin-top: 24px; }
+  h3 { font-size: 18px; color: #2563eb; }
+  .meta { color: #6b7280; font-size: 14px; margin-bottom: 24px; }
+  .meta span { margin-right: 16px; }
+  code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-size: 14px; }
+  pre { background: #1e293b; color: #e2e8f0; padding: 16px; border-radius: 8px; overflow-x: auto; }
+  pre code { background: none; color: inherit; }
+  blockquote { border-left: 4px solid #3b82f6; margin-left: 0; padding-left: 16px; color: #475569; font-style: italic; }
+  table { border-collapse: collapse; width: 100%; } th, td { border: 1px solid #e2e8f0; padding: 8px 12px; text-align: left; }
+  @media print { body { margin: 0; } }
+</style></head><body>
+<h1>${noteTitle}</h1>
+<div class="meta">
+  ${noteSubject ? `<span>📚 ${noteSubject}</span>` : ""}
+  ${noteTags.length > 0 ? `<span>🏷️ ${noteTags.join(", ")}</span>` : ""}
+  <span>📅 ${new Date().toLocaleDateString()}</span>
+</div>
+${htmlContent}
+</body></html>`);
+    printWindow.document.close();
+    
+    // Wait for content to render, then trigger print dialog (Save as PDF)
+    setTimeout(() => {
+      printWindow.print();
+    }, 500);
+    
+    toast({ title: "PDF Export", description: "Use 'Save as PDF' in the print dialog." });
+  };
+
+  const handleExportNoteById = (noteId: string) => {
+    const note = notes.find(n => n.id === noteId);
+    if (!note) return;
+
+    // If this is the selected note, use live content
+    if (noteId === selectedNoteId) {
+      handleExportNote();
+      return;
+    }
+
+    // Otherwise export with what we know from the list
+    const content = `${note.title}
+${note.subject ? `Subject: ${note.subject}` : ""}
+${"=".repeat(50)}
+
+(Open the note to export full content)`;
+
+    const element = document.createElement("a");
+    const file = new Blob([content], { type: "text/plain" });
+    element.href = URL.createObjectURL(file);
+    element.download = `${note.title.replace(/[^a-z0-9]/gi, "-").toLowerCase()}.txt`;
+    document.body.appendChild(element);
+    element.click();
+    document.body.removeChild(element);
+    toast({ title: "Exported", description: "Note exported as text file." });
+  };
+
+  const handleMoveNote = () => {
+    if (!moveNoteId) return;
+    const targetFolder = moveTargetFolder === "__new__" ? newFolderName.trim() : moveTargetFolder;
+    if (!targetFolder) {
+      toast({ title: "Select a folder", description: "Please choose a destination folder.", variant: "destructive" });
+      return;
+    }
+
+    updateNoteMutation.mutate({
+      id: moveNoteId,
+      data: { subject: targetFolder },
+    });
+
+    // If moving the currently selected note, update local state
+    if (moveNoteId === selectedNoteId) {
+      setNoteSubject(targetFolder);
+    }
+
+    setShowMoveDialog(false);
+    setMoveNoteId(null);
+    setMoveTargetFolder("");
+    setNewFolderName("");
+    toast({ title: "Note moved", description: `Moved to "${targetFolder}".` });
+  };
+
+  const openMoveDialog = (noteId: string) => {
+    const note = notes.find(n => n.id === noteId);
+    setMoveNoteId(noteId);
+    setMoveTargetFolder(note?.subject || "Uncategorized");
+    setNewFolderName("");
+    setShowMoveDialog(true);
+  };
+
+  const handleDeleteNoteById = (noteId: string) => {
+    setDeleteNoteTrigger(noteId);
+    setShowDeleteDialog(true);
+  };
+
+  // Get all unique folder/subject names for the move dropdown
+  const allFolders = [...new Set(notes.map(n => n.subject || "Uncategorized"))].sort();
+
   const handleCopyToClipboard = async () => {
     if (!noteTitle) return;
     
@@ -945,16 +1069,40 @@ ${noteContent}`;
 
   return (
     <div className="flex h-full bg-slate-50 dark:bg-slate-950">
-      {/* Sidebar */}
-      <div className="w-72 border-r border-blue-200 dark:border-blue-900 flex flex-col bg-white dark:bg-slate-900 shadow-sm">
-        <div className="p-4 border-b border-blue-100 dark:border-blue-900 space-y-3 bg-gradient-to-b from-blue-50 to-white dark:from-blue-950 dark:to-slate-900">
+      {/* Mobile Sidebar Toggle */}
+      {isMobile && !showMobileSidebar && (
+        <button
+          onClick={() => setShowMobileSidebar(true)}
+          className="fixed bottom-4 left-4 z-50 w-12 h-12 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/30 flex items-center justify-center"
+          aria-label="Show notes list"
+        >
+          <FileText className="h-5 w-5" />
+        </button>
+      )}
+
+      {/* Sidebar - full width on mobile when visible, fixed width on desktop */}
+      <div className={`${
+        isMobile
+          ? showMobileSidebar ? 'w-full absolute inset-0 z-40' : 'hidden'
+          : 'w-72'
+      } border-r border-blue-200 dark:border-blue-900 flex flex-col bg-white dark:bg-slate-900 shadow-sm`}>
+        <div className="p-3 sm:p-4 border-b border-blue-100 dark:border-blue-900 space-y-3 bg-gradient-to-b from-blue-50 to-white dark:from-blue-950 dark:to-slate-900">
           <div className="flex items-center gap-2 mb-2">
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center">
               <FileText className="h-5 w-5 text-white" />
             </div>
-            <h2 className="text-lg font-bold bg-gradient-to-r from-blue-600 to-blue-700 dark:from-blue-400 dark:to-blue-300 bg-clip-text text-transparent">
+            <h2 className="text-lg font-bold bg-gradient-to-r from-blue-600 to-blue-700 dark:from-blue-400 dark:to-blue-300 bg-clip-text text-transparent flex-1">
               Notes
             </h2>
+            {isMobile && (
+              <button
+                onClick={() => setShowMobileSidebar(false)}
+                className="p-1.5 rounded-lg hover:bg-blue-100 dark:hover:bg-slate-800 text-blue-500"
+                aria-label="Close sidebar"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            )}
           </div>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-blue-400" />
@@ -1012,22 +1160,78 @@ ${noteContent}`;
                       {subjectNotes.map((note) => {
                         const isSelected = selectedNoteId === note.id;
                         return (
-                          <Button
-                            key={note.id}
-                            variant={isSelected ? "secondary" : "ghost"}
-                            size="sm"
-                            className={`w-full justify-start gap-2 group ${
-                              isSelected
-                                ? "bg-blue-100 dark:bg-blue-950 text-blue-900 dark:text-blue-100"
-                                : ""
-                            }`}
-                            onClick={() => setSelectedNoteId(note.id)}
-                            data-testid={`button-note-${note.id}`}
-                          >
-                            <FileText className={`h-4 w-4 ${isSelected ? "text-blue-600" : "text-slate-400"}`} />
-                            <span className="flex-1 text-left truncate text-sm">{note.title}</span>
-                            {isSelected && <CheckCircle2 className="h-4 w-4 text-blue-600 flex-shrink-0" />}
-                          </Button>
+                          <div key={note.id} className="flex items-center group/note">
+                            <Button
+                              variant={isSelected ? "secondary" : "ghost"}
+                              size="sm"
+                              className={`flex-1 justify-start gap-2 ${
+                                isSelected
+                                  ? "bg-blue-100 dark:bg-blue-950 text-blue-900 dark:text-blue-100"
+                                  : ""
+                              }`}
+                              onClick={() => {
+                                setSelectedNoteId(note.id);
+                                if (isMobile) setShowMobileSidebar(false);
+                              }}
+                              data-testid={`button-note-${note.id}`}
+                            >
+                              <FileText className={`h-4 w-4 flex-shrink-0 ${isSelected ? "text-blue-600" : "text-slate-400"}`} />
+                              <span className="flex-1 text-left truncate text-sm">{note.title}</span>
+                              {isSelected && <CheckCircle2 className="h-4 w-4 text-blue-600 flex-shrink-0" />}
+                            </Button>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7 flex-shrink-0 opacity-0 group-hover/note:opacity-100 transition-opacity"
+                                  onClick={(e) => e.stopPropagation()}
+                                  data-testid={`button-note-actions-${note.id}`}
+                                >
+                                  <MoreVertical className="h-3.5 w-3.5" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end" className="w-48">
+                                <DropdownMenuItem
+                                  className="gap-2 text-sm"
+                                  onClick={() => {
+                                    setSelectedNoteId(note.id);
+                                    // Focus the title input for editing
+                                    setTimeout(() => {
+                                      const titleInput = document.querySelector('[data-testid="input-note-title"]') as HTMLInputElement;
+                                      titleInput?.focus();
+                                      titleInput?.select();
+                                    }, 100);
+                                  }}
+                                >
+                                  <Edit2 className="h-3.5 w-3.5" />
+                                  Edit
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  className="gap-2 text-sm"
+                                  onClick={() => openMoveDialog(note.id)}
+                                >
+                                  <FolderInput className="h-3.5 w-3.5" />
+                                  Move to Folder
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  className="gap-2 text-sm"
+                                  onClick={() => handleExportNoteById(note.id)}
+                                >
+                                  <Download className="h-3.5 w-3.5" />
+                                  Export
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem
+                                  className="gap-2 text-sm text-destructive"
+                                  onClick={() => handleDeleteNoteById(note.id)}
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                  Delete
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
                         );
                       })}
                     </div>
@@ -1040,19 +1244,19 @@ ${noteContent}`;
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col bg-white dark:bg-slate-900">
+      <div className={`flex-1 flex flex-col bg-white dark:bg-slate-900 ${isMobile && showMobileSidebar ? 'hidden' : ''}`}>
         {selectedNoteId ? (
           <>
             {/* Header */}
-            <div className="border-b border-blue-200 dark:border-blue-900 px-6 py-4 flex items-center justify-between gap-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-slate-900 dark:to-slate-800">
-              <div className="flex-1">
+            <div className="border-b border-blue-200 dark:border-blue-900 px-3 sm:px-6 py-3 sm:py-4 flex items-center justify-between gap-2 sm:gap-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-slate-900 dark:to-slate-800">
+              <div className="flex-1 min-w-0">
                 <Input
                   value={noteTitle}
                   onChange={(e) => {
                     setNoteTitle(e.target.value);
                     setIsSaved(false);
                   }}
-                  className="text-2xl font-bold border-0 bg-transparent focus-visible:ring-0 px-0 focus-visible:outline-none"
+                  className="text-lg sm:text-2xl font-bold border-0 bg-transparent focus-visible:ring-0 px-0 focus-visible:outline-none"
                   placeholder="Untitled Note"
                   data-testid="input-note-title"
                 />
@@ -1140,6 +1344,22 @@ ${noteContent}`;
                       <span>Export as TXT</span>
                     </DropdownMenuItem>
                     
+                    <DropdownMenuItem 
+                      className="gap-2"
+                      onClick={handleExportPDF}
+                    >
+                      <FileDown className="h-4 w-4" />
+                      <span>Export as PDF</span>
+                    </DropdownMenuItem>
+                    
+                    <DropdownMenuItem 
+                      className="gap-2"
+                      onClick={() => selectedNoteId && openMoveDialog(selectedNoteId)}
+                    >
+                      <FolderInput className="h-4 w-4" />
+                      <span>Move to Folder</span>
+                    </DropdownMenuItem>
+                    
                     <DropdownMenuSeparator />
                     
                     <DropdownMenuItem 
@@ -1156,7 +1376,7 @@ ${noteContent}`;
             </div>
 
             {/* Tags Bar */}
-            <div className="px-6 py-3 border-b border-blue-100 dark:border-blue-900 flex items-center gap-2 flex-wrap">
+            <div className="px-3 sm:px-6 py-2 sm:py-3 border-b border-blue-100 dark:border-blue-900 flex items-center gap-2 flex-wrap">
               <Tag className="h-4 w-4 text-blue-500" />
               {noteTags.map((tag) => (
                 <Badge
@@ -1186,7 +1406,7 @@ ${noteContent}`;
             </div>
 
             {/* Formatting Toolbar */}
-            <div className="px-6 py-2 border-b border-blue-100 dark:border-blue-900 flex items-center gap-1 flex-wrap bg-slate-50 dark:bg-slate-800/50">
+            <div className="px-3 sm:px-6 py-2 border-b border-blue-100 dark:border-blue-900 flex items-center gap-1 flex-wrap bg-slate-50 dark:bg-slate-800/50">
               <div className="flex items-center gap-1">
                 <FormatButton icon={Bold} label="Bold" shortcut="Ctrl+B" onClick={() => insertFormat('**', '**')} disabled={previewMode} />
                 <FormatButton icon={Italic} label="Italic" shortcut="Ctrl+I" onClick={() => insertFormat('*', '*')} disabled={previewMode} />
@@ -1301,7 +1521,7 @@ ${noteContent}`;
             </div>
 
             {/* Smart Note Types & Learning Tools Bar */}
-            <div className="px-6 py-2 border-b border-blue-100 dark:border-blue-900 flex items-center gap-3 flex-wrap bg-gradient-to-r from-teal-50/50 to-cyan-50/50 dark:from-teal-950/30 dark:to-cyan-950/30">
+            <div className="px-3 sm:px-6 py-2 border-b border-blue-100 dark:border-blue-900 flex items-center gap-2 sm:gap-3 flex-wrap bg-gradient-to-r from-teal-50/50 to-cyan-50/50 dark:from-teal-950/30 dark:to-cyan-950/30">
               <div className="flex items-center gap-2">
                 <span className="text-xs font-medium text-muted-foreground">Type:</span>
                 <Select value={selectedNoteType} onValueChange={setSelectedNoteType}>
@@ -1746,7 +1966,7 @@ Markdown formatting is supported:
               Delete Note?
             </AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. The note "{noteTitle}" will be permanently deleted.
+              This action cannot be undone. The note "{deleteNoteTrigger ? (notes.find(n => n.id === deleteNoteTrigger)?.title || noteTitle) : noteTitle}" will be permanently deleted.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-3 flex items-start gap-2">
@@ -1768,6 +1988,81 @@ Markdown formatting is supported:
           </AlertDialogAction>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Move to Folder Dialog */}
+      <Dialog open={showMoveDialog} onOpenChange={setShowMoveDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FolderInput className="h-5 w-5 text-blue-600" />
+              Move to Folder
+            </DialogTitle>
+            <DialogDescription>
+              Move "{moveNoteId ? (notes.find(n => n.id === moveNoteId)?.title || "this note") : "this note"}" to a different folder (subject).
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Select Folder</label>
+              <Select value={moveTargetFolder} onValueChange={setMoveTargetFolder}>
+                <SelectTrigger data-testid="select-move-folder">
+                  <SelectValue placeholder="Choose a folder..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {allFolders.map((folder) => (
+                    <SelectItem key={folder} value={folder}>
+                      <div className="flex items-center gap-2">
+                        <Folder className="h-3.5 w-3.5 text-blue-400" />
+                        {folder}
+                      </div>
+                    </SelectItem>
+                  ))}
+                  <SelectItem value="__new__">
+                    <div className="flex items-center gap-2">
+                      <Plus className="h-3.5 w-3.5 text-green-500" />
+                      Create new folder...
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {moveTargetFolder === "__new__" && (
+              <div className="space-y-2">
+                <label className="text-sm font-medium">New Folder Name</label>
+                <Input
+                  value={newFolderName}
+                  onChange={(e) => setNewFolderName(e.target.value)}
+                  placeholder="e.g., Mathematics, History..."
+                  data-testid="input-new-folder-name"
+                  autoFocus
+                />
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowMoveDialog(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleMoveNote}
+              disabled={
+                updateNoteMutation.isPending ||
+                (!moveTargetFolder) ||
+                (moveTargetFolder === "__new__" && !newFolderName.trim())
+              }
+              className="bg-blue-600 hover:bg-blue-700"
+              data-testid="button-confirm-move-note"
+            >
+              {updateNoteMutation.isPending ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <ArrowRightLeft className="h-4 w-4 mr-2" />
+              )}
+              Move Note
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Flashcard Dialog */}
       <Dialog open={showFlashcardDialog} onOpenChange={setShowFlashcardDialog}>

@@ -548,31 +548,31 @@ export default function Flashcards() {
   if (view === "session-summary" && sessionSummary) {
     return (
       <div className="flex-1 overflow-auto bg-gradient-to-b from-emerald-50 to-teal-50 dark:from-emerald-950 dark:to-teal-950">
-        <div className="max-w-4xl mx-auto p-6 space-y-6">
+        <div className="max-w-4xl mx-auto p-3 sm:p-6 space-y-6">
           <div className="text-center space-y-2">
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 mb-4">
               <CheckCircle2 className="h-8 w-8 text-white" />
             </div>
-            <h1 className="text-3xl font-bold">Session Complete!</h1>
-            <p className="text-lg text-muted-foreground">{sessionSummary.encouragement}</p>
+            <h1 className="text-2xl sm:text-3xl font-bold">Session Complete!</h1>
+            <p className="text-sm sm:text-lg text-muted-foreground">{sessionSummary.encouragement}</p>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <Card className="text-center p-4">
-              <p className="text-3xl font-bold text-emerald-600">{sessionSummary.summary.totalCards}</p>
-              <p className="text-sm text-muted-foreground">Cards Reviewed</p>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+            <Card className="text-center p-3 sm:p-4">
+              <p className="text-2xl sm:text-3xl font-bold text-emerald-600">{sessionSummary.summary.totalCards}</p>
+              <p className="text-xs sm:text-sm text-muted-foreground">Cards Reviewed</p>
             </Card>
-            <Card className="text-center p-4">
-              <p className="text-3xl font-bold text-blue-600">{sessionSummary.summary.accuracy}%</p>
-              <p className="text-sm text-muted-foreground">Accuracy</p>
+            <Card className="text-center p-3 sm:p-4">
+              <p className="text-2xl sm:text-3xl font-bold text-blue-600">{sessionSummary.summary.accuracy}%</p>
+              <p className="text-xs sm:text-sm text-muted-foreground">Accuracy</p>
             </Card>
-            <Card className="text-center p-4">
-              <p className="text-3xl font-bold text-green-600">{sessionSummary.summary.correctCount}</p>
-              <p className="text-sm text-muted-foreground">Good/Easy</p>
+            <Card className="text-center p-3 sm:p-4">
+              <p className="text-2xl sm:text-3xl font-bold text-green-600">{sessionSummary.summary.correctCount}</p>
+              <p className="text-xs sm:text-sm text-muted-foreground">Good/Easy</p>
             </Card>
-            <Card className="text-center p-4">
-              <p className="text-3xl font-bold text-orange-600">{sessionSummary.summary.strugglingCount}</p>
-              <p className="text-sm text-muted-foreground">Need Practice</p>
+            <Card className="text-center p-3 sm:p-4">
+              <p className="text-2xl sm:text-3xl font-bold text-orange-600">{sessionSummary.summary.strugglingCount}</p>
+              <p className="text-xs sm:text-sm text-muted-foreground">Need Practice</p>
             </Card>
           </div>
 
@@ -915,15 +915,15 @@ export default function Flashcards() {
     
     return (
       <div className="flex-1 overflow-auto bg-gradient-to-b from-emerald-50 to-teal-50 dark:from-emerald-950 dark:to-teal-950">
-        <div className="max-w-7xl mx-auto p-6 space-y-8">
+        <div className="max-w-7xl mx-auto p-3 sm:p-6 space-y-6 sm:space-y-8">
           {/* Hero Section */}
-          <div className="bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-600 rounded-2xl p-8 text-white shadow-xl">
+          <div className="bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-600 rounded-2xl p-4 sm:p-8 text-white shadow-xl">
             <div className="flex items-start justify-between flex-wrap gap-4">
               <div>
-                <h1 className="text-4xl md:text-5xl font-bold mb-2">Smart Flashcards</h1>
-                <p className="text-lg opacity-90 max-w-2xl">Intelligent spaced repetition that adapts to your learning</p>
+                <h1 className="text-2xl sm:text-4xl md:text-5xl font-bold mb-2">Smart Flashcards</h1>
+                <p className="text-sm sm:text-lg opacity-90 max-w-2xl">Intelligent spaced repetition that adapts to your learning</p>
               </div>
-              <Brain className="h-16 w-16 opacity-50" />
+              <Brain className="h-12 w-12 sm:h-16 sm:w-16 opacity-50 hidden sm:block" />
             </div>
           </div>
 
@@ -937,27 +937,27 @@ export default function Flashcards() {
                 </CardTitle>
                 <CardDescription>AI-prioritized cards based on your learning patterns</CardDescription>
               </CardHeader>
-              <CardContent className="p-6">
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
-                  <div className="text-center p-3 bg-slate-100 dark:bg-slate-800 rounded-lg">
-                    <p className="text-2xl font-bold text-slate-700 dark:text-slate-200">{stats?.totalCards ?? 0}</p>
-                    <p className="text-xs text-muted-foreground">Total Cards</p>
+              <CardContent className="p-4 sm:p-6">
+                <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 sm:gap-4 mb-6">
+                  <div className="text-center p-2 sm:p-3 bg-slate-100 dark:bg-slate-800 rounded-lg">
+                    <p className="text-lg sm:text-2xl font-bold text-slate-700 dark:text-slate-200">{stats?.totalCards ?? 0}</p>
+                    <p className="text-[10px] sm:text-xs text-muted-foreground">Total Cards</p>
                   </div>
-                  <div className="text-center p-3 bg-red-100 dark:bg-red-900/30 rounded-lg">
-                    <p className="text-2xl font-bold text-red-600">{stats?.dueNow ?? 0}</p>
-                    <p className="text-xs text-muted-foreground">Due Now</p>
+                  <div className="text-center p-2 sm:p-3 bg-red-100 dark:bg-red-900/30 rounded-lg">
+                    <p className="text-lg sm:text-2xl font-bold text-red-600">{stats?.dueNow ?? 0}</p>
+                    <p className="text-[10px] sm:text-xs text-muted-foreground">Due Now</p>
                   </div>
-                  <div className="text-center p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                    <p className="text-2xl font-bold text-blue-600">{stats?.new ?? 0}</p>
-                    <p className="text-xs text-muted-foreground">New</p>
+                  <div className="text-center p-2 sm:p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                    <p className="text-lg sm:text-2xl font-bold text-blue-600">{stats?.new ?? 0}</p>
+                    <p className="text-[10px] sm:text-xs text-muted-foreground">New</p>
                   </div>
-                  <div className="text-center p-3 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
-                    <p className="text-2xl font-bold text-orange-600">{stats?.struggling ?? 0}</p>
-                    <p className="text-xs text-muted-foreground">Struggling</p>
+                  <div className="text-center p-2 sm:p-3 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
+                    <p className="text-lg sm:text-2xl font-bold text-orange-600">{stats?.struggling ?? 0}</p>
+                    <p className="text-[10px] sm:text-xs text-muted-foreground">Struggling</p>
                   </div>
-                  <div className="text-center p-3 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg">
-                    <p className="text-2xl font-bold text-emerald-600">{stats?.mastered ?? 0}</p>
-                    <p className="text-xs text-muted-foreground">Mastered</p>
+                  <div className="text-center p-2 sm:p-3 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg">
+                    <p className="text-lg sm:text-2xl font-bold text-emerald-600">{stats?.mastered ?? 0}</p>
+                    <p className="text-[10px] sm:text-xs text-muted-foreground">Mastered</p>
                   </div>
                 </div>
 
@@ -1018,18 +1018,18 @@ export default function Flashcards() {
           )}
 
           {/* Action Buttons */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-4">
             <Button
               onClick={() => setView("create-deck")}
-              className="h-20 bg-gradient-to-br from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white text-lg font-semibold rounded-xl"
+              className="h-14 sm:h-20 bg-gradient-to-br from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white text-sm sm:text-lg font-semibold rounded-xl"
               data-testid="button-create-deck"
             >
-              <Plus className="h-6 w-6 mr-2" />
+              <Plus className="h-5 w-5 sm:h-6 sm:w-6 mr-2" />
               Create New Deck
             </Button>
             <Button
               variant="outline"
-              className="h-20 border-2 border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-300 text-lg font-semibold rounded-xl hover:bg-emerald-50 dark:hover:bg-emerald-950"
+              className="h-14 sm:h-20 border-2 border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-300 text-sm sm:text-lg font-semibold rounded-xl hover:bg-emerald-50 dark:hover:bg-emerald-950"
               onClick={() => setShowStudySettings(!showStudySettings)}
               data-testid="button-study-settings"
             >
