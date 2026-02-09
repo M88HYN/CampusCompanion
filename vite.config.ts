@@ -32,6 +32,7 @@ export default defineConfig({
     emptyOutDir: true,
   },
   server: {
+    host: "localhost",
     port: 5173,
     strictPort: true, // FAIL if port 5173 is occupied - NO fallback
     fs: {
@@ -41,7 +42,7 @@ export default defineConfig({
     // Proxy /api requests to backend for local dev (matches Replit single-origin behavior)
     proxy: {
       "/api": {
-        target: "http://127.0.0.1:3000",
+        target: "http://localhost:3000",
         changeOrigin: true,
         secure: false,
       },

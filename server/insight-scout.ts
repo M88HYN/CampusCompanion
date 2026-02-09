@@ -11,6 +11,7 @@ const researchQuerySchema = z.object({
   query: z.string().min(1, "Query is required"),
   searchDepth: z.enum(["quick", "balanced", "comprehensive"]).default("balanced"),
   responseType: z.enum(["explanation", "summary", "comparison", "analysis", "examples", "study_tips", "mistakes"]).default("explanation"),
+  studyIntent: z.enum(["exam_prep", "deep_understanding", "assignment_writing", "revision_recall", "quick_clarification"]).default("deep_understanding"),
   conversationId: z.string().nullable().optional(),
 });
 
@@ -55,7 +56,7 @@ export function registerInsightScoutRoutes(app: Express): void {
         return res.status(400).json({ error: parseResult.error.errors[0]?.message || "Invalid request" });
       }
       
-      const { query, searchDepth, responseType, conversationId } = parseResult.data;
+      const { query, searchDepth, responseType, studyIntent, conversationId } = parseResult.data;
       let convoId = conversationId || "temp-" + Math.random().toString(36).substring(7);
       
       // For now, skip database storage and just return a stub response
@@ -64,6 +65,14 @@ export function registerInsightScoutRoutes(app: Express): void {
         balanced: "Provide a well-structured answer with appropriate depth.",
         comprehensive: "Provide an in-depth, thorough response with examples, explanations, and related concepts.",
       }[searchDepth];
+
+      const intentInstruction = {
+        exam_prep: "The student is preparing for exams. Focus on key testable concepts, mark scheme points, potential exam questions, and concise revision-friendly formatting. Highlight what examiners look for.",
+        deep_understanding: "The student wants to deeply understand this topic. Provide thorough explanations, underlying principles, connections to related concepts, and build intuition step by step.",
+        assignment_writing: "The student is writing an assignment. Provide academically rigorous content suitable for essays or reports, with structured arguments, evidence-based reasoning, and proper academic framing.",
+        revision_recall: "The student is revising. Provide concise, memorable summaries with mnemonics, key definitions, and quick-reference material. Focus on retention and recall aids.",
+        quick_clarification: "The student needs a quick clarification. Be concise and direct. Answer the specific question without unnecessary elaboration. Get straight to the point.",
+      }[studyIntent];
 
       const typeInstruction = {
         explanation: "Provide a detailed explanation of this concept with step-by-step reasoning. Break down complex ideas into understandable parts and use clear examples.",
@@ -77,7 +86,7 @@ export function registerInsightScoutRoutes(app: Express): void {
 
       const chatMessages: OpenAI.ChatCompletionMessageParam[] = [
         { role: "system", content: SYSTEM_PROMPT },
-        { role: "user", content: `${depthInstruction} ${typeInstruction}\n\nQuery: ${query}` },
+        { role: "user", content: `${depthInstruction} ${typeInstruction}\n\nStudent's study intent: ${intentInstruction}\n\nStructure your response with these clearly labeled sections where applicable:\n1. **Key Insight** — A bold one-sentence summary of the main takeaway\n2. **Explanation** — The detailed answer\n3. **Examples** — Concrete examples or applications\n4. **Common Mistakes** — Pitfalls to avoid\n5. **Exam Relevance** — How this might appear in exams\n\nQuery: ${query}` },
       ];
 
       res.setHeader("Content-Type", "text/event-stream");

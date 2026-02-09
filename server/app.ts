@@ -127,7 +127,7 @@ export default async function runApp(
   // Run setup
   await setup(app, server);
 
-  const host = process.env.NODE_ENV === 'production' ? '0.0.0.0' : '127.0.0.1';
+  const host = process.env.NODE_ENV === 'production' ? '0.0.0.0' : 'localhost';
   const PORT = 3000; // FIXED PORT - NO AUTO-INCREMENT
 
   // FAIL-FAST: If port is occupied, crash immediately with clear error
@@ -150,7 +150,7 @@ export default async function runApp(
   server.listen(PORT, host, () => {
     log(`✅ Backend API server ready at http://${host}:${PORT}`);
     if (process.env.NODE_ENV === 'development') {
-      log(`📱 Frontend will be available at http://127.0.0.1:5173`, "express");
+      log(`📱 Frontend will be available at http://localhost:5173`, "express");
       log(`🔗 API requests from frontend will be proxied to http://${host}:${PORT}`, "express");
     }
   });
