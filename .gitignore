@@ -10,3 +10,16 @@ vite.config.ts.*
 coverage
 .bin
 *.bin
+
+# Replit artifacts
+.local/
+.config/
+.replit
+replit.md
+
+# Logs
+*.log
+
+# IDE
+.vscode/
+.idea/
