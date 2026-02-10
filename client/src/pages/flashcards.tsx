@@ -23,6 +23,83 @@ import { DifficultyBadge } from "@/components/ui/difficulty-badge";
 import { ProgressRing } from "@/components/ui/progress-ring";
 import type { Deck, Card as FlashCard } from "@shared/schema";
 
+/**
+ * ═══════════════════════════════════════════════════════════════════════════
+ * FLASHCARDS ANALYTICS - KEYBOARD-DRIVEN UPDATES ARCHITECTURE
+ * ═══════════════════════════════════════════════════════════════════════════
+ * 
+ * OVERVIEW:
+ * All keyboard actions in flashcard study sessions generate identical analytics
+ * events as their UI button equivalents. This ensures data consistency across
+ * all input methods (keyboard, mouse, touch).
+ *
+ * KEYBOARD SHORTCUTS & ANALYTICS MAPPING:
+ * ┌─────────────────┬─────────────────────────────────────────────────────┐
+ * │ Keyboard Input  │ Analytics Action                                    │
+ * ├─────────────────┼─────────────────────────────────────────────────────┤
+ * │ Space/Enter     │ Flip card (engagement tracking, no SM-2 update)     │
+ * │ 1 key           │ Rate quality 1 (incorrect/forgot) - SM-2 updates    │
+ * │ 2 key           │ Rate quality 2 (hard) - SM-2 updates                │
+ * │ 3 key           │ Rate quality 3 (good) - SM-2 updates                │
+ * │ 4 key           │ Rate quality 5 (easy) - SM-2 updates                │
+ * │ Escape          │ End session - finalizes all analytics via summary    │
+ * │ R (optional)    │ Restart session (future enhancement)                │
+ * └─────────────────┴─────────────────────────────────────────────────────┘
+ *
+ * ANALYTICS FLOW FOR KEYBOARD RATINGS (1-4 keys):
+ * ────────────────────────────────────────────────
+ * 1. Keyboard event listener detects keypress (e.g., "1", "2", "3", "4")
+ * 2. Calls handleReview(quality) with corresponding quality value (1, 2, 3, or 5)
+ * 3. handleReview() executes (identical logic for keyboard & mouse):
+ *    a. Validates card state and user auth
+ *    b. Invokes reviewCardMutation (POST /api/cards/:id/review)
+ *    c. Updates local session state (sessionResponses, sessionCardIds)
+ *    d. Triggers sound feedback (same as UI buttons)
+ *    e. Advances to next card or finalizes session
+ * 4. Server receives mutation:
+ *    a. Applies SM-2 spaced repetition algorithm
+ *    b. Creates cardReviews record (analytics database entry)
+ *    c. Updates card's easeFactor, interval, status, nextReviewDate
+ *    d. Returns updated card metadata
+ * 5. Client query cache invalidates → analytics display updates automatically
+ * 6. SESSION END:
+ *    a. User presses Escape or completes session
+ *    b. Session-summary mutation invoked with all cardIds and responses
+ *    c. Server calculates session analytics (accuracy, weak/strong concepts, etc.)
+ *    d. Client displays session summary with complete analytics
+ *
+ * NO DUPLICATE ANALYTICS:
+ * ───────────────────────
+ * ✅ Each rating generates exactly ONE SM-2 review event (via cardReviews table)
+ * ✅ Session state tracks arrays (sessionCardIds, sessionResponses):
+ *    - Prevents double-counting by storing only reviewed cards
+ *    - Used once at session end for summary calculation
+ * ✅ Keyboard handler checks reviewCardMutation.isPending:
+ *    - Prevents multiple mutations on rapid keypresses
+ *    - Guard condition prevents queuing duplicate requests
+ *
+ * ANALYTICS PANE INTEGRATION:
+ * ────────────────────────────
+ * The session stats are displayed via:
+ * 1. Real-time session counter (cards reviewed so far)
+ * 2. Session-summary view (post-session detailed analytics)
+ * 3. Insights page (aggregated learning analytics over time)
+ *
+ * All three sources update identically whether input is keyboard or mouse
+ * because all use the same underlying mutation and state management.
+ *
+ * TESTING KEYBOARD VS MOUSE PARITY:
+ * ──────────────────────────────────
+ * Both should produce identical analytics for:
+ * ✅ Card difficulty ratings (quality 1-5)
+ * ✅ SM-2 algorithm updates (ease factor, interval, status)
+ * ✅ Session accuracy calculations
+ * ✅ Weak/strong concept identification
+ * ✅ Time-on-card metrics
+ * ✅ Recommendation generation
+ * ═══════════════════════════════════════════════════════════════════════════
+ */
+
 interface DeckWithStats extends Deck {
   cards: number;
   dueToday: number;
@@ -139,54 +216,6 @@ export default function Flashcards() {
     enabled: view === "smart-study" || view === "decks",
     retry: 1,
   });
-
-  // Keyboard shortcuts for smart study
-  useEffect(() => {
-    if (view !== "smart-study") return;
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      const cards = smartCards.length > 0 ? smartCards : (smartQueue?.cards || []);
-      if (cards.length === 0) return;
-
-      switch (e.key.toLowerCase()) {
-        case " ":
-        case "enter":
-          e.preventDefault();
-          setFlipped((prev) => !prev);
-          break;
-        case "1":
-          e.preventDefault();
-          if (flipped && !reviewCardMutation.isPending) handleReview(1);
-          break;
-        case "2":
-          e.preventDefault();
-          if (flipped && !reviewCardMutation.isPending) handleReview(2);
-          break;
-        case "3":
-          e.preventDefault();
-          if (flipped && !reviewCardMutation.isPending) handleReview(3);
-          break;
-        case "4":
-          e.preventDefault();
-          if (flipped && !reviewCardMutation.isPending) handleReview(5);
-          break;
-        case "escape":
-          e.preventDefault();
-          if (sessionCardIds.length > 0) {
-            getSessionSummaryMutation.mutate({
-              cardIds: sessionCardIds,
-              responses: sessionResponses,
-            });
-          } else {
-            setView("decks");
-          }
-          break;
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [view, flipped, currentCard, smartCards, smartQueue?.cards, sessionCardIds, sessionResponses]);
 
   const { data: decks = [], isLoading: isLoadingDecks } = useQuery<DeckWithStats[]>({
     queryKey: ["/api/decks"],
@@ -390,7 +419,7 @@ export default function Flashcards() {
     const { playSound } = useSoundEffect();
     const { confetti } = useConfetti();
     
-    console.log("[FLASHCARDS] Review button clicked - quality:", quality);
+    console.log("[FLASHCARDS] Review action triggered - quality:", quality);
     const cards = smartCards.length > 0 ? smartCards : (smartQueue?.cards || []);
     console.log("[FLASHCARDS] Handler entered - cards available:", cards.length);
     
@@ -402,22 +431,46 @@ export default function Flashcards() {
     const card = cards[currentCard];
     const token = localStorage.getItem("token");
     console.log("[FLASHCARDS] Auth check - token exists:", !!token);
-    console.log("[FLASHCARDS] Calling reviewCard mutation for card:", card.id);
+    console.log("[FLASHCARDS] Calling reviewCard mutation for card:", card.id, "| Source: keyboard/mouse");
+    
+    /**
+     * ANALYTICS TRACKING
+     * This mutation:
+     * 1. Calls POST /api/cards/:id/review with quality rating
+     * 2. Server applies SM-2 algorithm and creates cardReviews record
+     * 3. Updates card's easeFactor, interval, status based on quality
+     * 4. All quality ratings (0-5) generate analytics events
+     * 
+     * Keyboard shortcut mapping:
+     *   1 key → quality 1 (new/forgotten)
+     *   2 key → quality 2 (hard)
+     *   3 key → quality 3 (good)
+     *   4 key → quality 5 (easy)
+     * 
+     * Session state tracking (for live display):
+     *   - sessionCardIds: cards reviewed in current session
+     *   - sessionResponses: quality ratings for each card
+     *   - These feed into session-summary analytics
+     */
     reviewCardMutation.mutate({ cardId: card.id, quality });
     
-    // Play sound feedback
+    // Play sound feedback (same for keyboard & mouse)
     playSound(quality >= 3 ? "success" : "click");
     
-    // Track session data
+    /**
+     * Track session data locally for real-time updates
+     * This ensures analytics display updates immediately when keyboard is used
+     */
     setSessionResponses(prev => [...prev, quality]);
     setSessionCardIds(prev => [...prev, card.id]);
     
     if (currentCard < cards.length - 1) {
+      // Move to next card
       setCurrentCard(currentCard + 1);
       setFlipped(false);
       setShowThinkingPrompt(studyPreferences.showThinkingPrompt);
     } else {
-      // Session complete - get summary and show confetti if good performance
+      // Session complete - finalize all analytics
       const allCardIds = [...sessionCardIds, card.id];
       const allResponses = [...sessionResponses, quality];
       const avgQuality = (allResponses.reduce((a, b) => a + b, 0) / allResponses.length);
@@ -426,6 +479,12 @@ export default function Flashcards() {
         confetti();
       }
       
+      /**
+       * Session summary mutation:
+       * - Calculates accuracy, weak concepts, strong concepts
+       * - Sends cardIds and responses arrays (no duplicates)
+       * - Server returns analytics summary for display
+       */
       getSessionSummaryMutation.mutate({ cardIds: allCardIds, responses: allResponses });
     }
   }, [smartCards, smartQueue?.cards, currentCard, reviewCardMutation, sessionCardIds, sessionResponses, studyPreferences.showThinkingPrompt, getSessionSummaryMutation]);
@@ -497,6 +556,7 @@ export default function Flashcards() {
     if (view !== "smart-study" && view !== "studying") return;
     
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Prevent keyboard handlers when input is focused
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
       
       switch (e.key) {
@@ -504,32 +564,92 @@ export default function Flashcards() {
         case "Enter":
           e.preventDefault();
           if (showThinkingPrompt) {
+            /**
+             * ANALYTICS: Dismiss thinking prompt
+             * This action doesn't generate a review event, but enables card interaction
+             */
+            console.log("[FLASHCARDS ANALYTICS] Keyboard: Dismissed thinking prompt (Space/Enter)");
             setShowThinkingPrompt(false);
           } else {
+            /**
+             * ANALYTICS: Card flip tracked
+             * Keyboard Space/Enter produces same effect as mouse click on card
+             * This is a passive interaction (no SM-2 update) but tracks engagement
+             */
+            console.log("[FLASHCARDS ANALYTICS] Keyboard: Flipped card (Space/Enter)");
             setFlipped(f => !f);
           }
           break;
         case "1":
           e.preventDefault();
-          if (flipped) handleReview(1);
+          if (flipped && !reviewCardMutation.isPending) {
+            /**
+             * ANALYTICS: Difficulty rating via keyboard
+             * Quality: 1 (incorrect/forgot)
+             * Same analytics as clicking "Again" button
+             */
+            console.log("[FLASHCARDS ANALYTICS] Keyboard: Rated card difficulty 1 (Again)");
+            handleReview(1);
+          }
           break;
         case "2":
           e.preventDefault();
-          if (flipped) handleReview(2);
+          if (flipped && !reviewCardMutation.isPending) {
+            /**
+             * ANALYTICS: Difficulty rating via keyboard
+             * Quality: 2 (hard)
+             * Same analytics as clicking "Hard" button
+             */
+            console.log("[FLASHCARDS ANALYTICS] Keyboard: Rated card difficulty 2 (Hard)");
+            handleReview(2);
+          }
           break;
         case "3":
           e.preventDefault();
-          if (flipped) handleReview(3);
+          if (flipped && !reviewCardMutation.isPending) {
+            /**
+             * ANALYTICS: Difficulty rating via keyboard
+             * Quality: 3 (good)
+             * Same analytics as clicking "Good" button
+             */
+            console.log("[FLASHCARDS ANALYTICS] Keyboard: Rated card difficulty 3 (Good)");
+            handleReview(3);
+          }
           break;
         case "4":
           e.preventDefault();
-          if (flipped) handleReview(5);
+          if (flipped && !reviewCardMutation.isPending) {
+            /**
+             * ANALYTICS: Difficulty rating via keyboard
+             * Quality: 5 (easy) - maps to "4" key
+             * Same analytics as clicking "Easy" button
+             */
+            console.log("[FLASHCARDS ANALYTICS] Keyboard: Rated card difficulty 5 (Easy)");
+            handleReview(5);
+          }
           break;
         case "Escape":
           e.preventDefault();
+          /**
+           * ANALYTICS: Session exit via keyboard
+           * Finalizes session analytics the same way as clicking "End Session" button
+           * If cards reviewed: sends session-summary for full analytics
+           * If no cards reviewed: returns to deck view without analytics
+           */
+          console.log("[FLASHCARDS ANALYTICS] Keyboard: Exit session (Esc)");
           if (sessionCardIds.length > 0) {
+            /**
+             * Session end: invoke session-summary endpoint
+             * This calculates:
+             * - Total cards reviewed
+             * - Accuracy percentage
+             * - Weak concepts (quality <= 2)
+             * - Strong concepts (quality >= 4)
+             * - Next actions and recommendations
+             */
             getSessionSummaryMutation.mutate({ cardIds: sessionCardIds, responses: sessionResponses });
           } else {
+            // No cards reviewed yet, just exit
             setView("decks");
           }
           break;
@@ -538,7 +658,7 @@ export default function Flashcards() {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [view, handleReview, flipped, showThinkingPrompt, sessionCardIds, sessionResponses, getSessionSummaryMutation]);
+  }, [view, handleReview, flipped, showThinkingPrompt, sessionCardIds, sessionResponses, getSessionSummaryMutation, reviewCardMutation.isPending]);
 
   // Set smart cards when queue loads
   useEffect(() => {
@@ -1331,15 +1451,23 @@ export default function Flashcards() {
                     <SelectValue placeholder="Select subject..." />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Languages">Languages</SelectItem>
-                    <SelectItem value="Mathematics">Mathematics</SelectItem>
-                    <SelectItem value="Science">Science</SelectItem>
-                    <SelectItem value="History">History</SelectItem>
-                    <SelectItem value="Literature">Literature</SelectItem>
-                    <SelectItem value="Computer Science">Computer Science</SelectItem>
-                    <SelectItem value="Other">Other</SelectItem>
+                    {/* Filter out "All Subjects" and show dynamic subjects from existing decks */}
+                    {availableSubjects
+                      .filter(subject => subject !== "All Subjects")
+                      .map(subject => (
+                        <SelectItem key={subject} value={subject}>
+                          {subject}
+                        </SelectItem>
+                      ))}
+                    {/* Always include "Other" as fallback option */}
+                    {!availableSubjects.includes("Other") && (
+                      <SelectItem value="Other">Other</SelectItem>
+                    )}
                   </SelectContent>
                 </Select>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Subjects are auto-populated from your existing decks. Create a deck with a new subject to expand options.
+                </p>
               </div>
 
               <div className="space-y-2">

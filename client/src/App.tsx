@@ -17,6 +17,7 @@ import Flashcards from "@/pages/flashcards";
 import Research from "@/pages/research";
 import Revision from "@/pages/revision";
 import Insights from "@/pages/insights";
+import Pomodoro from "@/pages/pomodoro";
 import Settings from "@/pages/settings";
 import Login from "@/pages/login";
 
@@ -32,6 +33,7 @@ function AppRouter() {
       <Route path="/flashcards" component={() => <Flashcards />} />
       <Route path="/research" component={() => <Research />} />
       <Route path="/revision" component={() => <Revision />} />
+      <Route path="/pomodoro" component={() => <Pomodoro />} />
       <Route path="/insights" component={() => <Insights />} />
       <Route path="/settings" component={() => <Settings />} />
       {/* Catch-all: redirect unknown routes to dashboard */}

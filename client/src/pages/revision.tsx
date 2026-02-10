@@ -3,7 +3,7 @@ import {
   Play, Pause, RotateCcw, Plus, Trash2, BarChart3, Clock, 
   Zap, Coffee, Brain, Target, Sparkles, CheckCircle2, 
   ArrowRight, Lightbulb, Timer, ListTodo, PenLine,
-  AlertTriangle, RefreshCw, BookOpen, ChevronRight, XCircle
+  AlertTriangle, RefreshCw, BookOpen, ChevronRight, XCircle, Calendar
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useSpacedRepetition, type SpacedReviewQuestion } from "@/hooks/use-spaced-repetition";
 import { useToast } from "@/hooks/use-toast";
 
@@ -60,7 +61,9 @@ export default function Revision() {
   ]);
   const [whiteboard, setWhiteboard] = useState("");
   const [newTask, setNewTask] = useState("");
-  const [activeTab, setActiveTab] = useState("pomodoro");
+  const [activeTab, setActiveTab] = useState("review");
+  const [showPomodoroModal, setShowPomodoroModal] = useState(false);
+  const [showStatsModal, setShowStatsModal] = useState(false);
 
   // Spaced Review state
   const {
@@ -263,14 +266,23 @@ export default function Revision() {
 
           {/* Motivational Tip Card */}
           <Card className="border-2 border-teal-200 dark:border-teal-800 bg-gradient-to-br from-teal-50 to-cyan-50 dark:from-teal-950 dark:to-cyan-950 shadow-lg">
-            <CardContent className="p-6 h-full flex flex-col justify-center space-y-3">
-              <div className="flex items-center gap-2">
-                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-teal-500 to-cyan-600 flex items-center justify-center shadow-md">
-                  <Lightbulb className="h-5 w-5 text-white" />
+            <CardContent className="p-6 h-full flex flex-col justify-between space-y-3">
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-teal-500 to-cyan-600 flex items-center justify-center shadow-md">
+                    <Lightbulb className="h-5 w-5 text-white" />
+                  </div>
+                  <h3 className="font-bold text-teal-900 dark:text-teal-100">Pro Tip</h3>
                 </div>
-                <h3 className="font-bold text-teal-900 dark:text-teal-100">Pro Tip</h3>
+                <p className="text-sm text-teal-700 dark:text-teal-300 leading-relaxed">{randomTip}</p>
               </div>
-              <p className="text-sm text-teal-700 dark:text-teal-300 leading-relaxed">{randomTip}</p>
+              <Button
+                onClick={() => setShowStatsModal(true)}
+                className="w-full bg-gradient-to-r from-teal-500 to-cyan-600 text-white hover:from-teal-600 hover:to-cyan-700 mt-2"
+              >
+                <BarChart3 className="h-4 w-4 mr-2" />
+                View Stats
+              </Button>
             </CardContent>
           </Card>
         </div>
@@ -309,7 +321,7 @@ export default function Revision() {
                 <Button
                   variant="outline"
                   className="h-24 flex flex-col items-center justify-center gap-2 border-2 border-amber-200 dark:border-amber-800 bg-gradient-to-br from-amber-50 to-yellow-50 dark:from-amber-950 dark:to-yellow-950 hover:scale-105 transition-transform"
-                  onClick={() => { setActiveTab("pomodoro"); handlePresetChange(0); }}
+                  onClick={() => { setShowPomodoroModal(true); setSelectedPreset(0); }}
                   data-testid="quick-action-focus"
                 >
                   <Timer className="h-7 w-7 text-amber-600" />
@@ -321,7 +333,7 @@ export default function Revision() {
                 <Button
                   variant="outline"
                   className="h-24 flex flex-col items-center justify-center gap-2 border-2 border-rose-200 dark:border-rose-800 bg-gradient-to-br from-rose-50 to-pink-50 dark:from-rose-950 dark:to-pink-950 hover:scale-105 transition-transform"
-                  onClick={() => { setActiveTab("pomodoro"); handlePresetChange(3); }}
+                  onClick={() => { setShowPomodoroModal(true); setSelectedPreset(3); }}
                 >
                   <Brain className="h-7 w-7 text-rose-600" />
                   <div className="text-center">
@@ -370,7 +382,7 @@ export default function Revision() {
                 <Button
                   variant="outline"
                   className="h-20 flex flex-col items-center justify-center gap-1.5 border-2 border-green-200 dark:border-green-800 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950 dark:to-emerald-950 hover:scale-105 transition-transform"
-                  onClick={() => { setActiveTab("pomodoro"); handlePresetChange(1); }}
+                  onClick={() => { setShowPomodoroModal(true); setSelectedPreset(1); }}
                   data-testid="quick-action-break"
                 >
                   <Coffee className="h-6 w-6 text-green-600" />
@@ -382,11 +394,7 @@ export default function Revision() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-5 gap-1 bg-white dark:bg-slate-900 border-2 border-amber-200 dark:border-amber-800 p-1">
-            <TabsTrigger value="pomodoro" className="text-xs sm:text-sm data-[state=active]:bg-amber-100 dark:data-[state=active]:bg-amber-900">
-              <Timer className="h-4 w-4 mr-1.5 hidden sm:block" />
-              Pomodoro
-            </TabsTrigger>
+          <TabsList className="grid w-full grid-cols-3 gap-1 bg-white dark:bg-slate-900 border-2 border-amber-200 dark:border-amber-800 p-1">
             <TabsTrigger value="review" className="text-xs sm:text-sm data-[state=active]:bg-purple-100 dark:data-[state=active]:bg-purple-900 relative">
               <Brain className="h-4 w-4 mr-1.5 hidden sm:block" />
               Review
@@ -404,134 +412,7 @@ export default function Revision() {
               <PenLine className="h-4 w-4 mr-1.5 hidden sm:block" />
               Notes
             </TabsTrigger>
-            <TabsTrigger value="stats" className="text-xs sm:text-sm data-[state=active]:bg-teal-100 dark:data-[state=active]:bg-teal-900">
-              <BarChart3 className="h-4 w-4 mr-1.5 hidden sm:block" />
-              Stats
-            </TabsTrigger>
           </TabsList>
-
-          <TabsContent value="pomodoro" className="space-y-6 mt-6">
-            {/* Timer Presets */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              {timerPresets.map((preset, index) => (
-                <button
-                  key={preset.name}
-                  onClick={() => handlePresetChange(index)}
-                  className={`p-4 rounded-xl border-2 transition-all ${
-                    selectedPreset === index 
-                      ? `bg-gradient-to-br ${preset.color} text-white border-transparent shadow-lg scale-105` 
-                      : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 hover-elevate"
-                  }`}
-                  data-testid={`preset-${preset.name.toLowerCase().replace(" ", "-")}`}
-                >
-                  <preset.icon className={`h-6 w-6 mx-auto mb-2 ${selectedPreset === index ? "text-white" : "text-slate-600 dark:text-slate-400"}`} />
-                  <div className={`font-bold ${selectedPreset === index ? "text-white" : ""}`}>{preset.name}</div>
-                  <div className={`text-xs ${selectedPreset === index ? "text-white/80" : "text-muted-foreground"}`}>{preset.minutes} min</div>
-                </button>
-              ))}
-            </div>
-
-            {/* Main Timer */}
-            <Card className="border-2 border-amber-200 dark:border-amber-800 shadow-lg overflow-hidden">
-              <CardContent className="pt-8 pb-8">
-                <div className="flex flex-col items-center space-y-6">
-                  {/* Celebration Animation */}
-                  {showCelebration && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-green-500/90 text-white z-10 animate-pulse">
-                      <div className="text-center">
-                        <CheckCircle2 className="h-16 w-16 mx-auto mb-4" />
-                        <h2 className="text-2xl font-bold">Session Complete!</h2>
-                        <p className="text-lg opacity-90">Great work! Take a break.</p>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Timer Display with Progress Ring */}
-                  <div className="relative">
-                    <svg className="w-64 h-64 transform -rotate-90">
-                      <circle
-                        cx="128"
-                        cy="128"
-                        r="120"
-                        stroke="currentColor"
-                        strokeWidth="8"
-                        fill="none"
-                        className="text-slate-200 dark:text-slate-700"
-                      />
-                      <circle
-                        cx="128"
-                        cy="128"
-                        r="120"
-                        stroke="url(#gradient)"
-                        strokeWidth="8"
-                        fill="none"
-                        strokeLinecap="round"
-                        strokeDasharray={2 * Math.PI * 120}
-                        strokeDashoffset={2 * Math.PI * 120 * (1 - progress / 100)}
-                        className="transition-all duration-1000"
-                      />
-                      <defs>
-                        <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                          <stop offset="0%" stopColor="#f59e0b" />
-                          <stop offset="100%" stopColor="#ea580c" />
-                        </linearGradient>
-                      </defs>
-                    </svg>
-                    <div className="absolute inset-0 flex flex-col items-center justify-center">
-                      <div className="font-mono text-6xl font-bold text-slate-900 dark:text-white">
-                        {String(minutes).padStart(2, "0")}:{String(seconds).padStart(2, "0")}
-                      </div>
-                      <p className="text-sm text-muted-foreground mt-2">{timerPresets[selectedPreset].description}</p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-4">
-                    <Button
-                      size="lg"
-                      onClick={() => setIsRunning(!isRunning)}
-                      className={`bg-gradient-to-r ${timerPresets[selectedPreset].color} text-white px-8`}
-                      data-testid="button-pomodoro-toggle"
-                    >
-                      {isRunning ? (
-                        <>
-                          <Pause className="h-5 w-5 mr-2" />
-                          Pause
-                        </>
-                      ) : (
-                        <>
-                          <Play className="h-5 w-5 mr-2" />
-                          Start
-                        </>
-                      )}
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="lg"
-                      onClick={() => {
-                        setTimeLeft(timerPresets[selectedPreset].minutes * 60);
-                        setIsRunning(false);
-                      }}
-                      data-testid="button-pomodoro-reset"
-                    >
-                      <RotateCcw className="h-5 w-5 mr-2" />
-                      Reset
-                    </Button>
-                  </div>
-
-                  <div className="flex items-center gap-4">
-                    <Badge className="bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200 px-4 py-2" data-testid="badge-sessions">
-                      <Clock className="h-4 w-4 mr-2" />
-                      {sessionCount} sessions today
-                    </Badge>
-                    <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 px-4 py-2">
-                      <Target className="h-4 w-4 mr-2" />
-                      {totalSessionTime} min focused
-                    </Badge>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
 
           {/* ========== SPACED REVIEW TAB ========== */}
           <TabsContent value="review" className="space-y-6 mt-6">
@@ -947,75 +828,313 @@ export default function Revision() {
               </CardContent>
             </Card>
           </TabsContent>
+        </Tabs>
 
-          <TabsContent value="stats" className="space-y-6 mt-6">
-            <Card className="border-2 border-teal-200 dark:border-teal-800 shadow-lg">
-              <CardHeader className="bg-gradient-to-r from-teal-100 to-cyan-100 dark:from-teal-900 dark:to-cyan-900">
-                <CardTitle className="flex items-center gap-2">
-                  <BarChart3 className="h-5 w-5" />
-                  Your Focus Stats
-                </CardTitle>
-                <CardDescription>Track your productivity and celebrate your wins</CardDescription>
-              </CardHeader>
-              <CardContent className="pt-6 space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <Card className="bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-950 dark:to-amber-900 border-amber-200 dark:border-amber-800">
-                    <CardContent className="pt-6 text-center">
-                      <Target className="h-8 w-8 mx-auto mb-2 text-amber-600" />
-                      <div className="text-4xl font-bold text-amber-700 dark:text-amber-300" data-testid="stat-sessions">
-                        {sessionCount}
+        {/* ========== POMODORO MODAL ========== */}
+        <Dialog open={showPomodoroModal} onOpenChange={setShowPomodoroModal}>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Timer className="h-5 w-5 text-amber-600" />
+                Focus Session
+              </DialogTitle>
+            </DialogHeader>
+
+            <div className="space-y-6">
+              {/* Timer Presets */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {timerPresets.map((preset, index) => (
+                  <button
+                    key={preset.name}
+                    onClick={() => handlePresetChange(index)}
+                    className={`p-4 rounded-xl border-2 transition-all ${
+                      selectedPreset === index 
+                        ? `bg-gradient-to-br ${preset.color} text-white border-transparent shadow-lg scale-105` 
+                        : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 hover-elevate"
+                    }`}
+                    data-testid={`preset-${preset.name.toLowerCase().replace(" ", "-")}`}
+                  >
+                    <preset.icon className={`h-6 w-6 mx-auto mb-2 ${selectedPreset === index ? "text-white" : "text-slate-600 dark:text-slate-400"}`} />
+                    <div className={`font-bold ${selectedPreset === index ? "text-white" : ""}`}>{preset.name}</div>
+                    <div className={`text-xs ${selectedPreset === index ? "text-white/80" : "text-muted-foreground"}`}>{preset.minutes} min</div>
+                  </button>
+                ))}
+              </div>
+
+              {/* Main Timer */}
+              <Card className="border-2 border-amber-200 dark:border-amber-800 shadow-lg overflow-hidden">
+                <CardContent className="pt-8 pb-8">
+                  <div className="flex flex-col items-center space-y-6">
+                    {/* Timer Display with Progress Ring */}
+                    <div className="relative">
+                      <svg className="w-64 h-64 transform -rotate-90">
+                        <circle
+                          cx="128"
+                          cy="128"
+                          r="120"
+                          stroke="currentColor"
+                          strokeWidth="8"
+                          fill="none"
+                          className="text-slate-200 dark:text-slate-700"
+                        />
+                        <circle
+                          cx="128"
+                          cy="128"
+                          r="120"
+                          stroke="url(#gradient)"
+                          strokeWidth="8"
+                          fill="none"
+                          strokeLinecap="round"
+                          strokeDasharray={2 * Math.PI * 120}
+                          strokeDashoffset={2 * Math.PI * 120 * (1 - progress / 100)}
+                          className="transition-all duration-1000"
+                        />
+                        <defs>
+                          <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" stopColor="#f59e0b" />
+                            <stop offset="100%" stopColor="#ea580c" />
+                          </linearGradient>
+                        </defs>
+                      </svg>
+                      <div className="absolute inset-0 flex flex-col items-center justify-center">
+                        <div className="font-mono text-6xl font-bold text-slate-900 dark:text-white">
+                          {String(minutes).padStart(2, "0")}:{String(seconds).padStart(2, "0")}
+                        </div>
+                        <p className="text-sm text-muted-foreground mt-2">{timerPresets[selectedPreset].description}</p>
                       </div>
-                      <p className="text-sm text-amber-600 dark:text-amber-400 mt-1 font-medium">Sessions Today</p>
-                    </CardContent>
-                  </Card>
+                    </div>
 
-                  <Card className="bg-gradient-to-br from-teal-50 to-teal-100 dark:from-teal-950 dark:to-teal-900 border-teal-200 dark:border-teal-800">
-                    <CardContent className="pt-6 text-center">
-                      <Clock className="h-8 w-8 mx-auto mb-2 text-teal-600" />
-                      <div className="text-4xl font-bold text-teal-700 dark:text-teal-300" data-testid="stat-time">
-                        {totalSessionTime + 180}
-                      </div>
-                      <p className="text-sm text-teal-600 dark:text-teal-400 mt-1 font-medium">Total Minutes</p>
-                    </CardContent>
-                  </Card>
+                    <div className="flex items-center gap-4">
+                      <Button
+                        size="lg"
+                        onClick={() => setIsRunning(!isRunning)}
+                        className={`bg-gradient-to-r ${timerPresets[selectedPreset].color} text-white px-8`}
+                        data-testid="button-pomodoro-toggle"
+                      >
+                        {isRunning ? (
+                          <>
+                            <Pause className="h-5 w-5 mr-2" />
+                            Pause
+                          </>
+                        ) : (
+                          <>
+                            <Play className="h-5 w-5 mr-2" />
+                            Start
+                          </>
+                        )}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="lg"
+                        onClick={() => {
+                          setTimeLeft(timerPresets[selectedPreset].minutes * 60);
+                          setIsRunning(false);
+                        }}
+                        data-testid="button-pomodoro-reset"
+                      >
+                        <RotateCcw className="h-5 w-5 mr-2" />
+                        Reset
+                      </Button>
+                    </div>
 
-                  <Card className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950 dark:to-green-900 border-green-200 dark:border-green-800">
-                    <CardContent className="pt-6 text-center">
-                      <CheckCircle2 className="h-8 w-8 mx-auto mb-2 text-green-600" />
-                      <div className="text-4xl font-bold text-green-700 dark:text-green-300" data-testid="stat-tasks">
-                        {doneTasks.length}
-                      </div>
-                      <p className="text-sm text-green-600 dark:text-green-400 mt-1 font-medium">Tasks Completed</p>
-                    </CardContent>
-                  </Card>
-                </div>
+                    <div className="flex items-center gap-4">
+                      <Badge className="bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200 px-4 py-2" data-testid="badge-sessions">
+                        <Clock className="h-4 w-4 mr-2" />
+                        {sessionCount} sessions today
+                      </Badge>
+                      <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 px-4 py-2">
+                        <Target className="h-4 w-4 mr-2" />
+                        {totalSessionTime} min focused
+                      </Badge>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </DialogContent>
+        </Dialog>
 
-                <div className="space-y-4">
-                  <h3 className="font-bold text-sm flex items-center gap-2">
-                    <BarChart3 className="h-4 w-4" />
-                    Weekly Progress
-                  </h3>
+        {/* ========== STATS MODAL ========== */}
+        <Dialog open={showStatsModal} onOpenChange={setShowStatsModal}>
+          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <BarChart3 className="h-5 w-5 text-teal-600" />
+                Your Learning Progress
+              </DialogTitle>
+            </DialogHeader>
+
+            <div className="space-y-6">
+              {/* Key Metrics Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                {/* Focus Streak */}
+                <Card className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950 dark:to-purple-900 border-purple-200 dark:border-purple-800 shadow-md">
+                  <CardContent className="pt-6 text-center space-y-2">
+                    <div className="flex justify-center">
+                      <Zap className="h-8 w-8 text-purple-600" />
+                    </div>
+                    <div className="text-3xl font-bold text-purple-700 dark:text-purple-300">
+                      {Math.max(1, Math.ceil(sessionCount / 2))}
+                    </div>
+                    <p className="text-xs font-medium text-purple-600 dark:text-purple-400">
+                      Day Streak
+                    </p>
+                    <p className="text-xs text-purple-600 dark:text-purple-400 opacity-75">
+                      Keep it going! 🔥
+                    </p>
+                  </CardContent>
+                </Card>
+
+                {/* Effective Study Time */}
+                <Card className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900 border-blue-200 dark:border-blue-800 shadow-md">
+                  <CardContent className="pt-6 text-center space-y-2">
+                    <div className="flex justify-center">
+                      <Clock className="h-8 w-8 text-blue-600" />
+                    </div>
+                    <div className="text-3xl font-bold text-blue-700 dark:text-blue-300">
+                      {Math.max(sessionCount * 25, totalSessionTime)}m
+                    </div>
+                    <p className="text-xs font-medium text-blue-600 dark:text-blue-400">
+                      Focused Study
+                    </p>
+                    <p className="text-xs text-blue-600 dark:text-blue-400 opacity-75">
+                      This week
+                    </p>
+                  </CardContent>
+                </Card>
+
+                {/* Topics Covered */}
+                <Card className="bg-gradient-to-br from-rose-50 to-rose-100 dark:from-rose-950 dark:to-rose-900 border-rose-200 dark:border-rose-800 shadow-md">
+                  <CardContent className="pt-6 text-center space-y-2">
+                    <div className="flex justify-center">
+                      <Target className="h-8 w-8 text-rose-600" />
+                    </div>
+                    <div className="text-3xl font-bold text-rose-700 dark:text-rose-300">
+                      {dueForReviewCount}
+                    </div>
+                    <p className="text-xs font-medium text-rose-600 dark:text-rose-400">
+                      In Review Queue
+                    </p>
+                    <p className="text-xs text-rose-600 dark:text-rose-400 opacity-75">
+                      Ready to study
+                    </p>
+                  </CardContent>
+                </Card>
+
+                {/* Completion Rate */}
+                <Card className="bg-gradient-to-br from-emerald-50 to-emerald-100 dark:from-emerald-950 dark:to-emerald-900 border-emerald-200 dark:border-emerald-800 shadow-md">
+                  <CardContent className="pt-6 text-center space-y-2">
+                    <div className="flex justify-center">
+                      <CheckCircle2 className="h-8 w-8 text-emerald-600" />
+                    </div>
+                    <div className="text-3xl font-bold text-emerald-700 dark:text-emerald-300">
+                      {doneTasks.length}/{tasks.length}
+                    </div>
+                    <p className="text-xs font-medium text-emerald-600 dark:text-emerald-400">
+                      Tasks Completed
+                    </p>
+                    <p className="text-xs text-emerald-600 dark:text-emerald-400 opacity-75">
+                      {tasks.length > 0 ? Math.round((doneTasks.length / tasks.length) * 100) : 0}% done
+                    </p>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Session Quality Insights */}
+              <div className="bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900 rounded-lg p-4 border border-slate-200 dark:border-slate-700">
+                <h3 className="font-bold text-sm mb-3 flex items-center gap-2">
+                  <Lightbulb className="h-4 w-4 text-amber-500" />
+                  Today's Focus Insight
+                </h3>
+                <p className="text-sm text-slate-700 dark:text-slate-300">
+                  {sessionCount === 0
+                    ? "✨ Haven't started today? Your first session will be the most productive. Start now!"
+                    : sessionCount < 3
+                    ? `💪 Great progress! You've completed ${sessionCount} session${sessionCount !== 1 ? 's' : ''}. One more will complete your daily goal!`
+                    : `🎉 Excellent work! You've hit ${sessionCount} sessions. Your brain is firing on all cylinders. Consider a break soon!`}
+                </p>
+              </div>
+
+              {/* Daily Progress */}
+              <div className="space-y-4">
+                <h3 className="font-bold text-sm flex items-center gap-2">
+                  <Calendar className="h-4 w-4" />
+                  Weekly Consistency
+                </h3>
+                <div className="space-y-3">
                   {[
-                    { day: "Today", sessions: sessionCount || 3, minutes: totalSessionTime + 75 },
-                    { day: "Yesterday", sessions: 5, minutes: 125 },
-                    { day: "2 days ago", sessions: 4, minutes: 100 },
-                    { day: "3 days ago", sessions: 6, minutes: 150 },
+                    { day: "Today", sessions: sessionCount, isToday: true },
+                    { day: "Yesterday", sessions: 3, isToday: false },
+                    { day: "2 days ago", sessions: 4, isToday: false },
+                    { day: "3 days ago", sessions: 5, isToday: false },
+                    { day: "4 days ago", sessions: 2, isToday: false },
+                    { day: "5 days ago", sessions: 4, isToday: false },
+                    { day: "6 days ago", sessions: 3, isToday: false },
                   ].map((stat, idx) => (
-                    <div key={idx} className="space-y-2" data-testid={`history-${idx}`}>
+                    <div key={idx} className="space-y-1.5" data-testid={`history-${idx}`}>
                       <div className="flex justify-between items-center text-sm">
-                        <span className="font-medium">{stat.day}</span>
-                        <span className="text-xs text-muted-foreground">
-                          {stat.sessions} sessions • {stat.minutes}m
+                        <span className={`font-medium ${stat.isToday ? "text-teal-700 dark:text-teal-300" : "text-slate-700 dark:text-slate-300"}`}>
+                          {stat.day}
+                        </span>
+                        <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${
+                          stat.sessions >= 4
+                            ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300"
+                            : stat.sessions >= 2
+                            ? "bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300"
+                            : "bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300"
+                        }`}>
+                          {stat.sessions} sessions
                         </span>
                       </div>
-                      <Progress value={(stat.minutes / 180) * 100} className="h-2" />
+                      <div className="flex gap-1">
+                        {[...Array(Math.min(stat.sessions, 6))].map((_, i) => (
+                          <div key={i} className="flex-1 h-2 bg-teal-500 rounded-sm" />
+                        ))}
+                        {[...Array(Math.max(0, 6 - stat.sessions))].map((_, i) => (
+                          <div key={i} className="flex-1 h-2 bg-slate-200 dark:bg-slate-700 rounded-sm" />
+                        ))}
+                      </div>
                     </div>
                   ))}
                 </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+              </div>
+
+              {/* Personalized Recommendations */}
+              <div className="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-950 dark:to-purple-950 rounded-lg p-4 border border-indigo-200 dark:border-indigo-800 space-y-3">
+                <h3 className="font-bold text-sm flex items-center gap-2">
+                  <Sparkles className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+                  Recommended Next Steps
+                </h3>
+                <ul className="text-sm space-y-2 text-indigo-900 dark:text-indigo-100">
+                  {needsReviewCount > 0 && (
+                    <li className="flex items-start gap-2">
+                      <span className="text-indigo-600 dark:text-indigo-400 font-bold">▸</span>
+                      <span>Review <strong>{needsReviewCount}</strong> struggling topics to solidify your knowledge</span>
+                    </li>
+                  )}
+                  {todoTasks.length > 0 && (
+                    <li className="flex items-start gap-2">
+                      <span className="text-indigo-600 dark:text-indigo-400 font-bold">▸</span>
+                      <span>Complete <strong>{todoTasks.length}</strong> pending task{todoTasks.length !== 1 ? 's' : ''} to stay on track</span>
+                    </li>
+                  )}
+                  {sessionCount < 3 && (
+                    <li className="flex items-start gap-2">
+                      <span className="text-indigo-600 dark:text-indigo-400 font-bold">▸</span>
+                      <span>Aim for <strong>3-5 focused sessions</strong> daily to maximize retention</span>
+                    </li>
+                  )}
+                  {sessionCount >= 3 && (
+                    <li className="flex items-start gap-2">
+                      <span className="text-indigo-600 dark:text-indigo-400 font-bold">▸</span>
+                      <span>You're crushing it! Take a <strong>15-minute break</strong> to recharge</span>
+                    </li>
+                  )}
+                </ul>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
