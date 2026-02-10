@@ -47,13 +47,14 @@ const motivationalTips = [
   "Every completed session brings you closer to your goals.",
 ];
 
+
+
 export default function Revision() {
   const [selectedPreset, setSelectedPreset] = useState(0);
   const [timeLeft, setTimeLeft] = useState(timerPresets[0].minutes * 60);
   const [isRunning, setIsRunning] = useState(false);
   const [sessionCount, setSessionCount] = useState(0);
   const [totalSessionTime, setTotalSessionTime] = useState(0);
-  const [showCelebration, setShowCelebration] = useState(false);
   const [tasks, setTasks] = useState<Task[]>([
     { id: "1", title: "Review Chapter 3", status: "todo", priority: "high" },
     { id: "2", title: "Practice problems", status: "in-progress", priority: "medium" },
@@ -62,7 +63,6 @@ export default function Revision() {
   const [whiteboard, setWhiteboard] = useState("");
   const [newTask, setNewTask] = useState("");
   const [activeTab, setActiveTab] = useState("review");
-  const [showPomodoroModal, setShowPomodoroModal] = useState(false);
   const [showStatsModal, setShowStatsModal] = useState(false);
 
   // Spaced Review state
@@ -168,8 +168,6 @@ export default function Revision() {
           if (timerPresets[selectedPreset].name === "Focus" || timerPresets[selectedPreset].name === "Deep Work") {
             setSessionCount((s) => s + 1);
             setTotalSessionTime((t) => t + timerPresets[selectedPreset].minutes);
-            setShowCelebration(true);
-            setTimeout(() => setShowCelebration(false), 3000);
           }
           return timerPresets[selectedPreset].minutes * 60;
         }
@@ -188,6 +186,8 @@ export default function Revision() {
     setTimeLeft(timerPresets[index].minutes * 60);
     setIsRunning(false);
   };
+
+
 
   const handleAddTask = () => {
     if (newTask.trim()) {
@@ -307,7 +307,6 @@ export default function Revision() {
 
         {/* Quick Actions Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Primary Actions */}
           <Card className="border-2 border-amber-200 dark:border-amber-800 shadow-lg">
             <CardHeader className="pb-3 bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-950 dark:to-yellow-950">
               <CardTitle className="text-base flex items-center gap-2">
@@ -321,7 +320,7 @@ export default function Revision() {
                 <Button
                   variant="outline"
                   className="h-24 flex flex-col items-center justify-center gap-2 border-2 border-amber-200 dark:border-amber-800 bg-gradient-to-br from-amber-50 to-yellow-50 dark:from-amber-950 dark:to-yellow-950 hover:scale-105 transition-transform"
-                  onClick={() => { setShowPomodoroModal(true); setSelectedPreset(0); }}
+                  onClick={() => handlePresetChange(0)}
                   data-testid="quick-action-focus"
                 >
                   <Timer className="h-7 w-7 text-amber-600" />
@@ -333,7 +332,7 @@ export default function Revision() {
                 <Button
                   variant="outline"
                   className="h-24 flex flex-col items-center justify-center gap-2 border-2 border-rose-200 dark:border-rose-800 bg-gradient-to-br from-rose-50 to-pink-50 dark:from-rose-950 dark:to-pink-950 hover:scale-105 transition-transform"
-                  onClick={() => { setShowPomodoroModal(true); setSelectedPreset(3); }}
+                  onClick={() => handlePresetChange(3)}
                 >
                   <Brain className="h-7 w-7 text-rose-600" />
                   <div className="text-center">
@@ -345,7 +344,6 @@ export default function Revision() {
             </CardContent>
           </Card>
 
-          {/* Secondary Actions */}
           <Card className="border-2 border-purple-200 dark:border-purple-800 shadow-lg">
             <CardHeader className="pb-3 bg-gradient-to-r from-purple-50 to-violet-50 dark:from-purple-950 dark:to-violet-950">
               <CardTitle className="text-base flex items-center gap-2">
@@ -355,45 +353,153 @@ export default function Revision() {
               <CardDescription className="text-xs">Manage your learning</CardDescription>
             </CardHeader>
             <CardContent className="pt-4">
-              <div className="grid grid-cols-3 gap-2">
-                <Button
-                  variant="outline"
-                  className="h-20 flex flex-col items-center justify-center gap-1.5 border-2 border-purple-200 dark:border-purple-800 bg-gradient-to-br from-purple-50 to-violet-50 dark:from-purple-950 dark:to-violet-950 hover:scale-105 transition-transform relative"
-                  onClick={() => { setActiveTab("review"); handleRestartReview(); }}
-                  data-testid="quick-action-review"
-                >
-                  <Brain className="h-6 w-6 text-purple-600" />
-                  <span className="text-xs font-medium">Review</span>
-                  {totalDue > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-purple-500 text-white text-[10px] rounded-full h-5 w-5 flex items-center justify-center font-bold">
-                      {totalDue > 9 ? "9+" : totalDue}
-                    </span>
-                  )}
-                </Button>
-                <Button
-                  variant="outline"
-                  className="h-20 flex flex-col items-center justify-center gap-1.5 border-2 border-blue-200 dark:border-blue-800 bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950 dark:to-cyan-950 hover:scale-105 transition-transform"
-                  onClick={() => setActiveTab("kanban")}
-                  data-testid="quick-action-tasks"
-                >
-                  <ListTodo className="h-6 w-6 text-blue-600" />
-                  <span className="text-xs font-medium">Tasks</span>
-                </Button>
-                <Button
-                  variant="outline"
-                  className="h-20 flex flex-col items-center justify-center gap-1.5 border-2 border-green-200 dark:border-green-800 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950 dark:to-emerald-950 hover:scale-105 transition-transform"
-                  onClick={() => { setShowPomodoroModal(true); setSelectedPreset(1); }}
-                  data-testid="quick-action-break"
-                >
-                  <Coffee className="h-6 w-6 text-green-600" />
-                  <span className="text-xs font-medium">Break</span>
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+              <div className="grid grid-cols-2 gap-2">
+                  <Button
+                    variant="outline"
+                    className="h-20 flex flex-col items-center justify-center gap-1.5 border-2 border-purple-200 dark:border-purple-800 bg-gradient-to-br from-purple-50 to-violet-50 dark:from-purple-950 dark:to-violet-950 hover:scale-105 transition-transform relative"
+                    onClick={() => { setActiveTab("review"); handleRestartReview(); }}
+                    data-testid="quick-action-review"
+                  >
+                    <Brain className="h-6 w-6 text-purple-600" />
+                    <span className="text-xs font-medium">Review</span>
+                    {totalDue > 0 && (
+                      <span className="absolute -top-1 -right-1 bg-purple-500 text-white text-[10px] rounded-full h-5 w-5 flex items-center justify-center font-bold">
+                        {totalDue > 9 ? "9+" : totalDue}
+                      </span>
+                    )}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="h-20 flex flex-col items-center justify-center gap-1.5 border-2 border-blue-200 dark:border-blue-800 bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950 dark:to-cyan-950 hover:scale-105 transition-transform"
+                    onClick={() => setActiveTab("kanban")}
+                    data-testid="quick-action-tasks"
+                  >
+                    <ListTodo className="h-6 w-6 text-blue-600" />
+                    <span className="text-xs font-medium">Tasks</span>
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        {/* ========== POMODORO SECTION ========== */}
+        <Card className="border-2 border-amber-200 dark:border-amber-800 shadow-lg">
+          <CardHeader className="bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-950 dark:to-yellow-950">
+            <CardTitle className="flex items-center gap-2">
+              <Timer className="h-5 w-5 text-amber-600" />
+              Focus Session
+            </CardTitle>
+            <CardDescription>Choose your timer and stay focused</CardDescription>
+          </CardHeader>
+          <CardContent className="pt-8 pb-8">
+            <div className="space-y-6">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {timerPresets.map((preset, index) => (
+                  <button
+                    key={preset.name}
+                    onClick={() => handlePresetChange(index)}
+                    className={`p-4 rounded-xl border-2 transition-all ${
+                      selectedPreset === index
+                        ? `bg-gradient-to-br ${preset.color} text-white border-transparent shadow-lg scale-105`
+                        : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 hover:border-amber-300 dark:hover:border-amber-700"
+                    }`}
+                    data-testid={`preset-${preset.name.toLowerCase().replace(" ", "-")}`}
+                  >
+                    <preset.icon className={`h-6 w-6 mx-auto mb-2 ${selectedPreset === index ? "text-white" : "text-slate-600 dark:text-slate-400"}`} />
+                    <div className={`font-bold ${selectedPreset === index ? "text-white" : ""}`}>{preset.name}</div>
+                    <div className={`text-xs ${selectedPreset === index ? "text-white/80" : "text-muted-foreground"}`}>{preset.minutes} min</div>
+                  </button>
+                ))}
+              </div>
+
+              <div className="flex flex-col md:flex-row items-center justify-between gap-8">
+                <div className="relative w-48 h-48 md:w-56 md:h-56">
+                  <svg className="w-full h-full transform -rotate-90">
+                    <circle
+                      cx="50%"
+                      cy="50%"
+                      r="45%"
+                      stroke="currentColor"
+                      strokeWidth="8"
+                      fill="none"
+                      className="text-slate-200 dark:text-slate-700"
+                    />
+                    <circle
+                      cx="50%"
+                      cy="50%"
+                      r="45%"
+                      stroke="url(#pomodoroGradient)"
+                      strokeWidth="8"
+                      fill="none"
+                      strokeLinecap="round"
+                      strokeDasharray={2 * Math.PI * (45 * (window.innerWidth > 768 ? 140 : 96))}
+                      strokeDashoffset={2 * Math.PI * (45 * (window.innerWidth > 768 ? 140 : 96)) * (1 - progress / 100)}
+                      className="transition-all duration-1000"
+                    />
+                    <defs>
+                      <linearGradient id="pomodoroGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" stopColor="#f59e0b" />
+                        <stop offset="100%" stopColor="#ea580c" />
+                      </linearGradient>
+                    </defs>
+                  </svg>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center">
+                    <div className="font-mono text-4xl md:text-5xl font-bold text-slate-900 dark:text-white">
+                      {String(minutes).padStart(2, "0")}:{String(seconds).padStart(2, "0")}
+                    </div>
+                    <p className="text-sm text-muted-foreground mt-2 text-center">{timerPresets[selectedPreset].description}</p>
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-4 w-full md:w-auto">
+                  <Button
+                    size="lg"
+                    onClick={() => setIsRunning(!isRunning)}
+                    className={`bg-gradient-to-r ${timerPresets[selectedPreset].color} text-white px-8 h-14`}
+                    data-testid="button-pomodoro-toggle"
+                  >
+                    {isRunning ? (
+                      <>
+                        <Pause className="h-5 w-5 mr-2" />
+                        Pause
+                      </>
+                    ) : (
+                      <>
+                        <Play className="h-5 w-5 mr-2" />
+                        Start
+                      </>
+                    )}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    onClick={() => {
+                      setTimeLeft(timerPresets[selectedPreset].minutes * 60);
+                      setIsRunning(false);
+                    }}
+                    className="h-14"
+                    data-testid="button-pomodoro-reset"
+                  >
+                    <RotateCcw className="h-5 w-5 mr-2" />
+                    Reset
+                  </Button>
+                  <div className="space-y-2">
+                    <Badge className="bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200 px-4 py-2 w-full justify-center" data-testid="badge-sessions">
+                      <Clock className="h-4 w-4 mr-2" />
+                      {sessionCount} sessions today
+                    </Badge>
+                    <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 px-4 py-2 w-full justify-center">
+                      <Target className="h-4 w-4 mr-2" />
+                      {totalSessionTime} min focused
+                    </Badge>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full mt-6">
           <TabsList className="grid w-full grid-cols-3 gap-1 bg-white dark:bg-slate-900 border-2 border-amber-200 dark:border-amber-800 p-1">
             <TabsTrigger value="review" className="text-xs sm:text-sm data-[state=active]:bg-purple-100 dark:data-[state=active]:bg-purple-900 relative">
               <Brain className="h-4 w-4 mr-1.5 hidden sm:block" />
@@ -830,130 +936,6 @@ export default function Revision() {
           </TabsContent>
         </Tabs>
 
-        {/* ========== POMODORO MODAL ========== */}
-        <Dialog open={showPomodoroModal} onOpenChange={setShowPomodoroModal}>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <Timer className="h-5 w-5 text-amber-600" />
-                Focus Session
-              </DialogTitle>
-            </DialogHeader>
-
-            <div className="space-y-6">
-              {/* Timer Presets */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                {timerPresets.map((preset, index) => (
-                  <button
-                    key={preset.name}
-                    onClick={() => handlePresetChange(index)}
-                    className={`p-4 rounded-xl border-2 transition-all ${
-                      selectedPreset === index 
-                        ? `bg-gradient-to-br ${preset.color} text-white border-transparent shadow-lg scale-105` 
-                        : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 hover-elevate"
-                    }`}
-                    data-testid={`preset-${preset.name.toLowerCase().replace(" ", "-")}`}
-                  >
-                    <preset.icon className={`h-6 w-6 mx-auto mb-2 ${selectedPreset === index ? "text-white" : "text-slate-600 dark:text-slate-400"}`} />
-                    <div className={`font-bold ${selectedPreset === index ? "text-white" : ""}`}>{preset.name}</div>
-                    <div className={`text-xs ${selectedPreset === index ? "text-white/80" : "text-muted-foreground"}`}>{preset.minutes} min</div>
-                  </button>
-                ))}
-              </div>
-
-              {/* Main Timer */}
-              <Card className="border-2 border-amber-200 dark:border-amber-800 shadow-lg overflow-hidden">
-                <CardContent className="pt-8 pb-8">
-                  <div className="flex flex-col items-center space-y-6">
-                    {/* Timer Display with Progress Ring */}
-                    <div className="relative">
-                      <svg className="w-64 h-64 transform -rotate-90">
-                        <circle
-                          cx="128"
-                          cy="128"
-                          r="120"
-                          stroke="currentColor"
-                          strokeWidth="8"
-                          fill="none"
-                          className="text-slate-200 dark:text-slate-700"
-                        />
-                        <circle
-                          cx="128"
-                          cy="128"
-                          r="120"
-                          stroke="url(#gradient)"
-                          strokeWidth="8"
-                          fill="none"
-                          strokeLinecap="round"
-                          strokeDasharray={2 * Math.PI * 120}
-                          strokeDashoffset={2 * Math.PI * 120 * (1 - progress / 100)}
-                          className="transition-all duration-1000"
-                        />
-                        <defs>
-                          <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                            <stop offset="0%" stopColor="#f59e0b" />
-                            <stop offset="100%" stopColor="#ea580c" />
-                          </linearGradient>
-                        </defs>
-                      </svg>
-                      <div className="absolute inset-0 flex flex-col items-center justify-center">
-                        <div className="font-mono text-6xl font-bold text-slate-900 dark:text-white">
-                          {String(minutes).padStart(2, "0")}:{String(seconds).padStart(2, "0")}
-                        </div>
-                        <p className="text-sm text-muted-foreground mt-2">{timerPresets[selectedPreset].description}</p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-4">
-                      <Button
-                        size="lg"
-                        onClick={() => setIsRunning(!isRunning)}
-                        className={`bg-gradient-to-r ${timerPresets[selectedPreset].color} text-white px-8`}
-                        data-testid="button-pomodoro-toggle"
-                      >
-                        {isRunning ? (
-                          <>
-                            <Pause className="h-5 w-5 mr-2" />
-                            Pause
-                          </>
-                        ) : (
-                          <>
-                            <Play className="h-5 w-5 mr-2" />
-                            Start
-                          </>
-                        )}
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="lg"
-                        onClick={() => {
-                          setTimeLeft(timerPresets[selectedPreset].minutes * 60);
-                          setIsRunning(false);
-                        }}
-                        data-testid="button-pomodoro-reset"
-                      >
-                        <RotateCcw className="h-5 w-5 mr-2" />
-                        Reset
-                      </Button>
-                    </div>
-
-                    <div className="flex items-center gap-4">
-                      <Badge className="bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200 px-4 py-2" data-testid="badge-sessions">
-                        <Clock className="h-4 w-4 mr-2" />
-                        {sessionCount} sessions today
-                      </Badge>
-                      <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 px-4 py-2">
-                        <Target className="h-4 w-4 mr-2" />
-                        {totalSessionTime} min focused
-                      </Badge>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </DialogContent>
-        </Dialog>
-
         {/* ========== STATS MODAL ========== */}
         <Dialog open={showStatsModal} onOpenChange={setShowStatsModal}>
           <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
@@ -1050,7 +1032,7 @@ export default function Revision() {
                   {sessionCount === 0
                     ? "✨ Haven't started today? Your first session will be the most productive. Start now!"
                     : sessionCount < 3
-                    ? `💪 Great progress! You've completed ${sessionCount} session${sessionCount !== 1 ? 's' : ''}. One more will complete your daily goal!`
+                    ? `💪 Great progress! You've completed ${sessionCount} session${sessionCount !== 1 ? "s" : ""}. One more will complete your daily goal!`
                     : `🎉 Excellent work! You've hit ${sessionCount} sessions. Your brain is firing on all cylinders. Consider a break soon!`}
                 </p>
               </div>
@@ -1115,7 +1097,7 @@ export default function Revision() {
                   {todoTasks.length > 0 && (
                     <li className="flex items-start gap-2">
                       <span className="text-indigo-600 dark:text-indigo-400 font-bold">▸</span>
-                      <span>Complete <strong>{todoTasks.length}</strong> pending task{todoTasks.length !== 1 ? 's' : ''} to stay on track</span>
+                      <span>Complete <strong>{todoTasks.length}</strong> pending task{todoTasks.length !== 1 ? "s" : ""} to stay on track</span>
                     </li>
                   )}
                   {sessionCount < 3 && (

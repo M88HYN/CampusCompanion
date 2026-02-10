@@ -10,7 +10,6 @@ import {
   Lightbulb,
   BarChart3,
   LogOut,
-  Clock,
 } from "lucide-react";
 import {
   Sidebar,
@@ -71,11 +70,6 @@ export function AppSidebar({ userRole = "student", onLogout }: AppSidebarProps) 
       title: "Revision Help",
       url: "/revision",
       icon: Lightbulb,
-    },
-    {
-      title: "Pomodoro Timer",
-      url: "/pomodoro",
-      icon: Clock,
     },
     {
       title: "Learning Insights",
