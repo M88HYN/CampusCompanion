@@ -10,7 +10,7 @@ export async function seedFlashcards(userId: string) {
     return { decksCreated: existingDecks.length, cardsCreated: 0 };
   }
   
-  // ENFORCE CONSTRAINT: Limit to 5-10 decks only (we'll create exactly 5)
+  // ENFORCE CONSTRAINT: Limit to 10-15 decks (multi-subject support)
   const now = Date.now();
   const sampleDecks = [
     {
@@ -61,6 +61,57 @@ export async function seedFlashcards(userId: string) {
       description: "OOP principles including encapsulation, inheritance, polymorphism, and SOLID",
       tags: JSON.stringify(["OOP", "design", "programming"]),
       difficulty: "medium",
+      createdAt: now,
+    },
+    // ==================== NEW MULTI-SUBJECT DECKS ====================
+    {
+      id: crypto.randomUUID(),
+      userId,
+      title: "Calculus Essentials",
+      subject: "Mathematics",
+      description: "Core concepts of differentiation, integration, and limits",
+      tags: JSON.stringify(["calculus", "math", "derivatives", "integrals"]),
+      difficulty: "hard",
+      createdAt: now,
+    },
+    {
+      id: crypto.randomUUID(),
+      userId,
+      title: "English Grammar & Writing",
+      subject: "English",
+      description: "Essential grammar rules, sentence structure, and writing techniques",
+      tags: JSON.stringify(["grammar", "writing", "language"]),
+      difficulty: "easy",
+      createdAt: now,
+    },
+    {
+      id: crypto.randomUUID(),
+      userId,
+      title: "Physics Fundamentals",
+      subject: "Physics",
+      description: "Newton's laws, forces, energy, and motion principles",
+      tags: JSON.stringify(["physics", "mechanics", "forces"]),
+      difficulty: "medium",
+      createdAt: now,
+    },
+    {
+      id: crypto.randomUUID(),
+      userId,
+      title: "Business & Marketing Basics",
+      subject: "Business Studies",
+      description: "Marketing principles, the 4 Ps, and business strategy fundamentals",
+      tags: JSON.stringify(["business", "marketing", "strategy"]),
+      difficulty: "easy",
+      createdAt: now,
+    },
+    {
+      id: crypto.randomUUID(),
+      userId,
+      title: "Study Skills & Exam Technique",
+      subject: "Study Skills",
+      description: "Effective revision strategies, time management, and exam preparation",
+      tags: JSON.stringify(["study-skills", "revision", "exams"]),
+      difficulty: "easy",
       createdAt: now,
     },
   ];
@@ -222,6 +273,98 @@ export async function seedFlashcards(userId: string) {
     { front: "What are Access Modifiers?", back: "public: Accessible everywhere\nprivate: Accessible only within class\nprotected: Accessible in class and subclasses\npackage/internal: Within same package" },
   ];
 
+  // ==================== NEW MULTI-SUBJECT CARD ARRAYS ====================
+  
+  const calculusCards = [
+    { front: "What is a derivative?", back: "The instantaneous rate of change of a function. Geometrically, it's the slope of the tangent line at a point. Formula: f'(x) = lim(h→0) [f(x+h) - f(x)] / h" },
+    { front: "Power Rule for derivatives", back: "If f(x) = xⁿ, then f'(x) = nxⁿ⁻¹. Example: d/dx(x³) = 3x²" },
+    { front: "What does an integral represent?", back: "The area under a curve. Also the antiderivative - reversing differentiation. Definite integral gives exact area, indefinite integral gives function + C." },
+    { front: "Fundamental Theorem of Calculus", back: "Connects derivatives and integrals: ∫ₐᵇ f(x)dx = F(b) - F(a) where F'(x) = f(x). Shows integration and differentiation are inverse operations." },
+    { front: "Product Rule", back: "If f(x) = u(x)·v(x), then f'(x) = u'v + uv'. Example: d/dx[x²·sin(x)] = 2x·sin(x) + x²·cos(x)" },
+    { front: "Chain Rule", back: "If f(x) = g(h(x)), then f'(x) = g'(h(x))·h'(x). Derivative of outer × derivative of inner. Example: d/dx[sin(x²)] = cos(x²)·2x" },
+    { front: "What is a limit?", back: "The value a function approaches as input approaches some value. Foundation of calculus. lim(x→a) f(x) = L means f(x) gets arbitrarily close to L as x approaches a." },
+    { front: "L'Hôpital's Rule", back: "For indeterminate forms 0/0 or ∞/∞: lim(x→a) f(x)/g(x) = lim(x→a) f'(x)/g'(x). Take derivatives of top and bottom separately." },
+    { front: "Quotient Rule", back: "If f(x) = u/v, then f'(x) = (u'v - uv')/v². Lo d-Hi minus Hi d-Lo over Lo-Lo." },
+    { front: "Critical Points", back: "Where f'(x) = 0 or f'(x) doesn't exist. Potential locations for local maxima, minima, or inflection points. Test with first or second derivative." },
+    { front: "Integration by Substitution", back: "Reverse chain rule. Let u = g(x), then du = g'(x)dx. Transform ∫f(g(x))g'(x)dx into ∫f(u)du. Example: ∫2x·cos(x²)dx, let u=x²" },
+    { front: "Integral of 1/x", back: "∫(1/x)dx = ln|x| + C. One of the most important integrals. Absolute value needed because ln only defined for positive numbers." },
+    { front: "Second Derivative Test", back: "At critical point x=c: If f''(c) > 0, local minimum. If f''(c) < 0, local maximum. If f''(c) = 0, test is inconclusive." },
+    { front: "Mean Value Theorem", back: "If f is continuous on [a,b] and differentiable on (a,b), there exists c where f'(c) = [f(b)-f(a)]/(b-a). Guarantees a point with slope equal to average slope." },
+    { front: "Derivative of e^x", back: "d/dx[e^x] = e^x. The function equals its own derivative. This makes e^x unique and central to calculus." },
+  ];
+
+  const englishCards = [
+    { front: "Subject vs Object Pronouns", back: "Subject (do action): I, you, he, she, it, we, they\nObject (receive action): me, you, him, her, it, us, them. Example: 'She gave it to me'" },
+    { front: "Active vs Passive Voice", back: "Active: Subject does the action ('John wrote the letter')\nPassive: Subject receives the action ('The letter was written by John'). Active is clearer and more direct." },
+    { front: "Independent vs Dependent Clause", back: "Independent: Complete thought, can stand alone ('I went to the store')\nDependent: Incomplete, needs main clause ('because I was hungry')" },
+    { front: "Comma Splice Error", back: "Incorrectly joining two independent clauses with only a comma. Wrong: 'I went home, I was tired.' Fix: use semicolon, period, or conjunction." },
+    { front: "Its vs It's", back: "Its = possessive ('The dog wagged its tail')\nIt's = contraction of 'it is' or 'it has' ('It's raining'). No apostrophe for possessive with 'it'!" },
+    { front: "Who vs Whom", back: "Who = subject ('Who called?')\nWhom = object ('To whom did you speak?'). If you can replace with he/she, use 'who'. If him/her works, use 'whom'." },
+    { front: "Affect vs Effect", back: "Affect = verb meaning to influence ('The weather affects mood')\nEffect = noun meaning result ('The effect was dramatic'). Rare: effect as verb means to cause." },
+    { front: "Present Perfect Tense", back: "Has/have + past participle. Shows action started in past, continues to present or has present relevance. 'I have lived here for 5 years.'" },
+    { front: "Parallel Structure", back: "Items in a series should have the same grammatical form. Wrong: 'I like running, swimming, and to bike.' Right: 'I like running, swimming, and biking.'" },
+    { front: "Modifier Placement", back: "Place modifiers next to what they modify. Misplaced: 'I saw a dog on my way to work that was huge.' Better: 'On my way to work, I saw a huge dog.'" },
+    { front: "Thesis Statement", back: "Central argument of an essay, usually at end of introduction. Should be specific, debatable, and preview main points. Guides entire paper." },
+    { front: "Topic Sentence", back: "First sentence of paragraph stating main idea. All other sentences in paragraph should support it. Helps readers follow structure." },
+    { front: "Transitions", back: "Words/phrases connecting ideas: however, therefore, furthermore, in contrast, as a result. Improve flow and show relationships between ideas." },
+    { front: "Run-on Sentence", back: "Two or more independent clauses improperly joined without punctuation or conjunction. Fix with period, semicolon, comma + conjunction, or subordination." },
+    { front: "Apostrophe Rules", back: "Possession: add 's (John's book)\nPlural possession: add s' (students' desks)\nContractions: replace missing letters (can't, won't)\nNever use for plural!" },
+  ];
+
+  const physicsCards = [
+    { front: "Newton's First Law", back: "Law of Inertia: An object at rest stays at rest, an object in motion stays in motion with constant velocity unless acted upon by external force." },
+    { front: "Newton's Second Law", back: "F = ma. Force equals mass times acceleration. Greater force or less mass results in greater acceleration. Units: Newtons (N) = kg·m/s²" },
+    { front: "Newton's Third Law", back: "For every action, there is an equal and opposite reaction. Forces always come in pairs. Example: rocket pushes gas down, gas pushes rocket up." },
+    { front: "Kinetic Energy Formula", back: "KE = ½mv². Energy of motion. Depends on mass and velocity squared. Doubling velocity quadruples kinetic energy." },
+    { front: "Potential Energy Formula", back: "PE = mgh. Gravitational potential energy. m = mass, g = gravity (9.8 m/s²), h = height. Energy due to position." },
+    { front: "Conservation of Energy", back: "Energy cannot be created or destroyed, only transformed. Total energy in isolated system remains constant. KE + PE = constant." },
+    { front: "Work Formula", back: "W = F·d·cos(θ). Work = force × displacement × cos(angle). Only force component parallel to motion does work. Units: Joules (J)" },
+    { front: "Power Definition", back: "P = W/t or P = F·v. Rate of doing work or transferring energy. Units: Watts (W) = Joules/second. 1 horsepower = 746 watts." },
+    { front: "Momentum", back: "p = mv. Product of mass and velocity. Vector quantity. Conserved in all collisions. Heavy slow object can have same momentum as light fast object." },
+    { front: "Conservation of Momentum", back: "Total momentum before collision = total momentum after collision. Applies to all collisions (elastic and inelastic) in isolated systems." },
+    { front: "Elastic vs Inelastic Collision", back: "Elastic: KE conserved (billiard balls)\nInelastic: KE not conserved, some becomes heat/sound (car crash)\nBoth conserve momentum!" },
+    { front: "Acceleration Due to Gravity", back: "g = 9.8 m/s² or ≈10 m/s² on Earth. All objects fall at same rate (ignoring air resistance). Galileo proved this." },
+    { front: "Velocity vs Speed", back: "Speed: scalar, magnitude only\nVelocity: vector, magnitude AND direction. Constant speed ≠ constant velocity if direction changes." },
+    { front: "Friction Types", back: "Static: prevents motion (μₛ, larger)\nKinetic: opposes motion (μₖ, smaller)\nF = μN where N is normal force. Always opposes motion." },
+    { front: "Centripetal Force", back: "Force directed toward center causing circular motion. F = mv²/r. Not a new type of force - tension, gravity, friction can provide it." },
+  ];
+
+  const businessCards = [
+    { front: "The 4 Ps of Marketing", back: "Product (what you sell), Price (how much), Place (where sold), Promotion (how advertised). Core marketing mix for strategy development." },
+    { front: "Market Segmentation", back: "Dividing market into smaller groups with similar characteristics/needs. Types: demographic, geographic, psychographic, behavioral. Enables targeted marketing." },
+    { front: "USP (Unique Selling Proposition)", back: "Distinctive feature that makes product stand out from competitors. Clear reason for customers to choose you. Example: 'Fastest delivery' or 'Lowest price guaranteed'" },
+    { front: "Primary vs Secondary Research", back: "Primary: NEW data collected firsthand (surveys, interviews)\nSecondary: EXISTING data from published sources (reports, studies). Primary is specific but expensive." },
+    { front: "SWOT Analysis", back: "Strengths (internal advantages), Weaknesses (internal disadvantages), Opportunities (external chances), Threats (external risks). Strategic planning tool." },
+    { front: "Supply and Demand", back: "Supply: quantity producers willing to sell at price\nDemand: quantity consumers willing to buy at price\nEquilibrium: where supply = demand, determines market price." },
+    { front: "Price Elasticity of Demand", back: "How demand changes when price changes. Elastic: big change in demand (luxuries). Inelastic: small change in demand (necessities). Affects pricing strategy." },
+    { front: "Penetration Pricing", back: "Setting LOW initial price to gain market share quickly, then raise later. Good for competitive markets. Risk: hard to raise prices, low profit initially." },
+    { front: "Skimming Pricing", back: "Setting HIGH initial price, then lower over time. Good for new innovative products. Maximizes profit from early adopters before competition enters." },
+    { front: "Profit Formula", back: "Profit = Revenue - Costs. Revenue = Price × Quantity Sold. Increase profit by raising price, selling more, or cutting costs." },
+    { front: "Fixed vs Variable Costs", back: "Fixed: Don't change with output (rent, salaries)\nVariable: Change with output (raw materials, packaging). Total Cost = Fixed + Variable." },
+    { front: "Break-Even Point", back: "Level of sales where total revenue = total costs. No profit, no loss. Below = loss, above = profit. Formula: Fixed Costs ÷ (Price - Variable Cost per unit)" },
+    { front: "Product Life Cycle", back: "Introduction (launch), Growth (sales rise), Maturity (peak sales), Decline (sales fall). Different strategies needed at each stage." },
+    { front: "Promotional Mix", back: "Advertising (paid announcements), Sales Promotion (discounts, coupons), Personal Selling (face-to-face), Public Relations (image management). Integrated approach works best." },
+    { front: "Branding Benefits", back: "Recognition, differentiation, customer loyalty, premium pricing, easier product launches. Strong brands are company's most valuable asset." },
+  ];
+
+  const studySkillsCards  = [
+    { front: "Pomodoro Technique", back: "25 minutes focused work, 5 minute break. After 4 cycles, take 15-30 minute break. Prevents burnout, maintains focus, creates urgency." },
+    { front: "Active Recall", back: "Testing yourself WITHOUT notes. Forces brain to retrieve information, strengthening memory. Much more effective than re-reading. Use flashcards, practice questions." },
+    { front: "Spaced Repetition", back: "Reviewing material at increasing intervals (1 day, 3 days, 1 week, 1 month). Fights forgetting curve. Review just before you'd forget for maximum efficiency." },
+    { front: "Feynman Technique", back: "Explain concept in simple terms as if teaching a child. Identifies gaps in understanding. Forces you to truly comprehend, not just memorize." },
+    { front: "SQ3R Reading Method", back: "Survey (skim), Question (ask what you'll learn), Read (actively), Recite (summarize aloud), Review (go over key points). Improves comprehension and retention." },
+    { front: "Cornell Note-Taking", back: "Divide page: notes (right), cues/questions (left), summary (bottom). During class: take notes. After: add questions, write summary. Best for lectures." },
+    { front: "Mind Mapping", back: "Visual diagram with central concept, branching ideas. Uses colors, images, keywords. Engages right brain, shows connections, easier to remember than lists." },
+    { front: "Chunking Information", back: "Breaking large amounts of info into smaller groups. Brain handles 7±2 chunks at once. Example: remembering phone numbers in groups, not 10 separate digits." },
+    { front: "Interleaving Practice", back: "Mixing different topics/skills in one session rather than blocking. Harder initially but improves retention and transfer. Example: math - do mixed problems, not all one type." },
+    { front: "Testing Effect", back: "Taking practice tests improves learning more than re-studying. Forces retrieval, identifies weak areas, reduces test anxiety, improves actual exam performance." },
+    { front: "Sleep and Memory", back: "Sleep consolidates memories from short-term to long-term. All-nighters are counterproductive. Study, sleep, remember. REM sleep especially important for retention." },
+    { front: "Elaborative Rehearsal", back: "Connecting new info to existing knowledge. Ask 'why' and 'how'. Create meaningful associations. Example: link new concept to personal experience." },
+    { front: "Metacognition", back: "Thinking about your thinking. Monitor your understanding. Ask: 'Do I really get this?' Adjust study strategies based on what works. Self-awareness improves learning." },
+    { front: "Growth Mindset", back: "Believing abilities can improve with effort. Embrace challenges, persist despite setbacks, view failure as learning opportunity. Opposite: fixed mindset ('I'm just not good at math')." },
+    { front: "Pre-Exam Strategy", back: "Night before: Light review, organize materials, sleep 7-8 hours. Morning: Eat protein breakfast, arrive early. First 5 min: Read all questions, plan time, start with easiest." },
+  ];
+
   // Helper function to generate realistic learning states
   const getRandomLearningState = () => {
     const rand = Math.random();
@@ -276,6 +419,12 @@ export async function seedFlashcards(userId: string) {
     { cards: sqlCards, deckId: createdDecks[2].id, tags: JSON.stringify(["sql", "database"]) },
     { cards: algoCards, deckId: createdDecks[3].id, tags: JSON.stringify(["algorithms"]) },
     { cards: oopCards, deckId: createdDecks[4].id, tags: JSON.stringify(["oop"]) },
+    // New multi-subject decks
+    { cards: calculusCards, deckId: createdDecks[5].id, tags: JSON.stringify(["calculus", "math"]) },
+    { cards: englishCards, deckId: createdDecks[6].id, tags: JSON.stringify(["grammar", "writing"]) },
+    { cards: physicsCards, deckId: createdDecks[7].id, tags: JSON.stringify(["physics", "mechanics"]) },
+    { cards: businessCards, deckId: createdDecks[8].id, tags: JSON.stringify(["business", "marketing"]) },
+    { cards: studySkillsCards, deckId: createdDecks[9].id, tags: JSON.stringify(["study-skills", "revision"]) },
   ];
 
   // First pass: Insert base card data with required fields

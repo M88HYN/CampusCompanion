@@ -147,6 +147,10 @@ export default function Quizzes() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState("quizzes");
   
+  // Filtering state
+  const [selectedSubject, setSelectedSubject] = useState<string>("All Subjects");
+  const [searchQuery, setSearchQuery] = useState<string>("");
+  
   const [adaptiveQuestion, setAdaptiveQuestion] = useState<Question | null>(null);
   const [adaptiveQuestionNumber, setAdaptiveQuestionNumber] = useState(1);
   const [adaptiveDifficulty, setAdaptiveDifficulty] = useState(3);
@@ -182,7 +186,7 @@ export default function Quizzes() {
     name: "questions",
   });
 
-  const { data: quizzes = [], isLoading: isLoadingQuizzes, refetch: refetchQuizzes } = useQuery<Quiz[]>({
+  const { data: allQuizzes = [], isLoading: isLoadingQuizzes, refetch: refetchQuizzes } = useQuery<Quiz[]>({
     queryKey: ["/api/quizzes"],
     queryFn: async () => {
       const res = await apiRequest("GET", "/api/quizzes");
@@ -199,11 +203,11 @@ export default function Quizzes() {
         return true;
       });
       
-      // VALIDATION: Check count constraints
-      if (uniqueQuizzes.length > 12) {
-        console.warn(`[QUIZZES] ⚠️  WARNING: ${uniqueQuizzes.length} quizzes found (max 12 expected)`);
-      } else if (uniqueQuizzes.length < 10 && uniqueQuizzes.length > 0) {
-        console.warn(`[QUIZZES] ⚠️  WARNING: Only ${uniqueQuizzes.length} quizzes found (10-12 expected)`);
+      // VALIDATION: Check count constraints (increased to 20 for multi-subject support)
+      if (uniqueQuizzes.length > 20) {
+        console.warn(`[QUIZZES] ⚠️  WARNING: ${uniqueQuizzes.length} quizzes found (max 20 expected)`);
+      } else if (uniqueQuizzes.length < 15 && uniqueQuizzes.length > 0) {
+        console.warn(`[QUIZZES] ⚠️  WARNING: Only ${uniqueQuizzes.length} quizzes found (15-20 expected for multi-subject)`);
       }
       
       console.log(`[QUIZZES] ✅ Loaded ${uniqueQuizzes.length} unique quizzes`);
@@ -212,6 +216,19 @@ export default function Quizzes() {
     staleTime: 0, // Always refetch to ensure fresh data when navigating back
     refetchOnMount: true,
     retry: 1,
+  });
+  
+  // Extract unique subjects from quizzes
+  const availableSubjects = ["All Subjects", ...Array.from(new Set(allQuizzes.map(q => q.subject || "General").filter(Boolean)))].sort();
+  
+  // Filter quizzes based on selected subject and search query
+  const quizzes = allQuizzes.filter(quiz => {
+    const matchesSubject = selectedSubject === "All Subjects" || quiz.subject === selectedSubject || (!quiz.subject && selectedSubject === "General");
+    const matchesSearch = !searchQuery || 
+      quiz.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+      (quiz.description && quiz.description.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (quiz.subject && quiz.subject.toLowerCase().includes(searchQuery.toLowerCase()));
+    return matchesSubject && matchesSearch;
   });
 
   const { data: selectedQuizData, isLoading: isLoadingQuiz } = useQuery<{
@@ -1675,11 +1692,79 @@ export default function Quizzes() {
           </TabsList>
 
           <TabsContent value="quizzes">
+            {/* Filter Bar */}
+            <div className="mb-6 space-y-4">
+              <div className="flex flex-col sm:flex-row gap-3">
+                {/* Search Bar */}
+                <div className="flex-1">
+                  <Input
+                    type="text"
+                    placeholder="Search quizzes by title or subject..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full border-2 border-teal-200 dark:border-teal-800 focus:border-teal-500 dark:focus:border-teal-400"
+                  />
+                </div>
+                
+                {/* Subject Filter */}
+                <Select value={selectedSubject} onValueChange={setSelectedSubject}>
+                  <SelectTrigger className="w-full sm:w-48 border-2 border-teal-200 dark:border-teal-800">
+                    <SelectValue placeholder="All Subjects" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableSubjects.map(subject => (
+                      <SelectItem key={subject} value={subject}>
+                        {subject}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              {/* Active Filters Display */}
+              {(selectedSubject !== "All Subjects" || searchQuery) && (
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-sm text-muted-foreground">Active filters:</span>
+                  {selectedSubject !== "All Subjects" && (
+                    <Badge 
+                      variant="secondary" 
+                      className="bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-200 cursor-pointer hover:bg-teal-200 dark:hover:bg-teal-800"
+                      onClick={() => setSelectedSubject("All Subjects")}
+                    >
+                      {selectedSubject}
+                      <X className="h-3 w-3 ml-1" />
+                    </Badge>
+                  )}
+                  {searchQuery && (
+                    <Badge 
+                      variant="secondary" 
+                      className="bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-200 cursor-pointer hover:bg-teal-200 dark:hover:bg-teal-800"
+                      onClick={() => setSearchQuery("")}
+                    >
+                      Search: "{searchQuery}"
+                      <X className="h-3 w-3 ml-1" />
+                    </Badge>
+                  )}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setSelectedSubject("All Subjects");
+                      setSearchQuery("");
+                    }}
+                    className="text-xs h-7"
+                  >
+                    Clear all
+                  </Button>
+                </div>
+              )}
+            </div>
+            
             {isLoadingQuizzes ? (
               <div className="flex items-center justify-center py-12">
                 <Loader className="h-8 w-8 animate-spin text-teal-600" />
               </div>
-            ) : quizzes.length === 0 ? (
+            ) : quizzes.length === 0 && allQuizzes.length === 0 ? (
               <Card className="border-2 border-dashed border-teal-300 dark:border-teal-700">
                 <CardContent className="py-12 text-center">
                   <div className="mx-auto w-16 h-16 rounded-full bg-teal-100 dark:bg-teal-900 flex items-center justify-center mb-4">
@@ -1694,6 +1779,26 @@ export default function Quizzes() {
                   >
                     <Plus className="h-4 w-4 mr-2" />
                     Create Your First Quiz
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : quizzes.length === 0 ? (
+              <Card className="border-2 border-teal-200 dark:border-teal-800">
+                <CardContent className="py-12 text-center">
+                  <div className="mx-auto w-16 h-16 rounded-full bg-teal-100 dark:bg-teal-900 flex items-center justify-center mb-4">
+                    <AlertCircle className="h-8 w-8 text-teal-600" />
+                  </div>
+                  <h3 className="text-xl font-bold mb-2">No Quizzes Match Your Filter</h3>
+                  <p className="text-muted-foreground mb-4">Try adjusting your filters or search query</p>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setSelectedSubject("All Subjects");
+                      setSearchQuery("");
+                    }}
+                    className="border-teal-300 dark:border-teal-700"
+                  >
+                    Clear Filters
                   </Button>
                 </CardContent>
               </Card>

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { Plus, Play, RotateCw, Upload, Trash2, Eye, EyeOff, Tags, Settings, Loader2, ArrowLeft, Search, Brain, Target, Zap, Clock, TrendingUp, CheckCircle2, AlertTriangle, Lightbulb, Keyboard, ChevronRight, Sparkles, BarChart3, BookOpen } from "lucide-react";
+import { Plus, Play, RotateCw, Upload, Trash2, Eye, EyeOff, Tags, Settings, Loader2, ArrowLeft, Search, Brain, Target, Zap, Clock, TrendingUp, CheckCircle2, AlertTriangle, Lightbulb, Keyboard, ChevronRight, Sparkles, BarChart3, BookOpen, X } from "lucide-react";
 import { normalizeTags } from "@/lib/tag-utils";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -98,6 +98,7 @@ export default function Flashcards() {
   const [sessionCardIds, setSessionCardIds] = useState<string[]>([]);
   const [smartCards, setSmartCards] = useState<SmartCard[]>([]);
   const [sessionSummary, setSessionSummary] = useState<SessionSummary | null>(null);
+  const [selectedSubject, setSelectedSubject] = useState<string>("All Subjects");
 
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -204,11 +205,11 @@ export default function Flashcards() {
         return true;
       });
       
-      // VALIDATION: Check count constraints
-      if (uniqueDecks.length > 10) {
-        console.warn(`[FLASHCARDS] ⚠️  WARNING: ${uniqueDecks.length} decks found (max 10 expected)`);
-      } else if (uniqueDecks.length < 5 && uniqueDecks.length > 0) {
-        console.warn(`[FLASHCARDS] ⚠️  WARNING: Only ${uniqueDecks.length} decks found (5-10 expected)`);
+      // VALIDATION: Check count constraints (increased to 15 for multi-subject support)
+      if (uniqueDecks.length > 15) {
+        console.warn(`[FLASHCARDS] ⚠️  WARNING: ${uniqueDecks.length} decks found (max 15 expected)`);
+      } else if (uniqueDecks.length < 10 && uniqueDecks.length > 0) {
+        console.warn(`[FLASHCARDS] ⚠️  WARNING: Only ${uniqueDecks.length} decks found (10-15 expected for multi-subject)`);
       }
       
       // Validate each deck has 10-30 cards
@@ -461,18 +462,28 @@ export default function Flashcards() {
     return colors[subject || ""] || "from-emerald-100 to-teal-100 dark:from-emerald-900 dark:to-teal-900 border-emerald-300 dark:border-emerald-700";
   };
 
+  // Extract unique subjects from decks
+  const availableSubjects = ["All Subjects", ...Array.from(new Set(decks.map(d => d.subject || "General").filter(Boolean)))].sort();
+
   const filteredDecks = useMemo(() => {
-    if (!searchQuery.trim()) return decks;
-    const query = searchQuery.toLowerCase();
     return decks.filter(deck => {
+      // Subject filter
+      const matchesSubject = selectedSubject === "All Subjects" || deck.subject === selectedSubject || (!deck.subject && selectedSubject === "General");
+      
+      // Search filter
+      if (!searchQuery.trim()) return matchesSubject;
+      
+      const query = searchQuery.toLowerCase();
       const normalizedTags = normalizeTags(deck.tags);
-      return (
+      const matchesSearch = (
         deck.title.toLowerCase().includes(query) ||
         deck.subject?.toLowerCase().includes(query) ||
         normalizedTags.some(tag => tag.toLowerCase().includes(query))
       );
+      
+      return matchesSubject && matchesSearch;
     });
-  }, [decks, searchQuery]);
+  }, [decks, searchQuery, selectedSubject]);
 
   const urgencyColors = {
     critical: "bg-red-500",
@@ -1084,21 +1095,80 @@ export default function Flashcards() {
 
           {/* Deck List */}
           <div>
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
-              <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Your Decks</h2>
-              {decks.length > 0 && (
-                <div className="relative w-full sm:w-72">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-emerald-500" />
-                  <Input
-                    placeholder="Search decks..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10 border-emerald-300 dark:border-emerald-700 focus-visible:ring-emerald-500"
-                    data-testid="input-search-decks"
-                  />
+            <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-4">Your Decks</h2>
+            
+            {/* Filter Bar */}
+            {decks.length > 0 && (
+              <div className="mb-6 space-y-4">
+                <div className="flex flex-col sm:flex-row gap-3">
+                  {/* Search Bar */}
+                  <div className="flex-1 relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-emerald-500" />
+                    <Input
+                      type="text"
+                      placeholder="Search decks by title or subject..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="pl-10 w-full border-2 border-emerald-200 dark:border-emerald-800 focus:border-emerald-500 dark:focus:border-emerald-400"
+                      data-testid="input-search-decks"
+                    />
+                  </div>
+                  
+                  {/* Subject Filter */}
+                  <Select value={selectedSubject} onValueChange={setSelectedSubject}>
+                    <SelectTrigger className="w-full sm:w-48 border-2 border-emerald-200 dark:border-emerald-800">
+                      <SelectValue placeholder="All Subjects" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableSubjects.map(subject => (
+                        <SelectItem key={subject} value={subject}>
+                          {subject}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
-              )}
-            </div>
+                
+                {/* Active Filters Display */}
+                {(selectedSubject !== "All Subjects" || searchQuery) && (
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-sm text-muted-foreground">Active filters:</span>
+                    {selectedSubject !== "All Subjects" && (
+                      <Badge 
+                        variant="secondary" 
+                        className="bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200 cursor-pointer hover:bg-emerald-200 dark:hover:bg-emerald-800"
+                        onClick={() => setSelectedSubject("All Subjects")}
+                      >
+                        {selectedSubject}
+                        <X className="h-3 w-3 ml-1" />
+                      </Badge>
+                    )}
+                    {searchQuery && (
+                      <Badge 
+                        variant="secondary" 
+                        className="bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200 cursor-pointer hover:bg-emerald-200 dark:hover:bg-emerald-800"
+                        onClick={() => setSearchQuery("")}
+                      >
+                        Search: "{searchQuery}"
+                        <X className="h-3 w-3 ml-1" />
+                      </Badge>
+                    )}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setSelectedSubject("All Subjects");
+                        setSearchQuery("");
+                      }}
+                      className="text-xs h-7"
+                    >
+                      Clear all
+                    </Button>
+                  </div>
+                )}
+              </div>
+            )}
+            
             {decks.length === 0 ? (
               <Card className="p-8 text-center border-2 border-dashed border-emerald-300 dark:border-emerald-700">
                 <div className="max-w-md mx-auto">

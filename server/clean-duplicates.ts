@@ -89,20 +89,20 @@ export async function cleanDuplicates(userId: string) {
 export async function enforceConstraints(userId: string) {
   console.log(`[ENFORCE] Enforcing constraints for userId: ${userId}`);
   
-  // Limit quizzes to 12
+  // Limit quizzes to 20 (increased to support multiple subjects)
   const allQuizzes = await db.select().from(quizzes).where(eq(quizzes.userId, userId));
-  if (allQuizzes.length > 12) {
-    const excessQuizzes = allQuizzes.slice(12);
+  if (allQuizzes.length > 20) {
+    const excessQuizzes = allQuizzes.slice(20);
     for (const quiz of excessQuizzes) {
       await db.delete(quizzes).where(eq(quizzes.id, quiz.id));
     }
     console.log(`[ENFORCE] Removed ${excessQuizzes.length} excess quizzes`);
   }
   
-  // Limit decks to 10
+  // Limit decks to 15 (increased to support multiple subjects)
   const allDecks = await db.select().from(decks).where(eq(decks.userId, userId));
-  if (allDecks.length > 10) {
-    const excessDecks = allDecks.slice(10);
+  if (allDecks.length > 15) {
+    const excessDecks = allDecks.slice(15);
     for (const deck of excessDecks) {
       await db.delete(decks).where(eq(decks.id, deck.id));
     }

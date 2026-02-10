@@ -829,6 +829,529 @@ const sampleQuizzes = [
       },
     ],
   },
+  // ==================== MATHEMATICS QUIZZES ====================
+  {
+    title: "Calculus Fundamentals",
+    subject: "Mathematics",
+    description: "Test your knowledge of limits, derivatives, and integrals",
+    mode: "practice",
+    passingScore: 70,
+    questions: [
+      {
+        type: "mcq",
+        question: "What is the derivative of x²?",
+        difficulty: 1,
+        marks: 1,
+        explanation: "Using the power rule: d/dx(xⁿ) = nxⁿ⁻¹, so d/dx(x²) = 2x¹ = 2x",
+        options: [
+          { text: "2x", isCorrect: true },
+          { text: "x", isCorrect: false },
+          { text: "2x²", isCorrect: false },
+          { text: "x²", isCorrect: false },
+        ],
+      },
+      {
+        type: "mcq",
+        question: "What does the derivative of a function represent?",
+        difficulty: 2,
+        marks: 1,
+        explanation: "The derivative represents the instantaneous rate of change of the function, which geometrically corresponds to the slope of the tangent line at any point.",
+        options: [
+          { text: "The area under the curve", isCorrect: false },
+          { text: "The rate of change at a point", isCorrect: true },
+          { text: "The maximum value", isCorrect: false },
+          { text: "The y-intercept", isCorrect: false },
+        ],
+      },
+      {
+        type: "mcq",
+        question: "What is the integral of 1/x dx?",
+        difficulty: 2,
+        marks: 1,
+        explanation: "The antiderivative of 1/x is ln|x| + C, where C is the constant of integration.",
+        options: [
+          { text: "x", isCorrect: false },
+          { text: "ln|x| + C", isCorrect: true },
+          { text: "1/x² + C", isCorrect: false },
+          { text: "e^x + C", isCorrect: false },
+        ],
+      },
+      {
+        type: "mcq",
+        question: "What is the limit of (sin x)/x as x approaches 0?",
+        difficulty: 3,
+        marks: 2,
+        explanation: "This is a fundamental limit in calculus: lim(x→0) (sin x)/x = 1. This limit is used to derive the derivative of sine.",
+        options: [
+          { text: "0", isCorrect: false },
+          { text: "1", isCorrect: true },
+          { text: "∞", isCorrect: false },
+          { text: "undefined", isCorrect: false },
+        ],
+      },
+      {
+        type: "mcq",
+        question: "If f(x) = e^x, what is f'(x)?",
+        difficulty: 2,
+        marks: 1,
+        explanation: "The exponential function e^x is unique in that its derivative is itself: d/dx(e^x) = e^x",
+        options: [
+          { text: "e^x", isCorrect: true },
+          { text: "xe^(x-1)", isCorrect: false },
+          { text: "e", isCorrect: false },
+          { text: "ln(x)", isCorrect: false },
+        ],
+      },
+    ],
+  },
+  {
+    title: "Algebra & Functions",
+    subject: "Mathematics",
+    description: "Master algebraic expressions, equations, and function transformations",
+    mode: "practice",
+    passingScore: 70,
+    questions: [
+      {
+        type: "mcq",
+        question: "What is the solution to the equation 2x + 5 = 13?",
+        difficulty: 1,
+        marks: 1,
+        explanation: "Subtract 5 from both sides: 2x = 8, then divide by 2: x = 4",
+        options: [
+          { text: "x = 3", isCorrect: false },
+          { text: "x = 4", isCorrect: true },
+          { text: "x = 6", isCorrect: false },
+          { text: "x = 9", isCorrect: false },
+        ],
+      },
+      {
+        type: "mcq",
+        question: "What is the quadratic formula?",
+        difficulty: 2,
+        marks: 1,
+        explanation: "The quadratic formula solves ax² + bx + c = 0: x = [-b ± √(b² - 4ac)] / 2a",
+        options: [
+          { text: "x = -b/2a", isCorrect: false },
+          { text: "x = [-b ± √(b² - 4ac)] / 2a", isCorrect: true },
+          { text: "x = (a + b) / c", isCorrect: false },
+          { text: "x = b² - 4ac", isCorrect: false },
+        ],
+      },
+      {
+        type: "mcq",
+        question: "If f(x) = 2x + 3, what is f(5)?",
+        difficulty: 1,
+        marks: 1,
+        explanation: "Substitute x = 5: f(5) = 2(5) + 3 = 10 + 3 = 13",
+        options: [
+          { text: "10", isCorrect: false },
+          { text: "13", isCorrect: true },
+          { text: "8", isCorrect: false },
+          { text: "16", isCorrect: false },
+        ],
+      },
+      {
+        type: "mcq",
+        question: "What happens to the graph of y = x² when transformed to y = (x-3)²?",
+        difficulty: 2,
+        marks: 1,
+        explanation: "The graph shifts 3 units to the RIGHT. Inside the parentheses, subtracting moves right, adding moves left.",
+        options: [
+          { text: "Shifts 3 units left", isCorrect: false },
+          { text: "Shifts 3 units right", isCorrect: true },
+          { text: "Shifts 3 units up", isCorrect: false },
+          { text: "Shifts 3 units down", isCorrect: false },
+        ],
+      },
+      {
+        type: "mcq",
+        question: "What is the slope of a line perpendicular to y = 2x + 1?",
+        difficulty: 2,
+        marks: 1,
+        explanation: "Perpendicular lines have slopes that are negative reciprocals. The slope of y = 2x + 1 is 2, so the perpendicular slope is -1/2.",
+        options: [
+          { text: "2", isCorrect: false },
+          { text: "-2", isCorrect: false },
+          { text: "1/2", isCorrect: false },
+          { text: "-1/2", isCorrect: true },
+        ],
+      },
+    ],
+  },
+  // ==================== ENGLISH QUIZZES ====================
+  {
+    title: "Grammar & Sentence Structure",
+    subject: "English",
+    description: "Test your understanding of grammar rules and sentence construction",
+    mode: "practice",
+    passingScore: 70,
+    questions: [
+      {
+        type: "mcq",
+        question: "Which sentence is grammatically correct?",
+        difficulty: 1,
+        marks: 1,
+        explanation: "\"She and I went to the store\" is correct. When the pronoun is part of a compound subject, use the subjective case (I, not me).",
+        options: [
+          { text: "Her and me went to the store", isCorrect: false },
+          { text: "She and I went to the store", isCorrect: true },
+          { text: "Her and I went to the store", isCorrect: false },
+          { text: "She and me went to the store", isCorrect: false },
+        ],
+      },
+      {
+        type: "mcq",
+        question: "Identify the verb tense: \"I have been studying for three hours.\"",
+        difficulty: 2,
+        marks: 1,
+        explanation: "This is the present perfect continuous tense, used to describe an action that started in the past and continues into the present.",
+        options: [
+          { text: "Simple present", isCorrect: false },
+          { text: "Past continuous", isCorrect: false },
+          { text: "Present perfect continuous", isCorrect: true },
+          { text: "Future perfect", isCorrect: false },
+        ],
+      },
+      {
+        type: "mcq",
+        question: "Which punctuation mark correctly completes this sentence: \"She asked__ where are you going\"",
+        difficulty: 2,
+        marks: 1,
+        explanation: "When a question is embedded in a statement, use a comma after 'asked' and change the question to indirect speech (no question mark inside).",
+        options: [
+          { text: "? (question mark)", isCorrect: false },
+          { text: ", (comma)", isCorrect: true },
+          { text: ": (colon)", isCorrect: false },
+          { text: "; (semicolon)", isCorrect: false },
+        ],
+      },
+      {
+        type: "mcq",
+        question: "What is a subordinate clause?",
+        difficulty: 2,
+        marks: 1,
+        explanation: "A subordinate clause is a dependent clause that cannot stand alone as a sentence and relies on the main clause for meaning.",
+        options: [
+          { text: "A clause that can stand alone as a sentence", isCorrect: false },
+          { text: "A clause containing the main idea", isCorrect: false },
+          { text: "A clause that depends on the main clause", isCorrect: true },
+          { text: "A clause without a verb", isCorrect: false },
+        ],
+      },
+      {
+        type: "mcq",
+        question: "Choose the correct word: \"The effect/affect of the medicine was immediate.\"",
+        difficulty: 2,
+        marks: 1,
+        explanation: "\"Effect\" (noun) is correct here. \"Affect\" is usually a verb meaning to influence. Effect as a noun means result or outcome.",
+        options: [
+          { text: "effect", isCorrect: true },
+          { text: "affect", isCorrect: false },
+          { text: "Both are correct", isCorrect: false },
+          { text: "Neither is correct", isCorrect: false },
+        ],
+      },
+    ],
+  },
+  {
+    title: "Literary Devices & Analysis",
+    subject: "English Literature",
+    description: "Explore metaphors, symbolism, themes, and literary techniques",
+    mode: "practice",
+    passingScore: 70,
+    questions: [
+      {
+        type: "mcq",
+        question: "What is a metaphor?",
+        difficulty: 1,
+        marks: 1,
+       explanation: "A metaphor is a direct comparison between two unlike things WITHOUT using 'like' or 'as', saying one thing IS another.",
+        options: [
+          { text: "A comparison using 'like' or 'as'", isCorrect: false },
+          { text: "A direct comparison saying one thing IS another", isCorrect: true },
+          { text: "An exaggeration for effect", isCorrect: false },
+          { text: "Giving human qualities to objects", isCorrect: false },
+        ],
+      },
+      {
+        type: "mcq",
+        question: "What is personification?",
+        difficulty: 1,
+        marks: 1,
+        explanation: "Personification gives human characteristics, emotions, or actions to non-human objects or abstract concepts.",
+        options: [
+          { text: "Comparing two things", isCorrect: false },
+          { text: "Giving human qualities to non-human things", isCorrect: true },
+          { text: "Using symbols to represent ideas", isCorrect: false },
+          { text: "Repetition of initial sounds", isCorrect: false },
+        ],
+      },
+      {
+        type: "mcq",
+        question: "What is the main purpose of foreshadowing?",
+        difficulty: 2,
+        marks: 1,
+        explanation: "Foreshadowing drops hints or clues about events that will occur later in the story, building suspense and preparing the reader.",
+        options: [
+          { text: "To reveal the ending immediately", isCorrect: false },
+          { text: "To hint at future events", isCorrect: true },
+          { text: "To describe the setting in detail", isCorrect: false },
+          { text: "To introduce characters", isCorrect: false },
+        ],
+      },
+      {
+        type: "mcq",
+        question: "Identify the literary device: \"The wind whispered through the trees.\"",
+        difficulty: 2,
+        marks: 1,
+        explanation: "This is personification because it gives the wind (a non-human element) the human action of whispering.",
+        options: [
+          { text: "Metaphor", isCorrect: false },
+          { text: "Simile", isCorrect: false },
+          { text: "Personification", isCorrect: true },
+          { text: "Alliteration", isCorrect: false },
+        ],
+      },
+      {
+        type: "mcq",
+        question: "What is dramatic irony?",
+        difficulty: 3,
+        marks: 2,
+        explanation: "Dramatic irony occurs when the audience knows something important that the characters do not, creating tension or humor.",
+        options: [
+          { text: "When the opposite of what's expected happens", isCorrect: false },
+          { text: "When the audience knows more than the characters", isCorrect: true },
+          { text: "When words have a double meaning", isCorrect: false },
+          { text: "When a situation is humorous", isCorrect: false },
+        ],
+      },
+    ],
+  },
+  // ==================== PHYSICS QUIZZES ====================
+  {
+    title: "Mechanics Fundamentals",
+    subject: "Physics",
+    description: "Master forces, motion, energy, and Newton's laws",
+    mode: "practice",
+    passingScore: 70,
+    questions: [
+      {
+        type: "mcq",
+        question: "What is Newton's First Law of Motion?",
+        difficulty: 1,
+        marks: 1,
+        explanation: "Newton's First Law states that an object at rest stays at rest and an object in motion stays in motion with the same velocity unless acted upon by an external force (law of inertia).",
+        options: [
+          { text: "F = ma", isCorrect: false },
+          { text: "An object in motion stays in motion unless acted upon by a force", isCorrect: true },
+          { text: "For every action there is an equal and opposite reaction", isCorrect: false },
+          { text: "Energy cannot be created or destroyed", isCorrect: false },
+        ],
+      },
+      {
+        type: "mcq",
+        question: "What is the formula for kinetic energy?",
+        difficulty: 1,
+        marks: 1,
+        explanation: "Kinetic energy (KE) is the energy of motion, calculated as KE = ½mv², where m is mass and v is velocity.",
+        options: [
+          { text: "KE = mv", isCorrect: false },
+          { text: "KE = ½mv²", isCorrect: true },
+          { text: "KE = mgh", isCorrect: false },
+          { text: "KE = ma", isCorrect: false },
+        ],
+      },
+      {
+        type: "mcq",
+        question: "If you apply a 10N force to a 2kg object, what is its acceleration?",
+        difficulty: 2,
+        marks: 1,
+        explanation: "Using F = ma, we can solve for a: a = F/m = 10N / 2kg = 5 m/s²",
+        options: [
+          { text: "5 m/s²", isCorrect: true },
+          { text: "20 m/s²", isCorrect: false },
+          { text: "2 m/s²", isCorrect: false },
+          { text: "10 m/s²", isCorrect: false },
+        ],
+      },
+      {
+        type: "mcq",
+        question: "What type of energy does a compressed spring possess?",
+        difficulty: 2,
+        marks: 1,
+        explanation: "A compressed spring stores elastic potential energy, which is released when the spring returns to its natural length.",
+        options: [
+          { text: "Kinetic energy", isCorrect: false },
+          { text: "Gravitational potential energy", isCorrect: false },
+          { text: "Elastic potential energy", isCorrect: true },
+          { text: "Thermal energy", isCorrect: false },
+        ],
+      },
+      {
+        type: "mcq",
+        question: "What is the SI unit for work and energy?",
+        difficulty: 1,
+        marks: 1,
+        explanation: "The joule (J) is the SI unit for both work and energy. 1 joule = 1 newton-meter (N·m).",
+        options: [
+          { text: "Watt", isCorrect: false },
+          { text: "Newton", isCorrect: false },
+          { text: "Joule", isCorrect: true },
+          { text: "Pascal", isCorrect: false },
+        ],
+      },
+    ],
+  },
+  // ==================== BUSINESS QUIZZES ====================
+  {
+    title: "Marketing Principles",
+    subject: "Business Studies",
+    description: "Understand the 4 Ps, market research, and promotional strategies",
+    mode: "practice",
+    passingScore: 70,
+    questions: [
+      {
+        type: "mcq",
+        question: "What are the 4 Ps of marketing?",
+        difficulty: 1,
+        marks: 1,
+        explanation: "The marketing mix consists of Product, Price, Place, and Promotion - the key elements companies control to influence consumer demand.",
+        options: [
+          { text: "Product, Price, People, Position", isCorrect: false },
+          { text: "Product, Price, Place, Promotion", isCorrect: true },
+          { text: "Profit, Price, Place, Promotion", isCorrect: false },
+          { text: "Product, Packaging, Place, Promotion", isCorrect: false },
+        ],
+      },
+      {
+        type: "mcq",
+        question: "What is market segmentation?",
+        difficulty: 2,
+        marks: 1,
+        explanation: "Market segmentation divides a broad market into smaller subsets of consumers with common needs, characteristics, or behaviors to target more effectively.",
+        options: [
+          { text: "Setting different prices for different products", isCorrect: false },
+          { text: "Dividing the market into smaller groups with similar needs", isCorrect: true },
+          { text: "Analyzing competitor strategies", isCorrect: false },
+          { text: "Reducing production costs", isCorrect: false },
+        ],
+      },
+      {
+        type: "mcq",
+        question: "What is a USP (Unique Selling Proposition)?",
+        difficulty: 2,
+        marks: 1,
+        explanation: "A USP is a distinctive feature or benefit that sets a product apart from competitors, giving consumers a clear reason to choose it.",
+        options: [
+          { text: "A low price strategy", isCorrect: false },
+          { text: "A unique feature that distinguishes your product from competitors", isCorrect: true },
+          { text: "A sales promotion technique", isCorrect: false },
+          { text: "A universal product code", isCorrect: false },
+        ],
+      },
+      {
+        type: "mcq",
+        question: "What is the purpose of primary market research?",
+        difficulty: 2,
+        marks: 1,
+        explanation: "Primary research collects NEW, first-hand data directly from potential customers through surveys, interviews, or observations specific to your needs.",
+        options: [
+          { text: "To analyze existing published data", isCorrect: false },
+          { text: "To collect new, first-hand data", isCorrect: true },
+          { text: "To study competitors' financial reports", isCorrect: false },
+          { text: "To review government statistics", isCorrect: false },
+        ],
+      },
+      {
+        type: "mcq",
+        question: "What does penetration pricing mean?",
+        difficulty: 3,
+        marks: 2,
+        explanation: "Penetration pricing sets an initially LOW price to attract customers quickly and gain market share, then may increase prices later once established.",
+        options: [
+          { text: "Setting a high price to maximize profit", isCorrect: false },
+          { text: "Setting a low initial price to gain market share", isCorrect: true },
+          { text: "Matching competitors' prices exactly", isCorrect: false },
+          { text: "Charging different prices to different customers", isCorrect: false },
+        ],
+      },
+    ],
+  },
+  // ==================== STUDY SKILLS QUIZZES ====================
+  {
+    title: "Exam Technique & Revision",
+    subject: "Study Skills",
+    description: "Master effective revision strategies and exam preparation techniques",
+    mode: "practice",
+    passingScore: 70,
+    questions: [
+      {
+        type: "mcq",
+        question: "What is the Pomodoro Technique?",
+        difficulty: 1,
+        marks: 1,
+        explanation: "The Pomodoro Technique involves studying for 25 minutes, then taking a 5-minute break. After 4 'pomodoros', take a longer 15-30 minute break.",
+        options: [
+          { text: "Studying for 2 hours without breaks", isCorrect: false },
+          { text: "25 minutes of focused study followed by a short break", isCorrect: true },
+          { text: "Reviewing notes immediately before an exam", isCorrect: false },
+          { text: "Creating mind maps", isCorrect: false },
+        ],
+      },
+      {
+        type: "mcq",
+        question: "Which revision technique is most effective for long-term retention?",
+        difficulty: 2,
+        marks: 1,
+        explanation: "Active recall (testing yourself without looking at notes) forces your brain to retrieve information, strengthening memory more than passive rereading.",
+        options: [
+          { text: "Highlighting text in different colors", isCorrect: false },
+          { text: "Re-reading notes multiple times", isCorrect: false },
+          { text: "Active recall and self-testing", isCorrect: true },
+          { text: "Listening to music while studying", isCorrect: false },
+        ],
+      },
+      {
+        type: "mcq",
+        question: "What is spaced repetition?",
+        difficulty: 2,
+        marks: 1,
+        explanation: "Spaced repetition involves reviewing material at increasing intervals (e.g., after 1 day, 3 days, 1 week) to combat forgetting and strengthen memory.",
+        options: [
+          { text: "Studying the same topic for hours continuously", isCorrect: false },
+          { text: "Reviewing material at increasing time intervals", isCorrect: true },
+          { text: "Spacing out study sessions randomly", isCorrect: false },
+          { text: "Studying multiple subjects simultaneously", isCorrect: false },
+        ],
+      },
+      {
+        type: "mcq",
+        question: "What should you do in the first 5 minutes of an exam?",
+        difficulty: 2,
+        marks: 1,
+        explanation: "Read ALL questions first to identify easier ones, plan your time effectively, and let your subconscious work on harder questions while you start with easier ones.",
+        options: [
+          { text: "Start answering the first question immediately", isCorrect: false },
+          { text: "Read all questions and plan your time", isCorrect: true },
+          { text: "Write down everything you memorized", isCorrect: false },
+          { text: "Check the clock repeatedly", isCorrect: false },
+        ],
+      },
+      {
+        type: "mcq",
+        question: "What is the best way to prepare for essay-based exams?",
+        difficulty: 3,
+        marks: 2,
+        explanation: "Creating essay plans for likely questions helps you organize ideas, memorize key points, and write structured responses quickly under exam pressure.",
+        options: [
+          { text: "Memorize entire essays word-for-word", isCorrect: false },
+          { text: "Create essay plans for likely questions", isCorrect: true },
+          { text: "Avoid practicing until the exam day", isCorrect: false },
+          { text: "Focus only on facts and ignore structure", isCorrect: false },
+        ],
+      },
+    ],
+  },
 ];
 
 export async function seedQuizzes(userId: string) {
@@ -869,6 +1392,7 @@ export async function seedQuizzes(userId: string) {
         
         // Assign tags based on quiz subject and question content
         let tags: string[] = [];
+        // Computer Science tags
         if (quizData.subject === "Computer Science" && quizData.title.includes("Data Structures")) {
           tags = ["data-structures", "arrays", "complexity"];
         } else if (quizData.subject === "Computer Science" && quizData.title.includes("Algorithms")) {
@@ -881,9 +1405,34 @@ export async function seedQuizzes(userId: string) {
           tags = ["databases", "sql", "queries"];
         } else if (quizData.subject === "Computer Science" && quizData.title.includes("Operating")) {
           tags = ["os", "processes", "memory"];
-        } else {
-          // Default tags based on subject
-          tags = [quizData.subject.toLowerCase().replace(/\\s+/g, "-")];
+        }
+        // Mathematics tags
+        else if (quizData.subject === "Mathematics" && quizData.title.includes("Calculus")) {
+          tags = ["calculus", "derivatives", "integrals", "limits"];
+        } else if (quizData.subject === "Mathematics" && quizData.title.includes("Algebra")) {
+          tags = ["algebra", "equations", "functions"];
+        }
+        // English tags
+        else if ((quizData.subject === "English" || quizData.subject === "English Literature") && quizData.title.includes("Grammar")) {
+          tags = ["grammar", "sentence-structure", "punctuation"];
+        } else if ((quizData.subject === "English" || quizData.subject === "English Literature") && quizData.title.includes("Literary")) {
+          tags = ["literary-devices", "metaphor", "symbolism"];
+        }
+        // Physics tags
+        else if (quizData.subject === "Physics" && quizData.title.includes("Mechanics")) {
+          tags = ["mechanics", "forces", "energy", "motion"];
+        }
+        // Business tags
+        else if (quizData.subject === "Business Studies" && quizData.title.includes("Marketing")) {
+          tags = ["marketing", "4ps", "market-research"];
+        }
+        // Study Skills tags
+        else if (quizData.subject === "Study Skills" && quizData.title.includes("Exam")) {
+          tags = ["exam-technique", "revision", "study-strategies"];
+        }
+        // Default tags based on subject
+        else {
+          tags = [quizData.subject.toLowerCase().replace(/\s+/g, "-")];
         }
         
         // Raw insert with tags
