@@ -1624,13 +1624,11 @@ export class DatabaseStorage implements IStorage {
         totalCards++;
         if (card.status === 'mastered') masteredCards++;
         // Count actual reviews from cardReviews table
-        const reviews: any[] = db.all(sql`
-          SELECT review_date, quality FROM card_reviews WHERE card_id = ${card.id}
-        `);
+        const reviews = await db.select().from(cardReviews).where(eq(cardReviews.cardId, card.id));
         totalCardReviews += reviews.length;
         // Track flashcard study dates for streak calculation
         for (const review of reviews) {
-          const reviewDate = review.review_date ? new Date(review.review_date) : null;
+          const reviewDate = review.reviewDate ? new Date(review.reviewDate) : null;
           if (reviewDate && !isNaN(reviewDate.getTime())) {
             flashcardStudyDates.add(reviewDate.toISOString().split('T')[0]);
           }
@@ -1712,7 +1710,17 @@ export class DatabaseStorage implements IStorage {
         // Get question for topic analysis
         const [question] = await db.select().from(quizQuestions).where(eq(quizQuestions.id, response.questionId));
         if (question?.tags) {
-          for (const tag of question.tags) {
+          // Parse tags from JSON string to array
+          let tagsArray: string[] = [];
+          try {
+            tagsArray = typeof question.tags === 'string' ? JSON.parse(question.tags) : question.tags;
+          } catch (e) {
+            console.warn(`Failed to parse tags for question ${question.id}:`, question.tags);
+            tagsArray = [];
+          }
+          
+          // Process each tag for topic statistics
+          for (const tag of tagsArray) {
             if (!topicStats[tag]) {
               topicStats[tag] = { correct: 0, total: 0, recentCorrect: 0, recentTotal: 0 };
             }
@@ -1778,28 +1786,66 @@ export class DatabaseStorage implements IStorage {
       longestStreak = Math.max(longestStreak, tempStreak, currentStreak);
     }
 
+    // Helper function to format topic names for display
+    const formatTopicName = (topic: string): string => {
+      // Handle common abbreviations and special cases
+      const specialCases: Record<string, string> = {
+        'oop': 'Object-Oriented Programming',
+        'os': 'Operating Systems',
+        'sql': 'SQL',
+        'html': 'HTML',
+        'css': 'CSS',
+        'javascript': 'JavaScript',
+        'big-o': 'Big O Notation',
+        '4ps': 'Marketing Mix (4 Ps)',
+      };
+      
+      const lowerTopic = topic.toLowerCase();
+      if (specialCases[lowerTopic]) {
+        return specialCases[lowerTopic];
+      }
+      
+      // Capitalize first letter of each word and replace hyphens/underscores with spaces
+      return topic
+        .split(/[-_]/)
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+        .join(' ');
+    };
+
     // Build topic performance
     const topicPerformance = Object.entries(topicStats).map(([topic, stats]) => {
       const accuracy = stats.total > 0 ? Math.round((stats.correct / stats.total) * 100) : 0;
       const recentAccuracy = stats.recentTotal > 0 ? Math.round((stats.recentCorrect / stats.recentTotal) * 100) : accuracy;
       const improvement = stats.recentTotal >= 2 ? recentAccuracy - accuracy : 0;
-      return { topic, accuracy, totalQuestions: stats.total, improvement };
+      return { 
+        topic: formatTopicName(topic), 
+        rawTopic: topic,
+        accuracy, 
+        totalQuestions: stats.total, 
+        incorrectCount: stats.total - stats.correct,
+        improvement 
+      };
     }).sort((a, b) => b.totalQuestions - a.totalQuestions);
 
-    // Identify weak areas and strengths
+    // Identify weak areas (accuracy < 60%, min 5 questions, sorted by lowest accuracy first)
     const weakAreas = topicPerformance
-      .filter(t => t.accuracy < 60 && t.totalQuestions >= 3)
+      .filter(t => t.accuracy < 60 && t.totalQuestions >= 5)
+      .sort((a, b) => a.accuracy - b.accuracy) // Sort by accuracy ascending (worst first)
       .map(t => ({
         topic: t.topic,
         accuracy: t.accuracy,
         suggestion: t.accuracy < 40 
-          ? `Review foundational concepts in ${t.topic}` 
-          : `Practice more ${t.topic} questions to improve`
+          ? `Focus on fundamentals - ${t.incorrectCount} questions need review in ${t.topic}` 
+          : t.accuracy < 50
+          ? `Practice ${t.topic} regularly - ${t.incorrectCount} mistakes to address`
+          : `Almost there! Review ${t.incorrectCount} incorrect answers in ${t.topic}`
       }))
       .slice(0, 5);
 
+    // Identify strengths (accuracy >= 75%, min 5 questions, sorted by highest accuracy first)
     const strengths = topicPerformance
-      .filter(t => t.accuracy >= 80 && t.totalQuestions >= 3)
+      .filter(t => t.accuracy >= 75 && t.totalQuestions >= 5)
+      .sort((a, b) => b.accuracy - a.accuracy) // Sort by accuracy descending (best first)
       .map(t => ({
         topic: t.topic,
         accuracy: t.accuracy,
@@ -1826,11 +1872,9 @@ export class DatabaseStorage implements IStorage {
       const deckCards = await this.getCards(deck.id);
       for (const card of deckCards) {
         // Get actual reviews for this card
-        const reviews: any[] = db.all(sql`
-          SELECT review_date, quality FROM card_reviews WHERE card_id = ${card.id}
-        `);
+        const reviews = await db.select().from(cardReviews).where(eq(cardReviews.cardId, card.id));
         for (const review of reviews) {
-          const reviewDate = review.review_date ? new Date(review.review_date) : null;
+          const reviewDate = review.reviewDate ? new Date(review.reviewDate) : null;
           if (!reviewDate || isNaN(reviewDate.getTime())) continue;
           const dateKey = reviewDate.toISOString().split('T')[0];
           if (!cardReviewsByDay[dateKey]) {
@@ -1930,7 +1974,12 @@ export class DatabaseStorage implements IStorage {
         overallAccuracy
       },
       accuracyTrends,
-      topicPerformance: topicPerformance.slice(0, 10),
+      topicPerformance: topicPerformance.slice(0, 10).map(t => ({
+        topic: t.topic,
+        accuracy: t.accuracy,
+        totalQuestions: t.totalQuestions,
+        improvement: t.improvement
+      })),
       studyPatterns,
       weakAreas,
       strengths,

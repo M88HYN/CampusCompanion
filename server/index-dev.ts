@@ -4,7 +4,7 @@ import { seedComputerScienceData } from "./seed-computer-science";
 import { seedCompletedQuizzes } from "./seed-completed-quizzes";
 import { cleanDuplicates, enforceConstraints } from "./clean-duplicates";
 import { db } from "./db";
-import { quizzes, quizAttempts, decks, cards } from "@shared/schema";
+import { quizzes, quizAttempts, decks } from "@shared/schema";
 import { eq } from "drizzle-orm";
 import type { Express } from "express";
 import type { Server } from "http";
@@ -24,9 +24,9 @@ const setup = async (_app: Express, _server: Server) => {
     console.log("\n🗑️  Clearing existing quizzes and decks to load new multi-subject data...");
     await db.delete(quizAttempts).where(eq(quizAttempts.userId, demoUserId));
     await db.delete(quizzes).where(eq(quizzes.userId, demoUserId));
-    await db.delete(cards).where(eq(cards.userId, demoUserId));
+    // Delete decks (will cascade to delete cards and cardReviews)
     await db.delete(decks).where(eq(decks.userId, demoUserId));
-    console.log("✅ Cleared all quizzes, quiz attempts, cards, and decks");
+    console.log("✅ Cleared all quizzes, quiz attempts, decks, cards, and card reviews");
     
     // THEN: Seed data (will skip if data already exists)
     console.log("\n🌱 Seeding data...");

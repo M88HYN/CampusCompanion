@@ -148,8 +148,13 @@ sqlite.exec(`
     CREATE TABLE IF NOT EXISTS card_reviews (
       id VARCHAR PRIMARY KEY,
       card_id VARCHAR NOT NULL REFERENCES cards(id) ON DELETE CASCADE,
+      user_id VARCHAR NOT NULL REFERENCES users(id) ON DELETE CASCADE,
       quality INTEGER NOT NULL,
-      review_date DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+      interval_before INTEGER NOT NULL,
+      interval_after INTEGER NOT NULL,
+      ease_factor_before REAL NOT NULL,
+      ease_factor_after REAL NOT NULL,
+      reviewed_at INTEGER NOT NULL
     )
   `);
 
