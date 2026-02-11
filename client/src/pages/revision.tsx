@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
+import { useLocation } from "wouter";
 import { 
   Play, Pause, RotateCcw, Plus, Trash2, BarChart3, Clock, 
   Zap, Coffee, Brain, Target, Sparkles, CheckCircle2, 
@@ -79,6 +80,7 @@ export default function Revision() {
     refetch: refetchReview,
   } = useSpacedRepetition(20);
   const { toast } = useToast();
+  const [_location, navigate] = useLocation();
 
   const [currentReviewIndex, setCurrentReviewIndex] = useState(0);
   const [selectedOptionId, setSelectedOptionId] = useState<string | null>(null);
@@ -289,7 +291,21 @@ export default function Revision() {
 
         {/* Smart Suggestion Banner */}
         {highPriorityTasks.length > 0 && (
-          <div className="bg-gradient-to-r from-rose-100 via-pink-100 to-fuchsia-100 dark:from-rose-900 dark:via-pink-900 dark:to-fuchsia-900 rounded-xl p-4 border-2 border-rose-200 dark:border-rose-800 shadow-md">
+          <div 
+            className="bg-gradient-to-r from-rose-100 via-pink-100 to-fuchsia-100 dark:from-rose-900 dark:via-pink-900 dark:to-fuchsia-900 rounded-xl p-4 border-2 border-rose-200 dark:border-rose-800 shadow-md cursor-pointer hover:shadow-lg hover:scale-105 transition-all"
+            onClick={() => {
+              const taskTitle = highPriorityTasks[0].title.toLowerCase();
+              if (taskTitle.includes("review") || taskTitle.includes("note")) {
+                navigate("/notes");
+              } else if (taskTitle.includes("practice") || taskTitle.includes("problem") || taskTitle.includes("quiz")) {
+                navigate("/quizzes");
+              } else if (taskTitle.includes("card") || taskTitle.includes("flash")) {
+                navigate("/flashcards");
+              } else {
+                navigate("/quizzes");
+              }
+            }}
+          >
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-rose-500 to-pink-600 flex items-center justify-center shadow-md shrink-0">
                 <Sparkles className="h-5 w-5 text-white" />
@@ -444,7 +460,7 @@ export default function Revision() {
                     </defs>
                   </svg>
                   <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <div className="font-mono text-4xl md:text-5xl font-bold text-slate-900 dark:text-white">
+                    <div className="font-sans text-4xl md:text-5xl font-bold tracking-tight tabular-nums text-slate-900 dark:text-white">
                       {String(minutes).padStart(2, "0")}:{String(seconds).padStart(2, "0")}
                     </div>
                     <p className="text-sm text-muted-foreground mt-2 text-center">{timerPresets[selectedPreset].description}</p>

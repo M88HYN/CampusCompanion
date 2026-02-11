@@ -1886,7 +1886,7 @@ export default function Quizzes() {
             ) : summary.totalQuizzesTaken > 0 ? (
               <div className="space-y-6">
                 {/* Overview Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
                   <AnalyticsStatCard
                     icon={<Trophy className="h-8 w-8" />}
                     title="Quizzes Taken"
@@ -1918,14 +1918,34 @@ export default function Quizzes() {
                     borderColor="border-blue-200 dark:border-blue-800 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900 border"
                   />
                   <AnalyticsStatCard
-                    icon={<Star className="h-8 w-8" />}
-                    title="Questions Answered"
-                    value={summary.totalQuestionsAnswered}
-                    subtitle="Total across all quizzes"
-                    iconBgColor="bg-orange-100 dark:bg-orange-900"
-                    iconColor="text-orange-600 dark:text-orange-400"
-                    textColor="text-orange-700 dark:text-orange-300"
-                    borderColor="border-orange-200 dark:border-orange-800 bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-950 dark:to-orange-900 border"
+                    icon={<CheckCircle2 className="h-8 w-8" />}
+                    title="Correct Answers"
+                    value={studyOverview.correctAnswers}
+                    subtitle={`${summary.totalQuestionsAnswered} total answered`}
+                    iconBgColor="bg-emerald-100 dark:bg-emerald-900"
+                    iconColor="text-emerald-600 dark:text-emerald-400"
+                    textColor="text-emerald-700 dark:text-emerald-300"
+                    borderColor="border-emerald-200 dark:border-emerald-800 bg-gradient-to-br from-emerald-50 to-emerald-100 dark:from-emerald-950 dark:to-emerald-900 border"
+                  />
+                  <AnalyticsStatCard
+                    icon={<AlertCircle className="h-8 w-8" />}
+                    title="Incorrect Answers"
+                    value={studyOverview.incorrectAnswers}
+                    subtitle={`${summary.totalQuestionsAnswered} total answered`}
+                    iconBgColor="bg-rose-100 dark:bg-rose-900"
+                    iconColor="text-rose-600 dark:text-rose-400"
+                    textColor="text-rose-700 dark:text-rose-300"
+                    borderColor="border-rose-200 dark:border-rose-800 bg-gradient-to-br from-rose-50 to-rose-100 dark:from-rose-950 dark:to-rose-900 border"
+                  />
+                  <AnalyticsStatCard
+                    icon={<Flame className="h-8 w-8" />}
+                    title="Current Streak"
+                    value={`${studyOverview.currentStreak} days`}
+                    subtitle={`Best ${studyOverview.longestStreak} days`}
+                    iconBgColor="bg-amber-100 dark:bg-amber-900"
+                    iconColor="text-amber-600 dark:text-amber-400"
+                    textColor="text-amber-700 dark:text-amber-300"
+                    borderColor="border-amber-200 dark:border-amber-800 bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-950 dark:to-amber-900 border"
                   />
                 </div>
 

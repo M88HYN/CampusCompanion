@@ -87,7 +87,7 @@ export function InsightCard({
       <CardContent>
         {items && items.length > 0 ? (
           <div className="space-y-3">
-            {items.map((item, idx) => (
+            {items.slice(0, 5).map((item, idx) => (
               <div
                 key={idx}
                 className={`flex items-center justify-between p-3 ${itemBgColor} rounded-lg`}
