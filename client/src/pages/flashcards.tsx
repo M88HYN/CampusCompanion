@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { Plus, Play, RotateCw, Upload, Trash2, Eye, EyeOff, Tags, Settings, Loader2, ArrowLeft, Search, Brain, Target, Zap, Clock, TrendingUp, CheckCircle2, AlertTriangle, Lightbulb, Keyboard, ChevronRight, Sparkles, BarChart3, BookOpen, X } from "lucide-react";
+import { Plus, Play, RotateCw, Upload, Trash2, Eye, EyeOff, Tags, Settings, Loader2, ArrowLeft, Search, Brain, Target, Zap, Clock, TrendingUp, CheckCircle2, AlertTriangle, Lightbulb, Keyboard, ChevronRight, Sparkles, BarChart3, BookOpen, X, TrendingDown, Award } from "lucide-react";
 import { normalizeTags } from "@/lib/tag-utils";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Select,
   SelectContent,
@@ -176,6 +177,7 @@ export default function Flashcards() {
   const [smartCards, setSmartCards] = useState<SmartCard[]>([]);
   const [sessionSummary, setSessionSummary] = useState<SessionSummary | null>(null);
   const [selectedSubject, setSelectedSubject] = useState<string>("All Subjects");
+  const [flashcardTabActive, setFlashcardTabActive] = useState("decks");
 
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -1058,8 +1060,25 @@ export default function Flashcards() {
             </div>
           </div>
 
-          {/* Quick Stats & Smart Study */}
-          {stats && stats.totalCards > 0 && (
+          {/* Tabs for Decks and Analytics */}
+          <Tabs value={flashcardTabActive} onValueChange={setFlashcardTabActive} className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="decks" className="flex items-center gap-2">
+                <BookOpen className="h-4 w-4" />
+                <span className="hidden sm:inline">My Decks</span>
+                <span className="sm:hidden">Decks</span>
+              </TabsTrigger>
+              <TabsTrigger value="analytics" className="flex items-center gap-2">
+                <BarChart3 className="h-4 w-4" />
+                <span className="hidden sm:inline">Analytics</span>
+                <span className="sm:hidden">Stats</span>
+              </TabsTrigger>
+            </TabsList>
+
+            {/* Decks Tab */}
+            <TabsContent value="decks" className="space-y-6 sm:space-y-8 mt-6">
+              {/* Quick Stats & Smart Study */}
+              {stats && stats.totalCards > 0 && (
             <Card className="border-2 border-emerald-200 dark:border-emerald-800 overflow-hidden">
               <CardHeader className="bg-gradient-to-r from-emerald-100 to-teal-100 dark:from-emerald-900 dark:to-teal-900">
                 <CardTitle className="flex items-center gap-2">
@@ -1413,7 +1432,173 @@ export default function Flashcards() {
                 })}
               </div>
             )}
-          </div>
+            </div>
+            </TabsContent>
+
+            {/* Analytics Tab */}
+            <TabsContent value="analytics" className="space-y-6 sm:space-y-8 mt-6">
+              <div className="space-y-6">
+                {/* Analytics Header */}
+                <Card className="border-2 border-emerald-200 dark:border-emerald-800">
+                  <CardHeader className="bg-gradient-to-r from-emerald-100 to-teal-100 dark:from-emerald-900 dark:to-teal-900">
+                    <CardTitle className="flex items-center gap-2">
+                      <BarChart3 className="h-5 w-5 text-emerald-600" />
+                      Flashcard Analytics
+                    </CardTitle>
+                    <CardDescription>Your learning progress and performance insights</CardDescription>
+                  </CardHeader>
+                  <CardContent className="pt-6">
+                    {stats && stats.totalCards > 0 ? (
+                      <>
+                        {/* Overview Stats */}
+                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 mb-8">
+                          <div className="p-3 sm:p-4 bg-slate-100 dark:bg-slate-800 rounded-lg text-center">
+                            <p className="text-xs sm:text-sm text-muted-foreground mb-1">Total Cards</p>
+                            <p className="text-2xl sm:text-3xl font-bold text-slate-700 dark:text-slate-300">{stats.totalCards}</p>
+                          </div>
+                          <div className="p-3 sm:p-4 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg text-center">
+                            <p className="text-xs sm:text-sm text-muted-foreground mb-1">Mastered</p>
+                            <p className="text-2xl sm:text-3xl font-bold text-emerald-600">{stats.mastered}</p>
+                            <p className="text-xs text-emerald-600 mt-1">{stats.totalCards > 0 ? Math.round((stats.mastered / stats.totalCards) * 100) : 0}%</p>
+                          </div>
+                          <div className="p-3 sm:p-4 bg-blue-100 dark:bg-blue-900/30 rounded-lg text-center">
+                            <p className="text-xs sm:text-sm text-muted-foreground mb-1">New</p>
+                            <p className="text-2xl sm:text-3xl font-bold text-blue-600">{stats.new}</p>
+                          </div>
+                          <div className="p-3 sm:p-4 bg-orange-100 dark:bg-orange-900/30 rounded-lg text-center">
+                            <p className="text-xs sm:text-sm text-muted-foreground mb-1">Struggling</p>
+                            <p className="text-2xl sm:text-3xl font-bold text-orange-600">{stats.struggling}</p>
+                          </div>
+                          <div className="p-3 sm:p-4 bg-red-100 dark:bg-red-900/30 rounded-lg text-center">
+                            <p className="text-xs sm:text-sm text-muted-foreground mb-1">Due Now</p>
+                            <p className="text-2xl sm:text-3xl font-bold text-red-600">{stats.dueNow}</p>
+                          </div>
+                        </div>
+
+                        {/* Mastery Progress */}
+                        <div className="mb-8">
+                          <div className="flex items-center justify-between mb-3">
+                            <h3 className="text-sm font-semibold flex items-center gap-2">
+                              <Award className="h-4 w-4 text-emerald-600" />
+                              Overall Mastery Progress
+                            </h3>
+                            <span className="text-sm font-bold text-emerald-600">{stats.totalCards > 0 ? Math.round((stats.mastered / stats.totalCards) * 100) : 0}%</span>
+                          </div>
+                          <Progress value={stats.totalCards > 0 ? (stats.mastered / stats.totalCards) * 100 : 0} className="h-3" />
+                        </div>
+
+                        {/* Strong Areas */}
+                        {filteredDecks.length > 0 && (
+                          <div className="mb-8">
+                            <h3 className="text-sm font-semibold flex items-center gap-2 mb-3">
+                              <TrendingUp className="h-4 w-4 text-emerald-600" />
+                              Strong Areas (Decks with highest mastery)
+                            </h3>
+                            <div className="space-y-2">
+                              {filteredDecks
+                                .filter(d => d.cards > 0)
+                                .sort((a, b) => (b.mastered / b.cards) - (a.mastered / a.cards))
+                                .slice(0, 5)
+                                .map(deck => {
+                                  const masteryPct = Math.round((deck.mastered / deck.cards) * 100);
+                                  return (
+                                    <div key={deck.id} className="p-3 bg-emerald-50 dark:bg-emerald-950 rounded-lg border border-emerald-200 dark:border-emerald-800">
+                                      <div className="flex items-center justify-between mb-2">
+                                        <p className="font-medium text-sm">{deck.title}</p>
+                                        <Badge className="bg-emerald-600 text-white">{masteryPct}%</Badge>
+                                      </div>
+                                      <Progress value={masteryPct} className="h-2" />
+                                      <p className="text-xs text-muted-foreground mt-1">{deck.mastered} of {deck.cards} cards mastered</p>
+                                    </div>
+                                  );
+                                })}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Weak Areas */}
+                        {filteredDecks.length > 0 && (
+                          <div>
+                            <h3 className="text-sm font-semibold flex items-center gap-2 mb-3">
+                              <TrendingDown className="h-4 w-4 text-orange-600" />
+                              Areas to Improve (Focus on these)
+                            </h3>
+                            <div className="space-y-2">
+                              {filteredDecks
+                                .filter(d => d.cards > 0 && (d.mastered / d.cards) < 0.7)
+                                .sort((a, b) => (a.mastered / a.cards) - (b.mastered / b.cards))
+                                .slice(0, 5)
+                                .map(deck => {
+                                  const masteryPct = Math.round((deck.mastered / deck.cards) * 100);
+                                  return (
+                                    <div key={deck.id} className="p-3 bg-orange-50 dark:bg-orange-950 rounded-lg border border-orange-200 dark:border-orange-800">
+                                      <div className="flex items-center justify-between mb-2">
+                                        <p className="font-medium text-sm">{deck.title}</p>
+                                        <Badge variant="outline" className="text-orange-600 border-orange-300 dark:border-orange-700">{masteryPct}%</Badge>
+                                      </div>
+                                      <Progress value={masteryPct} className="h-2" />
+                                      <p className="text-xs text-muted-foreground mt-1">{deck.dueToday} cards due for review</p>
+                                      <Button 
+                                        size="sm" 
+                                        variant="outline"
+                                        className="mt-2 w-full"
+                                        onClick={() => {
+                                          startSmartStudy("deck", deck.id);
+                                        }}
+                                      >
+                                        Study This Deck
+                                      </Button>
+                                    </div>
+                                  );
+                                })}
+                              {filteredDecks.filter(d => d.cards > 0 && (d.mastered / d.cards) < 0.7).length === 0 && (
+                                <p className="text-sm text-muted-foreground text-center py-4">Great! All your decks are progressing well.</p>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <div className="text-center py-8">
+                        <Brain className="h-12 w-12 mx-auto mb-4 text-slate-400" />
+                        <p className="text-muted-foreground">No cards yet. Create a deck and add cards to see analytics.</p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Study Tips */}
+                <Card className="border-2 border-blue-200 dark:border-blue-800">
+                  <CardHeader className="bg-gradient-to-r from-blue-100 to-cyan-100 dark:from-blue-900 dark:to-cyan-900">
+                    <CardTitle className="flex items-center gap-2 text-base">
+                      <Lightbulb className="h-5 w-5 text-blue-600" />
+                      Study Tips
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-4 space-y-3">
+                    <div className="text-sm space-y-2">
+                      <p className="flex items-start gap-2">
+                        <span className="text-blue-600 font-bold mt-1">→</span>
+                        <span>Focus on <strong>struggling cards</strong> first to improve weak areas faster</span>
+                      </p>
+                      <p className="flex items-start gap-2">
+                        <span className="text-blue-600 font-bold mt-1">→</span>
+                        <span>Review <strong>due cards</strong> regularly to maintain spaced repetition</span>
+                      </p>
+                      <p className="flex items-start gap-2">
+                        <span className="text-blue-600 font-bold mt-1">→</span>
+                        <span>Aim for <strong>70%+ mastery</strong> in each deck before moving to new material</span>
+                      </p>
+                      <p className="flex items-start gap-2">
+                        <span className="text-blue-600 font-bold mt-1">→</span>
+                        <span>Link related <strong>notes</strong> to flashcards for better context and learning</span>
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
+          </Tabs>
         </div>
       </div>
     );

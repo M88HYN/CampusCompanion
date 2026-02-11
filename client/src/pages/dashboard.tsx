@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
+import { apiRequest } from "@/lib/queryClient";
 
 interface DashboardMetrics {
   dueToday: number;
@@ -206,6 +207,10 @@ export default function Dashboard({ userRole = "student" }: DashboardProps) {
   // Fetch real metrics from backend
   const { data: metrics, isLoading: isLoadingMetrics } = useQuery<DashboardMetrics>({
     queryKey: ['/api/dashboard/metrics'],
+    queryFn: async () => {
+      const res = await apiRequest("GET", "/api/dashboard/metrics");
+      return res.json();
+    },
     enabled: !!user,
     retry: 1,
   });
@@ -213,6 +218,10 @@ export default function Dashboard({ userRole = "student" }: DashboardProps) {
   // Fetch due flashcards for immediate review
   const { data: dueCards = [], isError: dueCardsError } = useQuery<DueCard[]>({
     queryKey: ['/api/dashboard/due-flashcards'],
+    queryFn: async () => {
+      const res = await apiRequest("GET", "/api/dashboard/due-flashcards");
+      return res.json();
+    },
     enabled: !!user,
     retry: 1,
   });
@@ -220,6 +229,10 @@ export default function Dashboard({ userRole = "student" }: DashboardProps) {
   // Fetch lowest scoring quiz for retake recommendation
   const { data: lowestQuiz } = useQuery({
     queryKey: ['/api/dashboard/lowest-quiz'],
+    queryFn: async () => {
+      const res = await apiRequest("GET", "/api/dashboard/lowest-quiz");
+      return res.json();
+    },
     enabled: !!user,
     retry: 1,
   });
@@ -227,6 +240,10 @@ export default function Dashboard({ userRole = "student" }: DashboardProps) {
   // Fetch recent notes
   const { data: recentNotes = [], isError: notesError } = useQuery<Note[]>({
     queryKey: ['/api/dashboard/recent-notes'],
+    queryFn: async () => {
+      const res = await apiRequest("GET", "/api/dashboard/recent-notes");
+      return res.json();
+    },
     enabled: !!user,
     retry: 1,
   });
@@ -234,18 +251,30 @@ export default function Dashboard({ userRole = "student" }: DashboardProps) {
   // Keep the existing queries for deck/quiz counts
   const { data: decks = [], isError: decksError } = useQuery<Deck[]>({
     queryKey: ['/api/decks'],
+    queryFn: async () => {
+      const res = await apiRequest("GET", "/api/decks");
+      return res.json();
+    },
     enabled: !!user,
     retry: 1,
   });
 
   const { data: quizzes = [], isError: quizzesError } = useQuery<Quiz[]>({
     queryKey: ['/api/quizzes'],
+    queryFn: async () => {
+      const res = await apiRequest("GET", "/api/quizzes");
+      return res.json();
+    },
     enabled: !!user,
     retry: 1,
   });
 
   const { data: notes = [] } = useQuery<Note[]>({
     queryKey: ['/api/notes'],
+    queryFn: async () => {
+      const res = await apiRequest("GET", "/api/notes");
+      return res.json();
+    },
     enabled: !!user,
     retry: 1,
   });
@@ -253,6 +282,10 @@ export default function Dashboard({ userRole = "student" }: DashboardProps) {
   // Still fetch insights for weak areas and strengths
   const { data: insights, isLoading: isLoadingInsights } = useQuery<LearningInsights>({
     queryKey: ['/api/learning-insights'],
+    queryFn: async () => {
+      const res = await apiRequest("GET", "/api/learning-insights");
+      return res.json();
+    },
     enabled: !!user,
     retry: 1,
   });
