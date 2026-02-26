@@ -443,7 +443,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           type: "basic",
           front,
           back,
-          tags: (note.tags || []) as string[],
+          tags: note.tags ?? null,
           sourceNoteBlockId: block.id,
         });
         
@@ -915,7 +915,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             type: "basic",
             front: `What do you know about: ${block.content.substring(0, 100)}${block.content.length > 100 ? '...' : ''}?`,
             back: block.content,
-            tags: (note.tags || []) as string[],
+            tags: note.tags ?? null,
             sourceNoteBlockId: block.id,
           });
           createdCards.push(card);
@@ -1077,8 +1077,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Calculate next due date
-      const dueAt = new Date();
-      dueAt.setDate(dueAt.getDate() + interval);
+      const dueAtDate = new Date();
+      dueAtDate.setDate(dueAtDate.getDate() + interval);
+      const dueAt = dueAtDate.getTime();
       
       // Update card with new SM-2 values
       const updatedCard = await storage.updateCard(cardId, {
@@ -1087,7 +1088,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         repetitions,
         status,
         dueAt,
-        lastReviewedAt: new Date(),
+        lastReviewedAt: Date.now(),
       });
       
       // Create review record for analytics
@@ -1100,7 +1101,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         intervalAfter: interval,
         easeFactorBefore: card.easeFactor,
         easeFactorAfter: easeFactor,
-        reviewedAt: new Date(),
+        reviewedAt: Date.now(),
       }).returning();
       
       // Return updated card with review details

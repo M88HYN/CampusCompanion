@@ -538,7 +538,7 @@ export default function Notes() {
       data: {
         title: noteTitle,
         subject: noteSubject || undefined,
-        tags: noteTags.length > 0 ? noteTags : undefined,
+        tags: noteTags.length > 0 ? JSON.stringify(noteTags) : undefined,
       },
       content: noteContent,
     });

@@ -161,8 +161,8 @@ export class DatabaseStorage implements IStorage {
     const [user] = await db
       .insert(users)
       .values({ 
-        id: randomUUID(), 
         ...insertUser,
+        id: insertUser.id ?? randomUUID(),
         createdAt: Date.now(),
         updatedAt: Date.now()
       })
@@ -820,7 +820,7 @@ export class DatabaseStorage implements IStorage {
         .from(quizResponses)
         .where(and(
           inArray(quizResponses.attemptId, attempts.map((a: typeof attempts[0]) => a.id)),
-          eq(quizResponses.isCorrect, false)
+          eq(quizResponses.isCorrect, 0)
         ))
         .limit(limit);
 
@@ -1407,7 +1407,7 @@ export class DatabaseStorage implements IStorage {
               : new Date(a.completed_at);
             return isNaN(date.getTime()) ? null : date.toISOString().split('T')[0];
           })
-          .filter(Boolean)
+          .filter((value): value is string => Boolean(value))
       )].sort().reverse();
 
       let currentStreak = 0;

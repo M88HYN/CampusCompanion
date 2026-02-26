@@ -54,8 +54,8 @@ export function useAuth() {
     firstName: decoded.firstName || null,
     lastName: decoded.lastName || null,
     profileImageUrl: null,
-    createdAt: new Date(),
-    updatedAt: new Date(),
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
   });
 
   const createUserFromDemo = (demoUser: NonNullable<DemoStatusResponse["user"]>): User => ({
@@ -66,8 +66,8 @@ export function useAuth() {
     firstName: demoUser.firstName || "Demo",
     lastName: demoUser.lastName || "User",
     profileImageUrl: null,
-    createdAt: new Date(),
-    updatedAt: new Date(),
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
   });
 
   const tryDemoAuth = useCallback(async (): Promise<boolean> => {

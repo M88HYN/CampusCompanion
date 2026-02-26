@@ -448,7 +448,7 @@ export async function seedFlashcards(userId: string) {
   const insertedCards = await db.insert(cards).values(baseCards).returning();
 
   // Second pass: Update cards with varied learning states (30% mastered, 25% learning, 20% struggling, 25% new)
-  const cardsWithStates = insertedCards.map(card => {
+  const cardsWithStates = insertedCards.map((card: any) => {
     const state = getRandomLearningState();
     return {
       id: card.id,
@@ -489,7 +489,7 @@ export async function seedFlashcards(userId: string) {
   
   // Verify each deck has 10-30 cards
   for (const deck of finalDecks) {
-    const deckCards = finalCards.filter(c => c.deckId === deck.id);
+    const deckCards = finalCards.filter((c: any) => c.deckId === deck.id);
     if (deckCards.length < 10 || deckCards.length > 30) {
       console.warn(`[FLASHCARD SEED] ⚠️  WARNING: Deck "${deck.title}" has ${deckCards.length} cards (should be 10-30)`);
     }

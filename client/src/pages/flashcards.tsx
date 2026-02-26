@@ -215,7 +215,7 @@ export default function Flashcards() {
       }
       // Use apiRequest to include auth token in headers
       const res = await apiRequest("GET", `/api/cards/smart-queue?${params}`);
-      return res.json();
+      return (await res.json()) as SmartQueueResponse;
     },
     enabled: view === "smart-study" || view === "decks",
     retry: 1,
@@ -274,6 +274,10 @@ export default function Flashcards() {
 
   const { data: selectedDeck } = useQuery<DeckWithCards>({
     queryKey: ["/api/decks", selectedDeckId],
+    queryFn: async () => {
+      const res = await apiRequest("GET", `/api/decks/${selectedDeckId}`);
+      return (await res.json()) as DeckWithCards;
+    },
     enabled: !!selectedDeckId && (view === "studying" || view === "create-card" || view === "bulk-import"),
     retry: 1,
   });
@@ -438,7 +442,7 @@ export default function Flashcards() {
     const { confetti } = useConfetti();
     
     console.log("[FLASHCARDS] Review action triggered - quality:", quality);
-    const cards = smartCards.length > 0 ? smartCards : (smartQueue?.cards || []);
+    const cards: SmartCard[] = smartCards.length > 0 ? smartCards : (smartQueue?.cards ?? []);
     console.log("[FLASHCARDS] Handler entered - cards available:", cards.length);
     
     if (cards.length === 0) {

@@ -1,18 +1,19 @@
-import { sql } from "drizzle-orm";
-import { pgTable, text as pgText, varchar, timestamp, serial } from "drizzle-orm/pg-core";
+import { sqliteTable, text, integer, index } from "drizzle-orm/sqlite-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { users } from "./auth";
 
 // ==================== CONVERSATIONS ====================
 
-export const conversations = pgTable("conversations", {
-  id: serial("id").primaryKey(),
-  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
-  title: pgText("title").notNull().default("New Conversation"),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  updatedAt: timestamp("updated_at").notNull().defaultNow(),
-});
+export const conversations = sqliteTable("conversations", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  title: text("title").notNull().default("New Conversation"),
+  createdAt: integer("created_at").notNull(),
+  updatedAt: integer("updated_at").notNull(),
+}, (table) => ({
+  userIdIdx: index("conversations_user_id_idx").on(table.userId),
+}));
 
 export const insertConversationSchema = createInsertSchema(conversations).pick({
   userId: true,
@@ -24,13 +25,15 @@ export type InsertConversation = z.infer<typeof insertConversationSchema>;
 
 // ==================== MESSAGES ====================
 
-export const messages = pgTable("messages", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  conversationId: serial("conversation_id").references(() => conversations.id, { onDelete: "cascade" }),
-  role: pgText("role").notNull(),
-  content: pgText("content").notNull(),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-});
+export const messages = sqliteTable("messages", {
+  id: text("id").primaryKey(),
+  conversationId: text("conversation_id").references(() => conversations.id, { onDelete: "cascade" }),
+  role: text("role").notNull(),
+  content: text("content").notNull(),
+  createdAt: integer("created_at").notNull(),
+}, (table) => ({
+  conversationIdIdx: index("messages_conversation_id_idx").on(table.conversationId),
+}));
 
 export const insertMessageSchema = createInsertSchema(messages).pick({
   conversationId: true,

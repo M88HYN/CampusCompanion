@@ -1,8 +1,6 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text as pgText, varchar, integer as pgInteger, timestamp, boolean, real, index as pgIndex, serial } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
-import { conversations } from "./models/chat";
 
 // Import and re-export auth models (users, sessions tables and types)
 import { users, sessions, type User, type UpsertUser } from "./models/auth";
@@ -10,7 +8,7 @@ export { users, sessions, type User, type UpsertUser };
 
 // ==================== NOTES ====================
 
-import { sqliteTable, text, integer, index } from "drizzle-orm/sqlite-core";
+import { sqliteTable, text, integer, index, real } from "drizzle-orm/sqlite-core";
 
 export const notes = sqliteTable("notes", {
   id: text("id").primaryKey(),
@@ -281,26 +279,26 @@ export const quizResponses = sqliteTable("quiz_responses", {
 }));
 
 // User question stats for adaptive engine and spaced repetition
-export const userQuestionStats = pgTable("user_question_stats", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
-  questionId: varchar("question_id").notNull().references(() => quizQuestions.id, { onDelete: "cascade" }),
-  timesAnswered: pgInteger("times_answered").notNull().default(0),
-  timesCorrect: pgInteger("times_correct").notNull().default(0),
+export const userQuestionStats = sqliteTable("user_question_stats", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  questionId: text("question_id").notNull().references(() => quizQuestions.id, { onDelete: "cascade" }),
+  timesAnswered: integer("times_answered").notNull().default(0),
+  timesCorrect: integer("times_correct").notNull().default(0),
   averageResponseTime: real("average_response_time"), // seconds
-  lastAnsweredAt: timestamp("last_answered_at"),
-  streak: pgInteger("streak").notNull().default(0), // consecutive correct answers
+  lastAnsweredAt: integer("last_answered_at"),
+  streak: integer("streak").notNull().default(0), // consecutive correct answers
   // Spaced repetition fields (SM-2 algorithm)
   easeFactor: real("ease_factor").notNull().default(2.5),
-  interval: pgInteger("interval").notNull().default(0), // days
-  repetitions: pgInteger("repetitions").notNull().default(0),
-  nextReviewAt: timestamp("next_review_at"),
-  status: pgText("status").notNull().default("new"), // "new", "learning", "reviewing", "mastered"
-}, (table) => [
-  pgIndex("user_question_stats_user_id_idx").on(table.userId),
-  pgIndex("user_question_stats_question_id_idx").on(table.questionId),
-  pgIndex("user_question_stats_next_review_idx").on(table.nextReviewAt),
-]);
+  interval: integer("interval").notNull().default(0), // days
+  repetitions: integer("repetitions").notNull().default(0),
+  nextReviewAt: integer("next_review_at"),
+  status: text("status").notNull().default("new"), // "new", "learning", "reviewing", "mastered"
+}, (table) => ({
+  userIdIdx: index("user_question_stats_user_id_idx").on(table.userId),
+  questionIdIdx: index("user_question_stats_question_id_idx").on(table.questionId),
+  nextReviewIdx: index("user_question_stats_next_review_idx").on(table.nextReviewAt),
+}));
 
 export const insertQuizSchema = createInsertSchema(quizzes).omit({
   id: true,
@@ -352,31 +350,31 @@ export type InsertUserQuestionStats = z.infer<typeof insertUserQuestionStatsSche
 
 // ==================== GAMIFICATION: ACHIEVEMENTS & BADGES ====================
 
-export const achievements = pgTable("achievements", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  name: pgText("name").notNull().unique(),
-  description: pgText("description").notNull(),
-  icon: pgText("icon").notNull(), // icon name or emoji
-  category: pgText("category").notNull(), // "streak", "mastery", "exploration", "social", "milestone"
-  requirement: pgText("requirement").notNull(), // JSON describing unlock condition
-  points: pgInteger("points").notNull().default(10),
-  rarity: pgText("rarity").notNull().default("common"), // "common", "rare", "epic", "legendary"
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-}, (table) => [
-  pgIndex("achievements_category_idx").on(table.category),
-]);
+export const achievements = sqliteTable("achievements", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull().unique(),
+  description: text("description").notNull(),
+  icon: text("icon").notNull(), // icon name or emoji
+  category: text("category").notNull(), // "streak", "mastery", "exploration", "social", "milestone"
+  requirement: text("requirement").notNull(), // JSON describing unlock condition
+  points: integer("points").notNull().default(10),
+  rarity: text("rarity").notNull().default("common"), // "common", "rare", "epic", "legendary"
+  createdAt: integer("created_at").notNull(),
+}, (table) => ({
+  categoryIdx: index("achievements_category_idx").on(table.category),
+}));
 
-export const userAchievements = pgTable("user_achievements", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
-  achievementId: varchar("achievement_id").notNull().references(() => achievements.id, { onDelete: "cascade" }),
-  unlockedAt: timestamp("unlocked_at").notNull().defaultNow(),
-  progress: pgInteger("progress").default(0), // for progressive achievements
-  isNotified: boolean("is_notified").notNull().default(false),
-}, (table) => [
-  pgIndex("user_achievements_user_id_idx").on(table.userId),
-  pgIndex("user_achievements_achievement_id_idx").on(table.achievementId),
-]);
+export const userAchievements = sqliteTable("user_achievements", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  achievementId: text("achievement_id").notNull().references(() => achievements.id, { onDelete: "cascade" }),
+  unlockedAt: integer("unlocked_at").notNull(),
+  progress: integer("progress").default(0), // for progressive achievements
+  isNotified: integer("is_notified", { mode: "boolean" }).notNull().default(false),
+}, (table) => ({
+  userIdIdx: index("user_achievements_user_id_idx").on(table.userId),
+  achievementIdIdx: index("user_achievements_achievement_id_idx").on(table.achievementId),
+}));
 
 export const insertAchievementSchema = createInsertSchema(achievements).omit({
   id: true,
@@ -395,50 +393,50 @@ export type InsertUserAchievement = z.infer<typeof insertUserAchievementSchema>;
 
 // ==================== PROGRESS & ANALYTICS ====================
 
-export const studyStreaks = pgTable("study_streaks", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }).unique(),
-  currentStreak: pgInteger("current_streak").notNull().default(0),
-  longestStreak: pgInteger("longest_streak").notNull().default(0),
-  lastStudyDate: timestamp("last_study_date"),
-  totalStudyDays: pgInteger("total_study_days").notNull().default(0),
-  updatedAt: timestamp("updated_at").notNull().defaultNow(),
-}, (table) => [
-  pgIndex("study_streaks_user_id_idx").on(table.userId),
-]);
+export const studyStreaks = sqliteTable("study_streaks", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }).unique(),
+  currentStreak: integer("current_streak").notNull().default(0),
+  longestStreak: integer("longest_streak").notNull().default(0),
+  lastStudyDate: integer("last_study_date"),
+  totalStudyDays: integer("total_study_days").notNull().default(0),
+  updatedAt: integer("updated_at").notNull(),
+}, (table) => ({
+  userIdIdx: index("study_streaks_user_id_idx").on(table.userId),
+}));
 
-export const studySessions = pgTable("study_sessions", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
-  sessionType: pgText("session_type").notNull(), // "flashcards", "quiz", "notes", "research", "pomodoro"
-  resourceId: varchar("resource_id"), // deck_id, quiz_id, note_id, conversation_id
-  durationMinutes: pgInteger("duration_minutes").notNull(),
-  itemsReviewed: pgInteger("items_reviewed").default(0),
-  correctAnswers: pgInteger("correct_answers").default(0),
-  startedAt: timestamp("started_at").notNull().defaultNow(),
-  endedAt: timestamp("ended_at"),
-}, (table) => [
-  pgIndex("study_sessions_user_id_idx").on(table.userId),
-  pgIndex("study_sessions_session_type_idx").on(table.sessionType),
-  pgIndex("study_sessions_started_at_idx").on(table.startedAt),
-]);
+export const studySessions = sqliteTable("study_sessions", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  sessionType: text("session_type").notNull(), // "flashcards", "quiz", "notes", "research", "pomodoro"
+  resourceId: text("resource_id"), // deck_id, quiz_id, note_id, conversation_id
+  durationMinutes: integer("duration_minutes").notNull(),
+  itemsReviewed: integer("items_reviewed").default(0),
+  correctAnswers: integer("correct_answers").default(0),
+  startedAt: integer("started_at").notNull(),
+  endedAt: integer("ended_at"),
+}, (table) => ({
+  userIdIdx: index("study_sessions_user_id_idx").on(table.userId),
+  sessionTypeIdx: index("study_sessions_session_type_idx").on(table.sessionType),
+  startedAtIdx: index("study_sessions_started_at_idx").on(table.startedAt),
+}));
 
-export const learningGoals = pgTable("learning_goals", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
-  title: pgText("title").notNull(),
-  description: pgText("description"),
-  targetType: pgText("target_type").notNull(), // "flashcards", "quizzes", "study_time", "streak"
-  targetValue: pgInteger("target_value").notNull(),
-  currentValue: pgInteger("current_value").notNull().default(0),
-  deadline: timestamp("deadline"),
-  status: pgText("status").notNull().default("active"), // "active", "completed", "abandoned"
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  completedAt: timestamp("completed_at"),
-}, (table) => [
-  pgIndex("learning_goals_user_id_idx").on(table.userId),
-  pgIndex("learning_goals_status_idx").on(table.status),
-]);
+export const learningGoals = sqliteTable("learning_goals", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  title: text("title").notNull(),
+  description: text("description"),
+  targetType: text("target_type").notNull(), // "flashcards", "quizzes", "study_time", "streak"
+  targetValue: integer("target_value").notNull(),
+  currentValue: integer("current_value").notNull().default(0),
+  deadline: integer("deadline"),
+  status: text("status").notNull().default("active"), // "active", "completed", "abandoned"
+  createdAt: integer("created_at").notNull(),
+  completedAt: integer("completed_at"),
+}, (table) => ({
+  userIdIdx: index("learning_goals_user_id_idx").on(table.userId),
+  statusIdx: index("learning_goals_status_idx").on(table.status),
+}));
 
 export const insertStudyStreakSchema = createInsertSchema(studyStreaks).omit({
   id: true,
@@ -470,36 +468,36 @@ export type InsertLearningGoal = z.infer<typeof insertLearningGoalSchema>;
 
 // ==================== INSIGHT SCOUT: SAVED RESOURCES ====================
 
-export const savedResources = pgTable("saved_resources", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
-  conversationId: pgInteger("conversation_id").references(() => conversations.id, { onDelete: "set null" }),
-  title: pgText("title").notNull(),
-  url: pgText("url"),
-  content: pgText("content"),
-  resourceType: pgText("resource_type").notNull(), // "article", "video", "paper", "website", "note"
-  tags: pgText("tags").array(),
-  isFavorite: boolean("is_favorite").notNull().default(false),
-  linkedDeckId: varchar("linked_deck_id").references(() => decks.id, { onDelete: "set null" }),
-  linkedQuizId: varchar("linked_quiz_id").references(() => quizzes.id, { onDelete: "set null" }),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-}, (table) => [
-  pgIndex("saved_resources_user_id_idx").on(table.userId),
-  pgIndex("saved_resources_conversation_id_idx").on(table.conversationId),
-  pgIndex("saved_resources_resource_type_idx").on(table.resourceType),
-]);
+export const savedResources = sqliteTable("saved_resources", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  conversationId: text("conversation_id").references(() => researchConversations.id, { onDelete: "set null" }),
+  title: text("title").notNull(),
+  url: text("url"),
+  content: text("content"),
+  resourceType: text("resource_type").notNull(), // "article", "video", "paper", "website", "note"
+  tags: text("tags"),
+  isFavorite: integer("is_favorite", { mode: "boolean" }).notNull().default(false),
+  linkedDeckId: text("linked_deck_id").references(() => decks.id, { onDelete: "set null" }),
+  linkedQuizId: text("linked_quiz_id").references(() => quizzes.id, { onDelete: "set null" }),
+  createdAt: integer("created_at").notNull(),
+}, (table) => ({
+  userIdIdx: index("saved_resources_user_id_idx").on(table.userId),
+  conversationIdIdx: index("saved_resources_conversation_id_idx").on(table.conversationId),
+  resourceTypeIdx: index("saved_resources_resource_type_idx").on(table.resourceType),
+}));
 
-export const searchHistory = pgTable("search_history", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
-  query: pgText("query").notNull(),
-  searchType: pgText("search_type").notNull(), // "research", "notes", "flashcards", "quizzes"
-  resultCount: pgInteger("result_count"),
-  searchedAt: timestamp("searched_at").notNull().defaultNow(),
-}, (table) => [
-  pgIndex("search_history_user_id_idx").on(table.userId),
-  pgIndex("search_history_searched_at_idx").on(table.searchedAt),
-]);
+export const searchHistory = sqliteTable("search_history", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  query: text("query").notNull(),
+  searchType: text("search_type").notNull(), // "research", "notes", "flashcards", "quizzes"
+  resultCount: integer("result_count"),
+  searchedAt: integer("searched_at").notNull(),
+}, (table) => ({
+  userIdIdx: index("search_history_user_id_idx").on(table.userId),
+  searchedAtIdx: index("search_history_searched_at_idx").on(table.searchedAt),
+}));
 
 export const insertSavedResourceSchema = createInsertSchema(savedResources).omit({
   id: true,
@@ -518,45 +516,45 @@ export type InsertSearchHistory = z.infer<typeof insertSearchHistorySchema>;
 
 // ==================== USER PREFERENCES ====================
 
-export const userPreferences = pgTable("user_preferences", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }).unique(),
+export const userPreferences = sqliteTable("user_preferences", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }).unique(),
   // Account settings
-  phone: varchar("phone"),
-  bio: pgText("bio"),
-  language: varchar("language").notNull().default("en"),
-  timezone: varchar("timezone").notNull().default("america/new_york"),
+  phone: text("phone"),
+  bio: text("bio"),
+  language: text("language").notNull().default("en"),
+  timezone: text("timezone").notNull().default("america/new_york"),
   // Privacy settings
-  profileVisibility: boolean("profile_visibility").notNull().default(true),
-  showStudyActivity: boolean("show_study_activity").notNull().default(true),
-  shareQuizResults: boolean("share_quiz_results").notNull().default(true),
+  profileVisibility: integer("profile_visibility", { mode: "boolean" }).notNull().default(true),
+  showStudyActivity: integer("show_study_activity", { mode: "boolean" }).notNull().default(true),
+  shareQuizResults: integer("share_quiz_results", { mode: "boolean" }).notNull().default(true),
   // Notification settings
-  quizReminders: boolean("quiz_reminders").notNull().default(true),
-  flashcardReminders: boolean("flashcard_reminders").notNull().default(true),
-  weeklyDigest: boolean("weekly_digest").notNull().default(true),
-  newFeatures: boolean("new_features").notNull().default(false),
-  marketing: boolean("marketing").notNull().default(false),
+  quizReminders: integer("quiz_reminders", { mode: "boolean" }).notNull().default(true),
+  flashcardReminders: integer("flashcard_reminders", { mode: "boolean" }).notNull().default(true),
+  weeklyDigest: integer("weekly_digest", { mode: "boolean" }).notNull().default(true),
+  newFeatures: integer("new_features", { mode: "boolean" }).notNull().default(false),
+  marketing: integer("marketing", { mode: "boolean" }).notNull().default(false),
   // Insight Scout settings
-  aiModel: varchar("ai_model").notNull().default("gpt-4"),
-  searchDepth: varchar("search_depth").notNull().default("comprehensive"),
-  citationFormat: varchar("citation_format").notNull().default("apa"),
-  responseTone: varchar("response_tone").notNull().default("academic"),
-  includeExamples: boolean("include_examples").notNull().default(true),
-  includeSources: boolean("include_sources").notNull().default(true),
-  maxResults: varchar("max_results").notNull().default("10"),
-  queryHistory: boolean("query_history").notNull().default(true),
-  autoSave: boolean("auto_save").notNull().default(true),
-  researchSummary: boolean("research_summary").notNull().default(true),
-  webSearch: boolean("web_search").notNull().default(true),
-  academicDatabases: boolean("academic_databases").notNull().default(true),
-  enhancedAnalysis: boolean("enhanced_analysis").notNull().default(true),
-  multiLanguageSupport: boolean("multi_language_support").notNull().default(false),
+  aiModel: text("ai_model").notNull().default("gpt-4"),
+  searchDepth: text("search_depth").notNull().default("comprehensive"),
+  citationFormat: text("citation_format").notNull().default("apa"),
+  responseTone: text("response_tone").notNull().default("academic"),
+  includeExamples: integer("include_examples", { mode: "boolean" }).notNull().default(true),
+  includeSources: integer("include_sources", { mode: "boolean" }).notNull().default(true),
+  maxResults: text("max_results").notNull().default("10"),
+  queryHistory: integer("query_history", { mode: "boolean" }).notNull().default(true),
+  autoSave: integer("auto_save", { mode: "boolean" }).notNull().default(true),
+  researchSummary: integer("research_summary", { mode: "boolean" }).notNull().default(true),
+  webSearch: integer("web_search", { mode: "boolean" }).notNull().default(true),
+  academicDatabases: integer("academic_databases", { mode: "boolean" }).notNull().default(true),
+  enhancedAnalysis: integer("enhanced_analysis", { mode: "boolean" }).notNull().default(true),
+  multiLanguageSupport: integer("multi_language_support", { mode: "boolean" }).notNull().default(false),
   // Timestamps
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  updatedAt: timestamp("updated_at").notNull().defaultNow(),
-}, (table) => [
-  pgIndex("user_preferences_user_id_idx").on(table.userId),
-]);
+  createdAt: integer("created_at").notNull(),
+  updatedAt: integer("updated_at").notNull(),
+}, (table) => ({
+  userIdIdx: index("user_preferences_user_id_idx").on(table.userId),
+}));
 
 export const insertUserPreferencesSchema = createInsertSchema(userPreferences).omit({
   id: true,
