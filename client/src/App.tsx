@@ -4,11 +4,10 @@ import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
-import { Badge } from "@/components/ui/badge";
-import { AppSidebar } from "@/components/app-sidebar";
+import { SidebarProvider } from "@/components/ui/sidebar";
 import { ThemeProvider } from "@/components/theme-provider";
-import { ThemeToggle } from "@/components/theme-toggle";
+import { AppNavigation } from "@/components/navigation/app-navigation";
+import { AppTopbar } from "@/components/navigation/app-topbar";
 import { useAuth } from "@/hooks/use-auth";
 import { Loader2 } from "lucide-react";
 import Dashboard from "@/pages/dashboard";
@@ -34,6 +33,8 @@ function AppRouter() {
       <Route path="/research" component={() => <Research />} />
       <Route path="/revision" component={() => <Revision />} />
       <Route path="/insights" component={() => <Insights />} />
+      <Route path="/performance" component={() => <Insights />} />
+      <Route path="/profile" component={() => <Settings />} />
       <Route path="/settings" component={() => <Settings />} />
       {/* Catch-all: redirect unknown routes to dashboard */}
       <Route>
@@ -43,7 +44,13 @@ function AppRouter() {
   );
 }
 
-function MainLayout({ onLogout, isDemoReadOnly }: { onLogout: () => void; isDemoReadOnly: boolean }) {
+function MainLayout({
+  user,
+  onLogout,
+}: {
+  user: ReturnType<typeof useAuth>["user"];
+  onLogout: () => void;
+}) {
   const style = {
     "--sidebar-width": "16rem",
     "--sidebar-width-icon": "3rem",
@@ -52,24 +59,9 @@ function MainLayout({ onLogout, isDemoReadOnly }: { onLogout: () => void; isDemo
   return (
     <SidebarProvider style={style as React.CSSProperties}>
       <div className="flex h-screen w-full">
-        <AppSidebar userRole="student" onLogout={onLogout} />
+        <AppNavigation user={user} onLogout={onLogout} />
         <div className="flex flex-col flex-1 overflow-hidden">
-          <header className="flex items-center justify-between px-3 sm:px-6 py-2 sm:py-3 border-b-2 border-teal-200 dark:border-teal-800 bg-gradient-to-r from-white to-teal-50 dark:from-slate-900 dark:to-teal-950 shrink-0 shadow-sm">
-            <div className="flex items-center gap-2 sm:gap-3">
-              <SidebarTrigger data-testid="button-sidebar-toggle" className="text-teal-600 dark:text-teal-400" />
-              <h1 className="text-base sm:text-lg font-bold bg-gradient-to-r from-teal-600 to-cyan-600 dark:from-teal-400 dark:to-cyan-400 bg-clip-text text-transparent hidden sm:block">
-                StudyMate
-              </h1>
-            </div>
-            <div className="flex items-center gap-2">
-              {isDemoReadOnly ? (
-                <Badge variant="secondary" className="text-[10px] sm:text-xs">
-                  Demo Read-Only
-                </Badge>
-              ) : null}
-              <ThemeToggle />
-            </div>
-          </header>
+          <AppTopbar user={user} onLogout={onLogout} />
           <main className="flex-1 overflow-y-auto overflow-x-hidden">
             <AppRouter />
           </main>
@@ -91,7 +83,7 @@ function LoadingScreen() {
 }
 
 function AuthenticatedApp() {
-  const { user, isLoading, isAuthenticated, isDemoReadOnly, logout } = useAuth();
+  const { user, isLoading, isAuthenticated, logout } = useAuth();
   const [location] = useLocation();
 
   console.log("[AuthenticatedApp] Rendering", { isLoading, isAuthenticated, location, user: user?.email });
@@ -124,7 +116,7 @@ function AuthenticatedApp() {
     return <Redirect to="/dashboard" />;
   }
 
-  return <MainLayout onLogout={logout} isDemoReadOnly={isDemoReadOnly} />;
+  return <MainLayout user={user} onLogout={logout} />;
 }
 
 export default function App() {
