@@ -5,6 +5,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { Badge } from "@/components/ui/badge";
 import { AppSidebar } from "@/components/app-sidebar";
 import { ThemeProvider } from "@/components/theme-provider";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -42,7 +43,7 @@ function AppRouter() {
   );
 }
 
-function MainLayout({ onLogout }: { onLogout: () => void }) {
+function MainLayout({ onLogout, isDemoReadOnly }: { onLogout: () => void; isDemoReadOnly: boolean }) {
   const style = {
     "--sidebar-width": "16rem",
     "--sidebar-width-icon": "3rem",
@@ -60,7 +61,14 @@ function MainLayout({ onLogout }: { onLogout: () => void }) {
                 StudyMate
               </h1>
             </div>
-            <ThemeToggle />
+            <div className="flex items-center gap-2">
+              {isDemoReadOnly ? (
+                <Badge variant="secondary" className="text-[10px] sm:text-xs">
+                  Demo Read-Only
+                </Badge>
+              ) : null}
+              <ThemeToggle />
+            </div>
           </header>
           <main className="flex-1 overflow-y-auto overflow-x-hidden">
             <AppRouter />
@@ -83,7 +91,7 @@ function LoadingScreen() {
 }
 
 function AuthenticatedApp() {
-  const { user, isLoading, isAuthenticated, logout } = useAuth();
+  const { user, isLoading, isAuthenticated, isDemoReadOnly, logout } = useAuth();
   const [location] = useLocation();
 
   console.log("[AuthenticatedApp] Rendering", { isLoading, isAuthenticated, location, user: user?.email });
@@ -116,7 +124,7 @@ function AuthenticatedApp() {
     return <Redirect to="/dashboard" />;
   }
 
-  return <MainLayout onLogout={logout} />;
+  return <MainLayout onLogout={logout} isDemoReadOnly={isDemoReadOnly} />;
 }
 
 export default function App() {

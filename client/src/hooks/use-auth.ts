@@ -10,10 +10,22 @@ interface JWTPayload {
   exp?: number;
 }
 
+interface DemoStatusResponse {
+  enabled: boolean;
+  readOnly?: boolean;
+  user?: {
+    id: string;
+    email?: string | null;
+    firstName?: string | null;
+    lastName?: string | null;
+  };
+}
+
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isDemoReadOnly, setIsDemoReadOnly] = useState(false);
 
   const decodeToken = (token: string): JWTPayload | null => {
     try {
@@ -46,12 +58,51 @@ export function useAuth() {
     updatedAt: new Date(),
   });
 
+  const createUserFromDemo = (demoUser: NonNullable<DemoStatusResponse["user"]>): User => ({
+    id: demoUser.id,
+    username: "demo",
+    email: demoUser.email || null,
+    passwordHash: null,
+    firstName: demoUser.firstName || "Demo",
+    lastName: demoUser.lastName || "User",
+    profileImageUrl: null,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  });
+
+  const tryDemoAuth = useCallback(async (): Promise<boolean> => {
+    try {
+      const response = await fetch("/api/auth/demo-status");
+      if (!response.ok) {
+        return false;
+      }
+
+      const data = (await response.json()) as DemoStatusResponse;
+      if (data.enabled && data.user) {
+        setUser(createUserFromDemo(data.user));
+        setIsDemoReadOnly(!!data.readOnly);
+        setError(null);
+        return true;
+      }
+    } catch {
+      return false;
+    }
+
+    return false;
+  }, []);
+
   const verifyAuth = useCallback(async () => {
     try {
       const token = localStorage.getItem("token");
       if (!token) {
+        const demoAuthenticated = await tryDemoAuth();
+        if (demoAuthenticated) {
+          setIsLoading(false);
+          return;
+        }
         setIsLoading(false);
         setUser(null);
+        setIsDemoReadOnly(false);
         return;
       }
 
@@ -65,17 +116,23 @@ export function useAuth() {
       if (response.ok) {
         const data = await response.json();
         setUser(data.user);
+        setIsDemoReadOnly(false);
         setError(null);
       } else {
         // If server verification fails, fall back to JWT decoding
         const decoded = decodeToken(token);
         if (decoded) {
           setUser(createUserFromDecoded(decoded));
+          setIsDemoReadOnly(false);
           setError(null);
         } else {
           localStorage.removeItem("token");
-          setUser(null);
-          setError("Token invalid or expired");
+          const demoAuthenticated = await tryDemoAuth();
+          if (!demoAuthenticated) {
+            setUser(null);
+            setIsDemoReadOnly(false);
+            setError("Token invalid or expired");
+          }
         }
       }
     } catch (err) {
@@ -87,20 +144,29 @@ export function useAuth() {
         const decoded = decodeToken(token);
         if (decoded) {
           setUser(createUserFromDecoded(decoded));
+          setIsDemoReadOnly(false);
           setError(null);
         } else {
           localStorage.removeItem("token");
-          setUser(null);
-          setError("Token invalid or expired");
+          const demoAuthenticated = await tryDemoAuth();
+          if (!demoAuthenticated) {
+            setUser(null);
+            setIsDemoReadOnly(false);
+            setError("Token invalid or expired");
+          }
         }
       } else {
-        setUser(null);
-        setError(err instanceof Error ? err.message : "Auth verification failed");
+        const demoAuthenticated = await tryDemoAuth();
+        if (!demoAuthenticated) {
+          setUser(null);
+          setIsDemoReadOnly(false);
+          setError(err instanceof Error ? err.message : "Auth verification failed");
+        }
       }
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [tryDemoAuth]);
 
   // Initial verification on mount
   useEffect(() => {
@@ -110,9 +176,13 @@ export function useAuth() {
       try {
         const token = localStorage.getItem("token");
         if (!token) {
+          const demoAuthenticated = await tryDemoAuth();
           if (isMounted) {
             setIsLoading(false);
-            setUser(null);
+            if (!demoAuthenticated) {
+              setUser(null);
+              setIsDemoReadOnly(false);
+            }
           }
           return;
         }
@@ -128,6 +198,7 @@ export function useAuth() {
           const data = await response.json();
           if (isMounted) {
             setUser(data.user);
+            setIsDemoReadOnly(false);
             setError(null);
           }
         } else {
@@ -135,11 +206,16 @@ export function useAuth() {
           const decoded = decodeToken(token);
           if (decoded && isMounted) {
             setUser(createUserFromDecoded(decoded));
+            setIsDemoReadOnly(false);
             setError(null);
           } else if (isMounted) {
             localStorage.removeItem("token");
-            setUser(null);
-            setError("Token invalid or expired");
+            const demoAuthenticated = await tryDemoAuth();
+            if (!demoAuthenticated) {
+              setUser(null);
+              setIsDemoReadOnly(false);
+              setError("Token invalid or expired");
+            }
           }
         }
       } catch (err) {
@@ -151,15 +227,24 @@ export function useAuth() {
           const decoded = decodeToken(token);
           if (decoded && isMounted) {
             setUser(createUserFromDecoded(decoded));
+            setIsDemoReadOnly(false);
             setError(null);
           } else if (isMounted) {
             localStorage.removeItem("token");
-            setUser(null);
-            setError("Token invalid or expired");
+            const demoAuthenticated = await tryDemoAuth();
+            if (!demoAuthenticated) {
+              setUser(null);
+              setIsDemoReadOnly(false);
+              setError("Token invalid or expired");
+            }
           }
         } else if (isMounted) {
-          setUser(null);
-          setError(err instanceof Error ? err.message : "Auth verification failed");
+          const demoAuthenticated = await tryDemoAuth();
+          if (!demoAuthenticated) {
+            setUser(null);
+            setIsDemoReadOnly(false);
+            setError(err instanceof Error ? err.message : "Auth verification failed");
+          }
         }
       } finally {
         if (isMounted) {
@@ -173,7 +258,7 @@ export function useAuth() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [tryDemoAuth]);
 
   // Listen for storage changes from other tabs/windows
   useEffect(() => {
@@ -204,6 +289,7 @@ export function useAuth() {
   const logout = () => {
     localStorage.removeItem("token");
     setUser(null);
+    setIsDemoReadOnly(false);
     window.location.href = "/";
   };
 
@@ -211,6 +297,7 @@ export function useAuth() {
     user,
     isLoading,
     isAuthenticated: !!user,
+    isDemoReadOnly,
     logout,
     isLoggingOut: false,
     error,
