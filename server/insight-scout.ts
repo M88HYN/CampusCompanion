@@ -879,6 +879,134 @@ Your responses should be suitable for university coursework, exam preparation, a
 type ResearchQuery = z.infer<typeof researchQuerySchema>;
 type ResponseSource = "live_ai" | "local_fallback" | "mock_fallback";
 
+function getIntentFormatTemplate(studyIntent: ResearchQuery["studyIntent"]): string {
+  switch (studyIntent) {
+    case "exam_prep":
+      return `Use this exact markdown structure:
+1. **Exam Snapshot** — one-line core takeaway
+2. **Mark Scheme Points** — bullet points for high-mark answers
+3. **Worked Example** — one exam-style example with concise answer logic
+4. **Common Errors** — frequent mistakes and fixes
+5. **Exam Relevance** — question types and scoring advice`;
+    case "assignment_writing":
+      return `Use this exact markdown structure:
+1. **Thesis Snapshot** — one-line academic position
+2. **Argument Framework** — 3-4 argument pillars
+3. **Evidence & Sources** — evidence directions and citation guidance
+4. **Counterpoints** — limitations and alternative views
+5. **Assignment Use** — how to convert this into an essay/report section`;
+    case "revision_recall":
+      return `Use this exact markdown structure:
+1. **Memory Hook** — one-line mnemonic-style hook
+2. **Recall Sheet** — compact bullet summary
+3. **Flash Recall Prompts** — quick self-test questions
+4. **Common Mix-ups** — confusion points to avoid
+5. **Exam Relevance** — what to recall under timed conditions`;
+    case "quick_clarification":
+      return `Use this exact markdown structure:
+1. **One-Line Answer** — direct answer in one sentence
+2. **Direct Answer** — short explanation in 3-6 bullets
+3. **Quick Example** — one practical example
+4. **Pitfall** — single key thing not to confuse
+5. **Next Step** — what to read/practice next if needed`;
+    case "deep_understanding":
+    default:
+      return `Use this exact markdown structure:
+1. **Key Insight** — one-line conceptual takeaway
+2. **Concept Breakdown** — first-principles explanation
+3. **Examples** — concrete applications
+4. **Common Mistakes** — misconceptions and corrections
+5. **Exam Relevance** — how deep understanding helps exam performance`;
+  }
+}
+
+function formatLocalAnswerByIntent(answer: { question: string; answer: string; category: string }, studyIntent: ResearchQuery["studyIntent"]): string {
+  const firstSentence = answer.answer.split(".")[0]?.trim() || answer.answer;
+
+  switch (studyIntent) {
+    case "exam_prep":
+      return `**Exam Snapshot** — ${firstSentence}.
+
+**Mark Scheme Points**
+- Define the concept precisely
+- Explain mechanism clearly
+- Add one relevant example
+
+**Worked Example**
+Use this framing: definition -> mechanism -> example -> limitation.
+
+**Common Errors**
+- Writing generic statements with no mechanism
+- Skipping specific examples
+
+**Exam Relevance**
+Best used for short-answer and structured exam responses.`;
+    case "assignment_writing":
+      return `**Thesis Snapshot** — ${firstSentence}.
+
+**Argument Framework**
+- Define the concept
+- Build 2-3 evidence-backed claims
+- Evaluate limitations
+
+**Evidence & Sources**
+Reference textbooks, peer-reviewed papers, and credible reports.
+
+**Counterpoints**
+Address at least one opposing interpretation.
+
+**Assignment Use**
+Convert this into paragraph flow: claim -> evidence -> analysis -> link.`;
+    case "revision_recall":
+      return `**Memory Hook** — ${firstSentence}.
+
+**Recall Sheet**
+${answer.answer}
+
+**Flash Recall Prompts**
+- What is the core definition?
+- What is one key mechanism?
+- What is one real example?
+
+**Common Mix-ups**
+- Memorizing wording without understanding mechanism
+
+**Exam Relevance**
+Ideal for last-minute revision and recall drills.`;
+    case "quick_clarification":
+      return `**One-Line Answer** — ${firstSentence}.
+
+**Direct Answer**
+${answer.answer}
+
+**Quick Example**
+Related context: ${answer.question}
+
+**Pitfall**
+Avoid giving only a definition without application.
+
+**Next Step**
+Try one practice question immediately after reading.`;
+    case "deep_understanding":
+    default:
+      return `**Key Insight** — ${firstSentence}.
+
+**Concept Breakdown**
+${answer.answer}
+
+**Examples**
+- Related question: ${answer.question}
+- Category: ${answer.category}
+
+**Common Mistakes**
+- Relying only on memorization without active recall
+- Skipping practice questions and feedback loops
+
+**Exam Relevance**
+Turn this into an exam answer using definition -> mechanism -> example -> limitation.`;
+  }
+}
+
 export function registerInsightScoutRoutes(app: Express): void {
   // Conversation management endpoints moved to routes.ts
   // Only keep the query endpoint here
@@ -927,9 +1055,11 @@ export function registerInsightScoutRoutes(app: Express): void {
         mistakes: "Identify common mistakes, misconceptions, and errors students make with this topic. Explain why these mistakes happen and how to avoid them. Include correct approaches.",
       }[responseType];
 
+      const formatInstruction = getIntentFormatTemplate(studyIntent);
+
       const chatMessages: Array<{role: string; content: string}> = [
         { role: "system", content: SYSTEM_PROMPT },
-        { role: "user", content: `${depthInstruction} ${typeInstruction}\n\nStudent's study intent: ${intentInstruction}\n\nStructure your response with these clearly labeled sections where applicable:\n1. **Key Insight** — A bold one-sentence summary of the main takeaway\n2. **Explanation** — The detailed answer\n3. **Examples** — Concrete examples or applications\n4. **Common Mistakes** — Pitfalls to avoid\n5. **Exam Relevance** — How this might appear in exams\n\nQuery: ${query}` },
+        { role: "user", content: `${depthInstruction} ${typeInstruction}\n\nStudent's study intent: ${intentInstruction}\n\n${formatInstruction}\n\nQuery: ${query}` },
       ];
 
       res.setHeader("Content-Type", "text/event-stream");
@@ -948,7 +1078,7 @@ export function registerInsightScoutRoutes(app: Express): void {
       const streamLocalFallback = async (reason: string): Promise<ResponseSource> => {
         const localAnswer = findBestLocalAnswer(query);
         const fallbackContent = localAnswer
-          ? `**Key Insight** — ${localAnswer.answer.split(".")[0]}.\n\n**Explanation**\n\n${localAnswer.answer}\n\n**Examples**\n\n- Related question: ${localAnswer.question}\n- Category: ${localAnswer.category}\n\n**Common Mistakes**\n\n- Relying only on memorization without active recall\n- Skipping practice questions and feedback loops\n\n**Exam Relevance**\n\nTurn this into an exam answer using definition -> mechanism -> example -> limitation.`
+          ? formatLocalAnswerByIntent(localAnswer, studyIntent)
           : generateMockResponse(query, studyIntent, responseType, searchDepth);
 
         console.warn(`[Insight Scout] Fallback activated (${reason}). Source: ${localAnswer ? "local knowledge base" : "mock generator"}`);

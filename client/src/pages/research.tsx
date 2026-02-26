@@ -137,18 +137,33 @@ function parseInsightSections(content: string) {
     examRelevance: "",
   };
 
-  // Try to parse structured sections from the AI response
-  const keyInsightMatch = content.match(/\*\*Key Insight\*\*[:\s—\-]*([\s\S]*?)(?=\n##|\n\*\*(?:Explanation|Examples?|Common Mistakes?|Exam Relevance)\*\*|$)/i);
-  const explanationMatch = content.match(/\*\*Explanation\*\*[:\s—\-]*([\s\S]*?)(?=\n##|\n\*\*(?:Examples?|Common Mistakes?|Exam Relevance)\*\*|$)/i);
-  const examplesMatch = content.match(/\*\*Examples?\*\*[:\s—\-]*([\s\S]*?)(?=\n##|\n\*\*(?:Common Mistakes?|Exam Relevance)\*\*|$)/i);
-  const mistakesMatch = content.match(/\*\*Common Mistakes?\*\*[:\s—\-]*([\s\S]*?)(?=\n##|\n\*\*Exam Relevance\*\*|$)/i);
-  const examMatch = content.match(/\*\*Exam Relevance\*\*[:\s—\-]*([\s\S]*?)$/i);
+  const headingAliases = {
+    keyInsight: ["Key Insight", "Exam Snapshot", "Thesis Snapshot", "Memory Hook", "One-Line Answer"],
+    explanation: ["Explanation", "Concept Breakdown", "Mark Scheme Points", "Argument Framework", "Direct Answer", "Recall Sheet"],
+    examples: ["Examples", "Worked Example", "Quick Example", "Evidence & Sources", "Flash Recall Prompts"],
+    commonMistakes: ["Common Mistakes", "Common Errors", "Common Mix-ups", "Pitfall", "Counterpoints"],
+    examRelevance: ["Exam Relevance", "Assignment Use", "Next Step"],
+  } as const;
 
-  if (keyInsightMatch) sections.keyInsight = keyInsightMatch[1].trim();
-  if (explanationMatch) sections.explanation = explanationMatch[1].trim();
-  if (examplesMatch) sections.examples = examplesMatch[1].trim();
-  if (mistakesMatch) sections.commonMistakes = mistakesMatch[1].trim();
-  if (examMatch) sections.examRelevance = examMatch[1].trim();
+  const allHeadings = Object.values(headingAliases).flat();
+
+  const escapeRegex = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+  const extractSection = (aliases: readonly string[]) => {
+    const aliasPattern = aliases.map(escapeRegex).join("|");
+    const stopPattern = allHeadings.map(escapeRegex).join("|");
+    const regex = new RegExp(
+      `\\*\\*(?:${aliasPattern})\\*\\*[:\\s—\\-]*([\\s\\S]*?)(?=\\n##|\\n\\*\\*(?:${stopPattern})\\*\\*|$)`,
+      "i",
+    );
+    return content.match(regex)?.[1]?.trim() || "";
+  };
+
+  sections.keyInsight = extractSection(headingAliases.keyInsight);
+  sections.explanation = extractSection(headingAliases.explanation);
+  sections.examples = extractSection(headingAliases.examples);
+  sections.commonMistakes = extractSection(headingAliases.commonMistakes);
+  sections.examRelevance = extractSection(headingAliases.examRelevance);
 
   // If no structured sections found, put everything in explanation
   if (!sections.keyInsight && !sections.explanation) {

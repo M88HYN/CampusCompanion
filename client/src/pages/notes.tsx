@@ -227,7 +227,7 @@ export default function Notes() {
   const [examQuestions, setExamQuestions] = useState<{type: string; question: string; answer: string; marks: number}[]>([]);
   const [isGeneratingExam, setIsGeneratingExam] = useState(false);
   
-  const [, setLocation] = useLocation();
+  const [location, setLocation] = useLocation();
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
@@ -264,10 +264,21 @@ export default function Notes() {
   }, [selectedNote]);
 
   useEffect(() => {
-    if (notes.length > 0 && !selectedNoteId) {
+    if (notes.length === 0) return;
+
+    const noteIdFromUrl = new URL(window.location.href).searchParams.get("noteId");
+    if (noteIdFromUrl) {
+      const matched = notes.find((note) => note.id === noteIdFromUrl);
+      if (matched && selectedNoteId !== matched.id) {
+        setSelectedNoteId(matched.id);
+        return;
+      }
+    }
+
+    if (!selectedNoteId) {
       setSelectedNoteId(notes[0].id);
     }
-  }, [notes, selectedNoteId]);
+  }, [notes, selectedNoteId, location]);
 
   const createNoteMutation = useMutation({
     mutationFn: async (data: { title: string; subject?: string; tags?: string[] }) => {

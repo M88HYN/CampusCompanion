@@ -19,6 +19,7 @@ import { Switch } from "@/components/ui/switch";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useLocation } from "wouter";
 import { useSoundEffect, useConfetti, useKeyboardShortcuts } from "@/hooks/use-ui-effects";
 import { DifficultyBadge } from "@/components/ui/difficulty-badge";
 import { ProgressRing } from "@/components/ui/progress-ring";
@@ -163,6 +164,7 @@ type StudyMode = "smart" | "due-only" | "new-only" | "struggling" | "deck";
 
 export default function Flashcards() {
   const [view, setView] = useState<ViewState>("decks");
+    const [location] = useLocation();
   const [flipped, setFlipped] = useState(false);
   const [currentCard, setCurrentCard] = useState(0);
   const [selectedDeckId, setSelectedDeckId] = useState<string>("");
@@ -255,6 +257,20 @@ export default function Flashcards() {
     },
     retry: 1,
   });
+
+  useEffect(() => {
+    if (!decks.length) return;
+
+    const deckIdFromUrl = new URL(window.location.href).searchParams.get("deckId");
+    if (deckIdFromUrl) {
+      const matched = decks.find((deck) => deck.id === deckIdFromUrl);
+      if (matched && selectedDeckId !== matched.id) {
+        setSelectedDeckId(matched.id);
+        setView("decks");
+        setFlashcardTabActive("decks");
+      }
+    }
+  }, [decks, selectedDeckId, location]);
 
   const { data: selectedDeck } = useQuery<DeckWithCards>({
     queryKey: ["/api/decks", selectedDeckId],

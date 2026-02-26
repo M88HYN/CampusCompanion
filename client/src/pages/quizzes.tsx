@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { Plus, Play, Clock, CheckCircle2, AlertCircle, Star, BookMarked, Zap, Trophy, Target, RotateCw, Loader, Trash2, X, Brain, TrendingUp, TrendingDown, BarChart3, RefreshCw, ChevronRight, Lightbulb, FileText, Layers, GraduationCap, Flame, CalendarCheck } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useQueryClient } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -131,6 +132,7 @@ const quizFormSchema = z.object({
 type QuizFormValues = z.infer<typeof quizFormSchema>;
 
 export default function Quizzes() {
+  const [location] = useLocation();
   const [view, setView] = useState<ViewType>("list");
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<string>("");
@@ -158,6 +160,14 @@ export default function Quizzes() {
   
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const startTimeRef = useRef<number>(Date.now());
+
+  useEffect(() => {
+    const tab = new URL(window.location.href).searchParams.get("tab");
+    const validTabs = ["quizzes", "analytics", "review"];
+    if (tab && validTabs.includes(tab)) {
+      setActiveTab(tab);
+    }
+  }, [location]);
 
   const form = useForm<QuizFormValues>({
     resolver: zodResolver(quizFormSchema),
