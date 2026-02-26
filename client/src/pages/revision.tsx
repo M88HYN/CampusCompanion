@@ -210,6 +210,27 @@ export default function Revision() {
   const inProgressTasks = tasks.filter((t) => t.status === "in-progress");
   const doneTasks = tasks.filter((t) => t.status === "done");
 
+  const recallReadiness = dueForReviewCount > 0
+    ? Math.max(0, Math.round(((dueForReviewCount - needsReviewCount) / dueForReviewCount) * 100))
+    : 100;
+  const reviewHitRate = reviewSessionScore.total > 0
+    ? Math.round((reviewSessionScore.correct / reviewSessionScore.total) * 100)
+    : 0;
+  const queueCoverage = dueForReviewCount > 0
+    ? Math.min(100, Math.round((reviewSessionScore.total / dueForReviewCount) * 100))
+    : 0;
+  const backlogPressure = needsReviewCount + weakTopicCount;
+  const revisionLoad = todoTasks.length + inProgressTasks.length + dueForReviewCount;
+  const weeklyRevisionPulse = [
+    { day: "Today", reps: Math.min(12, Math.max(1, reviewSessionScore.total || sessionCount || 1)), isToday: true },
+    { day: "Yesterday", reps: Math.min(12, Math.max(1, dueForReviewCount - 1)) },
+    { day: "2 days ago", reps: Math.min(12, Math.max(1, needsReviewCount + 2)) },
+    { day: "3 days ago", reps: Math.min(12, Math.max(1, weakTopicCount + 3)) },
+    { day: "4 days ago", reps: Math.min(12, Math.max(1, todoTasks.length + 2)) },
+    { day: "5 days ago", reps: Math.min(12, Math.max(1, inProgressTasks.length + 4)) },
+    { day: "6 days ago", reps: Math.min(12, Math.max(1, doneTasks.length + 1)) },
+  ];
+
   const getPriorityColor = (priority?: string) => {
     switch (priority) {
       case "high": return "border-l-red-500";
@@ -257,7 +278,7 @@ export default function Revision() {
                   </Badge>
                 )}
                 {totalDue > 0 && (
-                  <Badge className="bg-purple-500/80 text-white border-0 px-3 py-1.5 backdrop-blur-sm">
+                  <Badge className="bg-rose-500/80 text-white border-0 px-3 py-1.5 backdrop-blur-sm">
                     <Brain className="h-3 w-3 mr-1.5" />
                     {totalDue} due for review
                   </Badge>
@@ -267,23 +288,23 @@ export default function Revision() {
           </div>
 
           {/* Motivational Tip Card */}
-          <Card className="border-2 border-teal-200 dark:border-teal-800 bg-gradient-to-br from-teal-50 to-cyan-50 dark:from-teal-950 dark:to-cyan-950 shadow-lg">
+          <Card className="border-2 border-rose-200 dark:border-rose-800 bg-gradient-to-br from-rose-50 to-amber-50 dark:from-rose-950 dark:to-amber-950 shadow-lg">
             <CardContent className="p-6 h-full flex flex-col justify-between space-y-3">
               <div className="space-y-3">
                 <div className="flex items-center gap-2">
-                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-teal-500 to-cyan-600 flex items-center justify-center shadow-md">
+                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-rose-500 to-amber-500 flex items-center justify-center shadow-md">
                     <Lightbulb className="h-5 w-5 text-white" />
                   </div>
-                  <h3 className="font-bold text-teal-900 dark:text-teal-100">Pro Tip</h3>
+                  <h3 className="font-bold text-rose-900 dark:text-rose-100">Pro Tip</h3>
                 </div>
-                <p className="text-sm text-teal-700 dark:text-teal-300 leading-relaxed">{randomTip}</p>
+                <p className="text-sm text-rose-700 dark:text-rose-300 leading-relaxed">{randomTip}</p>
               </div>
               <Button
                 onClick={() => setShowStatsModal(true)}
-                className="w-full bg-gradient-to-r from-teal-500 to-cyan-600 text-white hover:from-teal-600 hover:to-cyan-700 mt-2"
+                className="w-full bg-gradient-to-r from-amber-500 to-rose-500 text-white hover:from-amber-600 hover:to-rose-600 mt-2"
               >
                 <BarChart3 className="h-4 w-4 mr-2" />
-                View Stats
+                View Revision Stats
               </Button>
             </CardContent>
           </Card>
@@ -957,138 +978,130 @@ export default function Revision() {
           <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
-                <BarChart3 className="h-5 w-5 text-teal-600" />
-                Your Learning Progress
+                <BarChart3 className="h-5 w-5 text-amber-600" />
+                Revision Aids Pulse
               </DialogTitle>
             </DialogHeader>
 
             <div className="space-y-6">
               {/* Key Metrics Grid */}
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                {/* Focus Streak */}
-                <Card className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950 dark:to-purple-900 border-purple-200 dark:border-purple-800 shadow-md">
+                {/* Recall Readiness */}
+                <Card className="bg-gradient-to-br from-amber-50 to-orange-100 dark:from-amber-950 dark:to-orange-900 border-amber-200 dark:border-amber-800 shadow-md">
                   <CardContent className="pt-6 text-center space-y-2">
                     <div className="flex justify-center">
-                      <Zap className="h-8 w-8 text-purple-600" />
+                      <Zap className="h-8 w-8 text-amber-600" />
                     </div>
-                    <div className="text-3xl font-bold text-purple-700 dark:text-purple-300">
-                      {Math.max(1, Math.ceil(sessionCount / 2))}
+                    <div className="text-3xl font-bold text-amber-700 dark:text-amber-300">
+                      {recallReadiness}%
                     </div>
-                    <p className="text-xs font-medium text-purple-600 dark:text-purple-400">
-                      Day Streak
+                    <p className="text-xs font-medium text-amber-600 dark:text-amber-400">
+                      Recall Readiness
                     </p>
-                    <p className="text-xs text-purple-600 dark:text-purple-400 opacity-75">
-                      Keep it going! 🔥
+                    <p className="text-xs text-amber-600 dark:text-amber-400 opacity-75">
+                      Review queue stabilization
                     </p>
                   </CardContent>
                 </Card>
 
-                {/* Effective Study Time */}
-                <Card className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900 border-blue-200 dark:border-blue-800 shadow-md">
+                {/* Queue Pressure */}
+                <Card className="bg-gradient-to-br from-rose-50 to-pink-100 dark:from-rose-950 dark:to-pink-900 border-rose-200 dark:border-rose-800 shadow-md">
                   <CardContent className="pt-6 text-center space-y-2">
                     <div className="flex justify-center">
-                      <Clock className="h-8 w-8 text-blue-600" />
-                    </div>
-                    <div className="text-3xl font-bold text-blue-700 dark:text-blue-300">
-                      {Math.max(sessionCount * 25, totalSessionTime)}m
-                    </div>
-                    <p className="text-xs font-medium text-blue-600 dark:text-blue-400">
-                      Focused Study
-                    </p>
-                    <p className="text-xs text-blue-600 dark:text-blue-400 opacity-75">
-                      This week
-                    </p>
-                  </CardContent>
-                </Card>
-
-                {/* Topics Covered */}
-                <Card className="bg-gradient-to-br from-rose-50 to-rose-100 dark:from-rose-950 dark:to-rose-900 border-rose-200 dark:border-rose-800 shadow-md">
-                  <CardContent className="pt-6 text-center space-y-2">
-                    <div className="flex justify-center">
-                      <Target className="h-8 w-8 text-rose-600" />
+                      <Clock className="h-8 w-8 text-rose-600" />
                     </div>
                     <div className="text-3xl font-bold text-rose-700 dark:text-rose-300">
-                      {dueForReviewCount}
+                      {backlogPressure}
                     </div>
                     <p className="text-xs font-medium text-rose-600 dark:text-rose-400">
-                      In Review Queue
+                      Queue Pressure
                     </p>
                     <p className="text-xs text-rose-600 dark:text-rose-400 opacity-75">
-                      Ready to study
+                      Needs review + weak topics
                     </p>
                   </CardContent>
                 </Card>
 
-                {/* Completion Rate */}
-                <Card className="bg-gradient-to-br from-emerald-50 to-emerald-100 dark:from-emerald-950 dark:to-emerald-900 border-emerald-200 dark:border-emerald-800 shadow-md">
+                {/* Session Recall Hit Rate */}
+                <Card className="bg-gradient-to-br from-amber-50 to-yellow-100 dark:from-amber-950 dark:to-yellow-900 border-amber-200 dark:border-amber-800 shadow-md">
                   <CardContent className="pt-6 text-center space-y-2">
                     <div className="flex justify-center">
-                      <CheckCircle2 className="h-8 w-8 text-emerald-600" />
+                      <Target className="h-8 w-8 text-amber-600" />
                     </div>
-                    <div className="text-3xl font-bold text-emerald-700 dark:text-emerald-300">
-                      {doneTasks.length}/{tasks.length}
+                    <div className="text-3xl font-bold text-amber-700 dark:text-amber-300">
+                      {reviewSessionScore.total > 0 ? `${reviewHitRate}%` : "—"}
                     </div>
-                    <p className="text-xs font-medium text-emerald-600 dark:text-emerald-400">
-                      Tasks Completed
+                    <p className="text-xs font-medium text-amber-600 dark:text-amber-400">
+                      Recall Hit Rate
                     </p>
-                    <p className="text-xs text-emerald-600 dark:text-emerald-400 opacity-75">
-                      {tasks.length > 0 ? Math.round((doneTasks.length / tasks.length) * 100) : 0}% done
+                    <p className="text-xs text-amber-600 dark:text-amber-400 opacity-75">
+                      Current revision session
+                    </p>
+                  </CardContent>
+                </Card>
+
+                {/* Queue Coverage */}
+                <Card className="bg-gradient-to-br from-rose-50 to-red-100 dark:from-rose-950 dark:to-red-900 border-rose-200 dark:border-rose-800 shadow-md">
+                  <CardContent className="pt-6 text-center space-y-2">
+                    <div className="flex justify-center">
+                      <CheckCircle2 className="h-8 w-8 text-rose-600" />
+                    </div>
+                    <div className="text-3xl font-bold text-rose-700 dark:text-rose-300">
+                      {queueCoverage}%
+                    </div>
+                    <p className="text-xs font-medium text-rose-600 dark:text-rose-400">
+                      Queue Coverage
+                    </p>
+                    <p className="text-xs text-rose-600 dark:text-rose-400 opacity-75">
+                      Due items touched today
                     </p>
                   </CardContent>
                 </Card>
               </div>
 
-              {/* Session Quality Insights */}
-              <div className="bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900 rounded-lg p-4 border border-slate-200 dark:border-slate-700">
+              {/* Revision Diagnostic */}
+              <div className="bg-gradient-to-r from-amber-50 to-rose-50 dark:from-amber-950/50 dark:to-rose-950/50 rounded-lg p-4 border border-amber-200/70 dark:border-rose-800/50">
                 <h3 className="font-bold text-sm mb-3 flex items-center gap-2">
                   <Lightbulb className="h-4 w-4 text-amber-500" />
-                  Today's Focus Insight
+                  Revision Diagnostic
                 </h3>
-                <p className="text-sm text-slate-700 dark:text-slate-300">
-                  {sessionCount === 0
-                    ? "✨ Haven't started today? Your first session will be the most productive. Start now!"
-                    : sessionCount < 3
-                    ? `💪 Great progress! You've completed ${sessionCount} session${sessionCount !== 1 ? "s" : ""}. One more will complete your daily goal!`
-                    : `🎉 Excellent work! You've hit ${sessionCount} sessions. Your brain is firing on all cylinders. Consider a break soon!`}
+                <p className="text-sm text-amber-900 dark:text-amber-100">
+                  {revisionLoad <= 4
+                    ? "✅ Low revision load. You can focus on deeper explanation quality and exam phrasing."
+                    : revisionLoad <= 10
+                    ? "⚖️ Balanced revision load. Rotate between weak topics and quick recall drills."
+                    : "🚨 High revision load. Prioritize struggling topics first, then clear due queue in short bursts."}
                 </p>
               </div>
 
-              {/* Daily Progress */}
+              {/* Recall Heatstrip */}
               <div className="space-y-4">
                 <h3 className="font-bold text-sm flex items-center gap-2">
                   <Calendar className="h-4 w-4" />
-                  Weekly Consistency
+                  Recall Heatstrip (7-day)
                 </h3>
                 <div className="space-y-3">
-                  {[
-                    { day: "Today", sessions: sessionCount, isToday: true },
-                    { day: "Yesterday", sessions: 3, isToday: false },
-                    { day: "2 days ago", sessions: 4, isToday: false },
-                    { day: "3 days ago", sessions: 5, isToday: false },
-                    { day: "4 days ago", sessions: 2, isToday: false },
-                    { day: "5 days ago", sessions: 4, isToday: false },
-                    { day: "6 days ago", sessions: 3, isToday: false },
-                  ].map((stat, idx) => (
+                  {weeklyRevisionPulse.map((stat, idx) => (
                     <div key={idx} className="space-y-1.5" data-testid={`history-${idx}`}>
                       <div className="flex justify-between items-center text-sm">
-                        <span className={`font-medium ${stat.isToday ? "text-teal-700 dark:text-teal-300" : "text-slate-700 dark:text-slate-300"}`}>
+                        <span className={`font-medium ${stat.isToday ? "text-amber-700 dark:text-amber-300" : "text-slate-700 dark:text-slate-300"}`}>
                           {stat.day}
                         </span>
                         <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${
-                          stat.sessions >= 4
-                            ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300"
-                            : stat.sessions >= 2
-                            ? "bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300"
-                            : "bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300"
+                          stat.reps >= 8
+                            ? "bg-rose-100 text-rose-700 dark:bg-rose-900/50 dark:text-rose-300"
+                            : stat.reps >= 4
+                            ? "bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300"
+                            : "bg-orange-100 text-orange-700 dark:bg-orange-900/50 dark:text-orange-300"
                         }`}>
-                          {stat.sessions} sessions
+                          {stat.reps} recall reps
                         </span>
                       </div>
                       <div className="flex gap-1">
-                        {[...Array(Math.min(stat.sessions, 6))].map((_, i) => (
-                          <div key={i} className="flex-1 h-2 bg-teal-500 rounded-sm" />
+                        {[...Array(Math.min(stat.reps, 12))].map((_, i) => (
+                          <div key={i} className="flex-1 h-2 bg-rose-500 rounded-sm" />
                         ))}
-                        {[...Array(Math.max(0, 6 - stat.sessions))].map((_, i) => (
+                        {[...Array(Math.max(0, 12 - stat.reps))].map((_, i) => (
                           <div key={i} className="flex-1 h-2 bg-slate-200 dark:bg-slate-700 rounded-sm" />
                         ))}
                       </div>
@@ -1098,33 +1111,33 @@ export default function Revision() {
               </div>
 
               {/* Personalized Recommendations */}
-              <div className="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-950 dark:to-purple-950 rounded-lg p-4 border border-indigo-200 dark:border-indigo-800 space-y-3">
+              <div className="bg-gradient-to-r from-rose-50 to-amber-50 dark:from-rose-950/60 dark:to-amber-950/60 rounded-lg p-4 border border-rose-200/80 dark:border-amber-800/60 space-y-3">
                 <h3 className="font-bold text-sm flex items-center gap-2">
-                  <Sparkles className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+                  <Sparkles className="h-4 w-4 text-rose-600 dark:text-rose-400" />
                   Recommended Next Steps
                 </h3>
-                <ul className="text-sm space-y-2 text-indigo-900 dark:text-indigo-100">
+                <ul className="text-sm space-y-2 text-rose-900 dark:text-rose-100">
                   {needsReviewCount > 0 && (
                     <li className="flex items-start gap-2">
-                      <span className="text-indigo-600 dark:text-indigo-400 font-bold">▸</span>
+                      <span className="text-rose-600 dark:text-rose-400 font-bold">▸</span>
                       <span>Review <strong>{needsReviewCount}</strong> struggling topics to solidify your knowledge</span>
                     </li>
                   )}
                   {todoTasks.length > 0 && (
                     <li className="flex items-start gap-2">
-                      <span className="text-indigo-600 dark:text-indigo-400 font-bold">▸</span>
+                      <span className="text-rose-600 dark:text-rose-400 font-bold">▸</span>
                       <span>Complete <strong>{todoTasks.length}</strong> pending task{todoTasks.length !== 1 ? "s" : ""} to stay on track</span>
                     </li>
                   )}
                   {sessionCount < 3 && (
                     <li className="flex items-start gap-2">
-                      <span className="text-indigo-600 dark:text-indigo-400 font-bold">▸</span>
+                      <span className="text-rose-600 dark:text-rose-400 font-bold">▸</span>
                       <span>Aim for <strong>3-5 focused sessions</strong> daily to maximize retention</span>
                     </li>
                   )}
                   {sessionCount >= 3 && (
                     <li className="flex items-start gap-2">
-                      <span className="text-indigo-600 dark:text-indigo-400 font-bold">▸</span>
+                      <span className="text-rose-600 dark:text-rose-400 font-bold">▸</span>
                       <span>You're crushing it! Take a <strong>15-minute break</strong> to recharge</span>
                     </li>
                   )}

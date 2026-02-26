@@ -11,9 +11,13 @@ import {
   type QuizAttempt, type InsertQuizAttempt,
   type QuizResponse, type InsertQuizResponse,
   type UserQuestionStats, type InsertUserQuestionStats,
+  type ResearchConversation,
+  type ResearchMessage,
   type UserPreferences, type InsertUserPreferences,
   users, notes, noteBlocks, decks, cards, cardReviews,
-  quizzes, quizQuestions, quizOptions, quizAttempts, quizResponses, userQuestionStats, userPreferences
+  quizzes, quizQuestions, quizOptions, quizAttempts, quizResponses,
+  researchConversations, researchMessages,
+  userQuestionStats, userPreferences
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, lt, sql, or, lte, asc, inArray } from "drizzle-orm";
@@ -131,6 +135,13 @@ export interface IStorage {
   // User Preferences/Settings
   getUserPreferences(userId: string): Promise<any>;
   updateUserPreferences(userId: string, preferences: any): Promise<any>;
+
+  // Insight Scout Chat History
+  getResearchConversations(userId: string): Promise<ResearchConversation[]>;
+  getResearchConversation(id: string, userId: string): Promise<{ conversation: ResearchConversation; messages: ResearchMessage[] } | undefined>;
+  createResearchConversation(userId: string, title?: string): Promise<ResearchConversation>;
+  deleteResearchConversation(id: string, userId: string): Promise<void>;
+  addResearchMessage(conversationId: string, userId: string, role: string, content: string): Promise<ResearchMessage>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -2007,6 +2018,119 @@ export class DatabaseStorage implements IStorage {
         weeklyProgress: []
       };
     }
+  }
+
+  // ==================== INSIGHT SCOUT CHAT HISTORY ====================
+
+  async getResearchConversations(userId: string): Promise<ResearchConversation[]> {
+    return await db
+      .select()
+      .from(researchConversations)
+      .where(eq(researchConversations.userId, userId))
+      .orderBy(desc(researchConversations.updatedAt));
+  }
+
+  async getResearchConversation(
+    id: string,
+    userId: string,
+  ): Promise<{ conversation: ResearchConversation; messages: ResearchMessage[] } | undefined> {
+    const [conversation] = await db
+      .select()
+      .from(researchConversations)
+      .where(and(eq(researchConversations.id, id), eq(researchConversations.userId, userId)));
+
+    if (!conversation) {
+      return undefined;
+    }
+
+    const messages = await db
+      .select()
+      .from(researchMessages)
+      .where(eq(researchMessages.conversationId, id))
+      .orderBy(asc(researchMessages.createdAt));
+
+    return { conversation, messages };
+  }
+
+  async createResearchConversation(userId: string, title?: string): Promise<ResearchConversation> {
+    const id = randomUUID();
+    const now = Date.now();
+
+    await db.insert(researchConversations).values({
+      id,
+      userId,
+      title: (title || "New Conversation").trim().slice(0, 120) || "New Conversation",
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    const [created] = await db
+      .select()
+      .from(researchConversations)
+      .where(eq(researchConversations.id, id));
+
+    if (!created) {
+      throw new Error("Failed to create research conversation");
+    }
+
+    return created;
+  }
+
+  async deleteResearchConversation(id: string, userId: string): Promise<void> {
+    const [conversation] = await db
+      .select()
+      .from(researchConversations)
+      .where(and(eq(researchConversations.id, id), eq(researchConversations.userId, userId)));
+
+    if (!conversation) {
+      return;
+    }
+
+    await db.delete(researchMessages).where(eq(researchMessages.conversationId, id));
+    await db.delete(researchConversations).where(eq(researchConversations.id, id));
+  }
+
+  async addResearchMessage(
+    conversationId: string,
+    userId: string,
+    role: string,
+    content: string,
+  ): Promise<ResearchMessage> {
+    const [conversation] = await db
+      .select()
+      .from(researchConversations)
+      .where(and(eq(researchConversations.id, conversationId), eq(researchConversations.userId, userId)));
+
+    if (!conversation) {
+      throw new Error("Research conversation not found");
+    }
+
+    const id = randomUUID();
+    const now = Date.now();
+
+    await db.insert(researchMessages).values({
+      id,
+      conversationId,
+      role,
+      content,
+      createdAt: now,
+    });
+
+    await db
+      .update(researchConversations)
+      .set({ updatedAt: now })
+      .where(eq(researchConversations.id, conversationId));
+
+    const [created] = await db
+      .select()
+      .from(researchMessages)
+      .where(eq(researchMessages.id, id));
+
+    if (!created) {
+      throw new Error("Failed to create research message");
+    }
+
+    return created;
   }
 
   // ==================== USER PREFERENCES ====================

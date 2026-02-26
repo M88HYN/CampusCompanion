@@ -337,26 +337,54 @@ function pick<T>(arr: T[], seed: number, offset = 0): T {
 function generateMockResponse(query: string, studyIntent: string, responseType: string, searchDepth: string): string {
   const topic = query.replace(/^(explain|summarize|compare|analyze|show|how|what|why|when|where|describe|discuss)\s+(this\s+)?(concept|topic)?:?\s*/i, "").trim() || query;
   const knowledge = findTopicKnowledge(query);
+  let baseContent = "";
 
   if (knowledge) {
     // Use rich, topic-specific content
     switch (studyIntent) {
-      case "exam_prep":       return buildExamPrep(topic, knowledge, searchDepth);
-      case "assignment_writing": return buildAssignment(topic, knowledge, searchDepth);
-      case "revision_recall": return buildRevision(topic, knowledge, searchDepth);
-      case "quick_clarification": return buildQuickClarify(topic, knowledge);
-      default:                return buildDeepUnderstanding(topic, knowledge, searchDepth);
+      case "exam_prep":
+        baseContent = buildExamPrep(topic, knowledge, searchDepth);
+        break;
+      case "assignment_writing":
+        baseContent = buildAssignment(topic, knowledge, searchDepth);
+        break;
+      case "revision_recall":
+        baseContent = buildRevision(topic, knowledge, searchDepth);
+        break;
+      case "quick_clarification":
+        baseContent = buildQuickClarify(topic, knowledge);
+        break;
+      default:
+        baseContent = buildDeepUnderstanding(topic, knowledge, searchDepth);
+        break;
     }
   } else {
     // Fallback: generate varied content using query words as seeds
     switch (studyIntent) {
-      case "exam_prep":       return generateFallbackExamPrep(topic, searchDepth);
-      case "assignment_writing": return generateFallbackAssignment(topic, searchDepth);
-      case "revision_recall": return generateFallbackRevision(topic, searchDepth);
-      case "quick_clarification": return generateFallbackQuickClarify(topic);
-      default:                return generateFallbackDeep(topic, searchDepth);
+      case "exam_prep":
+        baseContent = generateFallbackExamPrep(topic, searchDepth);
+        break;
+      case "assignment_writing":
+        baseContent = generateFallbackAssignment(topic, searchDepth);
+        break;
+      case "revision_recall":
+        baseContent = generateFallbackRevision(topic, searchDepth);
+        break;
+      case "quick_clarification":
+        baseContent = generateFallbackQuickClarify(topic);
+        break;
+      default:
+        baseContent = generateFallbackDeep(topic, searchDepth);
+        break;
     }
   }
+
+  return shapeFallbackByAdvancedOptions(
+    baseContent,
+    responseType as ResearchQuery["responseType"],
+    searchDepth as ResearchQuery["searchDepth"],
+    topic,
+  );
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -920,12 +948,85 @@ function getIntentFormatTemplate(studyIntent: ResearchQuery["studyIntent"]): str
   }
 }
 
-function formatLocalAnswerByIntent(answer: { question: string; answer: string; category: string }, studyIntent: ResearchQuery["studyIntent"]): string {
+function getResponseTypeFormatTemplate(responseType: ResearchQuery["responseType"]): string {
+  switch (responseType) {
+    case "summary":
+      return `Response type is **Summary**. Keep each section compact: max 3 bullets and 1-2 short sentences before bullets.`;
+    case "comparison":
+      return `Response type is **Comparison**. In each relevant section, explicitly include "Similarities" and "Differences" bullets.`;
+    case "analysis":
+      return `Response type is **Analysis**. In each relevant section, include implication, limitation, and critical perspective.`;
+    case "examples":
+      return `Response type is **Examples**. Prioritize practical examples and applications; include at least 2 concrete cases.`;
+    case "study_tips":
+      return `Response type is **Study Tips**. Prioritize learning strategy, memory methods, and a practical study plan.`;
+    case "mistakes":
+      return `Response type is **Common Mistakes**. Prioritize misconceptions, why they happen, and correction strategies.`;
+    case "explanation":
+    default:
+      return `Response type is **Explanation**. Emphasize clear step-by-step reasoning and concept clarity.`;
+  }
+}
+
+function getSearchDepthFormatTemplate(searchDepth: ResearchQuery["searchDepth"]): string {
+  switch (searchDepth) {
+    case "quick":
+      return `Search depth is **Quick**. Keep response concise and focused; 5-8 short bullets total across sections.`;
+    case "comprehensive":
+      return `Search depth is **Comprehensive**. Expand each section with depth, include extra nuance, and add related concepts.`;
+    case "balanced":
+    default:
+      return `Search depth is **Balanced**. Keep good depth with clear structure, without over-expanding.`;
+  }
+}
+
+function shapeFallbackByAdvancedOptions(
+  content: string,
+  responseType: ResearchQuery["responseType"],
+  searchDepth: ResearchQuery["searchDepth"],
+  topic: string,
+): string {
+  const responseTypeSection = {
+    explanation: `**Reasoning Path**\n- Define core idea\n- Explain mechanism step-by-step\n- Validate with one concrete example`,
+    summary: `**Summary View**\n- Core takeaway in one line\n- 3-5 key points only\n- One final recap sentence`,
+    comparison: `**Comparison Lens**\n- **Similarities:** shared principles or structure\n- **Differences:** purpose, mechanism, or outcomes\n- **When to use which:** context-based decision rule`,
+    analysis: `**Analysis Lens**\n- **Implications:** what this changes in practice\n- **Limitations:** where this approach breaks down\n- **Critical perspective:** trade-offs and constraints`,
+    examples: `**Application Lens**\n- Example 1: foundational use case\n- Example 2: advanced/real-world use case\n- Explain why each example fits`,
+    study_tips: `**Study Plan Lens**\n- 20-minute active recall cycle\n- 5 self-test prompts\n- One spaced-repetition checkpoint for ${topic}`,
+    mistakes: `**Error-Prevention Lens**\n- Top misconception to avoid\n- Why students make this error\n- Correction checklist for exam answers`,
+  }[responseType];
+
+  const withType = `${content}\n\n${responseTypeSection}`;
+
+  if (searchDepth === "quick") {
+    const meaningfulLines = withType
+      .split("\n")
+      .map((line) => line.trimEnd())
+      .filter((line, index, arr) => line.length > 0 || (index > 0 && arr[index - 1].length > 0));
+
+    const condensed = meaningfulLines.slice(0, 18).join("\n");
+    return `${condensed}\n\n**Quick Depth Mode**\n- Focus only on core exam-relevant points.\n- Expand only if you request more detail.`;
+  }
+
+  if (searchDepth === "comprehensive") {
+    return `${withType}\n\n**Comprehensive Depth Mode**\n- Related concepts: connect this topic to adjacent ideas.\n- Edge cases: identify where assumptions can fail.\n- Extension: add one higher-order question for deeper mastery.`;
+  }
+
+  return `${withType}\n\n**Balanced Depth Mode**\n- Covers core mechanism, one concrete example, and one caution point.`;
+}
+
+function formatLocalAnswerByIntent(
+  answer: { question: string; answer: string; category: string },
+  studyIntent: ResearchQuery["studyIntent"],
+  responseType: ResearchQuery["responseType"],
+  searchDepth: ResearchQuery["searchDepth"],
+): string {
   const firstSentence = answer.answer.split(".")[0]?.trim() || answer.answer;
+  let baseContent = "";
 
   switch (studyIntent) {
     case "exam_prep":
-      return `**Exam Snapshot** — ${firstSentence}.
+      baseContent = `**Exam Snapshot** — ${firstSentence}.
 
 **Mark Scheme Points**
 - Define the concept precisely
@@ -941,8 +1042,9 @@ Use this framing: definition -> mechanism -> example -> limitation.
 
 **Exam Relevance**
 Best used for short-answer and structured exam responses.`;
+  break;
     case "assignment_writing":
-      return `**Thesis Snapshot** — ${firstSentence}.
+  baseContent = `**Thesis Snapshot** — ${firstSentence}.
 
 **Argument Framework**
 - Define the concept
@@ -957,8 +1059,9 @@ Address at least one opposing interpretation.
 
 **Assignment Use**
 Convert this into paragraph flow: claim -> evidence -> analysis -> link.`;
+  break;
     case "revision_recall":
-      return `**Memory Hook** — ${firstSentence}.
+  baseContent = `**Memory Hook** — ${firstSentence}.
 
 **Recall Sheet**
 ${answer.answer}
@@ -973,8 +1076,9 @@ ${answer.answer}
 
 **Exam Relevance**
 Ideal for last-minute revision and recall drills.`;
+  break;
     case "quick_clarification":
-      return `**One-Line Answer** — ${firstSentence}.
+  baseContent = `**One-Line Answer** — ${firstSentence}.
 
 **Direct Answer**
 ${answer.answer}
@@ -987,9 +1091,10 @@ Avoid giving only a definition without application.
 
 **Next Step**
 Try one practice question immediately after reading.`;
+  break;
     case "deep_understanding":
     default:
-      return `**Key Insight** — ${firstSentence}.
+  baseContent = `**Key Insight** — ${firstSentence}.
 
 **Concept Breakdown**
 ${answer.answer}
@@ -1004,7 +1109,10 @@ ${answer.answer}
 
 **Exam Relevance**
 Turn this into an exam answer using definition -> mechanism -> example -> limitation.`;
+      break;
   }
+
+  return shapeFallbackByAdvancedOptions(baseContent, responseType, searchDepth, answer.question);
 }
 
 export function registerInsightScoutRoutes(app: Express): void {
@@ -1056,10 +1164,15 @@ export function registerInsightScoutRoutes(app: Express): void {
       }[responseType];
 
       const formatInstruction = getIntentFormatTemplate(studyIntent);
+      const responseTypeFormatInstruction = getResponseTypeFormatTemplate(responseType);
+      const searchDepthFormatInstruction = getSearchDepthFormatTemplate(searchDepth);
 
       const chatMessages: Array<{role: string; content: string}> = [
         { role: "system", content: SYSTEM_PROMPT },
-        { role: "user", content: `${depthInstruction} ${typeInstruction}\n\nStudent's study intent: ${intentInstruction}\n\n${formatInstruction}\n\nQuery: ${query}` },
+        {
+          role: "user",
+          content: `${depthInstruction} ${typeInstruction}\n\nStudent's study intent: ${intentInstruction}\n\n${formatInstruction}\n${responseTypeFormatInstruction}\n${searchDepthFormatInstruction}\n\nStrict requirement: the response must clearly reflect BOTH selected controls (response type and search depth), not just study intent.\n\nQuery: ${query}`,
+        },
       ];
 
       res.setHeader("Content-Type", "text/event-stream");
@@ -1078,7 +1191,7 @@ export function registerInsightScoutRoutes(app: Express): void {
       const streamLocalFallback = async (reason: string): Promise<ResponseSource> => {
         const localAnswer = findBestLocalAnswer(query);
         const fallbackContent = localAnswer
-          ? formatLocalAnswerByIntent(localAnswer, studyIntent)
+          ? formatLocalAnswerByIntent(localAnswer, studyIntent, responseType, searchDepth)
           : generateMockResponse(query, studyIntent, responseType, searchDepth);
 
         console.warn(`[Insight Scout] Fallback activated (${reason}). Source: ${localAnswer ? "local knowledge base" : "mock generator"}`);

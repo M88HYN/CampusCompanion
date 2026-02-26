@@ -40,7 +40,7 @@ function dropTables() {
     'quiz_responses', 'quiz_attempts', 'quiz_options', 'quiz_questions', 'quizzes',
     'user_question_stats', 'user_achievements', 'user_preferences',
     'study_sessions', 'note_blocks', 'notes',
-    'research_conversations', 'sessions', 'users'
+    'messages', 'conversations', 'research_conversations', 'sessions', 'users'
   ];
   
   sqlite.exec('PRAGMA foreign_keys = OFF');
@@ -269,8 +269,8 @@ sqlite.exec(`
       id VARCHAR PRIMARY KEY,
       user_id VARCHAR NOT NULL REFERENCES users(id) ON DELETE CASCADE,
       title TEXT NOT NULL DEFAULT 'New Conversation',
-      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL
     )
   `);
 
@@ -296,7 +296,7 @@ sqlite.exec(`
       conversation_id VARCHAR NOT NULL REFERENCES conversations(id) ON DELETE CASCADE,
       role TEXT NOT NULL,
       content TEXT NOT NULL,
-      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+      created_at INTEGER NOT NULL
     )
   `);
 

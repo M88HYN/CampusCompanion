@@ -107,7 +107,7 @@ export default function Register() {
   const features = [
     { icon: Brain, label: "Smart Flashcards", desc: "AI-powered spaced repetition" },
     { icon: Target, label: "Adaptive Quizzes", desc: "Adjusts to your level" },
-    { icon: Sparkles, label: "Insight Scout", desc: "AI research assistant" },
+    { icon: Sparkles, label: "Insight Scout", desc: "AI insight assistant" },
     { icon: BookOpen, label: "Smart Notes", desc: "Auto-generate study materials" },
   ];
 

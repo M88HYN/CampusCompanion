@@ -18,6 +18,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { apiRequest } from "@/lib/queryClient";
 import { Link, useLocation } from "wouter";
 import type { User as AppUser } from "@shared/models/auth";
+import { StudyMateLogo } from "./studymate-logo";
 
 interface AppTopbarProps {
   user: AppUser | null;
@@ -39,8 +40,8 @@ const SEARCH_TARGETS: SearchTarget[] = [
   { label: "Quizzes", path: "/quizzes", description: "Quiz list and attempts", keywords: ["quiz", "quizzes", "test"], group: "Navigation" },
   { label: "Quiz Analytics", path: "/quizzes?tab=analytics", description: "Quiz analytics section", keywords: ["quiz analytics", "accuracy", "scores"], group: "Navigation" },
   { label: "Quiz Review", path: "/quizzes?tab=review", description: "Spaced quiz review", keywords: ["review", "quiz review"], group: "Navigation" },
-  { label: "Revision", path: "/revision", description: "Revision helper", keywords: ["revision", "recap"], group: "Navigation" },
-  { label: "Research", path: "/research", description: "Research and insight scout", keywords: ["research", "insight scout", "ai"], group: "Navigation" },
+  { label: "Revision Aids", path: "/revision", description: "Revision helper", keywords: ["revision", "recap", "revision aids"], group: "Navigation" },
+  { label: "Insight Scout", path: "/research", description: "AI-powered study assistant", keywords: ["research", "insight scout", "ai"], group: "Navigation" },
   { label: "Insights", path: "/insights", description: "Learning insights dashboard", keywords: ["insights", "learning data"], group: "Navigation" },
   { label: "Performance", path: "/performance", description: "Performance analytics", keywords: ["performance", "analytics", "metrics"], group: "Navigation" },
   { label: "Profile", path: "/profile", description: "User profile page", keywords: ["profile", "account"], group: "Navigation" },
@@ -178,9 +179,7 @@ export function AppTopbar({ user, onLogout }: AppTopbarProps) {
           </SidebarTrigger>
 
           <Link href="/dashboard" className="flex items-center gap-2" aria-label="Go to dashboard">
-            <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-teal-500 to-cyan-600 text-white flex items-center justify-center text-xs font-bold">
-              SM
-            </div>
+            <StudyMateLogo sizeClassName="h-8 w-8" />
             <span className="hidden text-sm font-semibold text-slate-900 dark:text-white sm:inline">StudyMate</span>
           </Link>
         </div>

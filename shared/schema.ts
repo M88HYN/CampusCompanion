@@ -63,6 +63,46 @@ export type InsertNote = z.infer<typeof insertNoteSchema>;
 export type NoteBlock = typeof noteBlocks.$inferSelect;
 export type InsertNoteBlock = z.infer<typeof insertNoteBlockSchema>;
 
+// ==================== INSIGHT SCOUT: CONVERSATIONS ====================
+
+export const researchConversations = sqliteTable("conversations", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull(),
+  title: text("title").notNull().default("New Conversation"),
+  createdAt: integer("created_at").notNull(),
+  updatedAt: integer("updated_at").notNull(),
+}, (table) => ({
+  userIdIdx: index("research_conversations_user_id_idx").on(table.userId),
+  updatedAtIdx: index("research_conversations_updated_at_idx").on(table.updatedAt),
+}));
+
+export const researchMessages = sqliteTable("messages", {
+  id: text("id").primaryKey(),
+  conversationId: text("conversation_id").notNull(),
+  role: text("role").notNull(),
+  content: text("content").notNull(),
+  createdAt: integer("created_at").notNull(),
+}, (table) => ({
+  conversationIdIdx: index("research_messages_conversation_id_idx").on(table.conversationId),
+  createdAtIdx: index("research_messages_created_at_idx").on(table.createdAt),
+}));
+
+export const insertResearchConversationSchema = createInsertSchema(researchConversations).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertResearchMessageSchema = createInsertSchema(researchMessages).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type ResearchConversation = typeof researchConversations.$inferSelect;
+export type InsertResearchConversation = z.infer<typeof insertResearchConversationSchema>;
+export type ResearchMessage = typeof researchMessages.$inferSelect;
+export type InsertResearchMessage = z.infer<typeof insertResearchMessageSchema>;
+
 // ==================== FLASHCARDS ====================
 
 export const decks = sqliteTable("decks", {

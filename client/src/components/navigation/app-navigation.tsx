@@ -24,6 +24,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import type { User as AppUser } from "@shared/models/auth";
 import { NavItem } from "./nav-item";
+import { StudyMateLogo } from "./studymate-logo";
 
 interface AppNavigationProps {
   user: AppUser | null;
@@ -38,8 +39,8 @@ const sections = [
       { label: "Notes", href: "/notes", icon: BookOpen },
       { label: "Flashcards", href: "/flashcards", icon: Repeat },
       { label: "Quizzes", href: "/quizzes", icon: BrainCircuit },
-      { label: "Revision", href: "/revision", icon: FlaskConical },
-      { label: "Research", href: "/research", icon: Search },
+      { label: "Revision Aids", href: "/revision", icon: FlaskConical },
+      { label: "Insight Scout", href: "/research", icon: Search },
     ],
   },
   {
@@ -70,12 +71,9 @@ export function AppNavigation({ user, onLogout }: AppNavigationProps) {
     <Sidebar aria-label="Primary sidebar navigation" className="border-r border-slate-200 dark:border-slate-800">
       <SidebarHeader className="px-4 py-4 border-b border-slate-200 dark:border-slate-800">
         <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-teal-500 to-cyan-600 text-white flex items-center justify-center font-bold">
-            SM
-          </div>
+          <StudyMateLogo />
           <div className="min-w-0">
             <p className="text-base font-semibold text-slate-900 dark:text-white">StudyMate</p>
-            <p className="text-xs text-slate-500 dark:text-slate-400">Campus Companion</p>
           </div>
         </div>
       </SidebarHeader>

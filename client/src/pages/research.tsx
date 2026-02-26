@@ -4,7 +4,7 @@ import {
   Loader2, ChevronDown, ChevronRight, GraduationCap, BookMarked,
   Target, Brain, Zap, PenLine, RotateCcw, Search, Settings2,
   ThumbsUp, ThumbsDown, HelpingHand, ClipboardList, ArrowRight,
-  FileText
+  FileText, History, Plus, Trash2
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { Card, CardContent } from "@/components/ui/card";
@@ -50,13 +50,33 @@ interface InsightCard {
   };
 }
 
+interface ResearchConversation {
+  id: string;
+  title: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
+interface ResearchConversationMessage {
+  id: string;
+  conversationId: string;
+  role: "user" | "assistant" | "system";
+  content: string;
+  createdAt: number;
+}
+
+interface ResearchConversationDetail {
+  conversation: ResearchConversation;
+  messages: ResearchConversationMessage[];
+}
+
 // ─── Constants ───────────────────────────────────────────────────────────────
 
 const STUDY_INTENTS: { value: StudyIntent; label: string; icon: React.ElementType; description: string }[] = [
   { value: "exam_prep", label: "Exam Prep", icon: Target, description: "Key points, mark schemes, exam-ready" },
   { value: "deep_understanding", label: "Deep Understanding", icon: Brain, description: "Thorough explanations, build intuition" },
   { value: "assignment_writing", label: "Assignment Writing", icon: PenLine, description: "Academic rigour, structured arguments" },
-  { value: "revision_recall", label: "Revision / Recall", icon: RotateCcw, description: "Mnemonics, summaries, quick-reference" },
+  { value: "revision_recall", label: "Revision Aids", icon: RotateCcw, description: "Mnemonics, summaries, quick-reference" },
   { value: "quick_clarification", label: "Quick Clarification", icon: Zap, description: "Concise, direct answers" },
 ];
 
@@ -402,6 +422,7 @@ export default function Research() {
   const [quizQuestion, setQuizQuestion] = useState("");
   const [quizAnswer, setQuizAnswer] = useState("");
   const [selectedQuizId, setSelectedQuizId] = useState("");
+  const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const queryClient = useQueryClient();
@@ -409,6 +430,24 @@ export default function Research() {
 
   const { data: decks = [] } = useQuery<Deck[]>({ queryKey: ["/api/decks"] });
   const { data: quizzes = [] } = useQuery<Quiz[]>({ queryKey: ["/api/quizzes"] });
+  const { data: conversations = [] } = useQuery<ResearchConversation[]>({
+    queryKey: ["/api/research/conversations"],
+    queryFn: async () => {
+      const res = await apiRequest("GET", "/api/research/conversations");
+      return (await res.json()) as ResearchConversation[];
+    },
+    staleTime: 10000,
+  });
+
+  const { data: conversationDetail } = useQuery<ResearchConversationDetail>({
+    queryKey: ["/api/research/conversations", currentConversationId],
+    queryFn: async () => {
+      const res = await apiRequest("GET", `/api/research/conversations/${currentConversationId}`);
+      return (await res.json()) as ResearchConversationDetail;
+    },
+    enabled: Boolean(currentConversationId),
+    staleTime: 10000,
+  });
 
   // ── Mutations ────────────────────────────────────────────────────────
 
@@ -422,7 +461,7 @@ export default function Research() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/notes"] });
-      toast({ title: "Saved to Notes", description: "Research insight has been saved as a new note." });
+      toast({ title: "Saved to Notes", description: "Insight Scout result has been saved as a new note." });
     },
     onError: () => {
       toast({ title: "Error", description: "Failed to save to notes", variant: "destructive" });
@@ -479,7 +518,76 @@ export default function Research() {
     },
   });
 
+  const createConversationMutation = useMutation({
+    mutationFn: async (title: string) => {
+      const res = await apiRequest("POST", "/api/research/conversations", { title });
+      return (await res.json()) as ResearchConversation;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/research/conversations"] });
+    },
+  });
+
+  const addMessageMutation = useMutation({
+    mutationFn: async (data: { conversationId: string; role: "user" | "assistant" | "system"; content: string }) => {
+      const res = await apiRequest("POST", `/api/research/conversations/${data.conversationId}/messages`, {
+        role: data.role,
+        content: data.content,
+      });
+      return await res.json();
+    },
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/research/conversations"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/research/conversations", variables.conversationId] });
+    },
+  });
+
+  const deleteConversationMutation = useMutation({
+    mutationFn: async (conversationId: string) => {
+      await apiRequest("DELETE", `/api/research/conversations/${conversationId}`);
+    },
+    onSuccess: (_data, conversationId) => {
+      if (currentConversationId === conversationId) {
+        setCurrentConversationId(null);
+        setInsightCards([]);
+      }
+      queryClient.invalidateQueries({ queryKey: ["/api/research/conversations"] });
+    },
+  });
+
   // ── Handlers ─────────────────────────────────────────────────────────
+
+  useEffect(() => {
+    if (!conversationDetail || !currentConversationId) return;
+
+    const loadedCards: InsightCard[] = [];
+    const messages = conversationDetail.messages;
+
+    for (let index = messages.length - 1; index >= 0; index -= 1) {
+      const message = messages[index];
+      if (message.role !== "assistant") continue;
+
+      const userQuery = [...messages.slice(0, index)].reverse().find((m) => m.role === "user")?.content || "Previous query";
+
+      loadedCards.push({
+        id: `history-${message.id}`,
+        query: userQuery,
+        title: generateTitle(userQuery),
+        content: message.content,
+        intent: "deep_understanding",
+        responseType: "explanation",
+        source: "unknown",
+        timestamp: new Date(message.createdAt),
+        confidence: null,
+        sections: parseInsightSections(message.content),
+      });
+    }
+
+    setInsightCards(loadedCards);
+  }, [conversationDetail, currentConversationId]);
+
+  const getConversationTitle = (query: string) =>
+    query.replace(/\s+/g, " ").trim().slice(0, 72) || "New Conversation";
 
   const handleCopy = async (content: string, id: string) => {
     try {
@@ -493,7 +601,7 @@ export default function Research() {
   };
 
   const handleSaveToNotes = (content: string) => {
-    const title = content.split("\n")[0]?.substring(0, 50) || "Research Insight";
+    const title = content.split("\n")[0]?.substring(0, 50) || "Insight Scout Result";
     saveToNotesMutation.mutate({ title: title.replace(/[#*]/g, "").trim(), content });
   };
 
@@ -534,6 +642,23 @@ export default function Research() {
 
     const query = input.trim();
     const cardId = `insight-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+    let activeConversationId = currentConversationId;
+
+    if (!activeConversationId) {
+      try {
+        const created = await createConversationMutation.mutateAsync(getConversationTitle(query));
+        activeConversationId = created.id;
+        setCurrentConversationId(created.id);
+      } catch {
+        toast({ title: "Error", description: "Failed to create chat history entry", variant: "destructive" });
+        return;
+      }
+    }
+
+    if (!activeConversationId) {
+      return;
+    }
+
     setInput("");
     setStreamingContent("");
     setStreamingQuery(query);
@@ -555,6 +680,7 @@ export default function Research() {
           searchDepth,
           responseType,
           studyIntent,
+          conversationId: activeConversationId,
         }),
       });
 
@@ -611,6 +737,18 @@ export default function Research() {
       };
 
       setInsightCards(prev => [newCard, ...prev]);
+
+      await addMessageMutation.mutateAsync({
+        conversationId: activeConversationId,
+        role: "user",
+        content: query,
+      });
+
+      await addMessageMutation.mutateAsync({
+        conversationId: activeConversationId,
+        role: "assistant",
+        content: fullContent,
+      });
     } catch {
       toast({ title: "Error", description: "Failed to process your research query", variant: "destructive" });
     } finally {
@@ -663,7 +801,7 @@ export default function Research() {
             </div>
             <div>
               <h1 className="text-lg font-bold text-slate-800 dark:text-slate-200 tracking-tight">Insight Scout</h1>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Research & Insight Canvas</p>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Insight Canvas</p>
             </div>
           </div>
         </div>
@@ -751,7 +889,7 @@ export default function Research() {
                 ) : (
                   <>
                     <Send className="h-4 w-4 mr-2" />
-                    Research
+                    Ask Insight Scout
                   </>
                 )}
               </Button>
@@ -800,6 +938,75 @@ export default function Research() {
                   </div>
                 </CollapsibleContent>
               </Collapsible>
+
+              <div className="space-y-2 pt-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-[10px] font-bold text-slate-500 dark:text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                    <History className="h-3 w-3" />
+                    Chat History
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCurrentConversationId(null);
+                      setInsightCards([]);
+                    }}
+                    className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 rounded"
+                  >
+                    <Plus className="h-3 w-3" />
+                    New Chat
+                  </button>
+                </div>
+
+                <div className="max-h-44 overflow-y-auto rounded-lg border border-slate-200/70 dark:border-slate-700/70 bg-white dark:bg-slate-900">
+                  {conversations.length === 0 ? (
+                    <p className="px-3 py-2 text-xs text-slate-500 dark:text-slate-400">No previous chats yet.</p>
+                  ) : (
+                    <div className="p-1.5 space-y-1">
+                      {conversations.map((conversation) => {
+                        const isActiveConversation = currentConversationId === conversation.id;
+                        return (
+                          <div
+                            key={conversation.id}
+                            className={`flex items-center gap-1 rounded-md border ${
+                              isActiveConversation
+                                ? "border-amber-300 dark:border-amber-700 bg-amber-50/80 dark:bg-amber-950/30"
+                                : "border-transparent hover:border-slate-200 dark:hover:border-slate-700"
+                            }`}
+                          >
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setCurrentConversationId(conversation.id);
+                                setInsightCards([]);
+                              }}
+                              className="flex-1 text-left px-2 py-1.5 text-xs text-slate-700 dark:text-slate-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 rounded"
+                              data-testid={`button-conversation-${conversation.id}`}
+                            >
+                              <p className="truncate font-medium">{conversation.title}</p>
+                              <p className="text-[10px] text-slate-500 dark:text-slate-400">
+                                {new Date(conversation.updatedAt).toLocaleString()}
+                              </p>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (!deleteConversationMutation.isPending) {
+                                  deleteConversationMutation.mutate(conversation.id);
+                                }
+                              }}
+                              className="p-1.5 text-slate-400 hover:text-rose-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 rounded"
+                              aria-label="Delete conversation"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              </div>
 
               <div className="pt-3">
                 <p className="text-[10px] text-center text-slate-400 dark:text-slate-600">
@@ -850,7 +1057,7 @@ export default function Research() {
                   <GraduationCap className="h-10 w-10 text-amber-500 dark:text-amber-400" />
                 </div>
                 <h2 className="text-xl font-bold text-slate-800 dark:text-slate-200 mb-2">
-                  Your Research Canvas
+                  Your Insight Canvas
                 </h2>
                 <p className="text-sm text-slate-500 dark:text-slate-400 max-w-sm leading-relaxed mb-6">
                   Ask a question on the left to generate structured insight cards.

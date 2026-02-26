@@ -328,14 +328,14 @@ export default function Dashboard({ userRole = "student" }: DashboardProps) {
     },
     {
       title: "Insight Scout",
-      description: "AI-powered research",
+      description: "AI-powered insight support",
       icon: Sparkles,
       bgGradient: "bg-gradient-to-br from-amber-400 via-orange-500 to-red-500",
       href: "/research",
       subtitle: "Ask anything, get explanations",
     },
     {
-      title: "Revision",
+      title: "Revision Aids",
       description: "Spaced review queue",
       icon: Lightbulb,
       bgGradient: "bg-gradient-to-br from-yellow-400 via-lime-500 to-green-500",
@@ -437,7 +437,7 @@ export default function Dashboard({ userRole = "student" }: DashboardProps) {
     if (actions.length === 0) {
       actions.push({
         title: "Explore Insight Scout",
-        description: "Ask any study question and get AI-powered explanations and research assistance.",
+        description: "Ask any study question and get AI-powered explanations and insight support.",
         reason: "Build knowledge",
         timeEstimate: "5 min",
         priority: 'low',

@@ -133,7 +133,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           <div><strong>Flashcards</strong><p>Spaced repetition study flow.</p></div>
           <div><strong>Quizzes</strong><p>MCQ and short-answer assessments.</p></div>
           <div><strong>Insights</strong><p>Performance analytics and trends.</p></div>
-          <div><strong>Research</strong><p>AI-assisted study support.</p></div>
+          <div><strong>Insight Scout</strong><p>AI-assisted study support.</p></div>
         </div>
       </div>
 
@@ -2527,10 +2527,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // ==================== RESEARCH/CONVERSATIONS API ====================
 
+  const createConversationBodySchema = z.object({
+    title: z.string().trim().min(1).max(120).optional(),
+  });
+
+  const createMessageBodySchema = z.object({
+    role: z.enum(["user", "assistant", "system"]),
+    content: z.string().trim().min(1),
+  });
+
   app.get("/api/research/conversations", authMiddleware, async (req: any, res) => {
     try {
       const userId = getUserId(req);
-      res.json([]);
+      const conversations = await storage.getResearchConversations(userId);
+      res.json(conversations);
     } catch (error) {
       console.error("Get conversations error:", error);
       res.status(500).json({ error: "Failed to fetch conversations" });
@@ -2540,7 +2550,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/research/conversations/:id", authMiddleware, async (req: any, res) => {
     try {
       const userId = getUserId(req);
-      res.json({ id: req.params.id, title: "Conversation", messages: [] });
+      const conversation = await storage.getResearchConversation(req.params.id, userId);
+      if (!conversation) {
+        return res.status(404).json({ error: "Conversation not found" });
+      }
+      res.json(conversation);
     } catch (error) {
       console.error("Get conversation error:", error);
       res.status(500).json({ error: "Failed to fetch conversation" });
@@ -2550,8 +2564,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/research/conversations", authMiddleware, async (req: any, res) => {
     try {
       const userId = getUserId(req);
-      const { title } = req.body;
-      res.status(201).json({ id: randomUUID(), title: title || "New Conversation", userId, createdAt: new Date() });
+      const parsed = createConversationBodySchema.safeParse(req.body ?? {});
+      if (!parsed.success) {
+        return res.status(400).json({ error: parsed.error.errors[0]?.message || "Invalid request" });
+      }
+
+      const conversation = await storage.createResearchConversation(userId, parsed.data.title);
+      res.status(201).json(conversation);
     } catch (error) {
       console.error("Create conversation error:", error);
       res.status(500).json({ error: "Failed to create conversation" });
@@ -2561,6 +2580,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/research/conversations/:id", authMiddleware, async (req: any, res) => {
     try {
       const userId = getUserId(req);
+      await storage.deleteResearchConversation(req.params.id, userId);
       res.status(204).send();
     } catch (error) {
       console.error("Delete conversation error:", error);
@@ -2571,8 +2591,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/research/conversations/:id/messages", authMiddleware, async (req: any, res) => {
     try {
       const userId = getUserId(req);
-      const { role, content } = req.body;
-      res.status(201).json({ id: randomUUID(), conversationId: req.params.id, role: role || "user", content, createdAt: new Date() });
+      const parsed = createMessageBodySchema.safeParse(req.body ?? {});
+      if (!parsed.success) {
+        return res.status(400).json({ error: parsed.error.errors[0]?.message || "Invalid request" });
+      }
+
+      const message = await storage.addResearchMessage(
+        req.params.id,
+        userId,
+        parsed.data.role,
+        parsed.data.content,
+      );
+
+      res.status(201).json(message);
     } catch (error) {
       console.error("Create message error:", error);
       res.status(500).json({ error: "Failed to create message" });
