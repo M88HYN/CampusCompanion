@@ -74,6 +74,7 @@ export function AppTopbar({ user, onLogout }: AppTopbarProps) {
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
 
   const { data: settings } = useQuery({
     queryKey: ["settings"],
@@ -105,6 +106,19 @@ export function AppTopbar({ user, onLogout }: AppTopbarProps) {
   useEffect(() => {
     setNotificationsEnabled(settings?.quizReminders ?? true);
   }, [settings]);
+
+  useEffect(() => {
+    const scrollContainer = document.getElementById("app-main-scroll");
+    if (!scrollContainer) return;
+
+    const handleScroll = () => {
+      setIsScrolled(scrollContainer.scrollTop > 8);
+    };
+
+    handleScroll();
+    scrollContainer.addEventListener("scroll", handleScroll, { passive: true });
+    return () => scrollContainer.removeEventListener("scroll", handleScroll);
+  }, []);
 
   const updateNotificationsMutation = useMutation({
     mutationFn: async (enabled: boolean) => {
@@ -168,7 +182,13 @@ export function AppTopbar({ user, onLogout }: AppTopbarProps) {
     "U";
 
   return (
-    <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 px-4 py-3 backdrop-blur dark:border-slate-800 dark:bg-slate-900/95 md:px-6">
+    <header
+      className={`sticky top-0 z-30 px-4 py-3 md:px-6 transition-all duration-300 ${
+        isScrolled
+          ? "border-b border-slate-300/90 bg-white/90 backdrop-blur-xl shadow-sm dark:border-slate-700/90 dark:bg-slate-900/90"
+          : "border-b border-slate-200 bg-white/95 backdrop-blur dark:border-slate-800 dark:bg-slate-900/95"
+      }`}
+    >
       <div className="flex items-center gap-4">
         <div className="flex items-center gap-3 md:min-w-[220px]">
           <SidebarTrigger
@@ -204,7 +224,7 @@ export function AppTopbar({ user, onLogout }: AppTopbarProps) {
 
             {isSearchOpen && filteredTargets.length > 0 ? (
               <div
-                className="absolute z-40 mt-2 w-full rounded-md border border-slate-200 bg-white shadow-lg dark:border-slate-700 dark:bg-slate-900"
+                className="search-dropdown-transition absolute z-40 mt-2 w-full rounded-md border border-slate-200 bg-white shadow-lg dark:border-slate-700 dark:bg-slate-900"
                 role="listbox"
                 aria-label="Search results"
               >

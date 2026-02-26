@@ -219,9 +219,27 @@
   animation: fade-in 220ms ease-out;
 }
 
+.search-dropdown-transition {
+  animation: slide-in-down-soft 180ms ease-out;
+  transform-origin: top center;
+  will-change: opacity, transform;
+}
+
+@keyframes slide-in-down-soft {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .route-transition,
-  .tabs-content-transition[data-state="active"] {
+  .tabs-content-transition[data-state="active"],
+  .search-dropdown-transition {
     animation: none;
   }
 

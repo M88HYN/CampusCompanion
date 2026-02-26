@@ -66,7 +66,7 @@ function MainLayout({
         <AppNavigation user={user} onLogout={onLogout} />
         <div className="flex flex-col flex-1 overflow-hidden">
           <AppTopbar user={user} onLogout={onLogout} />
-          <main className="flex-1 overflow-y-auto overflow-x-hidden">
+          <main id="app-main-scroll" className="flex-1 overflow-y-auto overflow-x-hidden">
             <div key={location} className="route-transition">
               <AppRouter />
             </div>
