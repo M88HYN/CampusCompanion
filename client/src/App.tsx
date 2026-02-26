@@ -53,6 +53,8 @@ function MainLayout({
   user: ReturnType<typeof useAuth>["user"];
   onLogout: () => void;
 }) {
+  const [location] = useLocation();
+
   const style = {
     "--sidebar-width": "16rem",
     "--sidebar-width-icon": "3rem",
@@ -65,7 +67,9 @@ function MainLayout({
         <div className="flex flex-col flex-1 overflow-hidden">
           <AppTopbar user={user} onLogout={onLogout} />
           <main className="flex-1 overflow-y-auto overflow-x-hidden">
-            <AppRouter />
+            <div key={location} className="route-transition">
+              <AppRouter />
+            </div>
           </main>
         </div>
       </div>

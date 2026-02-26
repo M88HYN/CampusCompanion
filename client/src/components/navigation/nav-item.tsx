@@ -20,11 +20,12 @@ export function NavItem({ href, label, icon: Icon, isActive, testId, onNavigate 
         data-testid={testId}
         onClick={onNavigate}
         className={cn(
-          "group relative flex items-center gap-3 rounded-md border-l-2 px-3 py-2 text-sm font-medium transition-all duration-200",
+          "group relative flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-all duration-200",
+          "before:absolute before:left-0 before:top-1/2 before:h-6 before:w-0.5 before:-translate-y-1/2 before:rounded-full before:transition-all before:duration-250",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2",
           isActive
-            ? "border-l-teal-500 bg-teal-50 text-teal-700 dark:bg-teal-950/60 dark:text-teal-300"
-            : "border-l-transparent text-slate-700 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white",
+            ? "before:bg-teal-500 before:opacity-100 before:scale-y-100 bg-teal-50 text-teal-700 dark:bg-teal-950/60 dark:text-teal-300"
+            : "before:bg-teal-500 before:opacity-0 before:scale-y-0 text-slate-700 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white",
         )}
       >
         <Icon className={cn("h-4 w-4 shrink-0", isActive ? "text-teal-600 dark:text-teal-300" : "text-slate-500 group-hover:text-slate-700 dark:text-slate-400 dark:group-hover:text-slate-200")} />
