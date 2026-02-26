@@ -1,15 +1,21 @@
 import { Bell, Menu, Search, Settings, User } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import { Switch } from "@/components/ui/switch";
+import { ThemeToggle } from "@/components/theme-toggle";
+import { apiRequest } from "@/lib/queryClient";
 import { Link } from "wouter";
 import type { User as AppUser } from "@shared/models/auth";
 
@@ -19,6 +25,39 @@ interface AppTopbarProps {
 }
 
 export function AppTopbar({ user, onLogout }: AppTopbarProps) {
+  const queryClient = useQueryClient();
+  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+
+  const { data: settings } = useQuery({
+    queryKey: ["settings"],
+    queryFn: async () => {
+      const response = await apiRequest("GET", "/api/settings");
+      return (await response.json()) as { quizReminders?: boolean };
+    },
+    staleTime: 30000,
+  });
+
+  useEffect(() => {
+    setNotificationsEnabled(settings?.quizReminders ?? true);
+  }, [settings]);
+
+  const updateNotificationsMutation = useMutation({
+    mutationFn: async (enabled: boolean) => {
+      const response = await apiRequest("PATCH", "/api/settings", {
+        quizReminders: enabled,
+      });
+      return await response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["settings"] });
+    },
+  });
+
+  const handleNotificationsToggle = (enabled: boolean) => {
+    setNotificationsEnabled(enabled);
+    updateNotificationsMutation.mutate(enabled);
+  };
+
   const initials =
     (user?.firstName?.[0] || "") + (user?.lastName?.[0] || "") ||
     user?.email?.[0]?.toUpperCase() ||
@@ -55,14 +94,38 @@ export function AppTopbar({ user, onLogout }: AppTopbarProps) {
         </div>
 
         <div className="ml-auto flex items-center gap-2 md:gap-3">
-          <Button
-            variant="ghost"
-            size="icon"
-            aria-label="Notifications"
-            className="focus-visible:ring-2 focus-visible:ring-teal-500"
-          >
-            <Bell className="h-4 w-4" />
-          </Button>
+          <ThemeToggle />
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label="Notification preferences"
+                className="focus-visible:ring-2 focus-visible:ring-teal-500"
+              >
+                <Bell className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-64">
+              <DropdownMenuLabel>Notifications</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <div className="px-3 py-2">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-medium">Quiz Reminders</p>
+                    <p className="text-xs text-muted-foreground">Enable reminder notifications</p>
+                  </div>
+                  <Switch
+                    checked={notificationsEnabled}
+                    onCheckedChange={handleNotificationsToggle}
+                    aria-label="Toggle quiz reminders"
+                    disabled={updateNotificationsMutation.isPending}
+                  />
+                </div>
+              </div>
+            </DropdownMenuContent>
+          </DropdownMenu>
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
