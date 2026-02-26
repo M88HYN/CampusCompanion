@@ -19,6 +19,7 @@ import {
   SidebarGroupContent,
   SidebarGroupLabel,
   SidebarHeader,
+  useSidebar,
 } from "@/components/ui/sidebar";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -61,6 +62,8 @@ const sections = [
 
 export function AppNavigation({ user, onLogout }: AppNavigationProps) {
   const [location] = useLocation();
+  const { state, isMobile } = useSidebar();
+  const isCollapsed = state === "collapsed" && !isMobile;
 
   const initials =
     (user?.firstName?.[0] || "") + (user?.lastName?.[0] || "") ||
@@ -68,11 +71,13 @@ export function AppNavigation({ user, onLogout }: AppNavigationProps) {
     "U";
 
   return (
-    <Sidebar aria-label="Primary sidebar navigation" className="border-r border-slate-200 dark:border-slate-800">
+    <Sidebar collapsible="icon" aria-label="Primary sidebar navigation" className="border-r border-slate-200 dark:border-slate-800 transition-all duration-300 ease-in-out">
       <SidebarHeader className="px-4 py-4 border-b border-slate-200 dark:border-slate-800">
         <div className="flex items-center gap-3">
           <StudyMateLogo />
-          <div className="min-w-0">
+          <div
+            className={`min-w-0 transition-all duration-200 ${isCollapsed ? "max-w-0 opacity-0" : "max-w-[160px] opacity-100"}`}
+          >
             <p className="text-base font-semibold text-slate-900 dark:text-white">StudyMate</p>
           </div>
         </div>
@@ -81,7 +86,7 @@ export function AppNavigation({ user, onLogout }: AppNavigationProps) {
       <SidebarContent className="px-2 py-3">
         {sections.map((section) => (
           <SidebarGroup key={section.heading} className="px-2 py-2">
-            <SidebarGroupLabel className="px-1 text-[11px] font-semibold tracking-wide text-slate-500 dark:text-slate-400">
+            <SidebarGroupLabel className={`px-1 text-[11px] font-semibold tracking-wide text-slate-500 dark:text-slate-400 transition-all duration-200 ${isCollapsed ? "opacity-0 max-h-0 overflow-hidden py-0" : "opacity-100"}`}>
               {section.heading}
             </SidebarGroupLabel>
             <SidebarGroupContent>
@@ -103,13 +108,13 @@ export function AppNavigation({ user, onLogout }: AppNavigationProps) {
       </SidebarContent>
 
       <SidebarFooter className="px-4 py-4 border-t border-slate-200 dark:border-slate-800 space-y-3">
-        <div className="flex items-center gap-3">
+        <div className={`flex items-center gap-3 ${isCollapsed ? "justify-center" : ""}`}>
           <Avatar className="h-9 w-9 border border-slate-200 dark:border-slate-700">
             <AvatarFallback className="bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200">
               {initials}
             </AvatarFallback>
           </Avatar>
-          <div className="min-w-0">
+          <div className={`min-w-0 transition-all duration-200 ${isCollapsed ? "max-w-0 opacity-0" : "max-w-[160px] opacity-100"}`}>
             <p className="truncate text-sm font-medium text-slate-900 dark:text-slate-100">
               {user?.firstName || user?.email || "User"}
             </p>
@@ -120,7 +125,7 @@ export function AppNavigation({ user, onLogout }: AppNavigationProps) {
         <Button
           onClick={onLogout}
           variant="outline"
-          className="w-full justify-start"
+          className={`w-full transition-all duration-200 ${isCollapsed ? "justify-center px-2" : "justify-start"}`}
           aria-label="Log out"
         >
           Log out

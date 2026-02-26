@@ -68,6 +68,18 @@ interface SearchDeck {
   tags?: string | null;
 }
 
+interface DueCard {
+  id: string;
+}
+
+interface FlashcardStats {
+  totalCards: number;
+  dueNow: number;
+  new: number;
+  struggling: number;
+  mastered: number;
+}
+
 export function AppTopbar({ user, onLogout }: AppTopbarProps) {
   const queryClient = useQueryClient();
   const [, setLocation] = useLocation();
@@ -99,6 +111,24 @@ export function AppTopbar({ user, onLogout }: AppTopbarProps) {
     queryFn: async () => {
       const response = await apiRequest("GET", "/api/decks");
       return (await response.json()) as SearchDeck[];
+    },
+    staleTime: 30000,
+  });
+
+  const { data: dueCards = [] } = useQuery<DueCard[]>({
+    queryKey: ["/api/cards/due"],
+    queryFn: async () => {
+      const response = await apiRequest("GET", "/api/cards/due");
+      return (await response.json()) as DueCard[];
+    },
+    staleTime: 30000,
+  });
+
+  const { data: flashcardStats } = useQuery<FlashcardStats>({
+    queryKey: ["/api/flashcards/stats"],
+    queryFn: async () => {
+      const response = await apiRequest("GET", "/api/flashcards/stats");
+      return (await response.json()) as FlashcardStats;
     },
     staleTime: 30000,
   });
@@ -181,6 +211,27 @@ export function AppTopbar({ user, onLogout }: AppTopbarProps) {
     user?.email?.[0]?.toUpperCase() ||
     "U";
 
+  const reminderItems = [
+    flashcardStats?.dueNow
+      ? {
+          id: "due-cards",
+          text: `Review ${flashcardStats.dueNow} due flashcard${flashcardStats.dueNow !== 1 ? "s" : ""}`,
+        }
+      : null,
+    flashcardStats?.struggling
+      ? {
+          id: "struggling-cards",
+          text: `Revisit ${flashcardStats.struggling} struggling card${flashcardStats.struggling !== 1 ? "s" : ""}`,
+        }
+      : null,
+    flashcardStats?.new
+      ? {
+          id: "new-cards",
+          text: `Start ${Math.min(flashcardStats.new, 5)} new card${Math.min(flashcardStats.new, 5) !== 1 ? "s" : ""}`,
+        }
+      : null,
+  ].filter(Boolean).slice(0, 3) as { id: string; text: string }[];
+
   return (
     <header
       className={`sticky top-0 z-30 px-4 py-3 md:px-6 transition-all duration-300 ${
@@ -192,7 +243,7 @@ export function AppTopbar({ user, onLogout }: AppTopbarProps) {
       <div className="flex items-center gap-4">
         <div className="flex items-center gap-3 md:min-w-[220px]">
           <SidebarTrigger
-            className="md:hidden"
+            className="transition-colors"
             aria-label="Open navigation menu"
           >
             <Menu className="h-4 w-4" />
@@ -257,9 +308,17 @@ export function AppTopbar({ user, onLogout }: AppTopbarProps) {
                 variant="ghost"
                 size="icon"
                 aria-label="Notification preferences"
-                className="focus-visible:ring-2 focus-visible:ring-teal-500"
+                className="relative focus-visible:ring-2 focus-visible:ring-teal-500"
               >
                 <Bell className="h-4 w-4" />
+                {dueCards.length > 0 ? (
+                  <span
+                    className="absolute -right-0.5 -top-0.5 inline-flex min-w-[1rem] h-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-semibold text-white"
+                    aria-label={`${Math.min(dueCards.length, 99)} notifications`}
+                  >
+                    {dueCards.length > 99 ? "99+" : dueCards.length}
+                  </span>
+                ) : null}
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-64">
@@ -277,6 +336,26 @@ export function AppTopbar({ user, onLogout }: AppTopbarProps) {
                     aria-label="Toggle quiz reminders"
                     disabled={updateNotificationsMutation.isPending}
                   />
+                </div>
+
+                <div className="mt-3 space-y-2">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                    Action items
+                  </p>
+                  {!notificationsEnabled ? (
+                    <p className="text-xs text-slate-500 dark:text-slate-400">Reminders are paused.</p>
+                  ) : reminderItems.length > 0 ? (
+                    <ul className="space-y-1.5">
+                      {reminderItems.map((item) => (
+                        <li key={item.id} className="text-xs text-slate-700 dark:text-slate-300 flex items-start gap-2">
+                          <span className="mt-1 h-1.5 w-1.5 rounded-full bg-teal-500" />
+                          <span>{item.text}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="text-xs text-slate-500 dark:text-slate-400">No urgent tasks right now.</p>
+                  )}
                 </div>
               </div>
             </DropdownMenuContent>
