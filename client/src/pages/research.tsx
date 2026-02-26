@@ -60,16 +60,6 @@ const STUDY_INTENTS: { value: StudyIntent; label: string; icon: React.ElementTyp
   { value: "quick_clarification", label: "Quick Clarification", icon: Zap, description: "Concise, direct answers" },
 ];
 
-const QUICK_PROMPTS = [
-  { label: "Explain Concept", prompt: "Explain this concept:", responseType: "explanation" as ResponseType },
-  { label: "Summarize", prompt: "Summarize this topic:", responseType: "summary" as ResponseType },
-  { label: "Compare & Contrast", prompt: "Compare and contrast:", responseType: "comparison" as ResponseType },
-  { label: "Analyze", prompt: "Analyze in depth:", responseType: "analysis" as ResponseType },
-  { label: "Real-world Examples", prompt: "Show real-world applications of:", responseType: "examples" as ResponseType },
-  { label: "Study Tips", prompt: "How should I study:", responseType: "study_tips" as ResponseType },
-  { label: "Common Mistakes", prompt: "What are common mistakes with:", responseType: "mistakes" as ResponseType },
-];
-
 const PRACTICE_PROMPTS: Array<{
   query: string;
   intent: StudyIntent;
@@ -765,28 +755,6 @@ export default function Research() {
                   </>
                 )}
               </Button>
-
-              {/* Quick Prompts */}
-              <div className="space-y-2">
-                <label className="text-[10px] font-bold text-slate-500 dark:text-slate-500 uppercase tracking-wider">Quick Start</label>
-                <div className="flex flex-wrap gap-1.5">
-                  {QUICK_PROMPTS.map((prompt, idx) => (
-                    <button
-                      key={idx}
-                      className="px-2.5 py-1 rounded-md text-[11px] font-medium border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-amber-50 hover:border-amber-300 dark:hover:bg-amber-950 dark:hover:border-amber-700 hover:text-amber-700 dark:hover:text-amber-400 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500"
-                      onClick={() => {
-                        setResponseType(prompt.responseType);
-                        setInput(input ? input + " " + prompt.prompt : prompt.prompt + " ");
-                        inputRef.current?.focus();
-                      }}
-                      disabled={isStreaming}
-                      data-testid={`button-quick-prompt-${idx}`}
-                    >
-                      {prompt.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
 
               {/* Advanced Options - collapsible */}
               <Collapsible open={advancedOpen} onOpenChange={setAdvancedOpen}>
