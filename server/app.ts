@@ -89,8 +89,11 @@ export default async function runApp(
 ) {
   const server = await registerRoutes(app);
 
-  // 404 handler - return JSON
-  app.use((_req: Request, res: Response) => {
+  // Run environment-specific setup (e.g., static serving in production)
+  await setup(app, server);
+
+  // 404 handler for API routes only
+  app.use("/api", (_req: Request, res: Response) => {
     res.status(404).json({ message: "Not Found" });
   });
 
@@ -124,18 +127,15 @@ export default async function runApp(
     console.error('Uncaught Exception:', error);
   });
 
-  // Run setup
-  await setup(app, server);
-
-  const host = '0.0.0.0'; // Allow access from any device on the local network
-  const PORT = 3000; // FIXED PORT - NO AUTO-INCREMENT
+  const host = '0.0.0.0';
+  const PORT = Number(process.env.PORT) || 3000;
 
   // FAIL-FAST: If port is occupied, crash immediately with clear error
   server.on('error', (error: any) => {
     if (error.code === 'EADDRINUSE') {
       console.error(`\n❌ FATAL ERROR: Port ${PORT} is already in use!`);
       console.error(`❌ Another process is using port ${PORT}.`);
-      console.error(`❌ Kill that process or change the port in shared/ports.ts\n`);
+      console.error(`❌ Set a different PORT or stop the conflicting process.\n`);
       process.exit(1);
     } else if (error.code === 'ECONNREFUSED') {
       console.error(`\n❌ FATAL ERROR: Connection refused on port ${PORT}!`);

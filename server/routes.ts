@@ -19,6 +19,7 @@ import { registerInsightScoutRoutes } from "./insight-scout";
 import { registerAuthRoutes, authMiddleware } from "./auth-routes";
 import type { Card } from "@shared/schema";
 import type { JWTPayload } from "./auth";
+import { listLocalAnswers, updateLocalAnswer } from "./local-ai-answers";
 
 /** Concrete card interface — Drizzle's $inferSelect resolves some SQLite columns as unknown */
 interface CardRecord {
@@ -2087,6 +2088,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Register AI research routes (Replit chat integration removed - using standard endpoints)
   registerInsightScoutRoutes(app);
+
+  const localAnswerUpdateSchema = z.object({
+    question: z.string().min(1).optional(),
+    answer: z.string().min(1).optional(),
+    keywords: z.array(z.string().min(1)).optional(),
+    category: z.enum(["study-skills", "computer-science", "math", "science", "writing", "productivity"]).optional(),
+  });
+
+  app.get("/api/research/local-answers", authMiddleware, async (req, res) => {
+    try {
+      const search = typeof req.query.search === "string" ? req.query.search : "";
+      const answers = listLocalAnswers(search);
+      res.json({ items: answers, count: answers.length });
+    } catch (error) {
+      console.error("Local answers list error:", error);
+      res.status(500).json({ error: "Failed to fetch local answers" });
+    }
+  });
+
+  app.patch("/api/research/local-answers/:id", authMiddleware, async (req, res) => {
+    try {
+      const parsed = localAnswerUpdateSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ error: "Invalid payload", details: parsed.error.errors });
+      }
+
+      const updated = updateLocalAnswer(req.params.id, parsed.data);
+      if (!updated) {
+        return res.status(404).json({ error: "Local answer not found" });
+      }
+
+      res.json({ item: updated });
+    } catch (error) {
+      console.error("Local answer update error:", error);
+      res.status(500).json({ error: "Failed to update local answer" });
+    }
+  });
 
   // ==================== DASHBOARD METRICS (Real Data) ====================
 

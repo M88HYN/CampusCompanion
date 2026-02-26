@@ -1,9 +1,12 @@
 import type { Express, Request, Response } from "express";
 import { z } from "zod";
+import { findBestLocalAnswer } from "./local-ai-answers";
 
 // Only import OpenAI if we have a real key
 const apiKey = process.env.AI_INTEGRATIONS_OPENAI_API_KEY || process.env.OPENAI_API_KEY || "";
 const hasRealApiKey = apiKey.length > 20 && !apiKey.includes("test") && !apiKey.includes("dummy");
+const OPENAI_MODEL = process.env.AI_INTEGRATIONS_OPENAI_MODEL || process.env.OPENAI_MODEL || "gpt-3.5-turbo";
+const REQUIRE_LIVE_AI = String(process.env.INSIGHT_SCOUT_REQUIRE_LIVE_AI || "false").toLowerCase() === "true";
 
 let openaiClient: any = null;
 let openaiInitialized = false;
@@ -874,10 +877,20 @@ const SYSTEM_PROMPT = `You are Insight Scout, an intelligent educational researc
 Your responses should be suitable for university coursework, exam preparation, and academic research.`;
 
 type ResearchQuery = z.infer<typeof researchQuerySchema>;
+type ResponseSource = "live_ai" | "local_fallback" | "mock_fallback";
 
 export function registerInsightScoutRoutes(app: Express): void {
   // Conversation management endpoints moved to routes.ts
   // Only keep the query endpoint here
+
+  app.get("/api/research/status", (_req: Request, res: Response) => {
+    res.json({
+      hasRealApiKey,
+      model: OPENAI_MODEL,
+      requireLiveAi: REQUIRE_LIVE_AI,
+      fallbackEnabled: !REQUIRE_LIVE_AI,
+    });
+  });
 
   app.post("/api/research/query", async (req: Request, res: Response) => {
     try {
@@ -923,40 +936,60 @@ export function registerInsightScoutRoutes(app: Express): void {
       res.setHeader("Cache-Control", "no-cache");
       res.setHeader("Connection", "keep-alive");
 
-      // Use OpenAI if available, otherwise use mock response
-      const openai = await getOpenAI();
-      if (openai) {
-        const stream = await openai.chat.completions.create({
-          model: "gpt-3.5-turbo",
-          messages: chatMessages,
-          stream: true,
-          max_completion_tokens: searchDepth === "comprehensive" ? 4096 : searchDepth === "quick" ? 1024 : 2048,
-        });
-
-        let fullResponse = "";
-
-        for await (const chunk of stream) {
-          const content = chunk.choices[0]?.delta?.content || "";
-          if (content) {
-            fullResponse += content;
-            res.write(`data: ${JSON.stringify({ content })}\n\n`);
-          }
-        }
-      } else {
-        // Mock streaming: send response in small chunks to simulate real streaming
-        console.log("[Insight Scout] Using mock response (no valid OpenAI key)");
-        const mockContent = generateMockResponse(query, studyIntent, responseType, searchDepth);
-        const words = mockContent.split(" ");
-        
+      const streamText = async (text: string, delayMs = 8) => {
+        const words = text.split(" ");
         for (let i = 0; i < words.length; i++) {
           const word = (i === 0 ? "" : " ") + words[i];
           res.write(`data: ${JSON.stringify({ content: word })}\n\n`);
-          // Small delay to simulate streaming (non-blocking)
-          await new Promise(resolve => setTimeout(resolve, 8));
+          await new Promise((resolve) => setTimeout(resolve, delayMs));
         }
+      };
+
+      const streamLocalFallback = async (reason: string): Promise<ResponseSource> => {
+        const localAnswer = findBestLocalAnswer(query);
+        const fallbackContent = localAnswer
+          ? `**Key Insight** — ${localAnswer.answer.split(".")[0]}.\n\n**Explanation**\n\n${localAnswer.answer}\n\n**Examples**\n\n- Related question: ${localAnswer.question}\n- Category: ${localAnswer.category}\n\n**Common Mistakes**\n\n- Relying only on memorization without active recall\n- Skipping practice questions and feedback loops\n\n**Exam Relevance**\n\nTurn this into an exam answer using definition -> mechanism -> example -> limitation.`
+          : generateMockResponse(query, studyIntent, responseType, searchDepth);
+
+        console.warn(`[Insight Scout] Fallback activated (${reason}). Source: ${localAnswer ? "local knowledge base" : "mock generator"}`);
+        await streamText(fallbackContent);
+        return localAnswer ? "local_fallback" : "mock_fallback";
+      };
+
+      // Use OpenAI if available, otherwise use local answer bank + mock response
+      const openai = await getOpenAI();
+      let responseSource: ResponseSource = "mock_fallback";
+      if (openai) {
+        try {
+          const stream = await openai.chat.completions.create({
+            model: OPENAI_MODEL,
+            messages: chatMessages,
+            stream: true,
+            max_completion_tokens: searchDepth === "comprehensive" ? 4096 : searchDepth === "quick" ? 1024 : 2048,
+          });
+
+          for await (const chunk of stream) {
+            const content = chunk.choices[0]?.delta?.content || "";
+            if (content) {
+              res.write(`data: ${JSON.stringify({ content })}\n\n`);
+            }
+          }
+          responseSource = "live_ai";
+        } catch (openAIError) {
+          const message = openAIError instanceof Error ? openAIError.message : "OpenAI stream error";
+          if (REQUIRE_LIVE_AI) {
+            throw new Error(`Live AI required but OpenAI request failed: ${message}`);
+          }
+          responseSource = await streamLocalFallback(message);
+        }
+      } else {
+        if (REQUIRE_LIVE_AI) {
+          throw new Error("Live AI required but no valid OPENAI_API_KEY is configured.");
+        }
+        responseSource = await streamLocalFallback("no OpenAI client available");
       }
 
-      res.write(`data: ${JSON.stringify({ done: true, conversationId: convoId })}\n\n`);
+      res.write(`data: ${JSON.stringify({ done: true, conversationId: convoId, source: responseSource })}\n\n`);
       res.end();
     } catch (error) {
       console.error("Error processing research query:", error);

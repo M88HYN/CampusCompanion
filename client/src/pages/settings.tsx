@@ -53,6 +53,14 @@ interface UserPreferences {
   updatedAt?: string;
 }
 
+interface LocalAnswerEntry {
+  id: string;
+  question: string;
+  answer: string;
+  keywords: string[];
+  category: "study-skills" | "computer-science" | "math" | "science" | "writing" | "productivity";
+}
+
 export default function Settings() {
   const [activeTab, setActiveTab] = useState<SettingsTab>("account");
   const [showPassword, setShowPassword] = useState(false);
@@ -107,6 +115,55 @@ export default function Settings() {
     showStudyActivity: true,
     shareQuizResults: true,
   });
+
+  const [localAnswerSearch, setLocalAnswerSearch] = useState("");
+  const [selectedLocalAnswerId, setSelectedLocalAnswerId] = useState<string>("");
+  const [localAnswerDraft, setLocalAnswerDraft] = useState({
+    question: "",
+    answer: "",
+    keywords: "",
+    category: "study-skills" as LocalAnswerEntry["category"],
+  });
+
+  const { data: localAnswersData, isLoading: isLocalAnswersLoading } = useQuery({
+    queryKey: ["local-ai-answers", localAnswerSearch],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (localAnswerSearch.trim()) params.set("search", localAnswerSearch.trim());
+      const response = await apiRequest("GET", `/api/research/local-answers${params.toString() ? `?${params.toString()}` : ""}`);
+      return (await response.json()) as { items: LocalAnswerEntry[]; count: number };
+    },
+    enabled: activeTab === "insight-scout",
+    staleTime: 10000,
+  });
+
+  const updateLocalAnswerMutation = useMutation({
+    mutationFn: async (payload: { id: string; question: string; answer: string; keywords: string[]; category: LocalAnswerEntry["category"] }) => {
+      const response = await apiRequest("PATCH", `/api/research/local-answers/${payload.id}`, {
+        question: payload.question,
+        answer: payload.answer,
+        keywords: payload.keywords,
+        category: payload.category,
+      });
+      return await response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["local-ai-answers"] });
+      toast({
+        title: "Local answer updated",
+        description: "The local AI answer was saved successfully.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Update failed",
+        description: "Could not save the local AI answer.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const localAnswers = localAnswersData?.items ?? [];
 
   // Update local state when preferences load
   useEffect(() => {
@@ -209,6 +266,45 @@ export default function Settings() {
 
   const handleSaveInsightScout = async () => {
     await updateMutation.mutateAsync(insightScoutState);
+  };
+
+  useEffect(() => {
+    if (!localAnswers.length) {
+      setSelectedLocalAnswerId("");
+      setLocalAnswerDraft({
+        question: "",
+        answer: "",
+        keywords: "",
+        category: "study-skills",
+      });
+      return;
+    }
+
+    const selected = localAnswers.find((entry) => entry.id === selectedLocalAnswerId) || localAnswers[0];
+    if (selected.id !== selectedLocalAnswerId) {
+      setSelectedLocalAnswerId(selected.id);
+    }
+
+    setLocalAnswerDraft({
+      question: selected.question,
+      answer: selected.answer,
+      keywords: selected.keywords.join(", "),
+      category: selected.category,
+    });
+  }, [localAnswers, selectedLocalAnswerId]);
+
+  const handleSaveLocalAnswer = async () => {
+    if (!selectedLocalAnswerId) return;
+    await updateLocalAnswerMutation.mutateAsync({
+      id: selectedLocalAnswerId,
+      question: localAnswerDraft.question,
+      answer: localAnswerDraft.answer,
+      keywords: localAnswerDraft.keywords
+        .split(",")
+        .map((keyword) => keyword.trim())
+        .filter(Boolean),
+      category: localAnswerDraft.category,
+    });
   };
 
   return (
@@ -910,6 +1006,117 @@ export default function Settings() {
                   {updateMutation.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
                   {updateMutation.isPending ? "Saving..." : "Save Insight Scout Settings"}
                 </Button>
+
+                <Card className="border-2 border-orange-200 dark:border-orange-800">
+                  <CardHeader className="bg-gradient-to-r from-orange-100 to-yellow-100 dark:from-orange-900 dark:to-yellow-900">
+                    <CardTitle>Local AI Answer Bank</CardTitle>
+                    <CardDescription>Search and edit built-in fallback answers used when live AI is unavailable.</CardDescription>
+                  </CardHeader>
+                  <CardContent className="pt-6 space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="local-ai-search" className="font-semibold">Search answers</Label>
+                      <Input
+                        id="local-ai-search"
+                        value={localAnswerSearch}
+                        onChange={(event) => setLocalAnswerSearch(event.target.value)}
+                        placeholder="Search by topic, keyword, or category"
+                        className="border-2 border-orange-200 dark:border-orange-800"
+                        data-testid="input-local-ai-search"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                      <div className="border-2 border-slate-200 dark:border-slate-700 rounded-lg p-2 max-h-80 overflow-auto space-y-2">
+                        {isLocalAnswersLoading ? (
+                          <p className="text-sm text-muted-foreground px-2 py-1">Loading local answers...</p>
+                        ) : localAnswers.length === 0 ? (
+                          <p className="text-sm text-muted-foreground px-2 py-1">No local answers match this search.</p>
+                        ) : (
+                          localAnswers.map((entry) => (
+                            <button
+                              key={entry.id}
+                              onClick={() => setSelectedLocalAnswerId(entry.id)}
+                              className={`w-full text-left p-2 rounded-md border transition-colors ${
+                                entry.id === selectedLocalAnswerId
+                                  ? "border-orange-400 bg-orange-50 dark:bg-orange-950"
+                                  : "border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800"
+                              }`}
+                              data-testid={`button-local-answer-${entry.id}`}
+                            >
+                              <p className="text-sm font-semibold line-clamp-1">{entry.question}</p>
+                              <p className="text-xs text-muted-foreground mt-1">{entry.category}</p>
+                            </button>
+                          ))
+                        )}
+                      </div>
+
+                      <div className="space-y-3">
+                        <div className="space-y-2">
+                          <Label htmlFor="local-ai-question" className="font-semibold">Question</Label>
+                          <Input
+                            id="local-ai-question"
+                            value={localAnswerDraft.question}
+                            onChange={(event) => setLocalAnswerDraft((prev) => ({ ...prev, question: event.target.value }))}
+                            className="border-2 border-orange-200 dark:border-orange-800"
+                            data-testid="input-local-ai-question"
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="local-ai-category" className="font-semibold">Category</Label>
+                          <Select
+                            value={localAnswerDraft.category}
+                            onValueChange={(value) => setLocalAnswerDraft((prev) => ({ ...prev, category: value as LocalAnswerEntry["category"] }))}
+                          >
+                            <SelectTrigger className="border-2 border-orange-200 dark:border-orange-800" data-testid="select-local-ai-category">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="study-skills">Study Skills</SelectItem>
+                              <SelectItem value="computer-science">Computer Science</SelectItem>
+                              <SelectItem value="math">Math</SelectItem>
+                              <SelectItem value="science">Science</SelectItem>
+                              <SelectItem value="writing">Writing</SelectItem>
+                              <SelectItem value="productivity">Productivity</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="local-ai-keywords" className="font-semibold">Keywords (comma-separated)</Label>
+                          <Input
+                            id="local-ai-keywords"
+                            value={localAnswerDraft.keywords}
+                            onChange={(event) => setLocalAnswerDraft((prev) => ({ ...prev, keywords: event.target.value }))}
+                            className="border-2 border-orange-200 dark:border-orange-800"
+                            data-testid="input-local-ai-keywords"
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="local-ai-answer" className="font-semibold">Answer</Label>
+                          <textarea
+                            id="local-ai-answer"
+                            value={localAnswerDraft.answer}
+                            onChange={(event) => setLocalAnswerDraft((prev) => ({ ...prev, answer: event.target.value }))}
+                            className="w-full min-h-[180px] p-3 border-2 border-orange-200 dark:border-orange-800 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 bg-white dark:bg-slate-900 text-slate-900 dark:text-white"
+                            data-testid="textarea-local-ai-answer"
+                          />
+                        </div>
+
+                        <Button
+                          onClick={handleSaveLocalAnswer}
+                          disabled={!selectedLocalAnswerId || updateLocalAnswerMutation.isPending}
+                          className="w-full bg-gradient-to-r from-orange-500 to-yellow-600 hover:from-orange-600 hover:to-yellow-700 text-white disabled:opacity-50"
+                          data-testid="button-save-local-ai-answer"
+                        >
+                          {updateLocalAnswerMutation.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
+                          {updateLocalAnswerMutation.isPending ? "Saving local answer..." : "Save Local Answer"}
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
               </div>
             )}
             </div>

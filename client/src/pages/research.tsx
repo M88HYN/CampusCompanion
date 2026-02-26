@@ -29,6 +29,7 @@ type StudyIntent = "exam_prep" | "deep_understanding" | "assignment_writing" | "
 type SearchDepth = "quick" | "balanced" | "comprehensive";
 type ResponseType = "explanation" | "summary" | "comparison" | "analysis" | "examples" | "study_tips" | "mistakes";
 type ConfidenceLevel = "yes" | "unsure" | "no" | null;
+type ResponseSource = "live_ai" | "local_fallback" | "mock_fallback" | "unknown";
 
 interface InsightCard {
   id: string;
@@ -37,6 +38,7 @@ interface InsightCard {
   content: string;
   intent: StudyIntent;
   responseType: ResponseType;
+  source: ResponseSource;
   timestamp: Date;
   confidence: ConfidenceLevel;
   sections: {
@@ -66,6 +68,56 @@ const QUICK_PROMPTS = [
   { label: "Real-world Examples", prompt: "Show real-world applications of:", responseType: "examples" as ResponseType },
   { label: "Study Tips", prompt: "How should I study:", responseType: "study_tips" as ResponseType },
   { label: "Common Mistakes", prompt: "What are common mistakes with:", responseType: "mistakes" as ResponseType },
+];
+
+const PRACTICE_PROMPTS: Array<{
+  query: string;
+  intent: StudyIntent;
+  responseType: ResponseType;
+  searchDepth: SearchDepth;
+}> = [
+  {
+    query: "Explain the light-dependent and Calvin cycle stages of photosynthesis with one exam-style trick question.",
+    intent: "exam_prep",
+    responseType: "explanation",
+    searchDepth: "balanced",
+  },
+  {
+    query: "Compare arrays, linked lists, and hash tables for insertion, lookup, and memory tradeoffs.",
+    intent: "deep_understanding",
+    responseType: "comparison",
+    searchDepth: "comprehensive",
+  },
+  {
+    query: "Give me a concise summary of natural selection with two misconceptions students often make.",
+    intent: "revision_recall",
+    responseType: "summary",
+    searchDepth: "balanced",
+  },
+  {
+    query: "How should I structure a 1500-word assignment on machine learning ethics with critical analysis?",
+    intent: "assignment_writing",
+    responseType: "analysis",
+    searchDepth: "comprehensive",
+  },
+  {
+    query: "What are practical examples of supply and demand in housing and labor markets?",
+    intent: "deep_understanding",
+    responseType: "examples",
+    searchDepth: "balanced",
+  },
+  {
+    query: "Give me revision-focused study tips for calculus derivatives and integrals in one page.",
+    intent: "revision_recall",
+    responseType: "study_tips",
+    searchDepth: "quick",
+  },
+  {
+    query: "What common mistakes do students make with binary search and Big-O notation?",
+    intent: "exam_prep",
+    responseType: "mistakes",
+    searchDepth: "balanced",
+  },
 ];
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -205,6 +257,22 @@ function InsightCardComponent({
 }) {
   const intentConfig = STUDY_INTENTS.find(i => i.value === card.intent);
   const IntentIcon = intentConfig?.icon || Brain;
+  const sourceLabel =
+    card.source === "live_ai"
+      ? "Live AI"
+      : card.source === "local_fallback"
+      ? "Local Fallback"
+      : card.source === "mock_fallback"
+      ? "Mock Fallback"
+      : "Source Pending";
+  const sourceClassName =
+    card.source === "live_ai"
+      ? "border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950"
+      : card.source === "local_fallback"
+      ? "border-blue-300 dark:border-blue-700 text-blue-700 dark:text-blue-400 bg-blue-50 dark:bg-blue-950"
+      : card.source === "mock_fallback"
+      ? "border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-800"
+      : "border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950";
 
   return (
     <div className="rounded-xl border border-slate-200/80 dark:border-slate-700/60 bg-white dark:bg-slate-900 shadow-sm hover:shadow-md transition-shadow overflow-hidden">
@@ -224,6 +292,9 @@ function InsightCardComponent({
                 <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 font-medium border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950">
                   <IntentIcon className="h-2.5 w-2.5 mr-1" />
                   {intentConfig?.label}
+                </Badge>
+                <Badge variant="outline" className={`text-[10px] px-1.5 py-0 h-4 font-medium ${sourceClassName}`}>
+                  {sourceLabel}
                 </Badge>
                 <span className="text-[10px] text-slate-400 dark:text-slate-500">
                   {card.timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
@@ -464,6 +535,7 @@ export default function Research() {
     setIsStreaming(true);
 
     let fullContent = "";
+    let finalSource: ResponseSource = "unknown";
 
     try {
       const token = localStorage.getItem("token");
@@ -502,6 +574,11 @@ export default function Research() {
                   fullContent += data.content;
                   setStreamingContent(fullContent);
                 }
+                if (data.done && typeof data.source === "string") {
+                  if (data.source === "live_ai" || data.source === "local_fallback" || data.source === "mock_fallback") {
+                    finalSource = data.source;
+                  }
+                }
                 if (data.error) {
                   toast({ title: "Error", description: data.error, variant: "destructive" });
                 }
@@ -522,6 +599,7 @@ export default function Research() {
         content: fullContent,
         intent: studyIntent,
         responseType,
+        source: finalSource,
         timestamp: new Date(),
         confidence: null,
         sections,
@@ -552,6 +630,7 @@ export default function Research() {
     content: streamingContent,
     intent: studyIntent,
     responseType,
+    source: "unknown",
     timestamp: new Date(),
     confidence: null,
     sections: parseInsightSections(streamingContent),
@@ -794,22 +873,21 @@ export default function Research() {
                   Ask a question on the left to generate structured insight cards.
                   Each response is broken down into expandable sections for focused study.
                 </p>
-                <div className="flex flex-col gap-2 w-full max-w-xs">
-                  {[
-                    "How does TCP/IP work?",
-                    "Compare REST and GraphQL",
-                    "Explain Big O notation",
-                  ].map((suggestion, i) => (
+                <div className="flex flex-col gap-2 w-full max-w-xl">
+                  {PRACTICE_PROMPTS.map((suggestion, i) => (
                     <button
                       key={i}
                       onClick={() => {
-                        setInput(suggestion);
+                        setStudyIntent(suggestion.intent);
+                        setResponseType(suggestion.responseType);
+                        setSearchDepth(suggestion.searchDepth);
+                        setInput(suggestion.query);
                         inputRef.current?.focus();
                       }}
                       className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm text-slate-600 dark:text-slate-400 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-amber-300 dark:hover:border-amber-700 hover:bg-amber-50/50 dark:hover:bg-amber-950/30 transition-all text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500"
                     >
                       <ArrowRight className="h-3 w-3 text-amber-500 shrink-0" />
-                      {suggestion}
+                      {suggestion.query}
                     </button>
                   ))}
                 </div>
