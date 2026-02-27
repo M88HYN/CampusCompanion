@@ -5,9 +5,13 @@ import { type Server } from "node:http";
 import express, { type Express } from "express";
 import runApp from "./app";
 import { createUser, findUserByEmail, findUserByUsername } from "./auth";
+import { storage } from "./storage";
+import { seedComputerScienceData } from "./seed-computer-science";
+import { seedCompletedQuizzes } from "./seed-completed-quizzes";
 
 export async function serveStatic(app: Express, _server: Server) {
   const enableDemoUser = process.env.ENABLE_DEMO_USER !== "false";
+  const enableDemoSeed = process.env.ENABLE_DEMO_SEED !== "false";
 
   if (enableDemoUser) {
     try {
@@ -17,11 +21,30 @@ export async function serveStatic(app: Express, _server: Server) {
 
       const existingByUsername = await findUserByUsername(demoUsername);
       const existingByEmail = await findUserByEmail(demoEmail);
-      const demoUser = existingByUsername || existingByEmail;
+      let demoUser = existingByUsername || existingByEmail;
 
       if (!demoUser) {
-        await createUser(demoEmail, demoPassword, "Demo", "User", demoUsername);
+        demoUser = await createUser(demoEmail, demoPassword, "Demo", "User", demoUsername);
         console.log("[PROD AUTH] Created demo account: demo-user / demo-user");
+      }
+
+      if (demoUser && enableDemoSeed) {
+        const [existingNotes, existingDecks, existingQuizzes] = await Promise.all([
+          storage.getNotes(demoUser.id),
+          storage.getDecks(demoUser.id),
+          storage.getQuizzes(demoUser.id),
+        ]);
+
+        const hasCoreSampleData =
+          existingNotes.length > 0 || existingDecks.length > 0 || existingQuizzes.length > 0;
+
+        if (!hasCoreSampleData) {
+          await seedComputerScienceData(demoUser.id);
+          console.log("[PROD SEED] Seeded demo core sample data");
+        }
+
+        await seedCompletedQuizzes(demoUser.id);
+        console.log("[PROD SEED] Ensured demo completed-quiz analytics data");
       }
     } catch (error) {
       console.error("[PROD AUTH] Failed to ensure demo account:", error);
