@@ -136,6 +136,30 @@ export function registerAuthRoutes(app: Express) {
         return res.status(401).json({ message: "Invalid credentials" });
       }
 
+      const isDemoUser = user.username === "demo-user" || user.email === "demo@studymate.local";
+      if (isDemoUser) {
+        try {
+          const [existingNotes, existingDecks, existingQuizzes] = await Promise.all([
+            storage.getNotes(user.id),
+            storage.getDecks(user.id),
+            storage.getQuizzes(user.id),
+          ]);
+
+          const hasCoreSampleData =
+            existingNotes.length > 0 || existingDecks.length > 0 || existingQuizzes.length > 0;
+
+          if (!hasCoreSampleData) {
+            await seedComputerScienceData(user.id);
+            console.log("[DEMO SEED] Seeded core sample data on demo login");
+          }
+
+          await seedCompletedQuizzes(user.id);
+          console.log("[DEMO SEED] Ensured completed quiz analytics on demo login");
+        } catch (seedError) {
+          console.error("[DEMO SEED] Failed during demo login seeding:", seedError);
+        }
+      }
+
       const token = generateToken(user);
       res.json({
         token,
