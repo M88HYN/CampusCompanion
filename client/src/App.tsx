@@ -9,7 +9,6 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { AppNavigation } from "@/components/navigation/app-navigation";
 import { AppTopbar } from "@/components/navigation/app-topbar";
 import { useAuth } from "@/hooks/use-auth";
-import { Loader2 } from "lucide-react";
 import Dashboard from "@/pages/dashboard";
 import Notes from "@/pages/notes";
 import Quizzes from "@/pages/quizzes";
@@ -77,27 +76,21 @@ function MainLayout({
   );
 }
 
-function LoadingScreen() {
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-teal-50/30 dark:from-slate-900 dark:to-teal-950/30">
-      <div className="text-center">
-        <Loader2 className="w-12 h-12 animate-spin text-teal-500 mx-auto mb-4" />
-        <p className="text-slate-600 dark:text-slate-400">Loading StudyMate...</p>
-      </div>
-    </div>
-  );
-}
-
 function AuthenticatedApp() {
   const { user, isLoading, isAuthenticated, logout } = useAuth();
   const [location] = useLocation();
 
   console.log("[AuthenticatedApp] Rendering", { isLoading, isAuthenticated, location, user: user?.email });
 
-  // Show loading screen
+  // Don't show splash/preload screen
   if (isLoading) {
-    console.log("[AuthenticatedApp] Still loading auth...");
-    return <LoadingScreen />;
+    return location === "/login" ? (
+      <div className="w-full min-h-screen bg-white">
+        <Login />
+      </div>
+    ) : (
+      <Redirect to="/login" />
+    );
   }
 
   // Not authenticated - show login only

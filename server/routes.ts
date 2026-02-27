@@ -147,7 +147,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           <li><a href="/quizzes">Quizzes</a></li>
           <li><a href="/insights">Insights</a></li>
           <li><a href="/api/health">API Health</a></li>
-          <li><a href="/api/auth/demo-status">Demo Status</a></li>
         </ul>
       </div>
     </div>

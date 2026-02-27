@@ -19,39 +19,6 @@ import { seedComputerScienceData } from "./seed-computer-science";
 import { seedCompletedQuizzes } from "./seed-completed-quizzes";
 import { storage } from "./storage";
 
-const DEMO_READ_ONLY_ENABLED = process.env.DEMO_READ_ONLY === "true";
-const DEMO_USER_ID = process.env.DEMO_USER_ID || "demo-user";
-const DEMO_USER_EMAIL = process.env.DEMO_USER_EMAIL || "demo-user@local.dev";
-const DEMO_USER_FIRST_NAME = process.env.DEMO_USER_FIRST_NAME || "Demo";
-const DEMO_USER_LAST_NAME = process.env.DEMO_USER_LAST_NAME || "User";
-
-function isReadOnlyMethod(method: string): boolean {
-  return method === "GET" || method === "HEAD" || method === "OPTIONS";
-}
-
-async function ensureUserAndSeed(userId: string, email: string, firstName?: string, lastName?: string) {
-  const [user] = await db.select().from(users).where(eq(users.id, userId));
-  if (!user) {
-    await db.insert(users).values({
-      id: userId,
-      email,
-      firstName: firstName || null,
-      lastName: lastName || null,
-      profileImageUrl: null,
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
-    }).catch(() => {});
-  }
-
-  const notes = await storage.getNotes(userId);
-  const quizzes = await storage.getQuizzes(userId);
-  if (notes.length === 0 || quizzes.length === 0) {
-    console.log(`[Auth] User ${userId} has ${notes.length} notes and ${quizzes.length} quizzes - seeding sample content`);
-    await seedComputerScienceData(userId);
-    await seedCompletedQuizzes(userId);
-  }
-}
-
 const loginSchema = z.object({
   emailOrUsername: z.string().min(1, "Email or username is required"),
   password: z.string().min(6),
@@ -78,29 +45,6 @@ export function authMiddleware(req: any, res: Response, next: NextFunction) {
   const token = req.headers.authorization?.split(" ")[1] || req.cookies?.token;
 
   if (!token) {
-    if (DEMO_READ_ONLY_ENABLED && isReadOnlyMethod(req.method)) {
-      req.user = {
-        userId: DEMO_USER_ID,
-        email: DEMO_USER_EMAIL,
-        firstName: DEMO_USER_FIRST_NAME,
-        lastName: DEMO_USER_LAST_NAME,
-      };
-
-      setImmediate(async () => {
-        try {
-          await ensureUserAndSeed(DEMO_USER_ID, DEMO_USER_EMAIL, DEMO_USER_FIRST_NAME, DEMO_USER_LAST_NAME);
-        } catch (error) {
-          console.log("[Auth] Demo mode setup skipped:", error instanceof Error ? error.message : String(error));
-        }
-      });
-
-      return next();
-    }
-
-    if (DEMO_READ_ONLY_ENABLED && !isReadOnlyMethod(req.method)) {
-      return res.status(403).json({ message: "Demo mode is read-only" });
-    }
-
     console.error("Auth failed: No token provided");
     return res.status(401).json({ message: "Unauthorized" });
   }
@@ -112,53 +56,13 @@ export function authMiddleware(req: any, res: Response, next: NextFunction) {
   }
 
   req.user = payload;
-
-  if (DEMO_READ_ONLY_ENABLED && payload.userId === DEMO_USER_ID && !isReadOnlyMethod(req.method)) {
-    return res.status(403).json({ message: "Demo mode is read-only" });
-  }
-  
-  // Ensure user exists in database AND has sample data (fire and forget)
-  setImmediate(async () => {
-    try {
-      await ensureUserAndSeed(
-        payload.userId,
-        payload.email || `user-${payload.userId}@local.dev`,
-        payload.firstName,
-        payload.lastName,
-      );
-    } catch (error) {
-      // Silently fail - best-effort seeding
-      console.log("[Auth] Sample data seeding skipped:", error instanceof Error ? error.message : String(error));
-    }
-  });
   
   next();
 }
 
 export function registerAuthRoutes(app: Express) {
   app.get("/api/auth/demo-status", async (_req: any, res: Response) => {
-    if (!DEMO_READ_ONLY_ENABLED) {
-      return res.json({ enabled: false });
-    }
-
-    setImmediate(async () => {
-      try {
-        await ensureUserAndSeed(DEMO_USER_ID, DEMO_USER_EMAIL, DEMO_USER_FIRST_NAME, DEMO_USER_LAST_NAME);
-      } catch (error) {
-        console.log("[Auth] Demo status setup skipped:", error instanceof Error ? error.message : String(error));
-      }
-    });
-
-    return res.json({
-      enabled: true,
-      readOnly: true,
-      user: {
-        id: DEMO_USER_ID,
-        email: DEMO_USER_EMAIL,
-        firstName: DEMO_USER_FIRST_NAME,
-        lastName: DEMO_USER_LAST_NAME,
-      },
-    });
+    return res.json({ enabled: false });
   });
 
   // Register route
@@ -183,14 +87,7 @@ export function registerAuthRoutes(app: Express) {
       }
 
       const user = await createUser(data.email, data.password, data.firstName, data.lastName, data.username);
-      
-      // Seed sample data for new user
-      try {
-        await seedComputerScienceData(user.id);
-      } catch (seedError) {
-        console.log("Note: Could not seed sample data for new user, but registration succeeded:", seedError);
-      }
-      
+
       const token = generateToken(user);
 
       res.json({
@@ -232,20 +129,6 @@ export function registerAuthRoutes(app: Express) {
       if (!valid) {
         return res.status(401).json({ message: "Invalid credentials" });
       }
-
-      // Seed sample data if user has none (fire and forget - don't block login)
-      setImmediate(async () => {
-        try {
-          const notes = await storage.getNotes(user.id);
-          if (notes.length === 0) {
-            console.log("User has no data - seeding sample content for userId:", user.id);
-            await seedComputerScienceData(user.id);
-            await seedCompletedQuizzes(user.id);
-          }
-        } catch (seedError) {
-          console.log("Note: Could not seed sample data, but login succeeded:", seedError);
-        }
-      });
 
       const token = generateToken(user);
       res.json({
