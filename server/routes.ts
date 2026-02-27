@@ -2564,7 +2564,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // If preferences don't exist, create with defaults
       if (!preferences) {
-        preferences = await storage.updateUserPreferences(userId, { userId });
+        preferences = await storage.updateUserPreferences(userId, {});
       }
       
       res.json(preferences);
@@ -2577,12 +2577,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/settings", authMiddleware, async (req: any, res) => {
     try {
       const userId = getUserId(req);
-      const updates = req.body;
+      const updates = req.body ?? {};
       
-      // Validate incoming data if needed - remove userId from updates if present
+      // Remove userId if present, then validate and strip unknown keys.
       const { userId: _, ...safeUpdates } = updates;
+
+      const parsed = schema.insertUserPreferencesSchema.partial().safeParse(safeUpdates);
+      if (!parsed.success) {
+        return res.status(400).json({ error: parsed.error.errors[0]?.message || "Invalid settings payload" });
+      }
       
-      const updated = await storage.updateUserPreferences(userId, safeUpdates);
+      const updated = await storage.updateUserPreferences(userId, parsed.data);
       res.json(updated);
     } catch (error) {
       console.error("Update settings error:", error);

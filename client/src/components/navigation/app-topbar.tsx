@@ -19,6 +19,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { Link, useLocation } from "wouter";
 import type { User as AppUser } from "@shared/models/auth";
 import { StudyMateLogo } from "./studymate-logo";
+import { useAppLanguage } from "@/lib/app-language";
 
 interface AppTopbarProps {
   user: AppUser | null;
@@ -81,6 +82,7 @@ interface FlashcardStats {
 }
 
 export function AppTopbar({ user, onLogout }: AppTopbarProps) {
+  const { t } = useAppLanguage();
   const queryClient = useQueryClient();
   const [, setLocation] = useLocation();
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
@@ -260,7 +262,7 @@ export function AppTopbar({ user, onLogout }: AppTopbarProps) {
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-foreground/70" />
             <Input
               aria-label="Search and navigate"
-              placeholder="Search pages, tabs, sections..."
+              placeholder={t("topbar.searchPlaceholder", "Search pages, tabs, sections...")}
               className="h-10 pl-9"
               value={searchQuery}
               onChange={(event) => {
@@ -322,13 +324,13 @@ export function AppTopbar({ user, onLogout }: AppTopbarProps) {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-64">
-              <DropdownMenuLabel>Notifications</DropdownMenuLabel>
+              <DropdownMenuLabel>{t("topbar.notifications", "Notifications")}</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <div className="px-3 py-2">
                 <div className="flex items-center justify-between gap-3">
                   <div>
-                    <p className="text-sm font-medium">Quiz Reminders</p>
-                    <p className="text-xs text-muted-foreground">Enable reminder notifications</p>
+                    <p className="text-sm font-medium">{t("topbar.quizReminders", "Quiz Reminders")}</p>
+                    <p className="text-xs text-muted-foreground">{t("topbar.enableReminders", "Enable reminder notifications")}</p>
                   </div>
                   <Switch
                     checked={notificationsEnabled}
@@ -340,10 +342,10 @@ export function AppTopbar({ user, onLogout }: AppTopbarProps) {
 
                 <div className="mt-3 space-y-2">
                   <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                    Action items
+                    {t("topbar.actionItems", "Action items")}
                   </p>
                   {!notificationsEnabled ? (
-                    <p className="text-xs text-muted-foreground">Reminders are paused.</p>
+                    <p className="text-xs text-muted-foreground">{t("topbar.remindersPaused", "Reminders are paused.")}</p>
                   ) : reminderItems.length > 0 ? (
                     <ul className="space-y-1.5">
                       {reminderItems.map((item) => (
@@ -354,7 +356,7 @@ export function AppTopbar({ user, onLogout }: AppTopbarProps) {
                       ))}
                     </ul>
                   ) : (
-                    <p className="text-xs text-muted-foreground">No urgent tasks right now.</p>
+                    <p className="text-xs text-muted-foreground">{t("topbar.noUrgent", "No urgent tasks right now.")}</p>
                   )}
                 </div>
               </div>
@@ -382,17 +384,17 @@ export function AppTopbar({ user, onLogout }: AppTopbarProps) {
               <DropdownMenuItem asChild>
                 <Link href="/profile" className="flex items-center gap-2">
                   <User className="h-4 w-4" />
-                  Profile
+                  {t("nav.profile", "Profile")}
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
                 <Link href="/settings" className="flex items-center gap-2">
                   <Settings className="h-4 w-4" />
-                  Settings
+                  {t("nav.settings", "Settings")}
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={onLogout}>Log out</DropdownMenuItem>
+              <DropdownMenuItem onClick={onLogout}>{t("common.logout", "Log out")}</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

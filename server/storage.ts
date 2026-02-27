@@ -2143,7 +2143,7 @@ export class DatabaseStorage implements IStorage {
   async updateUserPreferences(userId: string, preferences: Partial<InsertUserPreferences>): Promise<UserPreferences> {
     const [updated] = await db
       .update(userPreferences)
-      .set({ ...preferences, updatedAt: new Date() })
+      .set({ ...preferences, updatedAt: Date.now() })
       .where(eq(userPreferences.userId, userId))
       .returning();
     
@@ -2155,8 +2155,11 @@ export class DatabaseStorage implements IStorage {
     const [created] = await db
       .insert(userPreferences)
       .values({
+        id: randomUUID(),
         userId,
-        ...preferences
+        ...preferences,
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
       })
       .returning();
     return created;

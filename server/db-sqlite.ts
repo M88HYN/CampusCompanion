@@ -263,6 +263,42 @@ sqlite.exec(`
     )
   `);
 
+  // Create user_preferences table
+  sqlite.exec(`
+    CREATE TABLE IF NOT EXISTS user_preferences (
+      id VARCHAR PRIMARY KEY,
+      user_id VARCHAR NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
+      phone TEXT,
+      bio TEXT,
+      language TEXT NOT NULL DEFAULT 'en',
+      timezone TEXT NOT NULL DEFAULT 'america/new_york',
+      profile_visibility BOOLEAN NOT NULL DEFAULT 1,
+      show_study_activity BOOLEAN NOT NULL DEFAULT 1,
+      share_quiz_results BOOLEAN NOT NULL DEFAULT 1,
+      quiz_reminders BOOLEAN NOT NULL DEFAULT 1,
+      flashcard_reminders BOOLEAN NOT NULL DEFAULT 1,
+      weekly_digest BOOLEAN NOT NULL DEFAULT 1,
+      new_features BOOLEAN NOT NULL DEFAULT 0,
+      marketing BOOLEAN NOT NULL DEFAULT 0,
+      ai_model TEXT NOT NULL DEFAULT 'gpt-4',
+      search_depth TEXT NOT NULL DEFAULT 'comprehensive',
+      citation_format TEXT NOT NULL DEFAULT 'apa',
+      response_tone TEXT NOT NULL DEFAULT 'academic',
+      include_examples BOOLEAN NOT NULL DEFAULT 1,
+      include_sources BOOLEAN NOT NULL DEFAULT 1,
+      max_results TEXT NOT NULL DEFAULT '10',
+      query_history BOOLEAN NOT NULL DEFAULT 1,
+      auto_save BOOLEAN NOT NULL DEFAULT 1,
+      research_summary BOOLEAN NOT NULL DEFAULT 1,
+      web_search BOOLEAN NOT NULL DEFAULT 1,
+      academic_databases BOOLEAN NOT NULL DEFAULT 1,
+      enhanced_analysis BOOLEAN NOT NULL DEFAULT 1,
+      multi_language_support BOOLEAN NOT NULL DEFAULT 0,
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL
+    )
+  `);
+
   // Create conversations table
   sqlite.exec(`
     CREATE TABLE IF NOT EXISTS conversations (

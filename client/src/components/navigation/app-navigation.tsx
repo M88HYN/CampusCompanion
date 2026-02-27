@@ -26,44 +26,46 @@ import { Button } from "@/components/ui/button";
 import type { User as AppUser } from "@shared/models/auth";
 import { NavItem } from "./nav-item";
 import { StudyMateLogo } from "./studymate-logo";
+import { useAppLanguage } from "@/lib/app-language";
 
 interface AppNavigationProps {
   user: AppUser | null;
   onLogout: () => void;
 }
 
-const sections = [
-  {
-    heading: "STUDY TOOLS",
-    items: [
-      { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-      { label: "Notes", href: "/notes", icon: BookOpen },
-      { label: "Flashcards", href: "/flashcards", icon: Repeat },
-      { label: "Quizzes", href: "/quizzes", icon: BrainCircuit },
-      { label: "Revision Aids", href: "/revision", icon: FlaskConical },
-      { label: "Insight Scout", href: "/research", icon: Search },
-    ],
-  },
-  {
-    heading: "ANALYTICS",
-    items: [
-      { label: "Insights", href: "/insights", icon: BarChart3 },
-      { label: "Performance", href: "/performance", icon: Gauge },
-    ],
-  },
-  {
-    heading: "ACCOUNT",
-    items: [
-      { label: "Profile", href: "/profile", icon: User },
-      { label: "Settings", href: "/settings", icon: Settings },
-    ],
-  },
-];
-
 export function AppNavigation({ user, onLogout }: AppNavigationProps) {
+  const { t } = useAppLanguage();
   const [location] = useLocation();
   const { state, isMobile } = useSidebar();
   const isCollapsed = state === "collapsed" && !isMobile;
+
+  const sections = [
+    {
+      heading: t("nav.studyTools", "STUDY TOOLS"),
+      items: [
+        { label: t("nav.dashboard", "Dashboard"), href: "/dashboard", icon: LayoutDashboard },
+        { label: t("nav.notes", "Notes"), href: "/notes", icon: BookOpen },
+        { label: t("nav.flashcards", "Flashcards"), href: "/flashcards", icon: Repeat },
+        { label: t("nav.quizzes", "Quizzes"), href: "/quizzes", icon: BrainCircuit },
+        { label: t("nav.revision", "Revision Aids"), href: "/revision", icon: FlaskConical },
+        { label: t("nav.research", "Insight Scout"), href: "/research", icon: Search },
+      ],
+    },
+    {
+      heading: t("nav.analytics", "ANALYTICS"),
+      items: [
+        { label: t("nav.insights", "Insights"), href: "/insights", icon: BarChart3 },
+        { label: t("nav.performance", "Performance"), href: "/performance", icon: Gauge },
+      ],
+    },
+    {
+      heading: t("nav.account", "ACCOUNT"),
+      items: [
+        { label: t("nav.profile", "Profile"), href: "/profile", icon: User },
+        { label: t("nav.settings", "Settings"), href: "/settings", icon: Settings },
+      ],
+    },
+  ];
 
   const initials =
     (user?.firstName?.[0] || "") + (user?.lastName?.[0] || "") ||
@@ -128,7 +130,7 @@ export function AppNavigation({ user, onLogout }: AppNavigationProps) {
           className={`w-full transition-all duration-200 ${isCollapsed ? "justify-center px-2" : "justify-start"}`}
           aria-label="Log out"
         >
-          Log out
+          {t("common.logout", "Log out")}
         </Button>
       </SidebarFooter>
     </Sidebar>

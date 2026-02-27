@@ -41,7 +41,7 @@ const GITHUB_CLIENT_ID = process.env.GITHUB_CLIENT_ID || "";
 const GITHUB_CLIENT_SECRET = process.env.GITHUB_CLIENT_SECRET || "";
 const GITHUB_REDIRECT_URI = process.env.GITHUB_REDIRECT_URI || "http://localhost:3000/api/auth/github/callback";
 
-export function authMiddleware(req: any, res: Response, next: NextFunction) {
+export async function authMiddleware(req: any, res: Response, next: NextFunction) {
   const token = req.headers.authorization?.split(" ")[1] || req.cookies?.token;
 
   if (!token) {
@@ -52,6 +52,12 @@ export function authMiddleware(req: any, res: Response, next: NextFunction) {
   const payload = verifyToken(token);
   if (!payload) {
     console.error("Auth failed: Invalid token - verification failed. Token length:", token.length);
+    return res.status(401).json({ message: "Invalid token" });
+  }
+
+  const user = await findUserById(payload.userId);
+  if (!user) {
+    console.error("Auth failed: Token is valid but user no longer exists:", payload.userId);
     return res.status(401).json({ message: "Invalid token" });
   }
 

@@ -9,6 +9,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { AppNavigation } from "@/components/navigation/app-navigation";
 import { AppTopbar } from "@/components/navigation/app-topbar";
 import { useAuth } from "@/hooks/use-auth";
+import { AppLanguageProvider } from "@/lib/app-language";
 import Dashboard from "@/pages/dashboard";
 import Notes from "@/pages/notes";
 import Quizzes from "@/pages/quizzes";
@@ -124,10 +125,12 @@ export default function App() {
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
-          <ThemeProvider defaultTheme="light">
-            <AuthenticatedApp />
-            <Toaster />
-          </ThemeProvider>
+          <AppLanguageProvider>
+            <ThemeProvider defaultTheme="light">
+              <AuthenticatedApp />
+              <Toaster />
+            </ThemeProvider>
+          </AppLanguageProvider>
         </TooltipProvider>
       </QueryClientProvider>
     </ErrorBoundary>
