@@ -26,8 +26,15 @@ export function initializeDatabase(): BetterSQLite3Database<EmptySchema> {
     client: sqlite,
   });
 
-  // Drop and recreate tables (fresh reset on every startup)
-  dropTables();
+  // Only reset tables in development or when explicitly requested.
+  // Resetting in production deletes users and causes login failures.
+  const shouldResetOnStartup =
+    process.env.RESET_DB_ON_STARTUP === "true" || process.env.NODE_ENV !== "production";
+
+  if (shouldResetOnStartup) {
+    dropTables();
+  }
+
   createTables();
 
   return db;
