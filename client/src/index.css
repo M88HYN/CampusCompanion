@@ -191,17 +191,17 @@
   body {
     @apply font-sans antialiased text-foreground bg-background;
     background:
-      radial-gradient(circle at 8% 4%, hsl(var(--app-gradient-mid) / 0.45), transparent 42%),
-      radial-gradient(circle at 92% 6%, hsl(var(--app-gradient-end) / 0.35), transparent 45%),
-      linear-gradient(160deg, hsl(var(--app-gradient-start)) 0%, hsl(var(--background)) 45%, hsl(var(--app-gradient-end) / 0.24) 100%);
+      radial-gradient(circle at 8% 4%, hsl(var(--app-gradient-mid) / 0.28), transparent 42%),
+      radial-gradient(circle at 92% 6%, hsl(var(--app-gradient-end) / 0.22), transparent 45%),
+      linear-gradient(160deg, hsl(var(--app-gradient-start)) 0%, hsl(var(--background)) 48%, hsl(var(--app-gradient-end) / 0.14) 100%);
     background-attachment: fixed;
   }
 
   .dark body {
     background:
-      radial-gradient(circle at 10% 4%, hsl(var(--app-gradient-mid) / 0.4), transparent 42%),
-      radial-gradient(circle at 92% 8%, hsl(var(--app-gradient-end) / 0.28), transparent 46%),
-      linear-gradient(160deg, hsl(var(--app-gradient-start)) 0%, hsl(var(--background)) 50%, hsl(var(--app-gradient-end) / 0.22) 100%);
+      radial-gradient(circle at 10% 4%, hsl(var(--app-gradient-mid) / 0.28), transparent 42%),
+      radial-gradient(circle at 92% 8%, hsl(var(--app-gradient-end) / 0.18), transparent 46%),
+      linear-gradient(160deg, hsl(var(--app-gradient-start)) 0%, hsl(var(--background)) 52%, hsl(var(--app-gradient-end) / 0.14) 100%);
     background-attachment: fixed;
   }
 
@@ -238,9 +238,9 @@
 @layer utilities {
   .bg-app-gradient {
     background:
-      radial-gradient(circle at 12% 8%, hsl(var(--app-gradient-mid) / 0.42), transparent 40%),
-      radial-gradient(circle at 88% 8%, hsl(var(--app-gradient-end) / 0.32), transparent 42%),
-      linear-gradient(160deg, hsl(var(--app-gradient-start)) 0%, hsl(var(--background)) 46%, hsl(var(--app-gradient-end) / 0.2) 100%);
+      radial-gradient(circle at 12% 8%, hsl(var(--app-gradient-mid) / 0.26), transparent 40%),
+      radial-gradient(circle at 88% 8%, hsl(var(--app-gradient-end) / 0.2), transparent 42%),
+      linear-gradient(160deg, hsl(var(--app-gradient-start)) 0%, hsl(var(--background)) 50%, hsl(var(--app-gradient-end) / 0.12) 100%);
   }
 
   .bg-surface-gradient {

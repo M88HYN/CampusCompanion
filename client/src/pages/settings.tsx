@@ -319,23 +319,23 @@ export default function Settings() {
   };
 
   return (
-    <div className="flex-1 overflow-auto bg-gradient-to-b from-purple-50 to-indigo-50 dark:from-purple-950 dark:to-indigo-950">
+    <div className="flex-1 overflow-auto bg-gradient-to-br from-slate-50 via-blue-50/70 to-cyan-50/60 dark:from-purple-950 dark:via-slate-950 dark:to-indigo-950">
       <div className="max-w-6xl mx-auto p-6 space-y-8">
         {/* Hero Section */}
-        <div className="bg-gradient-to-r from-purple-500 via-violet-500 to-indigo-600 rounded-2xl p-8 text-white shadow-xl">
+        <div className="bg-gradient-to-r from-brand-primary via-[#253f95] to-brand-accent rounded-2xl p-8 text-white shadow-xl">
           <h1 className="text-4xl md:text-5xl font-bold mb-2">Settings</h1>
           <p className="text-lg opacity-90 max-w-2xl">Customize your StudyMate experience and manage your account</p>
         </div>
 
         {isLoading ? (
           <div className="flex items-center justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
+            <Loader2 className="h-8 w-8 animate-spin text-brand-primary" />
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
             {/* Sidebar Navigation */}
             <div className="lg:col-span-1">
-              <Card className="border-2 border-purple-200 dark:border-purple-800 sticky top-6">
+              <Card className="border border-border sticky top-6 bg-card/95 backdrop-blur-sm shadow-md">
                 <CardContent className="p-0">
                   <nav className="flex flex-col">
                     {tabs.map((tab) => {
@@ -347,7 +347,7 @@ export default function Settings() {
                           onClick={() => setActiveTab(tab.id)}
                           className={`flex items-center gap-3 px-4 py-3 text-left transition-all border-l-4 ${
                             isActive
-                              ? "border-l-purple-500 bg-purple-50 dark:bg-purple-950 text-purple-700 dark:text-purple-300 font-semibold"
+                              ? "border-l-brand-primary bg-brand-primary/10 dark:bg-purple-950 text-brand-primary dark:text-purple-300 font-semibold"
                               : "border-l-transparent text-muted-foreground hover:bg-slate-50 dark:hover:bg-slate-800"
                           }`}
                           data-testid={`button-settings-${tab.id}`}
@@ -368,13 +368,13 @@ export default function Settings() {
               {activeTab === "account" && (
                 <div className="space-y-6">
                   {/* Profile Picture */}
-                  <Card className="border-2 border-purple-200 dark:border-purple-800">
-                    <CardHeader className="bg-gradient-to-r from-purple-100 to-violet-100 dark:from-purple-900 dark:to-violet-900">
+                  <Card className="border border-border shadow-sm">
+                    <CardHeader className="bg-gradient-to-r from-brand-primary/10 to-brand-accent/10 dark:from-purple-900 dark:to-violet-900">
                       <CardTitle>Profile Picture</CardTitle>
                     </CardHeader>
                     <CardContent className="pt-6">
                       <div className="flex items-center gap-6">
-                        <Avatar className="h-24 w-24 border-4 border-purple-300 dark:border-purple-700">
+                        <Avatar className="h-24 w-24 border-4 border-brand-primary/30 dark:border-purple-700">
                           <AvatarFallback className="bg-gradient-to-br from-brand-primary to-brand-accent text-white text-2xl font-bold">
                             {formData.bio ? formData.bio.charAt(0).toUpperCase() : "U"}
                           </AvatarFallback>
@@ -390,8 +390,8 @@ export default function Settings() {
                   </Card>
 
                   {/* Personal Information */}
-                  <Card className="border-2 border-purple-200 dark:border-purple-800">
-                    <CardHeader className="bg-gradient-to-r from-purple-100 to-violet-100 dark:from-purple-900 dark:to-violet-900">
+                  <Card className="border border-border shadow-sm">
+                    <CardHeader className="bg-gradient-to-r from-brand-primary/10 to-brand-accent/10 dark:from-purple-900 dark:to-violet-900">
                       <CardTitle>Personal Information</CardTitle>
                       <CardDescription>Update your basic information</CardDescription>
                     </CardHeader>
@@ -404,7 +404,7 @@ export default function Settings() {
                           type="tel"
                           value={formData.phone}
                           onChange={handleInputChange}
-                          className="border-2 border-purple-200 dark:border-purple-800 focus-visible:ring-purple-500"
+                          className="border-2 border-brand-primary/30 dark:border-purple-800 focus-visible:ring-brand-primary"
                           data-testid="input-phone"
                         />
                       </div>
@@ -416,7 +416,7 @@ export default function Settings() {
                           name="bio"
                           value={formData.bio}
                           onChange={handleInputChange}
-                          className="w-full p-3 border-2 border-purple-200 dark:border-purple-800 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-500 bg-card text-foreground"
+                          className="w-full p-3 border-2 border-brand-primary/30 dark:border-purple-800 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary bg-card text-foreground"
                           rows={4}
                           placeholder="Tell us about yourself..."
                           data-testid="textarea-bio"
@@ -436,15 +436,15 @@ export default function Settings() {
                   </Card>
 
                   {/* Preferences */}
-                  <Card className="border-2 border-purple-200 dark:border-purple-800">
-                    <CardHeader className="bg-gradient-to-r from-purple-100 to-violet-100 dark:from-purple-900 dark:to-violet-900">
+                  <Card className="border border-border shadow-sm">
+                    <CardHeader className="bg-gradient-to-r from-brand-primary/10 to-brand-accent/10 dark:from-purple-900 dark:to-violet-900">
                       <CardTitle>Preferences</CardTitle>
                     </CardHeader>
                     <CardContent className="pt-6 space-y-6">
                       <div className="space-y-2">
                         <Label htmlFor="language" className="font-semibold">Language</Label>
                         <Select value={formData.language} onValueChange={(value) => handleSelectChange("language", value)}>
-                          <SelectTrigger className="border-2 border-purple-200 dark:border-purple-800" data-testid="select-language">
+                          <SelectTrigger className="border-2 border-brand-primary/30 dark:border-purple-800" data-testid="select-language">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -460,7 +460,7 @@ export default function Settings() {
                       <div className="space-y-2">
                         <Label htmlFor="timezone" className="font-semibold">Timezone</Label>
                         <Select value={formData.timezone} onValueChange={(value) => handleSelectChange("timezone", value)}>
-                          <SelectTrigger className="border-2 border-purple-200 dark:border-purple-800" data-testid="select-timezone">
+                          <SelectTrigger className="border-2 border-brand-primary/30 dark:border-purple-800" data-testid="select-timezone">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -490,8 +490,8 @@ export default function Settings() {
 
               {/* Privacy Settings */}
               {activeTab === "privacy" && (
-                <Card className="border-2 border-purple-200 dark:border-purple-800">
-                  <CardHeader className="bg-gradient-to-r from-purple-100 to-violet-100 dark:from-purple-900 dark:to-violet-900">
+                <Card className="border border-border shadow-sm">
+                  <CardHeader className="bg-gradient-to-r from-brand-primary/10 to-brand-accent/10 dark:from-purple-900 dark:to-violet-900">
                     <CardTitle>Privacy Settings</CardTitle>
                     <CardDescription>Control who can see your information</CardDescription>
                   </CardHeader>
@@ -548,8 +548,8 @@ export default function Settings() {
 
             {/* Notification Settings */}
             {activeTab === "notifications" && (
-              <Card className="border-2 border-purple-200 dark:border-purple-800">
-                <CardHeader className="bg-gradient-to-r from-purple-100 to-violet-100 dark:from-purple-900 dark:to-violet-900">
+              <Card className="border border-border shadow-sm">
+                <CardHeader className="bg-gradient-to-r from-brand-primary/10 to-brand-accent/10 dark:from-purple-900 dark:to-violet-900">
                   <CardTitle>Notification Preferences</CardTitle>
                   <CardDescription>Choose what notifications you want to receive</CardDescription>
                 </CardHeader>
@@ -557,8 +557,8 @@ export default function Settings() {
                   <div className="space-y-4">
                     <div className="flex items-center justify-between p-4 border-2 border-brand-primary/30 dark:border-brand-primary/40 rounded-lg bg-brand-primary/10 dark:bg-brand-primary/20">
                       <div>
-                        <p className="font-semibold text-blue-900 dark:text-blue-100">Quiz Reminders</p>
-                        <p className="text-sm text-brand-primary dark:text-blue-300">Remind me about upcoming quizzes</p>
+                        <p className="font-semibold text-foreground">Quiz Reminders</p>
+                        <p className="text-sm text-muted-foreground">Remind me about upcoming quizzes</p>
                       </div>
                       <Switch
                         checked={notificationsState.quizReminders}
@@ -569,8 +569,8 @@ export default function Settings() {
 
                     <div className="flex items-center justify-between p-4 border-2 border-success/30 dark:border-success/40 rounded-lg bg-success/10 dark:bg-success/20">
                       <div>
-                        <p className="font-semibold text-green-900 dark:text-green-100">Flashcard Reminders</p>
-                        <p className="text-sm text-success dark:text-green-300">Daily spaced repetition reminders</p>
+                        <p className="font-semibold text-foreground">Flashcard Reminders</p>
+                        <p className="text-sm text-muted-foreground">Daily spaced repetition reminders</p>
                       </div>
                       <Switch
                         checked={notificationsState.flashcardReminders}
@@ -579,10 +579,10 @@ export default function Settings() {
                       />
                     </div>
 
-                    <div className="flex items-center justify-between p-4 border-2 border-purple-200 dark:border-purple-800 rounded-lg bg-purple-50 dark:bg-purple-950">
+                    <div className="flex items-center justify-between p-4 border-2 border-brand-primary/30 dark:border-purple-800 rounded-lg bg-brand-primary/10 dark:bg-purple-950">
                       <div>
-                        <p className="font-semibold text-purple-900 dark:text-purple-100">Weekly Digest</p>
-                        <p className="text-sm text-purple-700 dark:text-purple-300">Summary of your study progress</p>
+                        <p className="font-semibold text-foreground">Weekly Digest</p>
+                        <p className="text-sm text-muted-foreground">Summary of your study progress</p>
                       </div>
                       <Switch
                         checked={notificationsState.weeklyDigest}
@@ -632,8 +632,8 @@ export default function Settings() {
             {activeTab === "security" && (
               <div className="space-y-6">
                 {/* Password */}
-                <Card className="border-2 border-purple-200 dark:border-purple-800">
-                  <CardHeader className="bg-gradient-to-r from-purple-100 to-violet-100 dark:from-purple-900 dark:to-violet-900">
+                <Card className="border border-border shadow-sm">
+                  <CardHeader className="bg-gradient-to-r from-brand-primary/10 to-brand-accent/10 dark:from-purple-900 dark:to-violet-900">
                     <CardTitle>Change Password</CardTitle>
                     <CardDescription>Update your password regularly for security</CardDescription>
                   </CardHeader>
@@ -645,7 +645,7 @@ export default function Settings() {
                           id="current-password"
                           type={showPassword ? "text" : "password"}
                           placeholder="Enter your current password"
-                          className="border-2 border-purple-200 dark:border-purple-800 focus-visible:ring-purple-500 pr-10"
+                          className="border-2 border-brand-primary/30 dark:border-purple-800 focus-visible:ring-brand-primary pr-10"
                           data-testid="input-current-password"
                         />
                         <button
@@ -664,7 +664,7 @@ export default function Settings() {
                         id="new-password"
                         type="password"
                         placeholder="Enter a new password"
-                        className="border-2 border-purple-200 dark:border-purple-800 focus-visible:ring-purple-500"
+                        className="border-2 border-brand-primary/30 dark:border-purple-800 focus-visible:ring-brand-primary"
                         data-testid="input-new-password"
                       />
                       <p className="text-xs text-muted-foreground">At least 8 characters with uppercase, lowercase, and numbers</p>
@@ -676,7 +676,7 @@ export default function Settings() {
                         id="confirm-password"
                         type="password"
                         placeholder="Confirm your new password"
-                        className="border-2 border-purple-200 dark:border-purple-800 focus-visible:ring-purple-500"
+                        className="border-2 border-brand-primary/30 dark:border-purple-800 focus-visible:ring-brand-primary"
                         data-testid="input-confirm-password"
                       />
                     </div>
@@ -689,8 +689,8 @@ export default function Settings() {
                 </Card>
 
                 {/* Two-Factor Authentication */}
-                <Card className="border-2 border-purple-200 dark:border-purple-800">
-                  <CardHeader className="bg-gradient-to-r from-purple-100 to-violet-100 dark:from-purple-900 dark:to-violet-900">
+                <Card className="border border-border shadow-sm">
+                  <CardHeader className="bg-gradient-to-r from-brand-primary/10 to-brand-accent/10 dark:from-purple-900 dark:to-violet-900">
                     <CardTitle>Two-Factor Authentication</CardTitle>
                     <CardDescription>Add an extra layer of security to your account</CardDescription>
                   </CardHeader>
@@ -710,8 +710,8 @@ export default function Settings() {
                 </Card>
 
                 {/* Active Sessions */}
-                <Card className="border-2 border-purple-200 dark:border-purple-800">
-                  <CardHeader className="bg-gradient-to-r from-purple-100 to-violet-100 dark:from-purple-900 dark:to-violet-900">
+                <Card className="border border-border shadow-sm">
+                  <CardHeader className="bg-gradient-to-r from-brand-primary/10 to-brand-accent/10 dark:from-purple-900 dark:to-violet-900">
                     <CardTitle>Active Sessions</CardTitle>
                     <CardDescription>Manage your active sessions</CardDescription>
                   </CardHeader>

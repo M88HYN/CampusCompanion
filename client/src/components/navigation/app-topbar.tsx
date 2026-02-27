@@ -257,7 +257,7 @@ export function AppTopbar({ user, onLogout }: AppTopbarProps) {
 
         <div className="hidden flex-1 md:flex md:justify-center">
           <form onSubmit={handleSearchSubmit} className="relative w-full max-w-xl">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-foreground/70" />
             <Input
               aria-label="Search and navigate"
               placeholder="Search pages, tabs, sections..."
