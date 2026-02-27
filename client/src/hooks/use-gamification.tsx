@@ -86,7 +86,7 @@ export function GamificationDisplay({
         {/* XP Bar */}
         <div className="flex-1">
           <div className="flex items-center justify-between mb-1">
-            <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+            <span className="text-sm font-semibold text-muted-foreground">
               XP
             </span>
             <span className="text-xs text-muted-foreground">

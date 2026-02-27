@@ -210,7 +210,7 @@ function ExpandableSection({ title, icon: Icon, content, defaultOpen = false }: 
             <ChevronRight className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
           )}
           <Icon className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0" />
-          <span className="text-sm font-semibold text-slate-700 dark:text-slate-300 group-hover:text-amber-800 dark:group-hover:text-amber-300 transition-colors">
+          <span className="text-sm font-semibold text-muted-foreground group-hover:text-amber-800 dark:group-hover:text-amber-300 transition-colors">
             {title}
           </span>
         </button>
@@ -232,7 +232,7 @@ function ConfidenceCheck({ confidence, onSelect }: {
 }) {
   return (
     <div className="flex items-center gap-3 px-4 py-3 bg-slate-50/80 dark:bg-slate-800/50 rounded-b-xl border-t border-slate-100 dark:border-slate-700/50">
-      <span className="text-xs font-medium text-slate-500 dark:text-slate-400 whitespace-nowrap">
+      <span className="text-xs font-medium text-muted-foreground whitespace-nowrap">
         Confident with this?
       </span>
       <div className="flex gap-1.5">
@@ -247,7 +247,7 @@ function ConfidenceCheck({ confidence, onSelect }: {
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium border transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 ${
               confidence === opt.value
                 ? opt.activeClass
-                : "border-slate-200 dark:border-slate-600 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700"
+                : "border-slate-200 dark:border-slate-600 text-muted-foreground hover:bg-slate-100 dark:hover:bg-slate-700"
             }`}
             aria-pressed={confidence === opt.value}
             aria-label={`Mark confidence as ${opt.label}`}
@@ -294,13 +294,13 @@ function InsightCardComponent({
     card.source === "live_ai"
       ? "border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950"
       : card.source === "local_fallback"
-      ? "border-blue-300 dark:border-blue-700 text-blue-700 dark:text-blue-400 bg-blue-50 dark:bg-blue-950"
+      ? "border-blue-300 dark:border-blue-700 text-brand-primary dark:text-blue-400 bg-brand-primary/10 dark:bg-brand-primary/20"
       : card.source === "mock_fallback"
-      ? "border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-800"
+      ? "border-slate-300 dark:border-slate-600 text-muted-foreground bg-slate-50 dark:bg-slate-800"
       : "border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950";
 
   return (
-    <div className="rounded-xl border border-slate-200/80 dark:border-slate-700/60 bg-white dark:bg-slate-900 shadow-sm hover:shadow-md transition-shadow overflow-hidden">
+    <div className="rounded-xl border border-slate-200/80 dark:border-slate-700/60 bg-card shadow-sm hover:shadow-md transition-shadow overflow-hidden">
       {/* Card Header */}
       <div className="px-5 pt-5 pb-3 space-y-2">
         <div className="flex items-start justify-between gap-3">
@@ -334,7 +334,7 @@ function InsightCardComponent({
           <div className="mt-3 px-3.5 py-2.5 rounded-lg bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/50 dark:to-orange-950/50 border border-amber-200/60 dark:border-amber-800/40">
             <div className="flex gap-2">
               <Sparkles className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
-              <p className="text-sm font-medium text-slate-700 dark:text-slate-300 leading-relaxed">
+              <p className="text-sm font-medium text-muted-foreground leading-relaxed">
                 {card.sections.keyInsight}
               </p>
             </div>
@@ -355,7 +355,7 @@ function InsightCardComponent({
         <div className="px-4 py-3 flex flex-wrap gap-2 border-t border-slate-100 dark:border-slate-700/50">
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button variant="outline" size="sm" className="h-7 text-xs gap-1.5 border-slate-200 dark:border-slate-700 hover:bg-amber-50 dark:hover:bg-amber-950 hover:border-amber-300 dark:hover:border-amber-700 transition-colors" onClick={() => onSaveToNotes(card.content)}>
+              <Button variant="outline" size="sm" className="h-7 text-xs gap-1.5 border-border hover:bg-amber-50 dark:hover:bg-amber-950 hover:border-amber-300 dark:hover:border-amber-700 transition-colors" onClick={() => onSaveToNotes(card.content)}>
                 <StickyNote className="h-3 w-3" /> Save to Notes
               </Button>
             </TooltipTrigger>
@@ -363,7 +363,7 @@ function InsightCardComponent({
           </Tooltip>
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button variant="outline" size="sm" className="h-7 text-xs gap-1.5 border-slate-200 dark:border-slate-700 hover:bg-emerald-50 dark:hover:bg-emerald-950 hover:border-emerald-300 dark:hover:border-emerald-700 transition-colors" onClick={() => onCreateFlashcard(card.content)}>
+              <Button variant="outline" size="sm" className="h-7 text-xs gap-1.5 border-border hover:bg-emerald-50 dark:hover:bg-emerald-950 hover:border-emerald-300 dark:hover:border-emerald-700 transition-colors" onClick={() => onCreateFlashcard(card.content)}>
                 <BookOpen className="h-3 w-3" /> Generate Flashcards
               </Button>
             </TooltipTrigger>
@@ -371,7 +371,7 @@ function InsightCardComponent({
           </Tooltip>
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button variant="outline" size="sm" className="h-7 text-xs gap-1.5 border-slate-200 dark:border-slate-700 hover:bg-fuchsia-50 dark:hover:bg-fuchsia-950 hover:border-fuchsia-300 dark:hover:border-fuchsia-700 transition-colors" onClick={() => onCreateQuiz(card.content)}>
+              <Button variant="outline" size="sm" className="h-7 text-xs gap-1.5 border-border hover:bg-fuchsia-50 dark:hover:bg-fuchsia-950 hover:border-fuchsia-300 dark:hover:border-fuchsia-700 transition-colors" onClick={() => onCreateQuiz(card.content)}>
                 <HelpCircle className="h-3 w-3" /> Generate Quiz
               </Button>
             </TooltipTrigger>
@@ -379,8 +379,8 @@ function InsightCardComponent({
           </Tooltip>
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button variant="outline" size="sm" className="h-7 text-xs gap-1.5 border-slate-200 dark:border-slate-700 hover:bg-sky-50 dark:hover:bg-sky-950 hover:border-sky-300 dark:hover:border-sky-700 transition-colors" onClick={() => onCopy(card.content, card.id)}>
-                {copiedId === card.id ? <Check className="h-3 w-3 text-green-500" /> : <Copy className="h-3 w-3" />}
+              <Button variant="outline" size="sm" className="h-7 text-xs gap-1.5 border-border hover:bg-sky-50 dark:hover:bg-sky-950 hover:border-sky-300 dark:hover:border-sky-700 transition-colors" onClick={() => onCopy(card.content, card.id)}>
+                {copiedId === card.id ? <Check className="h-3 w-3 text-success" /> : <Copy className="h-3 w-3" />}
                 {copiedId === card.id ? "Copied" : "Copy"}
               </Button>
             </TooltipTrigger>
@@ -782,7 +782,7 @@ export default function Research() {
   // ── Render ───────────────────────────────────────────────────────────
 
   return (
-    <div className="flex-1 flex flex-col md:flex-row h-full overflow-hidden bg-[#FEFCF3] dark:bg-slate-950 relative">
+    <div className="flex-1 flex flex-col md:flex-row h-full overflow-hidden bg-gradient-to-br from-sky-50 via-cyan-50 to-indigo-50 dark:from-slate-950 dark:via-sky-950/30 dark:to-indigo-950/30 relative">
       {/* Subtle paper grid texture */}
       <div className="absolute inset-0 pointer-events-none opacity-[0.035] dark:opacity-[0.02]" style={{
         backgroundImage: `repeating-linear-gradient(0deg, transparent, transparent 23px, rgba(180,160,120,0.3) 24px),
@@ -801,7 +801,7 @@ export default function Research() {
             </div>
             <div>
               <h1 className="text-lg font-bold text-slate-800 dark:text-slate-200 tracking-tight">Insight Scout</h1>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Insight Canvas</p>
+              <p className="text-[11px] text-muted-foreground font-medium">Insight Canvas</p>
             </div>
           </div>
         </div>
@@ -810,7 +810,7 @@ export default function Research() {
           <div className="flex flex-col">
             {/* Study Intent Selector */}
             <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-800 space-y-2.5">
-              <label className="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+              <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
                 <ClipboardList className="h-3 w-3" />
                 Study Intent
               </label>
@@ -832,12 +832,12 @@ export default function Research() {
                       <div className={`h-7 w-7 rounded-md flex items-center justify-center shrink-0 ${
                         isActive
                           ? "bg-gradient-to-br from-amber-500 to-orange-500 text-white"
-                          : "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400"
+                          : "bg-slate-100 dark:bg-slate-800 text-muted-foreground"
                       }`}>
                         <Icon className="h-3.5 w-3.5" />
                       </div>
                       <div className="min-w-0">
-                        <p className={`text-sm font-semibold ${isActive ? "text-amber-800 dark:text-amber-300" : "text-slate-700 dark:text-slate-300"}`}>
+                        <p className={`text-sm font-semibold ${isActive ? "text-amber-800 dark:text-amber-300" : "text-muted-foreground"}`}>
                           {intent.label}
                         </p>
                         <p className={`text-[10px] leading-tight ${isActive ? "text-amber-600 dark:text-amber-400" : "text-slate-400 dark:text-slate-500"}`}>
@@ -855,7 +855,7 @@ export default function Research() {
 
             {/* Question Input */}
             <div className="px-5 py-4 space-y-3">
-              <label className="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+              <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
                 <Search className="h-3 w-3" />
                 Your Question
               </label>
@@ -871,7 +871,7 @@ export default function Research() {
                 }}
                 placeholder="What would you like to understand?"
                 disabled={isStreaming}
-                className="min-h-[100px] resize-none border-2 border-slate-200 dark:border-slate-700 focus-visible:ring-amber-500 focus-visible:border-amber-400 rounded-lg text-sm bg-white dark:bg-slate-900"
+                className="min-h-[100px] resize-none border-2 border-border focus-visible:ring-amber-500 focus-visible:border-amber-400 rounded-lg text-sm bg-card"
                 data-testid="input-research-question"
               />
 
@@ -958,9 +958,9 @@ export default function Research() {
                   </button>
                 </div>
 
-                <div className="max-h-44 overflow-y-auto rounded-lg border border-slate-200/70 dark:border-slate-700/70 bg-white dark:bg-slate-900">
+                <div className="max-h-44 overflow-y-auto rounded-lg border border-slate-200/70 dark:border-slate-700/70 bg-card">
                   {conversations.length === 0 ? (
-                    <p className="px-3 py-2 text-xs text-slate-500 dark:text-slate-400">No previous chats yet.</p>
+                    <p className="px-3 py-2 text-xs text-muted-foreground">No previous chats yet.</p>
                   ) : (
                     <div className="p-1.5 space-y-1">
                       {conversations.map((conversation) => {
@@ -980,11 +980,11 @@ export default function Research() {
                                 setCurrentConversationId(conversation.id);
                                 setInsightCards([]);
                               }}
-                              className="flex-1 text-left px-2 py-1.5 text-xs text-slate-700 dark:text-slate-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 rounded"
+                              className="flex-1 text-left px-2 py-1.5 text-xs text-muted-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 rounded"
                               data-testid={`button-conversation-${conversation.id}`}
                             >
                               <p className="truncate font-medium">{conversation.title}</p>
-                              <p className="text-[10px] text-slate-500 dark:text-slate-400">
+                              <p className="text-[10px] text-muted-foreground">
                                 {new Date(conversation.updatedAt).toLocaleString()}
                               </p>
                             </button>
@@ -1025,9 +1025,9 @@ export default function Research() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <BookMarked className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-              <h2 className="text-sm font-bold text-slate-700 dark:text-slate-300">Insight Canvas</h2>
+              <h2 className="text-sm font-bold text-muted-foreground">Insight Canvas</h2>
               {insightCards.length > 0 && (
-                <Badge variant="secondary" className="text-[10px] h-5 px-1.5 bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400">
+                <Badge variant="secondary" className="text-[10px] h-5 px-1.5 bg-slate-100 dark:bg-slate-800 text-muted-foreground">
                   {insightCards.length} insight{insightCards.length !== 1 ? "s" : ""}
                 </Badge>
               )}
@@ -1059,7 +1059,7 @@ export default function Research() {
                 <h2 className="text-xl font-bold text-slate-800 dark:text-slate-200 mb-2">
                   Your Insight Canvas
                 </h2>
-                <p className="text-sm text-slate-500 dark:text-slate-400 max-w-sm leading-relaxed mb-6">
+                <p className="text-sm text-muted-foreground max-w-sm leading-relaxed mb-6">
                   Ask a question on the left to generate structured insight cards.
                   Each response is broken down into expandable sections for focused study.
                 </p>
@@ -1074,7 +1074,7 @@ export default function Research() {
                         setInput(suggestion.query);
                         inputRef.current?.focus();
                       }}
-                      className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm text-slate-600 dark:text-slate-400 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-amber-300 dark:hover:border-amber-700 hover:bg-amber-50/50 dark:hover:bg-amber-950/30 transition-all text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500"
+                      className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm text-muted-foreground bg-white dark:bg-slate-800 border border-border hover:border-amber-300 dark:hover:border-amber-700 hover:bg-amber-50/50 dark:hover:bg-amber-950/30 transition-all text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500"
                     >
                       <ArrowRight className="h-3 w-3 text-amber-500 shrink-0" />
                       {suggestion.query}

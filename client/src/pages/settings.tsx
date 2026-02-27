@@ -348,7 +348,7 @@ export default function Settings() {
                           className={`flex items-center gap-3 px-4 py-3 text-left transition-all border-l-4 ${
                             isActive
                               ? "border-l-purple-500 bg-purple-50 dark:bg-purple-950 text-purple-700 dark:text-purple-300 font-semibold"
-                              : "border-l-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800"
+                              : "border-l-transparent text-muted-foreground hover:bg-slate-50 dark:hover:bg-slate-800"
                           }`}
                           data-testid={`button-settings-${tab.id}`}
                         >
@@ -375,13 +375,13 @@ export default function Settings() {
                     <CardContent className="pt-6">
                       <div className="flex items-center gap-6">
                         <Avatar className="h-24 w-24 border-4 border-purple-300 dark:border-purple-700">
-                          <AvatarFallback className="bg-gradient-to-br from-purple-500 to-violet-600 text-white text-2xl font-bold">
+                          <AvatarFallback className="bg-gradient-to-br from-brand-primary to-brand-accent text-white text-2xl font-bold">
                             {formData.bio ? formData.bio.charAt(0).toUpperCase() : "U"}
                           </AvatarFallback>
                         </Avatar>
                         <div className="space-y-3">
                           <p className="text-sm text-muted-foreground">JPG, PNG or GIF (max 5MB)</p>
-                          <Button className="bg-gradient-to-r from-purple-500 to-violet-600 hover:from-purple-600 hover:to-violet-700 text-white">
+                          <Button className="bg-gradient-to-r from-brand-primary to-brand-accent hover:from-[#1A3175] hover:to-[#0891B2] text-white">
                             Upload New Picture
                           </Button>
                         </div>
@@ -416,7 +416,7 @@ export default function Settings() {
                           name="bio"
                           value={formData.bio}
                           onChange={handleInputChange}
-                          className="w-full p-3 border-2 border-purple-200 dark:border-purple-800 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-500 bg-white dark:bg-slate-900 text-slate-900 dark:text-white"
+                          className="w-full p-3 border-2 border-purple-200 dark:border-purple-800 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-500 bg-card text-foreground"
                           rows={4}
                           placeholder="Tell us about yourself..."
                           data-testid="textarea-bio"
@@ -424,7 +424,7 @@ export default function Settings() {
                       </div>
 
                       <Button 
-                        className="w-full bg-gradient-to-r from-purple-500 to-violet-600 hover:from-purple-600 hover:to-violet-700 text-white disabled:opacity-50" 
+                        className="w-full bg-gradient-to-r from-brand-primary to-brand-accent hover:from-[#1A3175] hover:to-[#0891B2] text-white disabled:opacity-50" 
                         data-testid="button-save-profile"
                         onClick={handleSaveProfile}
                         disabled={updateMutation.isPending}
@@ -476,7 +476,7 @@ export default function Settings() {
                       </div>
 
                       <Button 
-                        className="w-full bg-gradient-to-r from-purple-500 to-violet-600 hover:from-purple-600 hover:to-violet-700 text-white disabled:opacity-50" 
+                        className="w-full bg-gradient-to-r from-brand-primary to-brand-accent hover:from-[#1A3175] hover:to-[#0891B2] text-white disabled:opacity-50" 
                         onClick={handleSaveProfile}
                         disabled={updateMutation.isPending}
                       >
@@ -497,7 +497,7 @@ export default function Settings() {
                   </CardHeader>
                   <CardContent className="pt-6 space-y-6">
                     <div className="space-y-4">
-                      <div className="flex items-center justify-between p-4 border-2 border-slate-200 dark:border-slate-700 rounded-lg">
+                      <div className="flex items-center justify-between p-4 border-2 border-border rounded-lg">
                         <div>
                           <p className="font-semibold">Profile Visibility</p>
                           <p className="text-sm text-muted-foreground">Let other students see your profile</p>
@@ -509,7 +509,7 @@ export default function Settings() {
                         />
                       </div>
 
-                      <div className="flex items-center justify-between p-4 border-2 border-slate-200 dark:border-slate-700 rounded-lg">
+                      <div className="flex items-center justify-between p-4 border-2 border-border rounded-lg">
                         <div>
                           <p className="font-semibold">Show Study Activity</p>
                           <p className="text-sm text-muted-foreground">Display your study stats on leaderboards</p>
@@ -521,7 +521,7 @@ export default function Settings() {
                         />
                       </div>
 
-                      <div className="flex items-center justify-between p-4 border-2 border-slate-200 dark:border-slate-700 rounded-lg">
+                      <div className="flex items-center justify-between p-4 border-2 border-border rounded-lg">
                         <div>
                           <p className="font-semibold">Share Quiz Results</p>
                           <p className="text-sm text-muted-foreground">Allow instructors to see your quiz performance</p>
@@ -534,7 +534,7 @@ export default function Settings() {
                       </div>
 
                       <Button 
-                        className="w-full bg-gradient-to-r from-purple-500 to-violet-600 hover:from-purple-600 hover:to-violet-700 text-white disabled:opacity-50 mt-6"
+                        className="w-full bg-gradient-to-r from-brand-primary to-brand-accent hover:from-[#1A3175] hover:to-[#0891B2] text-white disabled:opacity-50 mt-6"
                         onClick={handleSavePrivacy}
                         disabled={updateMutation.isPending}
                       >
@@ -555,10 +555,10 @@ export default function Settings() {
                 </CardHeader>
                 <CardContent className="pt-6 space-y-6">
                   <div className="space-y-4">
-                    <div className="flex items-center justify-between p-4 border-2 border-blue-200 dark:border-blue-800 rounded-lg bg-blue-50 dark:bg-blue-950">
+                    <div className="flex items-center justify-between p-4 border-2 border-brand-primary/30 dark:border-brand-primary/40 rounded-lg bg-brand-primary/10 dark:bg-brand-primary/20">
                       <div>
                         <p className="font-semibold text-blue-900 dark:text-blue-100">Quiz Reminders</p>
-                        <p className="text-sm text-blue-700 dark:text-blue-300">Remind me about upcoming quizzes</p>
+                        <p className="text-sm text-brand-primary dark:text-blue-300">Remind me about upcoming quizzes</p>
                       </div>
                       <Switch
                         checked={notificationsState.quizReminders}
@@ -567,10 +567,10 @@ export default function Settings() {
                       />
                     </div>
 
-                    <div className="flex items-center justify-between p-4 border-2 border-green-200 dark:border-green-800 rounded-lg bg-green-50 dark:bg-green-950">
+                    <div className="flex items-center justify-between p-4 border-2 border-success/30 dark:border-success/40 rounded-lg bg-success/10 dark:bg-success/20">
                       <div>
                         <p className="font-semibold text-green-900 dark:text-green-100">Flashcard Reminders</p>
-                        <p className="text-sm text-green-700 dark:text-green-300">Daily spaced repetition reminders</p>
+                        <p className="text-sm text-success dark:text-green-300">Daily spaced repetition reminders</p>
                       </div>
                       <Switch
                         checked={notificationsState.flashcardReminders}
@@ -591,7 +591,7 @@ export default function Settings() {
                       />
                     </div>
 
-                    <div className="flex items-center justify-between p-4 border-2 border-slate-200 dark:border-slate-700 rounded-lg">
+                    <div className="flex items-center justify-between p-4 border-2 border-border rounded-lg">
                       <div>
                         <p className="font-semibold">New Features</p>
                         <p className="text-sm text-muted-foreground">Be notified about new features and updates</p>
@@ -603,7 +603,7 @@ export default function Settings() {
                       />
                     </div>
 
-                    <div className="flex items-center justify-between p-4 border-2 border-slate-200 dark:border-slate-700 rounded-lg">
+                    <div className="flex items-center justify-between p-4 border-2 border-border rounded-lg">
                       <div>
                         <p className="font-semibold">Marketing Emails</p>
                         <p className="text-sm text-muted-foreground">Promotional content and special offers</p>
@@ -616,7 +616,7 @@ export default function Settings() {
                     </div>
 
                     <Button 
-                      className="w-full bg-gradient-to-r from-purple-500 to-violet-600 hover:from-purple-600 hover:to-violet-700 text-white disabled:opacity-50 mt-6"
+                      className="w-full bg-gradient-to-r from-brand-primary to-brand-accent hover:from-[#1A3175] hover:to-[#0891B2] text-white disabled:opacity-50 mt-6"
                       onClick={handleSaveNotifications}
                       disabled={updateMutation.isPending}
                     >
@@ -681,7 +681,7 @@ export default function Settings() {
                       />
                     </div>
 
-                    <Button className="w-full bg-gradient-to-r from-purple-500 to-violet-600 hover:from-purple-600 hover:to-violet-700 text-white" data-testid="button-change-password">
+                    <Button className="w-full bg-gradient-to-r from-brand-primary to-brand-accent hover:from-[#1A3175] hover:to-[#0891B2] text-white" data-testid="button-change-password">
                       <Lock className="h-4 w-4 mr-2" />
                       Update Password
                     </Button>
@@ -702,7 +702,7 @@ export default function Settings() {
                           Not Enabled
                         </Badge>
                       </div>
-                      <Button className="bg-gradient-to-r from-purple-500 to-violet-600 hover:from-purple-600 hover:to-violet-700 text-white" data-testid="button-enable-2fa">
+                      <Button className="bg-gradient-to-r from-brand-primary to-brand-accent hover:from-[#1A3175] hover:to-[#0891B2] text-white" data-testid="button-enable-2fa">
                         Enable 2FA
                       </Button>
                     </div>
@@ -716,10 +716,10 @@ export default function Settings() {
                     <CardDescription>Manage your active sessions</CardDescription>
                   </CardHeader>
                   <CardContent className="pt-6 space-y-3">
-                    <div className="p-4 border-2 border-slate-200 dark:border-slate-700 rounded-lg">
+                    <div className="p-4 border-2 border-border rounded-lg">
                       <div className="flex items-center justify-between mb-2">
                         <p className="font-semibold">Chrome on macOS</p>
-                        <Badge className="bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-300 border-0">Current</Badge>
+                        <Badge className="bg-green-100 dark:bg-success/20 text-success dark:text-green-300 border-0">Current</Badge>
                       </div>
                       <p className="text-sm text-muted-foreground">Last active: Just now</p>
                     </div>
@@ -727,14 +727,14 @@ export default function Settings() {
                 </Card>
 
                 {/* Danger Zone */}
-                <Card className="border-2 border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950">
+                <Card className="border-2 border-destructive/30 dark:border-destructive/40 bg-red-50 dark:bg-red-950">
                   <CardHeader>
-                    <CardTitle className="text-red-700 dark:text-red-300">Danger Zone</CardTitle>
+                    <CardTitle className="text-destructive dark:text-red-300">Danger Zone</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <Button
                       variant="outline"
-                      className="w-full border-red-300 dark:border-red-700 text-red-700 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-900"
+                      className="w-full border-red-300 dark:border-red-700 text-destructive dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-900"
                       data-testid="button-logout"
                     >
                       <LogOut className="h-4 w-4 mr-2" />
@@ -742,7 +742,7 @@ export default function Settings() {
                     </Button>
                     <Button
                       variant="outline"
-                      className="w-full border-red-500 dark:border-red-600 text-red-700 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-900"
+                      className="w-full border-red-500 dark:border-red-600 text-destructive dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-900"
                       data-testid="button-delete-account"
                     >
                       Delete Account
@@ -857,7 +857,7 @@ export default function Settings() {
                     <div className="space-y-3">
                       <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">Quick Toggles</p>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        <div className="flex items-center justify-between p-3 border-2 border-slate-200 dark:border-slate-700 rounded-lg">
+                        <div className="flex items-center justify-between p-3 border-2 border-border rounded-lg">
                           <div>
                             <p className="font-medium">Include Examples</p>
                             <p className="text-xs text-muted-foreground">Show practical examples</p>
@@ -869,7 +869,7 @@ export default function Settings() {
                           />
                         </div>
 
-                        <div className="flex items-center justify-between p-3 border-2 border-slate-200 dark:border-slate-700 rounded-lg">
+                        <div className="flex items-center justify-between p-3 border-2 border-border rounded-lg">
                           <div>
                             <p className="font-medium">Include Sources</p>
                             <p className="text-xs text-muted-foreground">Attach citations</p>
@@ -881,7 +881,7 @@ export default function Settings() {
                           />
                         </div>
 
-                        <div className="flex items-center justify-between p-3 border-2 border-slate-200 dark:border-slate-700 rounded-lg">
+                        <div className="flex items-center justify-between p-3 border-2 border-border rounded-lg">
                           <div>
                             <p className="font-medium">Research Summary</p>
                             <p className="text-xs text-muted-foreground">Summarize key points</p>
@@ -893,7 +893,7 @@ export default function Settings() {
                           />
                         </div>
 
-                        <div className="flex items-center justify-between p-3 border-2 border-slate-200 dark:border-slate-700 rounded-lg">
+                        <div className="flex items-center justify-between p-3 border-2 border-border rounded-lg">
                           <div>
                             <p className="font-medium">Academic Databases</p>
                             <p className="text-xs text-muted-foreground">Prioritize academic sources</p>
@@ -959,7 +959,7 @@ export default function Settings() {
                     </div>
 
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                      <div className="border-2 border-slate-200 dark:border-slate-700 rounded-lg p-2 max-h-80 overflow-auto space-y-2">
+                      <div className="border-2 border-border rounded-lg p-2 max-h-80 overflow-auto space-y-2">
                         {isLocalAnswersLoading ? (
                           <p className="text-sm text-muted-foreground px-2 py-1">Loading local answers...</p>
                         ) : localAnswers.length === 0 ? (
@@ -972,7 +972,7 @@ export default function Settings() {
                               className={`w-full text-left p-2 rounded-md border transition-colors ${
                                 entry.id === selectedLocalAnswerId
                                   ? "border-orange-400 bg-orange-50 dark:bg-orange-950"
-                                  : "border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800"
+                                  : "border-border hover:bg-slate-50 dark:hover:bg-slate-800"
                               }`}
                               data-testid={`button-local-answer-${entry.id}`}
                             >
@@ -1032,7 +1032,7 @@ export default function Settings() {
                             id="local-ai-answer"
                             value={localAnswerDraft.answer}
                             onChange={(event) => setLocalAnswerDraft((prev) => ({ ...prev, answer: event.target.value }))}
-                            className="w-full min-h-[180px] p-3 border-2 border-orange-200 dark:border-orange-800 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 bg-white dark:bg-slate-900 text-slate-900 dark:text-white"
+                            className="w-full min-h-[180px] p-3 border-2 border-orange-200 dark:border-orange-800 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 bg-card text-foreground"
                             data-testid="textarea-local-ai-answer"
                           />
                         </div>

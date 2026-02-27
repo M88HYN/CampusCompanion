@@ -26,14 +26,14 @@ export function NavItem({ href, label, icon: Icon, isActive, testId, onNavigate 
       className={cn(
         "group relative flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-all duration-200",
         "before:absolute before:left-0 before:top-1/2 before:h-6 before:w-0.5 before:-translate-y-1/2 before:rounded-full before:transition-all before:duration-250",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
         isCollapsed && "justify-center px-2",
         isActive
-          ? "before:bg-teal-500 before:opacity-100 before:scale-y-100 bg-teal-50 text-teal-700 dark:bg-teal-950/60 dark:text-teal-300"
-          : "before:bg-teal-500 before:opacity-0 before:scale-y-0 text-slate-700 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white",
+          ? "before:bg-sidebar-accent before:opacity-100 before:scale-y-100 bg-gradient-to-r from-sidebar-accent to-secondary text-sidebar-accent-foreground shadow-sm"
+          : "before:bg-sidebar-accent before:opacity-0 before:scale-y-0 text-muted-foreground hover:bg-gradient-to-r hover:from-sidebar-accent/25 hover:to-secondary/20 hover:text-foreground dark:hover:from-sidebar-accent/35 dark:hover:to-secondary/25",
       )}
     >
-      <Icon className={cn("h-4 w-4 shrink-0 transition-colors", isActive ? "text-teal-600 dark:text-teal-300" : "text-slate-500 group-hover:text-slate-700 dark:text-slate-400 dark:group-hover:text-slate-200")} />
+      <Icon className={cn("h-4 w-4 shrink-0 transition-colors", isActive ? "text-sidebar-accent-foreground" : "text-muted-foreground group-hover:text-foreground")} />
       <span
         className={cn(
           "truncate transition-all duration-200",

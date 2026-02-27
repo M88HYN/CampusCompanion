@@ -54,9 +54,9 @@ function StatCard({
       <CardContent className="p-5">
         <div className="flex items-center justify-between">
           <div className="relative z-10">
-            <p className="text-sm font-medium text-slate-600 dark:text-slate-400">{title}</p>
-            <p className="text-2xl font-bold mt-1 text-slate-900 dark:text-white" data-testid={`${testId}-value`}>{value}</p>
-            {subtitle && <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{subtitle}</p>}
+            <p className="text-sm font-medium text-muted-foreground">{title}</p>
+            <p className="text-2xl font-bold mt-1 text-foreground" data-testid={`${testId}-value`}>{value}</p>
+            {subtitle && <p className="text-xs text-muted-foreground mt-1">{subtitle}</p>}
           </div>
           <div className={`w-12 h-12 rounded-xl ${gradient} flex items-center justify-center shadow-lg`}>
             <Icon className="w-6 h-6 text-white" />
@@ -89,7 +89,7 @@ function TopicBar({ topic, accuracy, totalQuestions, improvement }: {
     <div className="space-y-2">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <span className="font-medium text-sm text-slate-900 dark:text-white">{topic}</span>
+          <span className="font-medium text-sm text-foreground">{topic}</span>
           <Badge variant="outline" className="text-xs">
             {totalQuestions} questions
           </Badge>
@@ -160,8 +160,8 @@ function RecommendationCard({ recommendation }: {
           <Icon className="w-4 h-4 text-white" />
         </div>
         <div>
-          <p className="font-medium text-sm text-slate-900 dark:text-white">{recommendation.title}</p>
-          <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">{recommendation.description}</p>
+          <p className="font-medium text-sm text-foreground">{recommendation.title}</p>
+          <p className="text-xs text-muted-foreground mt-1">{recommendation.description}</p>
         </div>
       </div>
     </div>
@@ -218,7 +218,7 @@ export default function Insights() {
             <h1 className="text-3xl font-bold bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 dark:from-violet-400 dark:to-indigo-400 bg-clip-text text-transparent">
               Learning Insights
             </h1>
-            <p className="text-sm text-slate-600 dark:text-slate-400">
+            <p className="text-sm text-muted-foreground">
               Data-driven analysis of your study patterns and performance
             </p>
           </div>
@@ -260,7 +260,7 @@ export default function Insights() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card className="border-0 shadow-lg bg-white/80 dark:bg-slate-900/80 backdrop-blur" data-testid="card-accuracy-trends">
+          <Card className="border-0 shadow-lg bg-card backdrop-blur" data-testid="card-accuracy-trends">
             <CardHeader className="pb-2">
               <CardTitle className="text-lg flex items-center gap-2">
                 <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center">
@@ -276,12 +276,12 @@ export default function Insights() {
                   <AreaChart data={insights.accuracyTrends}>
                     <defs>
                       <linearGradient id="quizGradient" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.3}/>
-                        <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0}/>
+                        <stop offset="5%" stopColor="#1E3A8A" stopOpacity={0.3}/>
+                        <stop offset="95%" stopColor="#1E3A8A" stopOpacity={0}/>
                       </linearGradient>
                       <linearGradient id="flashcardGradient" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#14b8a6" stopOpacity={0.3}/>
-                        <stop offset="95%" stopColor="#14b8a6" stopOpacity={0}/>
+                        <stop offset="5%" stopColor="#06B6D4" stopOpacity={0.3}/>
+                        <stop offset="95%" stopColor="#06B6D4" stopOpacity={0}/>
                       </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
@@ -302,7 +302,7 @@ export default function Insights() {
                     <Area 
                       type="monotone" 
                       dataKey="quizAccuracy" 
-                      stroke="#8b5cf6" 
+                      stroke="#1E3A8A" 
                       fill="url(#quizGradient)"
                       strokeWidth={2}
                       name="Quiz"
@@ -310,7 +310,7 @@ export default function Insights() {
                     <Area 
                       type="monotone" 
                       dataKey="flashcardAccuracy" 
-                      stroke="#14b8a6" 
+                      stroke="#06B6D4" 
                       fill="url(#flashcardGradient)"
                       strokeWidth={2}
                       name="Flashcard"
@@ -328,7 +328,7 @@ export default function Insights() {
             </CardContent>
           </Card>
 
-          <Card className="border-0 shadow-lg bg-white/80 dark:bg-slate-900/80 backdrop-blur" data-testid="card-weekly-progress">
+          <Card className="border-0 shadow-lg bg-card backdrop-blur" data-testid="card-weekly-progress">
             <CardHeader className="pb-2">
               <CardTitle className="text-lg flex items-center gap-2">
                 <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-sky-500 to-blue-600 flex items-center justify-center">
@@ -352,8 +352,8 @@ export default function Insights() {
                         borderRadius: '8px'
                       }}
                     />
-                    <Bar dataKey="items" fill="#8b5cf6" radius={[4, 4, 0, 0]} name="Items Reviewed" />
-                    <Bar dataKey="minutes" fill="#14b8a6" radius={[4, 4, 0, 0]} name="Minutes" />
+                    <Bar dataKey="items" fill="#1E3A8A" radius={[4, 4, 0, 0]} name="Items Reviewed" />
+                    <Bar dataKey="minutes" fill="#06B6D4" radius={[4, 4, 0, 0]} name="Minutes" />
                   </BarChart>
                 </ResponsiveContainer>
               ) : (
@@ -369,7 +369,7 @@ export default function Insights() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <Card className="border-0 shadow-lg bg-white/80 dark:bg-slate-900/80 backdrop-blur lg:col-span-2" data-testid="card-topic-performance">
+          <Card className="border-0 shadow-lg bg-card backdrop-blur lg:col-span-2" data-testid="card-topic-performance">
             <CardHeader className="pb-2">
               <CardTitle className="text-lg flex items-center gap-2">
                 <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
@@ -393,7 +393,7 @@ export default function Insights() {
             </CardContent>
           </Card>
 
-          <Card className="border-0 shadow-lg bg-white/80 dark:bg-slate-900/80 backdrop-blur" data-testid="card-peak-study-times">
+          <Card className="border-0 shadow-lg bg-card backdrop-blur" data-testid="card-peak-study-times">
             <CardHeader className="pb-2">
               <CardTitle className="text-lg flex items-center gap-2">
                 <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center">
@@ -422,10 +422,10 @@ export default function Insights() {
                         <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20 border border-amber-200 dark:border-amber-900/30">
                           <div className="flex items-center gap-2">
                             <div className={`w-2.5 h-2.5 rounded-full ${i === 0 ? 'bg-gradient-to-r from-amber-500 to-orange-600 shadow-lg shadow-amber-500/50' : 'bg-slate-400'}`} />
-                            <span className="text-sm font-medium text-slate-900 dark:text-white">{timeLabel}</span>
+                            <span className="text-sm font-medium text-foreground">{timeLabel}</span>
                           </div>
                           <div className="flex items-center gap-2">
-                            <span className="text-xs text-slate-500 dark:text-slate-400">{pattern.sessions} sessions</span>
+                            <span className="text-xs text-muted-foreground">{pattern.sessions} sessions</span>
                             <Badge variant={i === 0 ? "default" : "outline"} className={`text-xs ${i === 0 ? 'bg-gradient-to-r from-amber-500 to-orange-600 border-0' : ''}`}>
                               {pattern.avgAccuracy}%
                             </Badge>
@@ -450,7 +450,7 @@ export default function Insights() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card className="border-0 shadow-lg bg-white/80 dark:bg-slate-900/80 backdrop-blur" data-testid="card-strengths">
+          <Card className="border-0 shadow-lg bg-card backdrop-blur" data-testid="card-strengths">
             <CardHeader className="pb-2">
               <CardTitle className="text-lg flex items-center gap-2">
                 <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center">
@@ -470,8 +470,8 @@ export default function Insights() {
                           {i + 1}
                         </div>
                         <div>
-                          <p className="font-medium text-sm text-slate-900 dark:text-white">{strength.topic}</p>
-                          <p className="text-xs text-slate-500 dark:text-slate-400">
+                          <p className="font-medium text-sm text-foreground">{strength.topic}</p>
+                          <p className="text-xs text-muted-foreground">
                             {strength.masteredConcepts} concepts mastered
                           </p>
                         </div>
@@ -489,7 +489,7 @@ export default function Insights() {
             </CardContent>
           </Card>
 
-          <Card className="border-0 shadow-lg bg-white/80 dark:bg-slate-900/80 backdrop-blur" data-testid="card-weak-areas">
+          <Card className="border-0 shadow-lg bg-card backdrop-blur" data-testid="card-weak-areas">
             <CardHeader className="pb-2">
               <CardTitle className="text-lg flex items-center gap-2">
                 <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center">
@@ -505,12 +505,12 @@ export default function Insights() {
                   {insights.weakAreas.map((area, i) => (
                     <div key={i} className="p-3 rounded-lg bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20 border border-amber-200 dark:border-amber-900/30 shadow-sm">
                       <div className="flex items-center justify-between mb-2">
-                        <p className="font-medium text-sm text-slate-900 dark:text-white">{area.topic}</p>
+                        <p className="font-medium text-sm text-foreground">{area.topic}</p>
                         <Badge className="bg-gradient-to-r from-amber-500 to-orange-600 text-white border-0 shadow-md">
                           {area.accuracy}%
                         </Badge>
                       </div>
-                      <p className="text-xs text-slate-600 dark:text-slate-400">{area.suggestion}</p>
+                      <p className="text-xs text-muted-foreground">{area.suggestion}</p>
                     </div>
                   ))}
                 </div>
@@ -524,7 +524,7 @@ export default function Insights() {
           </Card>
         </div>
 
-        <Card className="border-0 shadow-lg bg-white/80 dark:bg-slate-900/80 backdrop-blur" data-testid="card-recommendations">
+        <Card className="border-0 shadow-lg bg-card backdrop-blur" data-testid="card-recommendations">
           <CardHeader className="pb-2">
             <CardTitle className="text-lg flex items-center gap-2">
               <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-yellow-500 to-amber-600 flex items-center justify-center">

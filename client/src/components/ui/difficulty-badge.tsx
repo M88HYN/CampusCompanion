@@ -24,8 +24,8 @@ export function DifficultyBadge({ status, easeFactor }: DifficultyBadgeProps) {
     if (ease !== undefined && ease < 2.3) {
       return {
         label: "Struggling",
-        color: "text-red-600 dark:text-red-400",
-        bgColor: "bg-red-100 dark:bg-red-900/30 border-red-200 dark:border-red-800",
+        color: "text-destructive dark:text-red-400",
+        bgColor: "bg-red-100 dark:bg-red-900/30 border-destructive/30 dark:border-destructive/40",
         icon: AlertCircle,
         description: "This card needs more practice. Low success rate detected.",
       };
@@ -35,8 +35,8 @@ export function DifficultyBadge({ status, easeFactor }: DifficultyBadgeProps) {
       case "new":
         return {
           label: "New",
-          color: "text-blue-600 dark:text-blue-400",
-          bgColor: "bg-blue-100 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800",
+          color: "text-brand-primary dark:text-blue-400",
+          bgColor: "bg-blue-100 dark:bg-blue-900/30 border-brand-primary/30 dark:border-brand-primary/40",
           icon: BookOpen,
           description: "Fresh card - hasn't been reviewed yet.",
         };
@@ -51,8 +51,8 @@ export function DifficultyBadge({ status, easeFactor }: DifficultyBadgeProps) {
       case "mastered":
         return {
           label: "Mastered",
-          color: "text-green-600 dark:text-green-400",
-          bgColor: "bg-green-100 dark:bg-green-900/30 border-green-200 dark:border-green-800",
+          color: "text-success dark:text-green-400",
+          bgColor: "bg-green-100 dark:bg-green-900/30 border-success/30 dark:border-success/40",
           icon: Trophy,
           description: "Excellent! You've mastered this concept.",
         };

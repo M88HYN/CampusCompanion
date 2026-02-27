@@ -6,11 +6,32 @@ export default {
   theme: {
     extend: {
       borderRadius: {
-        lg: ".5625rem", /* 9px */
-        md: ".375rem", /* 6px */
-        sm: ".1875rem", /* 3px */
+        lg: "var(--radius)",
+        md: "calc(var(--radius) - 2px)",
+        sm: "calc(var(--radius) - 4px)",
       },
       colors: {
+        "brand-primary": "#1E3A8A",
+        "brand-accent": "#06B6D4",
+        "brand-background": "#F8FAFC",
+        "brand-card": "#FFFFFF",
+        "text-primary": "#0F172A",
+        "text-secondary": "#475569",
+        success: "#22C55E",
+        warning: "#F59E0B",
+        error: "#EF4444",
+        academic: {
+          primary: "#1E3A8A",
+          accent: "#06B6D4",
+          background: "#F8FAFC",
+          card: "#FFFFFF",
+          textPrimary: "#0F172A",
+          textSecondary: "#475569",
+          success: "#22C55E",
+          warning: "#F59E0B",
+          error: "#EF4444",
+          primaryHover: "#1A3175",
+        },
         // Flat / base colors (regular buttons)
         background: "hsl(var(--background) / <alpha-value>)",
         foreground: "hsl(var(--foreground) / <alpha-value>)",

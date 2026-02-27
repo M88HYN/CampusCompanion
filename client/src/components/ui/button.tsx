@@ -5,20 +5,20 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-[background-color,color,border-color,box-shadow,transform] duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 active:scale-[0.99] [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0" +
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl text-sm font-medium transition-all duration-200 ease-in-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 active:scale-[0.99] [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0" +
   " hover-elevate active-elevate-2",
   {
     variants: {
       variant: {
         default:
-          "bg-primary text-primary-foreground border border-primary-border",
+          "bg-gradient-to-r from-primary via-brand-primary to-secondary text-primary-foreground border border-primary-border hover:from-[hsl(223_64%_30%)] hover:via-[hsl(223_64%_34%)] hover:to-[hsl(191_96%_38%)]",
         destructive:
-          "bg-destructive text-destructive-foreground border border-destructive-border",
+          "bg-destructive text-destructive-foreground border border-destructive-border hover:bg-[hsl(0_84%_54%)]",
         outline:
           // Shows the background color of whatever card / sidebar / accent background it is inside of.
           // Inherits the current text color.
           " border [border-color:var(--button-outline)]  shadow-xs active:shadow-none ",
-        secondary: "border bg-secondary text-secondary-foreground border border-secondary-border ",
+        secondary: "border bg-gradient-to-r from-secondary to-[hsl(191_96%_36%)] text-secondary-foreground border border-secondary-border hover:from-[hsl(191_96%_38%)] hover:to-[hsl(191_96%_32%)] ",
         // Add a transparent border so that when someone toggles a border on later, it doesn't shift layout/size.
         ghost: "border border-transparent",
       },
@@ -27,8 +27,8 @@ const buttonVariants = cva(
       // but will expand to fit large amounts of content.
       size: {
         default: "min-h-10 px-4 py-2",
-        sm: "min-h-9 rounded-md px-3 text-xs",
-        lg: "min-h-11 rounded-md px-8",
+        sm: "min-h-9 rounded-xl px-3 text-xs",
+        lg: "min-h-11 rounded-xl px-8",
         icon: "h-9 w-9",
       },
     },

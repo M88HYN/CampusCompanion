@@ -153,10 +153,10 @@ export default function Register() {
       </div>
 
       <div className="flex-1 flex items-center justify-center p-6 bg-gradient-to-br from-slate-50 to-teal-50/30 dark:from-slate-900 dark:to-teal-950/30">
-        <Card className="w-full max-w-md border-0 shadow-xl bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm">
+        <Card className="w-full max-w-md border-0 shadow-xl bg-card backdrop-blur-sm">
           <CardHeader className="text-center pb-2">
             <div className="lg:hidden flex items-center justify-center gap-2 mb-4">
-              <div className="w-10 h-10 bg-gradient-to-br from-teal-500 to-cyan-500 rounded-xl flex items-center justify-center">
+              <div className="w-10 h-10 bg-gradient-to-br from-brand-primary to-brand-accent rounded-xl flex items-center justify-center">
                 <GraduationCap className="w-6 h-6 text-white" />
               </div>
               <span className="text-2xl font-bold bg-gradient-to-r from-teal-600 to-cyan-600 bg-clip-text text-transparent">
@@ -166,7 +166,7 @@ export default function Register() {
             <CardTitle className="text-2xl font-bold text-slate-800 dark:text-white" data-testid="text-page-title">
               Create your account
             </CardTitle>
-            <CardDescription className="text-slate-600 dark:text-slate-400" data-testid="text-page-description">
+            <CardDescription className="text-muted-foreground" data-testid="text-page-description">
               Start learning smarter today
             </CardDescription>
           </CardHeader>
@@ -179,7 +179,7 @@ export default function Register() {
                   name="username"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-slate-700 dark:text-slate-300">
+                      <FormLabel className="text-muted-foreground">
                         Username
                       </FormLabel>
                       <FormControl>
@@ -187,7 +187,7 @@ export default function Register() {
                           {...field}
                           type="text"
                           placeholder="Choose a username"
-                          className="h-11 border-slate-200 dark:border-slate-700 focus:border-teal-500 focus:ring-teal-500"
+                          className="h-11 border-border focus:border-teal-500 focus:ring-teal-500"
                           data-testid="input-username"
                           autoComplete="username"
                         />
@@ -203,7 +203,7 @@ export default function Register() {
                     name="firstName"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-slate-700 dark:text-slate-300">
+                        <FormLabel className="text-muted-foreground">
                           First name
                         </FormLabel>
                         <FormControl>
@@ -211,7 +211,7 @@ export default function Register() {
                             {...field}
                             type="text"
                             placeholder="First name"
-                            className="h-11 border-slate-200 dark:border-slate-700 focus:border-teal-500 focus:ring-teal-500"
+                            className="h-11 border-border focus:border-teal-500 focus:ring-teal-500"
                             data-testid="input-firstName"
                             autoComplete="given-name"
                           />
@@ -226,7 +226,7 @@ export default function Register() {
                     name="lastName"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-slate-700 dark:text-slate-300">
+                        <FormLabel className="text-muted-foreground">
                           Last name
                         </FormLabel>
                         <FormControl>
@@ -234,7 +234,7 @@ export default function Register() {
                             {...field}
                             type="text"
                             placeholder="Last name"
-                            className="h-11 border-slate-200 dark:border-slate-700 focus:border-teal-500 focus:ring-teal-500"
+                            className="h-11 border-border focus:border-teal-500 focus:ring-teal-500"
                             data-testid="input-lastName"
                             autoComplete="family-name"
                           />
@@ -250,7 +250,7 @@ export default function Register() {
                   name="email"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-slate-700 dark:text-slate-300">
+                      <FormLabel className="text-muted-foreground">
                         Email address
                       </FormLabel>
                       <FormControl>
@@ -258,7 +258,7 @@ export default function Register() {
                           {...field}
                           type="email"
                           placeholder="you@university.edu"
-                          className="h-11 border-slate-200 dark:border-slate-700 focus:border-teal-500 focus:ring-teal-500"
+                          className="h-11 border-border focus:border-teal-500 focus:ring-teal-500"
                           data-testid="input-email"
                           autoComplete="email"
                         />
@@ -273,7 +273,7 @@ export default function Register() {
                   name="password"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-slate-700 dark:text-slate-300">
+                      <FormLabel className="text-muted-foreground">
                         Password
                       </FormLabel>
                       <FormControl>
@@ -282,7 +282,7 @@ export default function Register() {
                             {...field}
                             type={showPassword ? "text" : "password"}
                             placeholder="Create a strong password"
-                            className="h-11 pr-10 border-slate-200 dark:border-slate-700 focus:border-teal-500 focus:ring-teal-500"
+                            className="h-11 pr-10 border-border focus:border-teal-500 focus:ring-teal-500"
                             data-testid="input-password"
                             autoComplete="new-password"
                           />
@@ -311,7 +311,7 @@ export default function Register() {
                   name="confirmPassword"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-slate-700 dark:text-slate-300">
+                      <FormLabel className="text-muted-foreground">
                         Confirm password
                       </FormLabel>
                       <FormControl>
@@ -320,7 +320,7 @@ export default function Register() {
                             {...field}
                             type={showConfirmPassword ? "text" : "password"}
                             placeholder="Confirm your password"
-                            className="h-11 pr-10 border-slate-200 dark:border-slate-700 focus:border-teal-500 focus:ring-teal-500"
+                            className="h-11 pr-10 border-border focus:border-teal-500 focus:ring-teal-500"
                             data-testid="input-confirm-password"
                             autoComplete="new-password"
                           />
@@ -346,7 +346,7 @@ export default function Register() {
 
                 <Button
                   type="submit"
-                  className="w-full h-11 bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white font-semibold shadow-lg shadow-teal-500/25 transition-all"
+                  className="w-full h-11 bg-gradient-to-r from-brand-primary to-brand-accent hover:from-[#1A3175] hover:to-[#0891B2] text-white font-semibold shadow-lg shadow-teal-500/25 transition-all"
                   disabled={registerMutation.isPending || isSuccess}
                   data-testid="button-register"
                 >
@@ -370,7 +370,7 @@ export default function Register() {
               </form>
             </Form>
 
-            <p className="text-center text-sm text-slate-600 dark:text-slate-400">
+            <p className="text-center text-sm text-muted-foreground">
               Already have an account?{" "}
               <a
                 href="/login"

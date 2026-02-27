@@ -61,11 +61,11 @@ function MainLayout({
 
   return (
     <SidebarProvider style={style as React.CSSProperties}>
-      <div className="flex h-screen w-full">
+      <div className="flex h-screen w-full bg-app-gradient">
         <AppNavigation user={user} onLogout={onLogout} />
-        <div className="flex flex-col flex-1 overflow-hidden">
+        <div className="flex flex-col flex-1 overflow-hidden bg-gradient-to-b from-background/80 via-background/70 to-secondary/10 backdrop-blur-[1px]">
           <AppTopbar user={user} onLogout={onLogout} />
-          <main id="app-main-scroll" className="flex-1 overflow-y-auto overflow-x-hidden">
+          <main id="app-main-scroll" className="flex-1 overflow-y-auto overflow-x-hidden bg-gradient-to-b from-transparent via-background/10 to-secondary/10">
             <div key={location} className="route-transition">
               <AppRouter />
             </div>
@@ -85,7 +85,7 @@ function AuthenticatedApp() {
   // Don't show splash/preload screen
   if (isLoading) {
     return location === "/login" ? (
-      <div className="w-full min-h-screen bg-white">
+      <div className="w-full min-h-screen bg-app-gradient">
         <Login />
       </div>
     ) : (
@@ -101,7 +101,7 @@ function AuthenticatedApp() {
       return <Redirect to="/login" />;
     }
     return (
-      <div className="w-full min-h-screen bg-white">
+      <div className="w-full min-h-screen bg-app-gradient">
         <Login />
       </div>
     );
@@ -156,11 +156,11 @@ class ErrorBoundary extends React.Component<
   render() {
     if (this.state.hasError) {
       return (
-        <div className="w-full h-screen flex items-center justify-center bg-gradient-to-br from-red-50 to-red-100">
+        <div className="w-full h-screen flex items-center justify-center bg-gradient-to-br from-primary/10 via-secondary/10 to-background">
           <div className="text-center max-w-md mx-auto p-6">
             <div className="text-6xl mb-4">⚠️</div>
-            <h1 className="text-2xl font-bold text-red-600 mb-4">Something went wrong</h1>
-            <p className="text-red-500 mb-2">Error: {this.state.error?.message}</p>
+            <h1 className="text-2xl font-bold text-destructive mb-4">Something went wrong</h1>
+            <p className="text-destructive mb-2">Error: {this.state.error?.message}</p>
             <p className="text-gray-600 mb-6">The application encountered an error. Please refresh the page to continue.</p>
             <button
               onClick={() => window.location.reload()}

@@ -97,11 +97,11 @@ function EnhancedToast({
       case "success":
         return <CheckCircle2 className="h-5 w-5 text-emerald-500 flex-shrink-0" />;
       case "error":
-        return <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0" />;
+        return <AlertCircle className="h-5 w-5 text-destructive flex-shrink-0" />;
       case "warning":
         return <AlertTriangle className="h-5 w-5 text-amber-500 flex-shrink-0" />;
       case "info":
-        return <Info className="h-5 w-5 text-blue-500 flex-shrink-0" />;
+        return <Info className="h-5 w-5 text-brand-primary flex-shrink-0" />;
     }
   };
 
@@ -110,11 +110,11 @@ function EnhancedToast({
       case "success":
         return "bg-emerald-50 dark:bg-emerald-950 border-emerald-200 dark:border-emerald-800";
       case "error":
-        return "bg-red-50 dark:bg-red-950 border-red-200 dark:border-red-800";
+        return "bg-red-50 dark:bg-red-950 border-destructive/30 dark:border-destructive/40";
       case "warning":
         return "bg-amber-50 dark:bg-amber-950 border-amber-200 dark:border-amber-800";
       case "info":
-        return "bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800";
+        return "bg-brand-primary/10 dark:bg-brand-primary/20 border-brand-primary/30 dark:border-brand-primary/40";
     }
   };
 

@@ -11,49 +11,57 @@
   --opaque-button-border-intensity: -8;
   --elevate-1: rgba(0,0,0, .03);
   --elevate-2: rgba(0,0,0, .08);
-  --background: 210 100% 98%;
-  --foreground: 222 47% 11%;
-  --border: 220 14% 88%;
+  --background: 210 40% 98%;
+  --foreground: 222 47% 8%;
+  --border: 215 20% 86%;
   --card: 0 0% 100%;
-  --card-foreground: 222 47% 11%;
-  --card-border: 220 14% 92%;
-  --sidebar: 240 20% 97%;
-  --sidebar-foreground: 222 47% 11%;
-  --sidebar-border: 220 14% 91%;
-  --sidebar-primary: 217 91% 60%;
+  --card-foreground: 222 47% 8%;
+  --card-border: 215 20% 90%;
+  --sidebar: 210 40% 98%;
+  --sidebar-foreground: 222 47% 8%;
+  --sidebar-border: 215 20% 90%;
+  --sidebar-primary: 191 96% 42%;
   --sidebar-primary-foreground: 0 0% 100%;
-  --sidebar-accent: 217 100% 95%;
-  --sidebar-accent-foreground: 217 91% 35%;
-  --sidebar-ring: 217 91% 60%;
+  --sidebar-accent: 191 96% 42%;
+  --sidebar-accent-foreground: 0 0% 100%;
+  --sidebar-ring: 191 96% 42%;
   --popover: 0 0% 100%;
-  --popover-foreground: 222 47% 11%;
-  --popover-border: 220 14% 88%;
-  --primary: 217 91% 60%;
+  --popover-foreground: 222 47% 8%;
+  --popover-border: 215 20% 86%;
+  --primary: 223 64% 33%;
   --primary-foreground: 0 0% 100%;
-  --secondary: 220 14% 96%;
-  --secondary-foreground: 222 47% 11%;
-  --muted: 220 14% 96%;
-  --muted-foreground: 220 9% 46%;
-  --accent: 280 100% 95%;
-  --accent-foreground: 280 80% 40%;
+  --secondary: 191 96% 42%;
+  --secondary-foreground: 0 0% 100%;
+  --muted: 210 40% 96%;
+  --muted-foreground: 215 20% 38%;
+  --accent: 191 96% 42%;
+  --accent-foreground: 0 0% 100%;
   --destructive: 0 84% 60%;
   --destructive-foreground: 0 0% 100%;
-  --input: 220 13% 85%;
-  --ring: 217 91% 60%;
-  --chart-1: 217 91% 60%;
-  --chart-2: 142 76% 45%;
-  --chart-3: 271 81% 60%;
-  --chart-4: 32 95% 55%;
-  --chart-5: 340 82% 52%;
+  --input: 215 20% 86%;
+  --ring: 223 64% 33%;
+  --chart-1: 223 64% 33%;
+  --chart-2: 191 96% 42%;
+  --chart-3: 223 64% 43%;
+  --chart-4: 191 96% 32%;
+  --chart-5: 215 20% 45%;
+  --app-gradient-start: 214 100% 97%;
+  --app-gradient-mid: 204 94% 94%;
+  --app-gradient-end: 191 96% 92%;
+  --surface-gradient-start: 0 0% 100%;
+  --surface-gradient-end: 210 40% 97%;
+  --hero-gradient-start: 223 64% 40%;
+  --hero-gradient-mid: 223 64% 35%;
+  --hero-gradient-end: 191 96% 42%;
   --font-sans: Inter, system-ui, -apple-system, sans-serif;
   --font-serif: Georgia, serif;
   --font-mono: JetBrains Mono, monospace;
-  --radius: .5rem;
+  --radius: .75rem;
   --shadow-2xs: 0px 2px 0px 0px hsl(217 91% 45% / 0.00);
   --shadow-xs: 0px 2px 0px 0px hsl(217 91% 45% / 0.00);
   --shadow-sm: 0px 2px 0px 0px hsl(217 91% 45% / 0.00), 0px 1px 2px -1px hsl(217 91% 45% / 0.00);
   --shadow: 0px 2px 0px 0px hsl(217 91% 45% / 0.00), 0px 1px 2px -1px hsl(217 91% 45% / 0.00);
-  --shadow-md: 0px 2px 0px 0px hsl(217 91% 45% / 0.00), 0px 2px 4px -1px hsl(217 91% 45% / 0.00);
+  --shadow-md: 0 4px 10px -2px hsl(215 25% 27% / 0.14), 0 2px 6px -2px hsl(215 25% 27% / 0.08);
   --shadow-lg: 0px 2px 0px 0px hsl(217 91% 45% / 0.00), 0px 4px 6px -1px hsl(217 91% 45% / 0.00);
   --shadow-xl: 0px 2px 0px 0px hsl(217 91% 45% / 0.00), 0px 8px 10px -1px hsl(217 91% 45% / 0.00);
   --shadow-2xl: 0px 2px 0px 0px hsl(217 91% 45% / 0.00);
@@ -95,8 +103,8 @@
   --opaque-button-border-intensity: 9;
   --elevate-1: rgba(255,255,255, .04);
   --elevate-2: rgba(255,255,255, .09);
-  --background: 222 47% 8%;
-  --foreground: 210 40% 98%;
+  --background: 222 47% 10%;
+  --foreground: 210 40% 96%;
   --border: 217 33% 17%;
   --card: 222 47% 11%;
   --card-foreground: 210 40% 98%;
@@ -104,36 +112,44 @@
   --sidebar: 222 47% 9%;
   --sidebar-foreground: 210 40% 98%;
   --sidebar-border: 217 33% 16%;
-  --sidebar-primary: 217 91% 65%;
+  --sidebar-primary: 191 96% 48%;
   --sidebar-primary-foreground: 222 47% 11%;
-  --sidebar-accent: 217 33% 18%;
-  --sidebar-accent-foreground: 217 91% 75%;
-  --sidebar-ring: 217 91% 65%;
+  --sidebar-accent: 191 96% 42%;
+  --sidebar-accent-foreground: 0 0% 100%;
+  --sidebar-ring: 191 96% 48%;
   --popover: 222 47% 11%;
   --popover-foreground: 210 40% 98%;
   --popover-border: 217 33% 17%;
-  --primary: 217 91% 65%;
+  --primary: 223 64% 45%;
   --primary-foreground: 222 47% 11%;
-  --secondary: 217 33% 17%;
-  --secondary-foreground: 210 40% 98%;
+  --secondary: 191 96% 42%;
+  --secondary-foreground: 0 0% 100%;
   --muted: 217 33% 17%;
   --muted-foreground: 215 20% 65%;
-  --accent: 280 100% 20%;
-  --accent-foreground: 280 100% 85%;
+  --accent: 191 96% 42%;
+  --accent-foreground: 0 0% 100%;
   --destructive: 0 84% 60%;
   --destructive-foreground: 210 40% 98%;
   --input: 217 33% 20%;
-  --ring: 217 91% 65%;
-  --chart-1: 217 91% 70%;
-  --chart-2: 142 76% 55%;
-  --chart-3: 271 81% 70%;
-  --chart-4: 32 95% 60%;
-  --chart-5: 340 82% 60%;
+  --ring: 223 64% 45%;
+  --chart-1: 223 64% 45%;
+  --chart-2: 191 96% 48%;
+  --chart-3: 223 64% 55%;
+  --chart-4: 191 96% 38%;
+  --chart-5: 215 20% 65%;
+  --app-gradient-start: 224 37% 12%;
+  --app-gradient-mid: 223 44% 14%;
+  --app-gradient-end: 199 74% 16%;
+  --surface-gradient-start: 222 47% 12%;
+  --surface-gradient-end: 218 35% 10%;
+  --hero-gradient-start: 223 64% 50%;
+  --hero-gradient-mid: 223 64% 44%;
+  --hero-gradient-end: 191 96% 46%;
   --shadow-2xs: 0px 2px 0px 0px hsl(217 91% 55% / 0.00);
   --shadow-xs: 0px 2px 0px 0px hsl(217 91% 55% / 0.00);
   --shadow-sm: 0px 2px 0px 0px hsl(217 91% 55% / 0.00), 0px 1px 2px -1px hsl(217 91% 55% / 0.00);
   --shadow: 0px 2px 0px 0px hsl(217 91% 55% / 0.00), 0px 1px 2px -1px hsl(217 91% 55% / 0.00);
-  --shadow-md: 0px 2px 0px 0px hsl(217 91% 55% / 0.00), 0px 2px 4px -1px hsl(217 91% 55% / 0.00);
+  --shadow-md: 0 4px 10px -2px hsl(210 30% 3% / 0.35), 0 2px 6px -2px hsl(210 30% 3% / 0.2);
   --shadow-lg: 0px 2px 0px 0px hsl(217 91% 55% / 0.00), 0px 4px 6px -1px hsl(217 91% 55% / 0.00);
   --shadow-xl: 0px 2px 0px 0px hsl(217 91% 55% / 0.00), 0px 8px 10px -1px hsl(217 91% 55% / 0.00);
   --shadow-2xl: 0px 2px 0px 0px hsl(217 91% 55% / 0.00);
@@ -173,14 +189,29 @@
   }
 
   body {
-    @apply font-sans antialiased text-foreground;
-    background: linear-gradient(135deg, hsl(210 100% 98%) 0%, hsl(220 80% 96%) 30%, hsl(240 60% 96%) 60%, hsl(210 100% 98%) 100%);
+    @apply font-sans antialiased text-foreground bg-background;
+    background:
+      radial-gradient(circle at 8% 4%, hsl(var(--app-gradient-mid) / 0.45), transparent 42%),
+      radial-gradient(circle at 92% 6%, hsl(var(--app-gradient-end) / 0.35), transparent 45%),
+      linear-gradient(160deg, hsl(var(--app-gradient-start)) 0%, hsl(var(--background)) 45%, hsl(var(--app-gradient-end) / 0.24) 100%);
     background-attachment: fixed;
   }
 
   .dark body {
-    background: linear-gradient(135deg, hsl(222 47% 8%) 0%, hsl(230 40% 10%) 30%, hsl(250 30% 11%) 60%, hsl(222 47% 8%) 100%);
+    background:
+      radial-gradient(circle at 10% 4%, hsl(var(--app-gradient-mid) / 0.4), transparent 42%),
+      radial-gradient(circle at 92% 8%, hsl(var(--app-gradient-end) / 0.28), transparent 46%),
+      linear-gradient(160deg, hsl(var(--app-gradient-start)) 0%, hsl(var(--background)) 50%, hsl(var(--app-gradient-end) / 0.22) 100%);
     background-attachment: fixed;
+  }
+
+  button,
+  a,
+  input,
+  textarea,
+  select,
+  [role="button"] {
+    @apply transition-all duration-200 ease-in-out;
   }
 }
 
@@ -205,6 +236,20 @@
  * need to be distinguished from eachother visually.
  */
 @layer utilities {
+  .bg-app-gradient {
+    background:
+      radial-gradient(circle at 12% 8%, hsl(var(--app-gradient-mid) / 0.42), transparent 40%),
+      radial-gradient(circle at 88% 8%, hsl(var(--app-gradient-end) / 0.32), transparent 42%),
+      linear-gradient(160deg, hsl(var(--app-gradient-start)) 0%, hsl(var(--background)) 46%, hsl(var(--app-gradient-end) / 0.2) 100%);
+  }
+
+  .bg-surface-gradient {
+    background: linear-gradient(180deg, hsl(var(--surface-gradient-start)) 0%, hsl(var(--surface-gradient-end)) 100%);
+  }
+
+  .bg-brand-gradient {
+    background: linear-gradient(105deg, hsl(var(--hero-gradient-start)) 0%, hsl(var(--hero-gradient-mid)) 50%, hsl(var(--hero-gradient-end)) 100%);
+  }
 
   /* Hide ugly search cancel button in Chrome until we can style it properly */
   input[type="search"]::-webkit-search-cancel-button {

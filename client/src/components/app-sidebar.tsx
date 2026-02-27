@@ -105,22 +105,22 @@ export function AppSidebar({ userRole = "student", onLogout }: AppSidebarProps) 
 
   return (
     <Sidebar>
-      <SidebarHeader className="p-4 bg-gradient-to-r from-teal-50 to-cyan-50 dark:from-teal-950 dark:to-cyan-950 border-b-2 border-teal-200 dark:border-teal-800">
+      <SidebarHeader className="p-4 bg-primary border-b border-primary/70 text-primary-foreground">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-teal-500 to-cyan-600 text-white shadow-lg">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-secondary text-white shadow-md">
             <Rocket className="h-6 w-6" />
           </div>
           <div className="flex flex-col">
-            <span className="text-lg font-bold text-teal-600 dark:text-teal-400">
+            <span className="text-lg font-bold text-primary-foreground">
               StudyMate
             </span>
-            <span className="text-xs text-teal-600 dark:text-teal-400 font-medium">Learn Faster</span>
+            <span className="text-xs text-primary-foreground/80 font-medium">Learn Faster</span>
           </div>
         </div>
       </SidebarHeader>
-      <SidebarContent className="bg-gradient-to-b from-slate-50 to-white dark:from-slate-950 dark:to-slate-900">
+      <SidebarContent className="bg-sidebar text-sidebar-foreground">
         <SidebarGroup>
-          <SidebarGroupLabel className="text-teal-700 dark:text-teal-300 font-bold">Learning Tools</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-muted-foreground font-bold">Learning Tools</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {learningTools.map((item) => (
@@ -142,7 +142,7 @@ export function AppSidebar({ userRole = "student", onLogout }: AppSidebarProps) 
         </SidebarGroup>
 
         <SidebarGroup>
-          <SidebarGroupLabel className="text-teal-700 dark:text-teal-300 font-bold">System</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-muted-foreground font-bold">System</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {adminTools
@@ -165,24 +165,24 @@ export function AppSidebar({ userRole = "student", onLogout }: AppSidebarProps) 
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter className="p-4 border-t-2 border-teal-200 dark:border-teal-800 bg-gradient-to-r from-teal-50 to-cyan-50 dark:from-teal-950 dark:to-cyan-950 space-y-3">
+      <SidebarFooter className="p-4 border-t border-border bg-card space-y-3">
         <div className="flex items-center gap-3">
-          <Avatar className="border-2 border-teal-300 dark:border-teal-700">
-            <AvatarFallback className="bg-gradient-to-br from-teal-500 to-cyan-600 text-white font-bold">
+          <Avatar className="border-2 border-border">
+            <AvatarFallback className="bg-secondary text-white font-bold">
               {user?.firstName?.[0] || user?.email?.[0]?.toUpperCase() || "U"}
             </AvatarFallback>
           </Avatar>
           <div className="flex flex-col flex-1 min-w-0">
-            <span className="text-sm font-semibold text-slate-900 dark:text-white truncate">
+            <span className="text-sm font-semibold text-foreground truncate">
               {user?.firstName && user?.lastName ? `${user.firstName} ${user.lastName}` : user?.email || "User"}
             </span>
             <Badge
               className={`w-fit text-xs border-0 ${
                 userRole === "admin"
-                  ? "bg-gradient-to-r from-orange-500 to-red-600 text-white"
+                  ? "bg-destructive text-white"
                   : userRole === "instructor"
-                  ? "bg-gradient-to-r from-teal-500 to-cyan-600 text-white"
-                  : "bg-gradient-to-r from-blue-500 to-cyan-600 text-white"
+                  ? "bg-secondary text-white"
+                  : "bg-primary text-white"
               }`}
               data-testid={`badge-role-${userRole}`}
             >
@@ -194,7 +194,7 @@ export function AppSidebar({ userRole = "student", onLogout }: AppSidebarProps) 
           <Button
             onClick={onLogout}
             variant="outline"
-            className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950 border-red-200 dark:border-red-800"
+            className="w-full justify-start text-destructive hover:bg-destructive/10 border-destructive/30"
           >
             <LogOut className="h-4 w-4 mr-2" />
             Logout

@@ -174,9 +174,9 @@ export default function Pomodoro() {
   const getAccentColor = () => {
     if (isWorkSession) {
       return {
-        text: "text-blue-600 dark:text-blue-400",
+        text: "text-brand-primary dark:text-blue-400",
         bg: "bg-blue-100 dark:bg-blue-900/30",
-        icon: "text-blue-500",
+        icon: "text-brand-primary",
       };
     } else {
       return {
@@ -201,7 +201,7 @@ export default function Pomodoro() {
           <h1 className="text-3xl sm:text-5xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 dark:from-white dark:to-slate-200 bg-clip-text text-transparent">
             Focus Sessions
           </h1>
-          <p className="text-sm sm:text-base text-slate-600 dark:text-slate-400">
+          <p className="text-sm sm:text-base text-muted-foreground">
             {isWorkSession ? "🎯 Stay focused and productive" : "☕ Recharge your mind"}
           </p>
         </div>
@@ -244,11 +244,11 @@ export default function Pomodoro() {
                 >
                   <stop
                     offset="0%"
-                    stopColor={isWorkSession ? "#60a5fa" : "#34d399"}
+                    stopColor={isWorkSession ? "#1E3A8A" : "#06B6D4"}
                   />
                   <stop
                     offset="100%"
-                    stopColor={isWorkSession ? "#a855f7" : "#14b8a6"}
+                    stopColor={isWorkSession ? "#1A3175" : "#0891B2"}
                   />
                 </linearGradient>
               </defs>
@@ -259,7 +259,7 @@ export default function Pomodoro() {
               <div className={`text-5xl sm:text-7xl font-bold font-mono ${accent.text}`}>
                 {displayTime}
               </div>
-              <div className="text-sm sm:text-base font-medium text-slate-600 dark:text-slate-400">
+              <div className="text-sm sm:text-base font-medium text-muted-foreground">
                 {isWorkSession ? "Focus Time" : "Break Time"}
               </div>
               <Badge
@@ -375,42 +375,42 @@ export default function Pomodoro() {
 
         {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
-          <Card className="border-2 border-slate-200 dark:border-slate-700">
+          <Card className="border-2 border-border">
             <CardContent className="pt-6 text-center">
-              <div className="text-2xl sm:text-3xl font-bold text-blue-600">
+              <div className="text-2xl sm:text-3xl font-bold text-brand-primary">
                 {stats.sessionsCompleted}
               </div>
-              <div className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-1">
+              <div className="text-xs sm:text-sm text-muted-foreground mt-1">
                 Sessions Done
               </div>
             </CardContent>
           </Card>
-          <Card className="border-2 border-slate-200 dark:border-slate-700">
+          <Card className="border-2 border-border">
             <CardContent className="pt-6 text-center">
               <div className="text-2xl sm:text-3xl font-bold text-emerald-600">
                 {stats.breaksTaken}
               </div>
-              <div className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-1">
+              <div className="text-xs sm:text-sm text-muted-foreground mt-1">
                 Breaks Taken
               </div>
             </CardContent>
           </Card>
-          <Card className="border-2 border-slate-200 dark:border-slate-700">
+          <Card className="border-2 border-border">
             <CardContent className="pt-6 text-center">
               <div className="text-2xl sm:text-3xl font-bold text-purple-600">
                 {stats.totalFocusTime}m
               </div>
-              <div className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-1">
+              <div className="text-xs sm:text-sm text-muted-foreground mt-1">
                 Focus Time
               </div>
             </CardContent>
           </Card>
-          <Card className="border-2 border-slate-200 dark:border-slate-700">
+          <Card className="border-2 border-border">
             <CardContent className="pt-6 text-center">
               <div className="text-2xl sm:text-3xl font-bold text-orange-600">
                 {stats.currentStreak}
               </div>
-              <div className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-1">
+              <div className="text-xs sm:text-sm text-muted-foreground mt-1">
                 Current Streak
               </div>
             </CardContent>
@@ -418,15 +418,15 @@ export default function Pomodoro() {
         </div>
 
         {/* Motivational Quote */}
-        <Card className="border-2 border-slate-200 dark:border-slate-700 bg-white/50 dark:bg-slate-800/50 backdrop-blur">
+        <Card className="border-2 border-border bg-white/50 dark:bg-slate-800/50 backdrop-blur">
           <CardContent className="pt-6">
             <div className="text-center space-y-2">
-              <p className="text-lg font-semibold text-slate-700 dark:text-slate-300 italic">
+              <p className="text-lg font-semibold text-muted-foreground italic">
                 {isWorkSession
                   ? "You've got this! Every minute brings you closer to your goals. 💪"
                   : "Take a deep breath. You've earned this moment of rest. 🌿"}
               </p>
-              <p className="text-sm text-slate-600 dark:text-slate-400">
+              <p className="text-sm text-muted-foreground">
                 {stats.sessionsCompleted > 0
                   ? `You're on a streak of ${stats.currentStreak} sessions! 🔥`
                   : "Start your first focus session to build momentum!"}
@@ -436,14 +436,14 @@ export default function Pomodoro() {
         </Card>
 
         {/* Tips */}
-        <Card className="border-2 border-slate-200 dark:border-slate-700">
+        <Card className="border-2 border-border">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg">
               <Lightbulb className="h-5 w-5 text-amber-500" />
               Focus Tips
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-2 text-sm text-slate-600 dark:text-slate-400">
+          <CardContent className="space-y-2 text-sm text-muted-foreground">
             <p>✨ Silence notifications during focus sessions</p>
             <p>💧 Take a sip of water during your break</p>
             <p>🌍 A short walk can refresh your mind</p>
@@ -502,7 +502,7 @@ function SettingsDialog({
 
       <Button
         onClick={() => onApply(newWork, newBreak)}
-        className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white"
+        className="w-full bg-gradient-to-r from-brand-primary to-brand-accent hover:from-[#1A3175] hover:to-[#0891B2] text-white"
       >
         <Check className="h-4 w-4 mr-2" />
         Apply Settings

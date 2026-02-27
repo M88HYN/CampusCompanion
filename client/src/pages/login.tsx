@@ -136,21 +136,21 @@ export default function Login() {
       </div>
 
       <div className="flex-1 flex items-center justify-center p-4 sm:p-6 bg-gradient-to-br from-slate-50 to-teal-50/30 dark:from-slate-900 dark:to-teal-950/30">
-        <Card className="w-full max-w-md border-0 shadow-xl bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm">
+        <Card className="w-full max-w-md border-0 shadow-xl bg-card backdrop-blur-sm">
           <CardHeader className="text-center pb-6">
             <div className="lg:hidden flex items-center justify-center gap-2 mb-6">
-              <div className="w-12 h-12 bg-gradient-to-br from-teal-500 to-cyan-500 rounded-xl flex items-center justify-center">
+              <div className="w-12 h-12 bg-gradient-to-br from-brand-primary to-brand-accent rounded-xl flex items-center justify-center">
                 <GraduationCap className="w-7 h-7 text-white" />
               </div>
               <span className="text-2xl font-bold bg-gradient-to-r from-teal-600 to-cyan-600 bg-clip-text text-transparent">StudyMate</span>
             </div>
             <CardTitle className="text-2xl font-bold text-slate-800 dark:text-white">{isLogin ? "Welcome Back" : "Create Account"}</CardTitle>
-            <CardDescription className="text-slate-600 dark:text-slate-400 text-base">{isLogin ? "Sign in to your account" : "Sign up to get started"}</CardDescription>
+            <CardDescription className="text-muted-foreground text-base">{isLogin ? "Sign in to your account" : "Sign up to get started"}</CardDescription>
           </CardHeader>
 
           <CardContent className="space-y-6">
             {error && (
-              <div className="p-3 bg-red-100 border border-red-300 rounded text-red-700 text-sm">{error}</div>
+              <div className="p-3 bg-red-100 border border-red-300 rounded text-destructive text-sm">{error}</div>
             )}
 
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -165,14 +165,14 @@ export default function Login() {
               )}
               <Input type={isLogin ? "text" : "email"} placeholder={isLogin ? "Email or Username" : "Email address"} value={email} onChange={(e) => setEmail(e.target.value)} required className="h-11" />
               <Input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required className="h-11" />
-              <Button type="submit" disabled={loading} className="w-full h-11 bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white font-semibold">
+              <Button type="submit" disabled={loading} className="w-full h-11 bg-gradient-to-r from-brand-primary to-brand-accent hover:from-[#1A3175] hover:to-[#0891B2] text-white font-semibold">
                 {loading ? "Loading..." : (isLogin ? "Sign In" : "Sign Up")}
               </Button>
             </form>
 
             <div className="relative">
-              <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-200 dark:border-slate-700" /></div>
-              <div className="relative flex justify-center text-sm"><span className="px-2 bg-white dark:bg-slate-900/80 text-slate-500">Or continue with</span></div>
+              <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-border" /></div>
+              <div className="relative flex justify-center text-sm"><span className="px-2 bg-card/80 text-slate-500">Or continue with</span></div>
             </div>
 
             <div className="space-y-3">
@@ -205,7 +205,7 @@ export default function Login() {
               </Button>
             </div>
 
-            <div className="text-center text-sm text-slate-600 dark:text-slate-400">
+            <div className="text-center text-sm text-muted-foreground">
               {isLogin ? (
                 <>Don't have an account? <button type="button" onClick={() => setIsLogin(false)} className="text-teal-600 hover:text-teal-700 font-semibold">Sign up</button></>
               ) : (

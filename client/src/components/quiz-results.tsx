@@ -142,7 +142,7 @@ export function TimerMode({
   onTimeEnd: () => void;
 }) {
   const getTimerColor = (seconds: number) => {
-    if (seconds <= 10) return "text-red-600";
+    if (seconds <= 10) return "text-destructive";
     if (seconds <= 30) return "text-amber-600";
     return "text-emerald-600";
   };

@@ -71,14 +71,14 @@ export function AppNavigation({ user, onLogout }: AppNavigationProps) {
     "U";
 
   return (
-    <Sidebar collapsible="icon" aria-label="Primary sidebar navigation" className="border-r border-slate-200 dark:border-slate-800 transition-all duration-300 ease-in-out">
-      <SidebarHeader className="px-4 py-4 border-b border-slate-200 dark:border-slate-800">
+    <Sidebar collapsible="icon" aria-label="Primary sidebar navigation" className="border-r border-border transition-all duration-300 ease-in-out bg-surface-gradient">
+      <SidebarHeader className="px-4 py-4 border-b border-border bg-gradient-to-r from-background to-muted/40">
         <div className="flex items-center gap-3">
           <StudyMateLogo />
           <div
             className={`min-w-0 transition-all duration-200 ${isCollapsed ? "max-w-0 opacity-0" : "max-w-[160px] opacity-100"}`}
           >
-            <p className="text-base font-semibold text-slate-900 dark:text-white">StudyMate</p>
+            <p className="text-base font-semibold text-foreground">StudyMate</p>
           </div>
         </div>
       </SidebarHeader>
@@ -86,7 +86,7 @@ export function AppNavigation({ user, onLogout }: AppNavigationProps) {
       <SidebarContent className="px-2 py-3">
         {sections.map((section) => (
           <SidebarGroup key={section.heading} className="px-2 py-2">
-            <SidebarGroupLabel className={`px-1 text-[11px] font-semibold tracking-wide text-slate-500 dark:text-slate-400 transition-all duration-200 ${isCollapsed ? "opacity-0 max-h-0 overflow-hidden py-0" : "opacity-100"}`}>
+            <SidebarGroupLabel className={`px-1 text-[11px] font-semibold tracking-wide text-muted-foreground transition-all duration-200 ${isCollapsed ? "opacity-0 max-h-0 overflow-hidden py-0" : "opacity-100"}`}>
               {section.heading}
             </SidebarGroupLabel>
             <SidebarGroupContent>
@@ -107,18 +107,18 @@ export function AppNavigation({ user, onLogout }: AppNavigationProps) {
         ))}
       </SidebarContent>
 
-      <SidebarFooter className="px-4 py-4 border-t border-slate-200 dark:border-slate-800 space-y-3">
+      <SidebarFooter className="px-4 py-4 border-t border-border space-y-3 bg-gradient-to-r from-background to-muted/40">
         <div className={`flex items-center gap-3 ${isCollapsed ? "justify-center" : ""}`}>
-          <Avatar className="h-9 w-9 border border-slate-200 dark:border-slate-700">
-            <AvatarFallback className="bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200">
+          <Avatar className="h-9 w-9 border border-border">
+            <AvatarFallback className="bg-gradient-to-br from-primary to-secondary text-white">
               {initials}
             </AvatarFallback>
           </Avatar>
           <div className={`min-w-0 transition-all duration-200 ${isCollapsed ? "max-w-0 opacity-0" : "max-w-[160px] opacity-100"}`}>
-            <p className="truncate text-sm font-medium text-slate-900 dark:text-slate-100">
+            <p className="truncate text-sm font-medium text-foreground">
               {user?.firstName || user?.email || "User"}
             </p>
-            <p className="truncate text-xs text-slate-500 dark:text-slate-400">{user?.email || "No email"}</p>
+            <p className="truncate text-xs text-muted-foreground">{user?.email || "No email"}</p>
           </div>
         </div>
 

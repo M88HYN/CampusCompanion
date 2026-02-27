@@ -234,10 +234,10 @@ export function AppTopbar({ user, onLogout }: AppTopbarProps) {
 
   return (
     <header
-      className={`sticky top-0 z-30 px-4 py-3 md:px-6 transition-all duration-300 ${
+      className={`sticky top-0 z-30 px-4 py-3 md:px-6 transition-all duration-200 ease-in-out ${
         isScrolled
-          ? "border-b border-slate-300/90 bg-white/90 backdrop-blur-xl shadow-sm dark:border-slate-700/90 dark:bg-slate-900/90"
-          : "border-b border-slate-200 bg-white/95 backdrop-blur dark:border-slate-800 dark:bg-slate-900/95"
+          ? "border-b border-primary/70 bg-gradient-to-r from-primary via-brand-primary to-secondary text-primary-foreground backdrop-blur-xl shadow-md"
+          : "border-b border-primary/60 bg-gradient-to-r from-primary via-brand-primary to-secondary text-primary-foreground backdrop-blur"
       }`}
     >
       <div className="flex items-center gap-4">
@@ -251,13 +251,13 @@ export function AppTopbar({ user, onLogout }: AppTopbarProps) {
 
           <Link href="/dashboard" className="flex items-center gap-2" aria-label="Go to dashboard">
             <StudyMateLogo sizeClassName="h-8 w-8" />
-            <span className="hidden text-sm font-semibold text-slate-900 dark:text-white sm:inline">StudyMate</span>
+            <span className="hidden text-sm font-semibold text-primary-foreground sm:inline">StudyMate</span>
           </Link>
         </div>
 
         <div className="hidden flex-1 md:flex md:justify-center">
           <form onSubmit={handleSearchSubmit} className="relative w-full max-w-xl">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               aria-label="Search and navigate"
               placeholder="Search pages, tabs, sections..."
@@ -275,7 +275,7 @@ export function AppTopbar({ user, onLogout }: AppTopbarProps) {
 
             {isSearchOpen && filteredTargets.length > 0 ? (
               <div
-                className="search-dropdown-transition absolute z-40 mt-2 w-full rounded-md border border-slate-200 bg-white shadow-lg dark:border-slate-700 dark:bg-slate-900"
+                className="search-dropdown-transition absolute z-40 mt-2 w-full rounded-xl border border-border bg-card shadow-md"
                 role="listbox"
                 aria-label="Search results"
               >
@@ -283,14 +283,14 @@ export function AppTopbar({ user, onLogout }: AppTopbarProps) {
                   <button
                     key={target.path}
                     type="button"
-                    className="w-full px-3 py-2 text-left hover:bg-slate-100 dark:hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500"
+                    className="w-full px-3 py-2 text-left hover:bg-accent/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     onMouseDown={() => handleSearchNavigate(target)}
                     aria-label={`Go to ${target.label}`}
                   >
-                    <p className="text-sm font-medium text-slate-900 dark:text-slate-100">{target.label}</p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">{target.description}</p>
+                    <p className="text-sm font-medium text-foreground">{target.label}</p>
+                    <p className="text-xs text-muted-foreground">{target.description}</p>
                     {target.group ? (
-                      <p className="text-[10px] uppercase tracking-wide text-teal-600 dark:text-teal-400 mt-0.5">{target.group}</p>
+                      <p className="text-[10px] uppercase tracking-wide text-secondary mt-0.5">{target.group}</p>
                     ) : null}
                   </button>
                 ))}
@@ -308,12 +308,12 @@ export function AppTopbar({ user, onLogout }: AppTopbarProps) {
                 variant="ghost"
                 size="icon"
                 aria-label="Notification preferences"
-                className="relative focus-visible:ring-2 focus-visible:ring-teal-500"
+                className="relative text-primary-foreground focus-visible:ring-2 focus-visible:ring-ring"
               >
                 <Bell className="h-4 w-4" />
                 {dueCards.length > 0 ? (
                   <span
-                    className="absolute -right-0.5 -top-0.5 inline-flex min-w-[1rem] h-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-semibold text-white"
+                    className="absolute -right-0.5 -top-0.5 inline-flex min-w-[1rem] h-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-semibold text-white"
                     aria-label={`${Math.min(dueCards.length, 99)} notifications`}
                   >
                     {dueCards.length > 99 ? "99+" : dueCards.length}
@@ -339,22 +339,22 @@ export function AppTopbar({ user, onLogout }: AppTopbarProps) {
                 </div>
 
                 <div className="mt-3 space-y-2">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                     Action items
                   </p>
                   {!notificationsEnabled ? (
-                    <p className="text-xs text-slate-500 dark:text-slate-400">Reminders are paused.</p>
+                    <p className="text-xs text-muted-foreground">Reminders are paused.</p>
                   ) : reminderItems.length > 0 ? (
                     <ul className="space-y-1.5">
                       {reminderItems.map((item) => (
-                        <li key={item.id} className="text-xs text-slate-700 dark:text-slate-300 flex items-start gap-2">
-                          <span className="mt-1 h-1.5 w-1.5 rounded-full bg-teal-500" />
+                        <li key={item.id} className="text-xs text-foreground/90 flex items-start gap-2">
+                          <span className="mt-1 h-1.5 w-1.5 rounded-full bg-secondary" />
                           <span>{item.text}</span>
                         </li>
                       ))}
                     </ul>
                   ) : (
-                    <p className="text-xs text-slate-500 dark:text-slate-400">No urgent tasks right now.</p>
+                    <p className="text-xs text-muted-foreground">No urgent tasks right now.</p>
                   )}
                 </div>
               </div>
@@ -365,11 +365,11 @@ export function AppTopbar({ user, onLogout }: AppTopbarProps) {
             <DropdownMenuTrigger asChild>
               <Button
                 variant="ghost"
-                className="h-10 gap-2 px-2 focus-visible:ring-2 focus-visible:ring-teal-500"
+                className="h-10 gap-2 px-2 text-primary-foreground focus-visible:ring-2 focus-visible:ring-ring"
                 aria-label="Open user menu"
               >
-                <Avatar className="h-8 w-8 border border-slate-200 dark:border-slate-700">
-                  <AvatarFallback className="bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200">
+                <Avatar className="h-8 w-8 border border-primary-foreground/40">
+                  <AvatarFallback className="bg-secondary text-white">
                     {initials}
                   </AvatarFallback>
                 </Avatar>

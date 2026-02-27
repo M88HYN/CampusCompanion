@@ -209,7 +209,7 @@ export function RichNoteEditor({
             value={content}
             onChange={(e) => setContent(e.target.value)}
             placeholder="Start typing your note... You can use markdown formatting like **bold**, _italic_, `code`, etc."
-            className="w-full h-96 p-4 border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 resize-none focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            className="w-full h-96 p-4 border border-border rounded-lg bg-card text-foreground resize-none focus:outline-none focus:ring-2 focus:ring-emerald-500"
           />
         </CardContent>
       </Card>

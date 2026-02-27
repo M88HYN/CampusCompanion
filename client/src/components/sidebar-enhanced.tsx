@@ -63,7 +63,7 @@ export function SidebarEnhanced() {
 
   return (
     <div
-      className={`transition-all duration-300 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 h-screen flex flex-col ${
+      className={`transition-all duration-300 bg-card border-r border-border h-screen flex flex-col ${
         collapsed ? "w-20" : "w-64"
       }`}
     >
@@ -127,7 +127,7 @@ export function SidebarEnhanced() {
       </nav>
 
       {/* Footer */}
-      <div className="p-4 border-t border-slate-200 dark:border-slate-800">
+      <div className="p-4 border-t border-border">
         <div
           className={`text-xs text-muted-foreground text-center ${
             collapsed ? "truncate" : ""

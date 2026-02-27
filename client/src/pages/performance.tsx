@@ -28,7 +28,7 @@ export default function Performance() {
 
   if (isLoading) {
     return (
-      <div className="p-6 md:p-8 space-y-6">
+      <div className="p-6 md:p-8 space-y-6 bg-gradient-to-br from-cyan-50 via-teal-50 to-indigo-50 dark:from-slate-950 dark:via-cyan-950/30 dark:to-indigo-950/30 min-h-full">
         <div className="h-9 w-64 animate-pulse rounded bg-slate-200 dark:bg-slate-800" />
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {[1, 2, 3, 4].map((i) => (
@@ -42,11 +42,11 @@ export default function Performance() {
   const hasPerformanceData = summary.totalQuizzesTaken > 0;
 
   return (
-    <div className="p-6 md:p-8 space-y-6">
+    <div className="p-6 md:p-8 space-y-6 bg-gradient-to-br from-cyan-50 via-teal-50 to-indigo-50 dark:from-slate-950 dark:via-cyan-950/30 dark:to-indigo-950/30 min-h-full">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-white">Performance</h1>
-          <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
+          <h1 className="text-2xl md:text-3xl font-bold text-foreground">Performance</h1>
+          <p className="text-sm text-muted-foreground mt-1">
             Quiz results, accuracy trends, and actionable performance insights.
           </p>
         </div>
@@ -82,9 +82,9 @@ export default function Performance() {
               value={`${summary.avgTimePerQuestion}s`}
               subtitle="Speed and pacing"
               iconBgColor="bg-blue-100 dark:bg-blue-900"
-              iconColor="text-blue-600 dark:text-blue-400"
-              textColor="text-blue-700 dark:text-blue-300"
-              borderColor="border-blue-200 dark:border-blue-800 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900 border"
+              iconColor="text-brand-primary dark:text-blue-400"
+              textColor="text-brand-primary dark:text-blue-300"
+              borderColor="border-brand-primary/30 dark:border-brand-primary/40 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900 border"
             />
             <AnalyticsStatCard
               icon={<Flame className="h-8 w-8" />}
@@ -99,7 +99,7 @@ export default function Performance() {
           </div>
 
           {smartInsights.length > 0 ? (
-            <Card className="border border-slate-200 dark:border-slate-700">
+            <Card className="border border-border">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Gauge className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
@@ -116,7 +116,7 @@ export default function Performance() {
                         ? "border-emerald-200 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-950/40"
                         : insight.type === "weakness"
                         ? "border-rose-200 bg-rose-50 dark:border-rose-800 dark:bg-rose-950/40"
-                        : "border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/30"
+                        : "border-brand-primary/30 bg-brand-primary/10 dark:border-brand-primary/40 dark:bg-brand-primary/20"
                     }`}
                   >
                     <div className="flex items-start gap-2">
@@ -125,9 +125,9 @@ export default function Performance() {
                       ) : insight.type === "weakness" ? (
                         <TrendingDown className="h-4 w-4 mt-0.5 text-rose-600 dark:text-rose-400" />
                       ) : (
-                        <BarChart3 className="h-4 w-4 mt-0.5 text-blue-600 dark:text-blue-400" />
+                        <BarChart3 className="h-4 w-4 mt-0.5 text-brand-primary dark:text-blue-400" />
                       )}
-                      <p className="text-sm text-slate-700 dark:text-slate-300">{insight.text}</p>
+                      <p className="text-sm text-muted-foreground">{insight.text}</p>
                     </div>
                   </div>
                 ))}
@@ -163,18 +163,18 @@ export default function Performance() {
           ) : null}
 
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-            <Card className="border border-slate-200 dark:border-slate-700">
+            <Card className="border border-border">
               <CardHeader>
                 <CardTitle>Difficulty Breakdown</CardTitle>
                 <CardDescription>Accuracy by question difficulty level.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
                 {performanceByDifficulty.map((item) => (
-                  <div key={item.level} className="flex items-center justify-between rounded-md border border-slate-200 dark:border-slate-700 p-3">
-                    <p className="capitalize font-medium text-slate-900 dark:text-slate-100">{item.level}</p>
+                  <div key={item.level} className="flex items-center justify-between rounded-md border border-border p-3">
+                    <p className="capitalize font-medium text-foreground">{item.level}</p>
                     <div className="text-right">
-                      <p className="font-semibold text-slate-900 dark:text-slate-100">{item.accuracy}%</p>
-                      <p className="text-xs text-slate-500 dark:text-slate-400">{item.questionsAnswered} questions</p>
+                      <p className="font-semibold text-foreground">{item.accuracy}%</p>
+                      <p className="text-xs text-muted-foreground">{item.questionsAnswered} questions</p>
                     </div>
                   </div>
                 ))}
@@ -185,11 +185,11 @@ export default function Performance() {
           </div>
         </>
       ) : (
-        <Card className="border border-slate-200 dark:border-slate-700">
+        <Card className="border border-border">
           <CardContent className="py-16 text-center">
             <BarChart3 className="h-10 w-10 mx-auto text-slate-400 mb-3" />
-            <h2 className="text-xl font-semibold text-slate-900 dark:text-white">No performance data yet</h2>
-            <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
+            <h2 className="text-xl font-semibold text-foreground">No performance data yet</h2>
+            <p className="text-sm text-muted-foreground mt-1">
               Complete a few quizzes to unlock your dedicated performance analytics.
             </p>
           </CardContent>

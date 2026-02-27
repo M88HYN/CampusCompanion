@@ -780,10 +780,10 @@ export default function Quizzes() {
     let scoreColor = "from-red-500 to-red-600";
     let scoreLabel = "Keep Trying!";
     if (score >= 90) {
-      scoreColor = "from-teal-500 to-cyan-600";
+      scoreColor = "from-brand-primary to-brand-accent";
       scoreLabel = "Perfect!";
     } else if (score >= 75) {
-      scoreColor = "from-blue-500 to-cyan-600";
+      scoreColor = "from-brand-primary to-brand-accent";
       scoreLabel = "Great Job!";
     } else if (score >= 50) {
       scoreColor = "from-yellow-500 to-orange-600";
@@ -791,7 +791,7 @@ export default function Quizzes() {
     }
 
     return (
-      <div className="flex-1 overflow-auto bg-gradient-to-b from-teal-50 to-cyan-50 dark:from-teal-950 dark:to-cyan-950">
+      <div className="flex-1 overflow-auto bg-gradient-to-br from-fuchsia-50 via-rose-50 to-purple-50 dark:from-slate-950 dark:via-fuchsia-950/35 dark:to-slate-900">
         <div className="max-w-4xl mx-auto p-3 sm:p-6 space-y-4 sm:space-y-6">
           <div className={`bg-gradient-to-r ${scoreColor} rounded-2xl p-4 sm:p-8 text-white text-center shadow-lg`}>
             <div className="mb-4 flex justify-center gap-2 animate-bounce">
@@ -801,7 +801,7 @@ export default function Quizzes() {
             <p className="text-sm sm:text-lg opacity-90">You scored {correctAnswers} out of {totalQuestions} questions correctly</p>
           </div>
 
-          <Card className="border-2 border-teal-200 dark:border-teal-800 shadow-lg">
+          <Card className="border-2 border-brand-primary/30 dark:border-brand-primary/40 shadow-lg">
             <CardContent className="pt-6 sm:pt-8 text-center">
               <div className="space-y-4">
                 <div>
@@ -819,32 +819,32 @@ export default function Quizzes() {
           </Card>
 
           <div className="grid grid-cols-3 gap-3 sm:gap-4">
-            <Card className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950 dark:to-green-900 border-green-200 dark:border-green-800">
+            <Card className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950 dark:to-green-900 border-success/30 dark:border-success/40">
               <CardContent className="pt-4 sm:pt-6 text-center">
-                <CheckCircle2 className="h-6 w-6 sm:h-8 sm:w-8 text-green-600 dark:text-green-400 mx-auto mb-2" />
-                <div className="text-2xl sm:text-3xl font-bold text-green-700 dark:text-green-300">{correctAnswers}</div>
-                <p className="text-xs sm:text-sm text-green-600 dark:text-green-400 font-medium">Correct</p>
+                <CheckCircle2 className="h-6 w-6 sm:h-8 sm:w-8 text-success dark:text-green-400 mx-auto mb-2" />
+                <div className="text-2xl sm:text-3xl font-bold text-success dark:text-green-300">{correctAnswers}</div>
+                <p className="text-xs sm:text-sm text-success dark:text-green-400 font-medium">Correct</p>
               </CardContent>
             </Card>
-            <Card className="bg-gradient-to-br from-red-50 to-red-100 dark:from-red-950 dark:to-red-900 border-red-200 dark:border-red-800">
+            <Card className="bg-gradient-to-br from-red-50 to-red-100 dark:from-red-950 dark:to-red-900 border-destructive/30 dark:border-destructive/40">
               <CardContent className="pt-4 sm:pt-6 text-center">
-                <AlertCircle className="h-6 w-6 sm:h-8 sm:w-8 text-red-600 dark:text-red-400 mx-auto mb-2" />
-                <div className="text-2xl sm:text-3xl font-bold text-red-700 dark:text-red-300">{totalQuestions - correctAnswers}</div>
-                <p className="text-xs sm:text-sm text-red-600 dark:text-red-400 font-medium">Incorrect</p>
+                <AlertCircle className="h-6 w-6 sm:h-8 sm:w-8 text-destructive dark:text-red-400 mx-auto mb-2" />
+                <div className="text-2xl sm:text-3xl font-bold text-destructive dark:text-red-300">{totalQuestions - correctAnswers}</div>
+                <p className="text-xs sm:text-sm text-destructive dark:text-red-400 font-medium">Incorrect</p>
               </CardContent>
             </Card>
-            <Card className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900 border-blue-200 dark:border-blue-800">
+            <Card className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900 border-brand-primary/30 dark:border-brand-primary/40">
               <CardContent className="pt-4 sm:pt-6 text-center">
-                <Zap className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600 dark:text-blue-400 mx-auto mb-2" />
-                <div className="text-2xl sm:text-3xl font-bold text-blue-700 dark:text-blue-300">+{correctAnswers * 10}</div>
-                <p className="text-xs sm:text-sm text-blue-600 dark:text-blue-400 font-medium">XP Earned</p>
+                <Zap className="h-6 w-6 sm:h-8 sm:w-8 text-brand-primary dark:text-blue-400 mx-auto mb-2" />
+                <div className="text-2xl sm:text-3xl font-bold text-brand-primary dark:text-blue-300">+{correctAnswers * 10}</div>
+                <p className="text-xs sm:text-sm text-brand-primary dark:text-blue-400 font-medium">XP Earned</p>
               </CardContent>
             </Card>
           </div>
 
           {userAnswers.length > 0 && activeQuestions.length > 0 && (
-            <Card className="border-2 border-teal-200 dark:border-teal-800">
-              <CardHeader className="bg-gradient-to-r from-teal-100 to-cyan-100 dark:from-teal-900 dark:to-cyan-900 rounded-t-lg">
+            <Card className="border-2 border-brand-primary/30 dark:border-brand-primary/40">
+              <CardHeader className="bg-gradient-to-r from-brand-primary/10 to-brand-accent/10 dark:from-brand-primary/20 dark:to-brand-accent/20 rounded-t-lg">
                 <CardTitle className="text-2xl">Review Your Answers</CardTitle>
                 <CardDescription>Learn from your mistakes</CardDescription>
               </CardHeader>
@@ -854,12 +854,12 @@ export default function Quizzes() {
                   const isCorrect = userAnswer?.correct;
 
                   return (
-                    <div key={question.id} className={`border-2 rounded-xl p-4 space-y-3 ${isCorrect ? 'border-green-400 bg-green-50 dark:bg-green-950/30' : 'border-red-400 bg-red-50 dark:bg-red-950/30'}`}>
+                    <div key={question.id} className={`border-2 rounded-xl p-4 space-y-3 ${isCorrect ? 'border-green-400 bg-success/10 dark:bg-success/20' : 'border-red-400 bg-red-50 dark:bg-red-950/30'}`}>
                       <div className="flex items-start gap-3">
                         {isCorrect ? (
-                          <CheckCircle2 className="h-6 w-6 text-green-600 shrink-0 mt-0.5" />
+                          <CheckCircle2 className="h-6 w-6 text-success shrink-0 mt-0.5" />
                         ) : (
-                          <AlertCircle className="h-6 w-6 text-red-600 shrink-0 mt-0.5" />
+                          <AlertCircle className="h-6 w-6 text-destructive shrink-0 mt-0.5" />
                         )}
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-2">
@@ -868,8 +868,8 @@ export default function Quizzes() {
                           </div>
                           <p className="text-sm mb-3">{question.question}</p>
                           {userAnswer?.explanation && (
-                            <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-950/30 rounded-lg text-sm border-l-4 border-blue-500">
-                              <div className="font-medium mb-1 text-blue-700 dark:text-blue-400">Explanation:</div>
+                            <div className="mt-3 p-3 bg-brand-primary/10 dark:bg-brand-primary/20 rounded-lg text-sm border-l-4 border-blue-500">
+                              <div className="font-medium mb-1 text-brand-primary dark:text-blue-400">Explanation:</div>
                               <p>{userAnswer.explanation}</p>
                             </div>
                           )}
@@ -900,7 +900,7 @@ export default function Quizzes() {
             </Button>
             {selectedQuizId && (
               <Button
-                className="flex-1 bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 text-white"
+                className="flex-1 bg-gradient-to-r from-brand-primary to-brand-accent hover:from-[#1A3175] hover:to-[#0891B2] text-white"
                 onClick={() => startQuiz(selectedQuizId)}
                 data-testid="button-retake-quiz"
               >
@@ -917,9 +917,9 @@ export default function Quizzes() {
   if (view === "adaptive") {
     if (!adaptiveQuestion) {
       return (
-        <div className="flex-1 flex items-center justify-center bg-gradient-to-b from-teal-50 to-cyan-50 dark:from-teal-950 dark:to-cyan-950">
+        <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-fuchsia-50 via-rose-50 to-purple-50 dark:from-slate-950 dark:via-fuchsia-950/35 dark:to-slate-900">
           <div className="text-center">
-            <Loader className="h-12 w-12 animate-spin text-teal-600 mx-auto mb-4" />
+            <Loader className="h-12 w-12 animate-spin text-brand-primary mx-auto mb-4" />
             <p className="text-lg font-medium">Loading adaptive quiz...</p>
           </div>
         </div>
@@ -930,8 +930,8 @@ export default function Quizzes() {
     const progress = (adaptiveQuestionNumber / 10) * 100;
 
     return (
-      <div className="flex-1 flex flex-col bg-gradient-to-b from-teal-50 to-cyan-50 dark:from-teal-950 dark:to-cyan-950">
-        <div className="border-b-2 border-teal-200 dark:border-teal-800 bg-white dark:bg-slate-900 shadow-sm sticky top-0 z-10">
+      <div className="flex-1 flex flex-col bg-gradient-to-br from-fuchsia-50 via-rose-50 to-purple-50 dark:from-slate-950 dark:via-fuchsia-950/35 dark:to-slate-900">
+        <div className="border-b-2 border-brand-primary/30 dark:border-brand-primary/40 bg-card shadow-sm sticky top-0 z-10">
           <div className="max-w-5xl mx-auto px-3 sm:px-6 py-3 sm:py-4 flex items-center justify-between gap-2 sm:gap-4">
             <div className="flex items-center gap-2 sm:gap-4">
               <Badge className="bg-gradient-to-r from-orange-500 to-amber-600 text-white gap-1 border-0 px-2 sm:px-3 py-1 text-xs">
@@ -941,7 +941,7 @@ export default function Quizzes() {
               </Badge>
               <div className="text-center">
                 <p className="text-[10px] sm:text-xs text-muted-foreground font-medium">Question</p>
-                <p className="text-sm sm:text-lg font-bold text-teal-700 dark:text-teal-300">
+                <p className="text-sm sm:text-lg font-bold text-brand-primary dark:text-brand-accent">
                   {adaptiveQuestionNumber}/10
                 </p>
               </div>
@@ -971,7 +971,7 @@ export default function Quizzes() {
 
         <div className="flex-1 flex items-center justify-center p-3 sm:p-8 overflow-auto">
           <div className="w-full max-w-4xl">
-            <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl p-4 sm:p-8 mb-6 border-2 border-teal-200 dark:border-teal-800">
+            <div className="bg-card rounded-2xl shadow-xl p-4 sm:p-8 mb-6 border-2 border-brand-primary/30 dark:border-brand-primary/40">
               <div className="flex items-center justify-between mb-6">
                 <Badge variant="outline" className="text-orange-700 dark:text-orange-300 border-orange-300 dark:border-orange-700">
                   {question.type.toUpperCase()}
@@ -990,7 +990,7 @@ export default function Quizzes() {
                 </div>
               </div>
 
-              <h2 className="text-xl sm:text-3xl font-bold text-slate-900 dark:text-white leading-relaxed mb-6 sm:mb-8">
+              <h2 className="text-xl sm:text-3xl font-bold text-foreground leading-relaxed mb-6 sm:mb-8">
                 {question.question}
               </h2>
 
@@ -1007,29 +1007,29 @@ export default function Quizzes() {
                         disabled={showFeedback || isSubmitting}
                         className={`w-full p-3 sm:p-5 rounded-xl font-semibold text-sm sm:text-lg transition-all duration-300 cursor-pointer text-left border-2 flex items-center gap-3 ${
                           showFeedback && isCorrectOption
-                            ? 'border-green-500 bg-green-100 dark:bg-green-950 text-green-900 dark:text-green-100 scale-105 shadow-lg'
+                            ? 'border-green-500 bg-green-100 dark:bg-success/20 text-green-900 dark:text-green-100 scale-105 shadow-lg'
                             : showFeedback && isSelected && !isCorrectOption
                             ? 'border-red-500 bg-red-100 dark:bg-red-950 text-red-900 dark:text-red-100 scale-95 shadow-lg'
                             : isSelected && !showFeedback
                             ? 'border-orange-500 bg-orange-100 dark:bg-orange-950 text-orange-900 dark:text-orange-100 shadow-lg'
-                            : 'border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 hover:border-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900'
+                            : 'border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-foreground hover:border-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900'
                         }`}
                         data-testid={`adaptive-option-${index}`}
                       >
                         <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold flex-shrink-0 ${
                           showFeedback && isCorrectOption
-                            ? 'bg-green-500 text-white'
+                            ? 'bg-success/100 text-white'
                             : showFeedback && isSelected && !isCorrectOption
                             ? 'bg-red-500 text-white'
                             : isSelected && !showFeedback
                             ? 'bg-orange-500 text-white'
-                            : 'bg-slate-300 dark:bg-slate-600 text-slate-700 dark:text-slate-300'
+                            : 'bg-slate-300 dark:bg-slate-600 text-muted-foreground'
                         }`}>
                           {String.fromCharCode(65 + index)}
                         </div>
                         <span className="flex-1">{option.text}</span>
-                        {showFeedback && isCorrectOption && <CheckCircle2 className="h-6 w-6 text-green-600" />}
-                        {showFeedback && isSelected && !isCorrectOption && <AlertCircle className="h-6 w-6 text-red-600" />}
+                        {showFeedback && isCorrectOption && <CheckCircle2 className="h-6 w-6 text-success" />}
+                        {showFeedback && isSelected && !isCorrectOption && <AlertCircle className="h-6 w-6 text-destructive" />}
                       </button>
                     );
                   })}
@@ -1103,9 +1103,9 @@ export default function Quizzes() {
   if (view === "taking") {
     if (isLoadingQuiz || activeQuestions.length === 0) {
       return (
-        <div className="flex-1 flex items-center justify-center bg-gradient-to-b from-teal-50 to-cyan-50 dark:from-teal-950 dark:to-cyan-950">
+        <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-fuchsia-50 via-rose-50 to-purple-50 dark:from-slate-950 dark:via-fuchsia-950/35 dark:to-slate-900">
           <div className="text-center">
-            <Loader className="h-12 w-12 animate-spin text-teal-600 mx-auto mb-4" />
+            <Loader className="h-12 w-12 animate-spin text-brand-primary mx-auto mb-4" />
             <p className="text-lg font-medium">Loading quiz...</p>
           </div>
         </div>
@@ -1116,18 +1116,18 @@ export default function Quizzes() {
     const progress = ((currentQuestion + 1) / activeQuestions.length) * 100;
 
     return (
-      <div className="flex-1 flex flex-col bg-gradient-to-b from-teal-50 to-cyan-50 dark:from-teal-950 dark:to-cyan-950">
-        <div className="border-b-2 border-teal-200 dark:border-teal-800 bg-white dark:bg-slate-900 shadow-sm sticky top-0 z-10">
+      <div className="flex-1 flex flex-col bg-gradient-to-br from-fuchsia-50 via-rose-50 to-purple-50 dark:from-slate-950 dark:via-fuchsia-950/35 dark:to-slate-900">
+        <div className="border-b-2 border-brand-primary/30 dark:border-brand-primary/40 bg-card shadow-sm sticky top-0 z-10">
           <div className="max-w-5xl mx-auto px-3 sm:px-6 py-3 sm:py-4 flex items-center justify-between gap-2 sm:gap-4">
             <div className="flex items-center gap-2 sm:gap-4">
-              <Badge className="bg-gradient-to-r from-teal-500 to-cyan-600 text-white gap-1 border-0 px-2 sm:px-3 py-1 text-xs">
+              <Badge className="bg-gradient-to-r from-brand-primary to-brand-accent text-white gap-1 border-0 px-2 sm:px-3 py-1 text-xs">
                 <Target className="h-3 w-3" />
                 <span className="hidden sm:inline">Practice Mode</span>
                 <span className="sm:hidden">Practice</span>
               </Badge>
               <div className="text-center">
                 <p className="text-[10px] sm:text-xs text-muted-foreground font-medium">Question</p>
-                <p className="text-sm sm:text-lg font-bold text-teal-700 dark:text-teal-300">
+                <p className="text-sm sm:text-lg font-bold text-brand-primary dark:text-brand-accent">
                   {currentQuestion + 1}/{activeQuestions.length}
                 </p>
               </div>
@@ -1139,8 +1139,8 @@ export default function Quizzes() {
 
             <div className={`text-center px-2 sm:px-4 py-1 sm:py-2 rounded-lg font-mono font-bold text-sm sm:text-lg ${
               timeLeft < 60 
-                ? 'bg-red-100 dark:bg-red-950 text-red-700 dark:text-red-300' 
-                : 'bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300'
+                ? 'bg-red-100 dark:bg-red-950 text-destructive dark:text-red-300' 
+                : 'bg-blue-100 dark:bg-brand-primary/20 text-brand-primary dark:text-blue-300'
             }`}>
               <Clock className="h-4 w-4 inline mr-1" />
               {formatTime(timeLeft)}
@@ -1150,9 +1150,9 @@ export default function Quizzes() {
 
         <div className="flex-1 flex items-center justify-center p-3 sm:p-8 overflow-auto">
           <div className="w-full max-w-4xl">
-            <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl p-4 sm:p-8 mb-6 border-2 border-teal-200 dark:border-teal-800">
+            <div className="bg-card rounded-2xl shadow-xl p-4 sm:p-8 mb-6 border-2 border-brand-primary/30 dark:border-brand-primary/40">
               <div className="flex items-center justify-between mb-6">
-                <Badge variant="outline" className="text-teal-700 dark:text-teal-300 border-teal-300 dark:border-teal-700">
+                <Badge variant="outline" className="text-brand-primary dark:text-brand-accent border-brand-primary/40 dark:border-brand-primary/50">
                   {question.type.toUpperCase()}
                 </Badge>
                 <div className="flex items-center gap-2">
@@ -1169,7 +1169,7 @@ export default function Quizzes() {
                 </div>
               </div>
 
-              <h2 className="text-xl sm:text-3xl font-bold text-slate-900 dark:text-white leading-relaxed mb-6 sm:mb-8">
+              <h2 className="text-xl sm:text-3xl font-bold text-foreground leading-relaxed mb-6 sm:mb-8">
                 {question.question}
               </h2>
 
@@ -1186,29 +1186,29 @@ export default function Quizzes() {
                         disabled={showFeedback || isSubmitting}
                         className={`w-full p-3 sm:p-5 rounded-xl font-semibold text-sm sm:text-lg transition-all duration-300 cursor-pointer text-left border-2 flex items-center gap-3 ${
                           showFeedback && isCorrectOption
-                            ? 'border-green-500 bg-green-100 dark:bg-green-950 text-green-900 dark:text-green-100 scale-105 shadow-lg'
+                            ? 'border-green-500 bg-green-100 dark:bg-success/20 text-green-900 dark:text-green-100 scale-105 shadow-lg'
                             : showFeedback && isSelected && !isCorrectOption
                             ? 'border-red-500 bg-red-100 dark:bg-red-950 text-red-900 dark:text-red-100 scale-95 shadow-lg'
                             : isSelected && !showFeedback
-                            ? 'border-teal-500 bg-teal-100 dark:bg-teal-950 text-teal-900 dark:text-teal-100 shadow-lg'
-                            : 'border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 hover:border-teal-400 hover:bg-teal-50 dark:hover:bg-teal-900'
+                            ? 'border-brand-primary bg-brand-primary/10 dark:bg-brand-primary/20 text-brand-primary dark:text-brand-accent shadow-lg'
+                            : 'border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-foreground hover:border-brand-accent hover:bg-brand-accent/10 dark:hover:bg-brand-accent/20'
                         }`}
                         data-testid={`option-${index}`}
                       >
                         <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold flex-shrink-0 ${
                           showFeedback && isCorrectOption
-                            ? 'bg-green-500 text-white'
+                            ? 'bg-success/100 text-white'
                             : showFeedback && isSelected && !isCorrectOption
                             ? 'bg-red-500 text-white'
                             : isSelected && !showFeedback
-                            ? 'bg-teal-500 text-white'
-                            : 'bg-slate-300 dark:bg-slate-600 text-slate-700 dark:text-slate-300'
+                            ? 'bg-brand-primary text-white'
+                            : 'bg-slate-300 dark:bg-slate-600 text-muted-foreground'
                         }`}>
                           {String.fromCharCode(65 + index)}
                         </div>
                         <span className="flex-1">{option.text}</span>
-                        {showFeedback && isCorrectOption && <CheckCircle2 className="h-6 w-6 text-green-600" />}
-                        {showFeedback && isSelected && !isCorrectOption && <AlertCircle className="h-6 w-6 text-red-600" />}
+                        {showFeedback && isCorrectOption && <CheckCircle2 className="h-6 w-6 text-success" />}
+                        {showFeedback && isSelected && !isCorrectOption && <AlertCircle className="h-6 w-6 text-destructive" />}
                       </button>
                     );
                   })}
@@ -1272,7 +1272,7 @@ export default function Quizzes() {
                     void handleAnswerSubmit();
                   }}
                   disabled={isSubmitting || (question.type === "mcq" ? !selectedAnswer : !textAnswer.trim())}
-                  className="bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 text-white px-8"
+                  className="bg-gradient-to-r from-brand-primary to-brand-accent hover:from-[#1A3175] hover:to-[#0891B2] text-white px-8"
                   data-testid="button-submit-answer"
                 >
                   {isSubmitting ? (
@@ -1285,7 +1285,7 @@ export default function Quizzes() {
                 <Button
                   size="lg"
                   onClick={handleNextQuestion}
-                  className="bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 text-white px-8"
+                  className="bg-gradient-to-r from-brand-primary to-brand-accent hover:from-[#1A3175] hover:to-[#0891B2] text-white px-8"
                   data-testid="button-next"
                 >
                   {currentQuestion === activeQuestions.length - 1 ? "Finish Quiz" : "Next Question"}
@@ -1301,9 +1301,9 @@ export default function Quizzes() {
 
   if (view === "create") {
     return (
-      <div className="flex-1 overflow-auto bg-gradient-to-b from-teal-50 to-cyan-50 dark:from-teal-950 dark:to-cyan-950">
+      <div className="flex-1 overflow-auto bg-gradient-to-br from-fuchsia-50 via-rose-50 to-purple-50 dark:from-slate-950 dark:via-fuchsia-950/35 dark:to-slate-900">
         <div className="max-w-4xl mx-auto p-6 space-y-6">
-          <div className="bg-gradient-to-r from-teal-500 via-cyan-500 to-cyan-600 rounded-2xl p-8 text-white shadow-xl">
+          <div className="bg-gradient-to-r from-brand-primary via-brand-primary to-brand-accent rounded-2xl p-8 text-white shadow-xl">
             <div className="flex items-center justify-between gap-4">
               <div>
                 <h1 className="text-4xl font-bold mb-2">Create New Quiz</h1>
@@ -1323,8 +1323,8 @@ export default function Quizzes() {
 
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              <Card className="border-2 border-teal-200 dark:border-teal-800">
-                <CardHeader className="bg-gradient-to-r from-teal-100 to-cyan-100 dark:from-teal-900 dark:to-cyan-900">
+              <Card className="border-2 border-brand-primary/30 dark:border-brand-primary/40">
+                <CardHeader className="bg-gradient-to-r from-brand-primary/10 to-brand-accent/10 dark:from-brand-primary/20 dark:to-brand-accent/20">
                   <CardTitle>Quiz Details</CardTitle>
                   <CardDescription>Set up the basic information for your quiz</CardDescription>
                 </CardHeader>
@@ -1448,8 +1448,8 @@ export default function Quizzes() {
                 </CardContent>
               </Card>
 
-              <Card className="border-2 border-teal-200 dark:border-teal-800">
-                <CardHeader className="bg-gradient-to-r from-teal-100 to-cyan-100 dark:from-teal-900 dark:to-cyan-900">
+              <Card className="border-2 border-brand-primary/30 dark:border-brand-primary/40">
+                <CardHeader className="bg-gradient-to-r from-brand-primary/10 to-brand-accent/10 dark:from-brand-primary/20 dark:to-brand-accent/20">
                   <div className="flex items-center justify-between gap-4">
                     <div>
                       <CardTitle>Questions</CardTitle>
@@ -1464,7 +1464,7 @@ export default function Quizzes() {
                     const correctOptionIndex = form.watch(`questions.${qIndex}.correctOptionIndex`);
                     
                     return (
-                      <div key={field.id} className="border-2 border-slate-200 dark:border-slate-700 rounded-xl p-6 space-y-4">
+                      <div key={field.id} className="border-2 border-border rounded-xl p-6 space-y-4">
                         <div className="flex items-center justify-between gap-4">
                           <h3 className="font-bold text-lg">Question {qIndex + 1}</h3>
                           <div className="flex items-center gap-2">
@@ -1490,7 +1490,7 @@ export default function Quizzes() {
                                 variant="outline"
                                 size="icon"
                                 onClick={() => removeQuestionField(qIndex)}
-                                className="text-red-600 hover:bg-red-50 dark:hover:bg-red-950"
+                                className="text-destructive hover:bg-destructive/10 dark:hover:bg-destructive/20"
                                 data-testid={`button-remove-question-${qIndex}`}
                               >
                                 <Trash2 className="h-4 w-4" />
@@ -1520,7 +1520,7 @@ export default function Quizzes() {
                               <div key={oIndex} className="flex items-center gap-3">
                                 <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold shrink-0 ${
                                   correctOptionIndex === oIndex
-                                    ? 'bg-green-500 text-white'
+                                    ? 'bg-success/100 text-white'
                                     : 'bg-slate-200 dark:bg-slate-700'
                                 }`}>
                                   {String.fromCharCode(65 + oIndex)}
@@ -1543,7 +1543,7 @@ export default function Quizzes() {
                                   variant={correctOptionIndex === oIndex ? "default" : "outline"}
                                   size="sm"
                                   onClick={() => form.setValue(`questions.${qIndex}.correctOptionIndex`, oIndex)}
-                                  className={correctOptionIndex === oIndex ? "bg-green-500 hover:bg-green-600" : ""}
+                                  className={correctOptionIndex === oIndex ? "bg-success/100 hover:bg-green-600" : ""}
                                   data-testid={`button-correct-${qIndex}-${oIndex}`}
                                 >
                                   {correctOptionIndex === oIndex ? "Correct" : "Set Correct"}
@@ -1624,7 +1624,7 @@ export default function Quizzes() {
                     type="button"
                     variant="outline"
                     onClick={addQuestionField}
-                    className="w-full border-2 border-dashed border-teal-300 dark:border-teal-700 text-teal-700 dark:text-teal-300 hover:bg-teal-50 dark:hover:bg-teal-950"
+                    className="w-full border-2 border-dashed border-brand-primary/40 dark:border-brand-primary/50 text-brand-primary dark:text-brand-accent hover:bg-brand-primary/10 dark:hover:bg-brand-primary/20"
                     data-testid="button-add-question"
                   >
                     <Plus className="h-4 w-4 mr-2" />
@@ -1645,7 +1645,7 @@ export default function Quizzes() {
                 </Button>
                 <Button
                   type="submit"
-                  className="flex-1 bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 text-white"
+                  className="flex-1 bg-gradient-to-r from-brand-primary to-brand-accent hover:from-[#1A3175] hover:to-[#0891B2] text-white"
                   disabled={createQuizMutation.isPending}
                   data-testid="button-create-quiz"
                 >
@@ -1670,9 +1670,9 @@ export default function Quizzes() {
   }
 
   return (
-    <div className="flex-1 overflow-auto bg-gradient-to-b from-teal-50 to-cyan-50 dark:from-teal-950 dark:to-cyan-950">
+    <div className="flex-1 overflow-auto bg-gradient-to-br from-fuchsia-50 via-rose-50 to-purple-50 dark:from-slate-950 dark:via-fuchsia-950/35 dark:to-slate-900">
       <div className="max-w-7xl mx-auto p-3 sm:p-6 space-y-6 sm:space-y-8">
-        <div className="bg-gradient-to-r from-teal-500 via-cyan-500 to-cyan-600 rounded-2xl p-4 sm:p-8 text-white shadow-xl">
+        <div className="bg-gradient-to-r from-brand-primary via-brand-primary to-brand-accent rounded-2xl p-4 sm:p-8 text-white shadow-xl">
           <div className="flex items-start justify-between gap-4 flex-wrap">
             <div>
               <h1 className="text-2xl sm:text-4xl md:text-5xl font-bold mb-2">Quizzes</h1>
@@ -1716,13 +1716,13 @@ export default function Quizzes() {
                     placeholder="Search quizzes by title or subject..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full border-2 border-teal-200 dark:border-teal-800 focus:border-teal-500 dark:focus:border-teal-400"
+                    className="w-full border-2 border-brand-primary/30 dark:border-brand-primary/40 focus:border-brand-primary dark:focus:border-brand-accent"
                   />
                 </div>
                 
                 {/* Subject Filter */}
                 <Select value={selectedSubject} onValueChange={setSelectedSubject}>
-                  <SelectTrigger className="w-full sm:w-48 border-2 border-teal-200 dark:border-teal-800">
+                  <SelectTrigger className="w-full sm:w-48 border-2 border-brand-primary/30 dark:border-brand-primary/40">
                     <SelectValue placeholder="All Subjects" />
                   </SelectTrigger>
                   <SelectContent>
@@ -1742,7 +1742,7 @@ export default function Quizzes() {
                   {selectedSubject !== "All Subjects" && (
                     <Badge 
                       variant="secondary" 
-                      className="bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-200 cursor-pointer hover:bg-teal-200 dark:hover:bg-teal-800"
+                      className="bg-brand-primary/10 text-brand-primary dark:bg-brand-primary/20 dark:text-brand-accent cursor-pointer hover:bg-brand-primary/20 dark:hover:bg-brand-primary/30"
                       onClick={() => setSelectedSubject("All Subjects")}
                     >
                       {selectedSubject}
@@ -1752,7 +1752,7 @@ export default function Quizzes() {
                   {searchQuery && (
                     <Badge 
                       variant="secondary" 
-                      className="bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-200 cursor-pointer hover:bg-teal-200 dark:hover:bg-teal-800"
+                      className="bg-brand-primary/10 text-brand-primary dark:bg-brand-primary/20 dark:text-brand-accent cursor-pointer hover:bg-brand-primary/20 dark:hover:bg-brand-primary/30"
                       onClick={() => setSearchQuery("")}
                     >
                       Search: "{searchQuery}"
@@ -1776,19 +1776,19 @@ export default function Quizzes() {
             
             {isLoadingQuizzes ? (
               <div className="flex items-center justify-center py-12">
-                <Loader className="h-8 w-8 animate-spin text-teal-600" />
+                <Loader className="h-8 w-8 animate-spin text-brand-primary" />
               </div>
             ) : quizzes.length === 0 && allQuizzes.length === 0 ? (
-              <Card className="border-2 border-dashed border-teal-300 dark:border-teal-700">
+              <Card className="border-2 border-dashed border-brand-primary/40 dark:border-brand-primary/50">
                 <CardContent className="py-12 text-center">
-                  <div className="mx-auto w-16 h-16 rounded-full bg-teal-100 dark:bg-teal-900 flex items-center justify-center mb-4">
-                    <BookMarked className="h-8 w-8 text-teal-600" />
+                  <div className="mx-auto w-16 h-16 rounded-full bg-brand-primary/10 dark:bg-brand-primary/20 flex items-center justify-center mb-4">
+                    <BookMarked className="h-8 w-8 text-brand-primary" />
                   </div>
                   <h3 className="text-xl font-bold mb-2">No Quizzes Yet</h3>
                   <p className="text-muted-foreground mb-4">Create your first quiz to get started</p>
                   <Button
                     onClick={() => setView("create")}
-                    className="bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 text-white"
+                    className="bg-gradient-to-r from-brand-primary to-brand-accent hover:from-[#1A3175] hover:to-[#0891B2] text-white"
                     data-testid="button-create-first-quiz"
                   >
                     <Plus className="h-4 w-4 mr-2" />
@@ -1797,10 +1797,10 @@ export default function Quizzes() {
                 </CardContent>
               </Card>
             ) : quizzes.length === 0 ? (
-              <Card className="border-2 border-teal-200 dark:border-teal-800">
+              <Card className="border-2 border-brand-primary/30 dark:border-brand-primary/40">
                 <CardContent className="py-12 text-center">
-                  <div className="mx-auto w-16 h-16 rounded-full bg-teal-100 dark:bg-teal-900 flex items-center justify-center mb-4">
-                    <AlertCircle className="h-8 w-8 text-teal-600" />
+                  <div className="mx-auto w-16 h-16 rounded-full bg-brand-primary/10 dark:bg-brand-primary/20 flex items-center justify-center mb-4">
+                    <AlertCircle className="h-8 w-8 text-brand-primary" />
                   </div>
                   <h3 className="text-xl font-bold mb-2">No Quizzes Match Your Filter</h3>
                   <p className="text-muted-foreground mb-4">Try adjusting your filters or search query</p>
@@ -1810,7 +1810,7 @@ export default function Quizzes() {
                       setSelectedSubject("All Subjects");
                       setSearchQuery("");
                     }}
-                    className="border-teal-300 dark:border-teal-700"
+                    className="border-brand-primary/40 dark:border-brand-primary/50"
                   >
                     Clear Filters
                   </Button>
@@ -1826,16 +1826,16 @@ export default function Quizzes() {
                   .map((quiz) => (
                   <Card
                     key={quiz.id}
-                    className="border-2 border-teal-200 dark:border-teal-800 hover:shadow-lg transition-shadow"
+                    className="border-2 border-brand-primary/30 dark:border-brand-primary/40 hover:shadow-lg transition-shadow"
                     data-testid={`card-quiz-${quiz.id}`}
                   >
-                    <CardHeader className="bg-gradient-to-r from-teal-100 to-cyan-100 dark:from-teal-900 dark:to-cyan-900 rounded-t-lg pb-3">
+                    <CardHeader className="bg-gradient-to-r from-brand-primary/10 to-brand-accent/10 dark:from-brand-primary/20 dark:to-brand-accent/20 rounded-t-lg pb-3">
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0">
                           <CardTitle className="text-lg truncate">{quiz.title}</CardTitle>
                           <CardDescription className="text-xs">{quiz.subject || "General"}</CardDescription>
                         </div>
-                        <Badge variant="outline" className="text-teal-700 dark:text-teal-300 border-teal-300 dark:border-teal-700 shrink-0">
+                        <Badge variant="outline" className="text-brand-primary dark:text-brand-accent border-brand-primary/40 dark:border-brand-primary/50 shrink-0">
                           {quiz.mode}
                         </Badge>
                       </div>
@@ -1843,15 +1843,15 @@ export default function Quizzes() {
                     <CardContent className="pt-4 space-y-4">
                       <div className="grid grid-cols-3 gap-2 text-center text-sm">
                         <div>
-                          <div className="text-2xl font-bold text-teal-700 dark:text-teal-300">{quiz.questionCount}</div>
+                          <div className="text-2xl font-bold text-brand-primary dark:text-brand-accent">{quiz.questionCount}</div>
                           <div className="text-muted-foreground text-xs">Questions</div>
                         </div>
                         <div>
-                          <div className="text-2xl font-bold text-blue-700 dark:text-blue-300">{quiz.attemptCount}</div>
+                          <div className="text-2xl font-bold text-brand-primary dark:text-blue-300">{quiz.attemptCount}</div>
                           <div className="text-muted-foreground text-xs">Attempts</div>
                         </div>
                         <div>
-                          <div className="text-2xl font-bold text-green-700 dark:text-green-300">
+                          <div className="text-2xl font-bold text-success dark:text-green-300">
                             {quiz.bestScore !== null ? `${quiz.bestScore}%` : "-"}
                           </div>
                           <div className="text-muted-foreground text-xs">Best</div>
@@ -1861,7 +1861,7 @@ export default function Quizzes() {
                       <div className="flex gap-2">
                         <Button
                           onClick={() => startQuiz(quiz.id)}
-                          className="flex-1 bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 text-white"
+                          className="flex-1 bg-gradient-to-r from-brand-primary to-brand-accent hover:from-[#1A3175] hover:to-[#0891B2] text-white"
                           data-testid={`button-start-quiz-${quiz.id}`}
                         >
                           <Play className="h-4 w-4 mr-1" />
@@ -1879,7 +1879,7 @@ export default function Quizzes() {
                           onClick={() => deleteQuizMutation.mutate(quiz.id)}
                           variant="outline"
                           size="icon"
-                          className="text-red-600 hover:bg-red-50 dark:hover:bg-red-950"
+                          className="text-destructive hover:bg-destructive/10 dark:hover:bg-destructive/20"
                           data-testid={`button-delete-quiz-${quiz.id}`}
                         >
                           <Trash2 className="h-4 w-4" />
@@ -1895,7 +1895,7 @@ export default function Quizzes() {
           <TabsContent value="analytics">
             {analyticsFetching ? (
               <div className="flex items-center justify-center py-12">
-                <Loader className="h-8 w-8 animate-spin text-teal-600" />
+                <Loader className="h-8 w-8 animate-spin text-brand-primary" />
               </div>
             ) : summary.totalQuizzesTaken > 0 ? (
               <div className="space-y-6">
@@ -1906,10 +1906,10 @@ export default function Quizzes() {
                     title="Quizzes Taken"
                     value={summary.totalQuizzesTaken}
                     subtitle={`${summary.totalQuestionsAnswered} questions answered`}
-                    iconBgColor="bg-teal-100 dark:bg-teal-900"
-                    iconColor="text-teal-600 dark:text-teal-400"
-                    textColor="text-teal-700 dark:text-teal-300"
-                    borderColor="border-teal-200 dark:border-teal-800 bg-gradient-to-br from-teal-50 to-teal-100 dark:from-teal-950 dark:to-teal-900 border"
+                    iconBgColor="bg-brand-primary/10 dark:bg-brand-primary/20"
+                    iconColor="text-brand-primary dark:text-brand-accent"
+                    textColor="text-brand-primary dark:text-brand-accent"
+                    borderColor="border-brand-primary/30 dark:border-brand-primary/40 bg-gradient-to-br from-brand-primary/10 to-brand-primary/20 dark:from-brand-primary/20 dark:to-brand-primary/30 border"
                   />
                   <AnalyticsStatCard
                     icon={<Target className="h-8 w-8" />}
@@ -1917,9 +1917,9 @@ export default function Quizzes() {
                     value={`${summary.overallAccuracy}%`}
                     subtitle={`Based on ${summary.totalQuestionsAnswered} questions`}
                     iconBgColor="bg-green-100 dark:bg-green-900"
-                    iconColor="text-green-600 dark:text-green-400"
-                    textColor="text-green-700 dark:text-green-300"
-                    borderColor="border-green-200 dark:border-green-800 bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950 dark:to-green-900 border"
+                    iconColor="text-success dark:text-green-400"
+                    textColor="text-success dark:text-green-300"
+                    borderColor="border-success/30 dark:border-success/40 bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950 dark:to-green-900 border"
                   />
                   <AnalyticsStatCard
                     icon={<Clock className="h-8 w-8" />}
@@ -1927,9 +1927,9 @@ export default function Quizzes() {
                     value={`${summary.avgTimePerQuestion}s`}
                     subtitle="Across all attempts"
                     iconBgColor="bg-blue-100 dark:bg-blue-900"
-                    iconColor="text-blue-600 dark:text-blue-400"
-                    textColor="text-blue-700 dark:text-blue-300"
-                    borderColor="border-blue-200 dark:border-blue-800 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900 border"
+                    iconColor="text-brand-primary dark:text-blue-400"
+                    textColor="text-brand-primary dark:text-blue-300"
+                    borderColor="border-brand-primary/30 dark:border-brand-primary/40 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900 border"
                   />
                   <AnalyticsStatCard
                     icon={<CheckCircle2 className="h-8 w-8" />}
@@ -1973,20 +1973,20 @@ export default function Quizzes() {
                   </CardHeader>
                   <CardContent>
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-                      <div className="flex flex-col items-center p-3 rounded-lg bg-blue-50 dark:bg-blue-950/50 border border-blue-200 dark:border-blue-800">
-                        <FileText className="h-6 w-6 text-blue-600 dark:text-blue-400 mb-1" />
-                        <span className="text-2xl font-bold text-blue-700 dark:text-blue-300">{studyOverview.noteCount}</span>
-                        <span className="text-xs text-blue-600/80 dark:text-blue-400/80">Notes</span>
+                      <div className="flex flex-col items-center p-3 rounded-lg bg-brand-primary/10 dark:bg-brand-primary/20 border border-brand-primary/30 dark:border-brand-primary/40">
+                        <FileText className="h-6 w-6 text-brand-primary dark:text-blue-400 mb-1" />
+                        <span className="text-2xl font-bold text-brand-primary dark:text-blue-300">{studyOverview.noteCount}</span>
+                        <span className="text-xs text-brand-primary/80 dark:text-blue-400/80">Notes</span>
                       </div>
                       <div className="flex flex-col items-center p-3 rounded-lg bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800">
                         <Layers className="h-6 w-6 text-emerald-600 dark:text-emerald-400 mb-1" />
                         <span className="text-2xl font-bold text-emerald-700 dark:text-emerald-300">{studyOverview.deckCount}</span>
                         <span className="text-xs text-emerald-600/80 dark:text-emerald-400/80">Decks</span>
                       </div>
-                      <div className="flex flex-col items-center p-3 rounded-lg bg-teal-50 dark:bg-teal-950/50 border border-teal-200 dark:border-teal-800">
-                        <BookMarked className="h-6 w-6 text-teal-600 dark:text-teal-400 mb-1" />
-                        <span className="text-2xl font-bold text-teal-700 dark:text-teal-300">{studyOverview.flashcardCount}</span>
-                        <span className="text-xs text-teal-600/80 dark:text-teal-400/80">Flashcards</span>
+                      <div className="flex flex-col items-center p-3 rounded-lg bg-brand-primary/10 dark:bg-brand-primary/20 border border-brand-primary/30 dark:border-brand-primary/40">
+                        <BookMarked className="h-6 w-6 text-brand-primary dark:text-brand-accent mb-1" />
+                        <span className="text-2xl font-bold text-brand-primary dark:text-brand-accent">{studyOverview.flashcardCount}</span>
+                        <span className="text-xs text-brand-primary/80 dark:text-brand-accent/80">Flashcards</span>
                       </div>
                       <div className="flex flex-col items-center p-3 rounded-lg bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800">
                         <Star className="h-6 w-6 text-amber-600 dark:text-amber-400 mb-1" />
@@ -2011,9 +2011,9 @@ export default function Quizzes() {
                               : 0}%
                           </span>
                         </div>
-                        <div className="flex h-3 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700">
+                        <div className="flex h-3 rounded-full overflow-hidden bg-muted">
                           <div
-                            className="bg-green-500 dark:bg-green-400 transition-all"
+                            className="bg-success/100 dark:bg-green-400 transition-all"
                             style={{ width: `${studyOverview.correctAnswers + studyOverview.incorrectAnswers > 0 ? (studyOverview.correctAnswers / (studyOverview.correctAnswers + studyOverview.incorrectAnswers)) * 100 : 0}%` }}
                           />
                           <div
@@ -2022,8 +2022,8 @@ export default function Quizzes() {
                           />
                         </div>
                         <div className="flex justify-between text-xs mt-1">
-                          <span className="text-green-600 dark:text-green-400">{studyOverview.correctAnswers} correct</span>
-                          <span className="text-red-500 dark:text-red-400">{studyOverview.incorrectAnswers} incorrect</span>
+                          <span className="text-success dark:text-green-400">{studyOverview.correctAnswers} correct</span>
+                          <span className="text-destructive dark:text-red-400">{studyOverview.incorrectAnswers} incorrect</span>
                         </div>
                       </div>
                     )}
@@ -2035,7 +2035,7 @@ export default function Quizzes() {
                         <div>
                           <span className="text-lg font-bold text-orange-600 dark:text-orange-400">{studyOverview.currentStreak}-day streak</span>
                           {studyOverview.longestStreak > studyOverview.currentStreak && (
-                            <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">(Best: {studyOverview.longestStreak} days)</span>
+                            <span className="text-xs text-muted-foreground ml-2">(Best: {studyOverview.longestStreak} days)</span>
                           )}
                         </div>
                       </div>
@@ -2064,14 +2064,14 @@ export default function Quizzes() {
                               ? "bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-800"
                               : insight.type === "tip"
                               ? "bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800"
-                              : "bg-blue-50 dark:bg-blue-950/50 border border-blue-200 dark:border-blue-800"
+                              : "bg-brand-primary/10 dark:bg-brand-primary/20 border border-brand-primary/30 dark:border-brand-primary/40"
                           }`}
                         >
                           <div className={`flex-shrink-0 mt-0.5 ${
                             insight.type === "strength" ? "text-emerald-600 dark:text-emerald-400"
                               : insight.type === "weakness" ? "text-rose-600 dark:text-rose-400"
                               : insight.type === "tip" ? "text-amber-600 dark:text-amber-400"
-                              : "text-blue-600 dark:text-blue-400"
+                              : "text-brand-primary dark:text-blue-400"
                           }`}>
                             {insight.type === "strength" ? <TrendingUp className="h-4 w-4" />
                               : insight.type === "weakness" ? <TrendingDown className="h-4 w-4" />
@@ -2083,11 +2083,11 @@ export default function Quizzes() {
                               insight.type === "strength" ? "text-emerald-700 dark:text-emerald-300"
                                 : insight.type === "weakness" ? "text-rose-700 dark:text-rose-300"
                                 : insight.type === "tip" ? "text-amber-700 dark:text-amber-300"
-                                : "text-blue-700 dark:text-blue-300"
+                                : "text-brand-primary dark:text-blue-300"
                             }`}>
                               {insight.type === "strength" ? "Doing Well" : insight.type === "weakness" ? "Needs Work" : insight.type === "tip" ? "Tip" : "Info"}
                             </span>
-                            <p className="text-sm text-slate-700 dark:text-slate-300 mt-0.5">{insight.text}</p>
+                            <p className="text-sm text-muted-foreground mt-0.5">{insight.text}</p>
                           </div>
                         </div>
                       ))}
@@ -2097,10 +2097,10 @@ export default function Quizzes() {
 
                 {/* Per-Quiz Performance Breakdown */}
                 {quizPerformance.length > 0 && (
-                  <Card className="border border-slate-200 dark:border-slate-700">
+                  <Card className="border border-border">
                     <CardHeader>
                       <CardTitle className="flex items-center gap-2">
-                        <BarChart3 className="h-5 w-5 text-teal-600 dark:text-teal-400" />
+                        <BarChart3 className="h-5 w-5 text-brand-primary dark:text-brand-accent" />
                         Quiz Performance Breakdown
                       </CardTitle>
                       <CardDescription>Your accuracy across different quizzes</CardDescription>
@@ -2156,10 +2156,10 @@ export default function Quizzes() {
 
                 {/* Difficulty Performance */}
                 {performanceByDifficulty.some(d => d.questionsAnswered > 0) && (
-                  <Card className="border border-slate-200 dark:border-slate-700">
+                  <Card className="border border-border">
                     <CardHeader>
                       <CardTitle className="flex items-center gap-2">
-                        <Target className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                        <Target className="h-5 w-5 text-brand-primary dark:text-blue-400" />
                         Performance by Difficulty
                       </CardTitle>
                       <CardDescription>How you perform across easy, medium, and hard questions</CardDescription>
@@ -2232,44 +2232,44 @@ export default function Quizzes() {
                 ) : null}
               </div>
             ) : (
-              <Card className="border border-teal-200 dark:border-teal-800 bg-gradient-to-br from-teal-50/50 via-white to-blue-50/30 dark:from-teal-950/30 dark:via-slate-900 dark:to-blue-950/20 overflow-hidden">
+              <Card className="border border-brand-primary/30 dark:border-brand-primary/40 bg-gradient-to-br from-brand-primary/10 via-white to-brand-accent/10 dark:from-brand-primary/20 dark:via-slate-900 dark:to-brand-accent/20 overflow-hidden">
                 <CardContent className="py-16 px-6 text-center relative">
                   {/* Decorative background */}
-                  <div className="absolute inset-0 bg-gradient-to-br from-teal-100/20 to-transparent dark:from-teal-900/10 pointer-events-none" />
+                  <div className="absolute inset-0 bg-gradient-to-br from-brand-primary/20 to-transparent dark:from-brand-primary/30 pointer-events-none" />
                   
                   <div className="relative z-10 max-w-md mx-auto space-y-6">
                     {/* Icon with subtle animation */}
-                    <div className="inline-flex p-4 rounded-2xl bg-gradient-to-br from-teal-500 to-blue-500 shadow-lg shadow-teal-500/20 dark:shadow-teal-500/10">
+                    <div className="inline-flex p-4 rounded-2xl bg-gradient-to-br from-brand-primary to-brand-accent shadow-lg shadow-brand-primary/20 dark:shadow-brand-primary/10">
                       <BarChart3 className="h-10 w-10 text-white" />
                     </div>
                     
                     {/* Title */}
                     <div>
-                      <h3 className="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-3">
+                      <h3 className="text-2xl font-bold text-foreground mb-3">
                         Your Analytics Await
                       </h3>
-                      <p className="text-slate-600 dark:text-slate-400 leading-relaxed">
+                      <p className="text-muted-foreground leading-relaxed">
                         Complete quizzes to unlock powerful insights about your learning journey
                       </p>
                     </div>
                     
                     {/* Value proposition */}
                     <div className="grid grid-cols-2 gap-3 pt-4">
-                      <div className="p-3 rounded-lg bg-white/60 dark:bg-slate-800/40 border border-teal-200/50 dark:border-teal-800/30">
-                        <Target className="h-5 w-5 text-teal-600 dark:text-teal-400 mx-auto mb-1" />
-                        <p className="text-xs font-medium text-slate-700 dark:text-slate-300">Track Accuracy</p>
+                      <div className="p-3 rounded-lg bg-white/60 dark:bg-slate-800/40 border border-brand-primary/30 dark:border-brand-primary/40">
+                        <Target className="h-5 w-5 text-brand-primary dark:text-brand-accent mx-auto mb-1" />
+                        <p className="text-xs font-medium text-muted-foreground">Track Accuracy</p>
                       </div>
-                      <div className="p-3 rounded-lg bg-white/60 dark:bg-slate-800/40 border border-blue-200/50 dark:border-blue-800/30">
-                        <TrendingUp className="h-5 w-5 text-blue-600 dark:text-blue-400 mx-auto mb-1" />
-                        <p className="text-xs font-medium text-slate-700 dark:text-slate-300">View Progress</p>
+                      <div className="p-3 rounded-lg bg-white/60 dark:bg-slate-800/40 border border-brand-primary/30 dark:border-brand-primary/40">
+                        <TrendingUp className="h-5 w-5 text-brand-primary dark:text-blue-400 mx-auto mb-1" />
+                        <p className="text-xs font-medium text-muted-foreground">View Progress</p>
                       </div>
-                      <div className="p-3 rounded-lg bg-white/60 dark:bg-slate-800/40 border border-green-200/50 dark:border-green-800/30">
-                        <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400 mx-auto mb-1" />
-                        <p className="text-xs font-medium text-slate-700 dark:text-slate-300">Find Strengths</p>
+                      <div className="p-3 rounded-lg bg-white/60 dark:bg-slate-800/40 border border-success/30 dark:border-success/40">
+                        <CheckCircle2 className="h-5 w-5 text-success dark:text-green-400 mx-auto mb-1" />
+                        <p className="text-xs font-medium text-muted-foreground">Find Strengths</p>
                       </div>
                       <div className="p-3 rounded-lg bg-white/60 dark:bg-slate-800/40 border border-orange-200/50 dark:border-orange-800/30">
                         <AlertCircle className="h-5 w-5 text-orange-600 dark:text-orange-400 mx-auto mb-1" />
-                        <p className="text-xs font-medium text-slate-700 dark:text-slate-300">Spot Gaps</p>
+                        <p className="text-xs font-medium text-muted-foreground">Spot Gaps</p>
                       </div>
                     </div>
                     
@@ -2281,7 +2281,7 @@ export default function Quizzes() {
                           setView("list");
                           setActiveTab("list");
                         }}
-                        className="bg-gradient-to-r from-teal-600 to-blue-600 hover:from-teal-700 hover:to-blue-700 text-white shadow-lg shadow-teal-500/30 dark:shadow-teal-500/20 transition-all hover:scale-105"
+                        className="bg-gradient-to-r from-brand-primary to-brand-accent hover:from-[#1A3175] hover:to-[#0891B2] text-white shadow-lg shadow-brand-primary/30 dark:shadow-brand-primary/20 transition-all hover:scale-105"
                       >
                         <Play className="h-4 w-4 mr-2" />
                         Start Your First Quiz
@@ -2299,26 +2299,26 @@ export default function Quizzes() {
           <TabsContent value="review">
             {isLoadingReview ? (
               <div className="flex items-center justify-center py-12">
-                <Loader className="h-8 w-8 animate-spin text-teal-600" />
+                <Loader className="h-8 w-8 animate-spin text-brand-primary" />
               </div>
             ) : spacedReviewItems.length === 0 ? (
-              <Card className="border border-teal-200 dark:border-teal-800 bg-gradient-to-br from-purple-50/50 via-white to-teal-50/30 dark:from-purple-950/30 dark:via-slate-900 dark:to-teal-950/20 overflow-hidden">
+              <Card className="border border-brand-primary/30 dark:border-brand-primary/40 bg-gradient-to-br from-purple-50/50 via-white to-brand-accent/10 dark:from-purple-950/30 dark:via-slate-900 dark:to-brand-accent/20 overflow-hidden">
                 <CardContent className="py-16 px-6 text-center relative">
                   {/* Decorative background pattern */}
                   <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(139,92,246,0.08),transparent_50%)] dark:bg-[radial-gradient(circle_at_30%_20%,rgba(139,92,246,0.05),transparent_50%)] pointer-events-none" />
                   
                   <div className="relative z-10 max-w-lg mx-auto space-y-6">
                     {/* Icon with rotation animation hint */}
-                    <div className="inline-flex p-4 rounded-2xl bg-gradient-to-br from-purple-500 to-teal-500 shadow-lg shadow-purple-500/20 dark:shadow-purple-500/10">
+                    <div className="inline-flex p-4 rounded-2xl bg-gradient-to-br from-purple-500 to-brand-accent shadow-lg shadow-purple-500/20 dark:shadow-purple-500/10">
                       <RefreshCw className="h-10 w-10 text-white" />
                     </div>
                     
                     {/* Title and description */}
                     <div>
-                      <h3 className="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-3">
+                      <h3 className="text-2xl font-bold text-foreground mb-3">
                         Spaced Repetition Ready
                       </h3>
-                      <p className="text-slate-600 dark:text-slate-400 leading-relaxed mb-4">
+                      <p className="text-muted-foreground leading-relaxed mb-4">
                         Your personalized review queue is empty right now. Great work staying on top of your studies!
                       </p>
                     </div>
@@ -2327,25 +2327,25 @@ export default function Quizzes() {
                     <div className="bg-white/60 dark:bg-slate-800/40 border border-purple-200/50 dark:border-purple-800/30 rounded-xl p-6 space-y-4 text-left">
                       <div className="flex items-center gap-2 mb-2">
                         <Brain className="h-5 w-5 text-purple-600 dark:text-purple-400" />
-                        <h4 className="font-semibold text-slate-900 dark:text-slate-100">How Spaced Review Works</h4>
+                        <h4 className="font-semibold text-foreground">How Spaced Review Works</h4>
                       </div>
                       
                       <div className="space-y-3 text-sm">
                         <div className="flex items-start gap-3">
-                          <div className="flex-shrink-0 w-6 h-6 rounded-full bg-teal-500/20 dark:bg-teal-500/30 flex items-center justify-center text-teal-700 dark:text-teal-300 font-bold text-xs">1</div>
-                          <p className="text-slate-600 dark:text-slate-400 pt-0.5">
+                          <div className="flex-shrink-0 w-6 h-6 rounded-full bg-brand-primary/20 dark:bg-brand-primary/30 flex items-center justify-center text-brand-primary dark:text-brand-accent font-bold text-xs">1</div>
+                          <p className="text-muted-foreground pt-0.5">
                             Answer quiz questions and track which ones you find challenging
                           </p>
                         </div>
                         <div className="flex items-start gap-3">
-                          <div className="flex-shrink-0 w-6 h-6 rounded-full bg-teal-500/20 dark:bg-teal-500/30 flex items-center justify-center text-teal-700 dark:text-teal-300 font-bold text-xs">2</div>
-                          <p className="text-slate-600 dark:text-slate-400 pt-0.5">
+                          <div className="flex-shrink-0 w-6 h-6 rounded-full bg-brand-primary/20 dark:bg-brand-primary/30 flex items-center justify-center text-brand-primary dark:text-brand-accent font-bold text-xs">2</div>
+                          <p className="text-muted-foreground pt-0.5">
                             Questions you struggle with will automatically appear here at optimal intervals
                           </p>
                         </div>
                         <div className="flex items-start gap-3">
-                          <div className="flex-shrink-0 w-6 h-6 rounded-full bg-teal-500/20 dark:bg-teal-500/30 flex items-center justify-center text-teal-700 dark:text-teal-300 font-bold text-xs">3</div>
-                          <p className="text-slate-600 dark:text-slate-400 pt-0.5">
+                          <div className="flex-shrink-0 w-6 h-6 rounded-full bg-brand-primary/20 dark:bg-brand-primary/30 flex items-center justify-center text-brand-primary dark:text-brand-accent font-bold text-xs">3</div>
+                          <p className="text-muted-foreground pt-0.5">
                             Regular review strengthens memory and boosts long-term retention
                           </p>
                         </div>
@@ -2361,7 +2361,7 @@ export default function Quizzes() {
                           setActiveTab("list");
                         }}
                         variant="outline"
-                        className="border-teal-300 dark:border-teal-700 text-teal-700 dark:text-teal-300 hover:bg-teal-50 dark:hover:bg-teal-950/30 transition-all hover:scale-105"
+                        className="border-brand-primary/40 dark:border-brand-primary/50 text-brand-primary dark:text-brand-accent hover:bg-brand-primary/10 dark:hover:bg-brand-primary/20/30 transition-all hover:scale-105"
                       >
                         <ChevronRight className="h-4 w-4 mr-2" />
                         Browse Available Quizzes
@@ -2377,12 +2377,12 @@ export default function Quizzes() {
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <h2 className="text-xl font-bold">Questions Due for Review</h2>
-                  <Badge variant="outline" className="text-teal-700 dark:text-teal-300">
+                  <Badge variant="outline" className="text-brand-primary dark:text-brand-accent">
                     {spacedReviewItems.length} questions
                   </Badge>
                 </div>
                 {spacedReviewItems.map((item) => (
-                  <Card key={item.id} className="border-2 border-teal-200 dark:border-teal-800">
+                  <Card key={item.id} className="border-2 border-brand-primary/30 dark:border-brand-primary/40">
                     <CardContent className="pt-6">
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex-1">
@@ -2399,13 +2399,13 @@ export default function Quizzes() {
                                   key={option.id} 
                                   className={`p-2 rounded-lg border ${
                                     option.isCorrect 
-                                      ? 'border-green-400 bg-green-50 dark:bg-green-950/30' 
-                                      : 'border-slate-200 dark:border-slate-700'
+                                      ? 'border-green-400 bg-success/10 dark:bg-success/20' 
+                                      : 'border-border'
                                   }`}
                                 >
                                   <span className="font-medium mr-2">{String.fromCharCode(65 + index)}.</span>
                                   {option.text}
-                                  {option.isCorrect && <CheckCircle2 className="h-4 w-4 inline ml-2 text-green-600" />}
+                                  {option.isCorrect && <CheckCircle2 className="h-4 w-4 inline ml-2 text-success" />}
                                 </div>
                               ))}
                             </div>
@@ -2422,7 +2422,7 @@ export default function Quizzes() {
                             size="sm"
                             variant="outline"
                             onClick={() => handleSpacedReview(item.id, 1)}
-                            className="text-red-600 border-red-200 hover:bg-red-50"
+                            className="text-destructive border-destructive/30 hover:bg-destructive/10"
                             data-testid={`button-review-again-${item.id}`}
                           >
                             Again
@@ -2440,7 +2440,7 @@ export default function Quizzes() {
                             size="sm"
                             variant="outline"
                             onClick={() => handleSpacedReview(item.id, 5)}
-                            className="text-green-600 border-green-200 hover:bg-green-50"
+                            className="text-success border-success/30 hover:bg-success/10"
                             data-testid={`button-review-easy-${item.id}`}
                           >
                             Easy

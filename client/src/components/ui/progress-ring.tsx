@@ -57,7 +57,7 @@ export function ProgressRing({
 
         {/* Center text */}
         <div className="absolute flex flex-col items-center justify-center">
-          <span className="text-2xl font-bold text-slate-900 dark:text-white">
+          <span className="text-2xl font-bold text-foreground">
             {Math.round(accuracy)}%
           </span>
           <span className="text-xs text-muted-foreground">Accuracy</span>

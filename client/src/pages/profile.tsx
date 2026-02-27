@@ -111,29 +111,29 @@ export default function Profile() {
     <div className="p-6 md:p-8 max-w-5xl mx-auto space-y-6">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-white">Profile</h1>
-          <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
+          <h1 className="text-2xl md:text-3xl font-bold text-foreground">Profile</h1>
+          <p className="text-sm text-muted-foreground mt-1">
             View your account identity and jump to account management tools.
           </p>
         </div>
         {isDemoReadOnly ? <Badge variant="secondary">Demo Read-Only</Badge> : null}
       </div>
 
-      <Card className="border border-slate-200 dark:border-slate-700">
+      <Card className="border border-border">
         <CardContent className="p-6">
           <div className="flex flex-col sm:flex-row sm:items-center gap-5">
-            <Avatar className="h-20 w-20 border border-slate-200 dark:border-slate-700">
+            <Avatar className="h-20 w-20 border border-border">
               <AvatarFallback className="text-xl bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200">
                 {initials}
               </AvatarFallback>
             </Avatar>
             <div className="space-y-1">
-              <h2 className="text-xl font-semibold text-slate-900 dark:text-white">{fullName}</h2>
-              <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+              <h2 className="text-xl font-semibold text-foreground">{fullName}</h2>
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Mail className="h-4 w-4" />
                 <span>{user?.email || "No email available"}</span>
               </div>
-              <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <User className="h-4 w-4" />
                 <span>User ID: {user?.id || "Unknown"}</span>
               </div>
@@ -173,13 +173,13 @@ export default function Profile() {
             <CardDescription>Tune profile visibility and contact details without leaving this page.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4 text-sm">
-            <div className="rounded-lg border border-slate-200 dark:border-slate-700 p-3 space-y-2">
+            <div className="rounded-lg border border-border p-3 space-y-2">
               <div className="flex items-center justify-between">
-                <p className="text-sm font-medium text-slate-900 dark:text-slate-100">Profile completeness</p>
+                <p className="text-sm font-medium text-foreground">Profile completeness</p>
                 <Badge variant="secondary">{completenessPercent}%</Badge>
               </div>
               <Progress value={completenessPercent} className="h-2" />
-              <p className="text-xs text-slate-600 dark:text-slate-400">
+              <p className="text-xs text-muted-foreground">
                 Completed {completedCount} of {completenessChecks.length} profile signals.
               </p>
             </div>
@@ -208,11 +208,11 @@ export default function Profile() {
               />
             </div>
 
-            <div className="rounded-lg border border-slate-200 dark:border-slate-700 p-3 space-y-3">
+            <div className="rounded-lg border border-border p-3 space-y-3">
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <p className="font-medium text-slate-900 dark:text-slate-100">Public profile visibility</p>
-                  <p className="text-xs text-slate-600 dark:text-slate-400">Show your profile to others.</p>
+                  <p className="font-medium text-foreground">Public profile visibility</p>
+                  <p className="text-xs text-muted-foreground">Show your profile to others.</p>
                 </div>
                 <Switch
                   checked={formData.profileVisibility}
@@ -226,8 +226,8 @@ export default function Profile() {
 
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <p className="font-medium text-slate-900 dark:text-slate-100">Show study activity</p>
-                  <p className="text-xs text-slate-600 dark:text-slate-400">Allow study progress to appear on profile.</p>
+                  <p className="font-medium text-foreground">Show study activity</p>
+                  <p className="text-xs text-muted-foreground">Allow study progress to appear on profile.</p>
                 </div>
                 <Switch
                   checked={formData.showStudyActivity}
@@ -271,18 +271,18 @@ export default function Profile() {
 
             <Separator />
             <div className="flex items-center justify-between">
-              <span className="text-slate-600 dark:text-slate-400">Display name</span>
-              <span className="font-medium text-slate-900 dark:text-slate-100">{fullName}</span>
+              <span className="text-muted-foreground">Display name</span>
+              <span className="font-medium text-foreground">{fullName}</span>
             </div>
             <Separator />
             <div className="flex items-center justify-between">
-              <span className="text-slate-600 dark:text-slate-400">Email</span>
-              <span className="font-medium text-slate-900 dark:text-slate-100">{user?.email || "-"}</span>
+              <span className="text-muted-foreground">Email</span>
+              <span className="font-medium text-foreground">{user?.email || "-"}</span>
             </div>
             <Separator />
             <div className="flex items-center justify-between">
-              <span className="text-slate-600 dark:text-slate-400">Mode</span>
-              <span className="font-medium text-slate-900 dark:text-slate-100">
+              <span className="text-muted-foreground">Mode</span>
+              <span className="font-medium text-foreground">
                 {isDemoReadOnly ? "Read-only demo" : "Authenticated"}
               </span>
             </div>

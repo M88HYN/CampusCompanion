@@ -124,7 +124,7 @@ function MarkdownPreview({ content }: { content: string }) {
         prose-code:bg-slate-100 prose-code:dark:bg-slate-800 prose-code:px-2 prose-code:py-1 prose-code:rounded
         prose-pre:bg-slate-900 prose-pre:text-slate-100 prose-pre:p-4 prose-pre:rounded
         prose-blockquote:border-l-4 prose-blockquote:border-blue-500 prose-blockquote:italic prose-blockquote:text-slate-600 prose-blockquote:dark:text-slate-400
-        prose-a:text-blue-600 prose-a:dark:text-blue-400 prose-a:underline
+        prose-a:text-brand-primary prose-a:dark:text-blue-400 prose-a:underline
         prose-strong:font-bold
         prose-em:italic"
       dangerouslySetInnerHTML={{ __html: html }}
@@ -1072,14 +1072,14 @@ ${noteContent}`;
 
   if (isLoading) {
     return (
-      <div className="flex h-full items-center justify-center bg-slate-50 dark:bg-slate-950">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+      <div className="flex h-full items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-cyan-50 dark:from-slate-950 dark:via-indigo-950/40 dark:to-slate-900">
+        <Loader2 className="h-8 w-8 animate-spin text-brand-primary" />
       </div>
     );
   }
 
   return (
-    <div className="flex h-full bg-slate-50 dark:bg-slate-950">
+    <div className="flex h-full bg-gradient-to-br from-blue-50 via-indigo-50 to-cyan-50 dark:from-slate-950 dark:via-indigo-950/40 dark:to-slate-900">
       {/* Mobile Sidebar Toggle */}
       {isMobile && !showMobileSidebar && (
         <button
@@ -1096,7 +1096,7 @@ ${noteContent}`;
         isMobile
           ? showMobileSidebar ? 'w-full absolute inset-0 z-40' : 'hidden'
           : 'w-72'
-      } border-r border-blue-200 dark:border-blue-900 flex flex-col bg-white dark:bg-slate-900 shadow-sm`}>
+      } border-r border-brand-primary/30 dark:border-blue-900 flex flex-col bg-card shadow-sm`}>
         <div className="p-3 sm:p-4 border-b border-blue-100 dark:border-blue-900 space-y-3 bg-gradient-to-b from-blue-50 to-white dark:from-blue-950 dark:to-slate-900">
           <div className="flex items-center gap-2 mb-2">
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center">
@@ -1108,7 +1108,7 @@ ${noteContent}`;
             {isMobile && (
               <button
                 onClick={() => setShowMobileSidebar(false)}
-                className="p-1.5 rounded-lg hover:bg-blue-100 dark:hover:bg-slate-800 text-blue-500"
+                className="p-1.5 rounded-lg hover:bg-blue-100 dark:hover:bg-slate-800 text-brand-primary"
                 aria-label="Close sidebar"
               >
                 <X className="h-5 w-5" />
@@ -1121,7 +1121,7 @@ ${noteContent}`;
               placeholder="Search notes..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 bg-blue-50 dark:bg-slate-800 border-blue-200 dark:border-blue-800 focus-visible:ring-blue-500 focus-visible:border-blue-400"
+              className="pl-9 bg-brand-primary/10 dark:bg-slate-800 border-brand-primary/30 dark:border-brand-primary/40 focus-visible:ring-blue-500 focus-visible:border-blue-400"
               data-testid="input-search-notes"
             />
           </div>
@@ -1156,7 +1156,7 @@ ${noteContent}`;
                     data-testid={`button-subject-${subject}`}
                   >
                     <div className={`transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`}>
-                      <ChevronRight className="h-4 w-4 text-blue-500" />
+                      <ChevronRight className="h-4 w-4 text-brand-primary" />
                     </div>
                     {isExpanded ? (
                       <FolderOpen className="h-4 w-4 text-blue-400" />
@@ -1167,7 +1167,7 @@ ${noteContent}`;
                     <span className="text-xs text-muted-foreground">{subjectNotes.length}</span>
                   </Button>
                   {isExpanded && (
-                    <div className="ml-4 border-l-2 border-blue-200 dark:border-blue-800 pl-2 space-y-1">
+                    <div className="ml-4 border-l-2 border-brand-primary/30 dark:border-brand-primary/40 pl-2 space-y-1">
                       {subjectNotes.map((note) => {
                         const isSelected = selectedNoteId === note.id;
                         return (
@@ -1177,7 +1177,7 @@ ${noteContent}`;
                               size="sm"
                               className={`flex-1 justify-start gap-2 ${
                                 isSelected
-                                  ? "bg-blue-100 dark:bg-blue-950 text-blue-900 dark:text-blue-100"
+                                  ? "bg-blue-100 dark:bg-brand-primary/20 text-blue-900 dark:text-blue-100"
                                   : ""
                               }`}
                               onClick={() => {
@@ -1186,9 +1186,9 @@ ${noteContent}`;
                               }}
                               data-testid={`button-note-${note.id}`}
                             >
-                              <FileText className={`h-4 w-4 flex-shrink-0 ${isSelected ? "text-blue-600" : "text-slate-400"}`} />
+                              <FileText className={`h-4 w-4 flex-shrink-0 ${isSelected ? "text-brand-primary" : "text-slate-400"}`} />
                               <span className="flex-1 text-left truncate text-sm">{note.title}</span>
-                              {isSelected && <CheckCircle2 className="h-4 w-4 text-blue-600 flex-shrink-0" />}
+                              {isSelected && <CheckCircle2 className="h-4 w-4 text-brand-primary flex-shrink-0" />}
                             </Button>
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
@@ -1255,11 +1255,11 @@ ${noteContent}`;
       </div>
 
       {/* Main Content Area */}
-      <div className={`flex-1 flex flex-col bg-white dark:bg-slate-900 ${isMobile && showMobileSidebar ? 'hidden' : ''}`}>
+      <div className={`flex-1 flex flex-col bg-card ${isMobile && showMobileSidebar ? 'hidden' : ''}`}>
         {selectedNoteId ? (
           <>
             {/* Header */}
-            <div className="border-b border-blue-200 dark:border-blue-900 px-3 sm:px-6 py-3 sm:py-4 flex items-center justify-between gap-2 sm:gap-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-slate-900 dark:to-slate-800">
+            <div className="border-b border-brand-primary/30 dark:border-blue-900 px-3 sm:px-6 py-3 sm:py-4 flex items-center justify-between gap-2 sm:gap-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-slate-900 dark:to-slate-800">
               <div className="flex-1 min-w-0">
                 <Input
                   value={noteTitle}
@@ -1285,12 +1285,12 @@ ${noteContent}`;
 
               <div className="flex items-center gap-3 ml-4">
                 {updateNoteMutation.isPending ? (
-                  <Badge className="bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300 gap-1 border-0">
+                  <Badge className="bg-blue-100 dark:bg-brand-primary/20 text-brand-primary dark:text-blue-300 gap-1 border-0">
                     <Loader2 className="h-3 w-3 animate-spin" />
                     Saving...
                   </Badge>
                 ) : isSaved ? (
-                  <Badge variant="secondary" className="bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-300 gap-1 border-0">
+                  <Badge variant="secondary" className="bg-green-100 dark:bg-success/20 text-success dark:text-green-300 gap-1 border-0">
                     <CheckCircle2 className="h-3 w-3" />
                     Saved
                   </Badge>
@@ -1388,15 +1388,15 @@ ${noteContent}`;
 
             {/* Tags Bar */}
             <div className="px-3 sm:px-6 py-2 sm:py-3 border-b border-blue-100 dark:border-blue-900 flex items-center gap-2 flex-wrap">
-              <Tag className="h-4 w-4 text-blue-500" />
+              <Tag className="h-4 w-4 text-brand-primary" />
               {noteTags.map((tag) => (
                 <Badge
                   key={tag}
                   variant="secondary"
-                  className="gap-1 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300"
+                  className="gap-1 bg-blue-100 dark:bg-blue-900 text-brand-primary dark:text-blue-300"
                 >
                   {tag}
-                  <button onClick={() => removeTag(tag)} className="ml-1 hover:text-red-500">
+                  <button onClick={() => removeTag(tag)} className="ml-1 hover:text-destructive">
                     <X className="h-3 w-3" />
                   </button>
                 </Badge>
@@ -1552,12 +1552,12 @@ ${noteContent}`;
                     </SelectItem>
                     <SelectItem value="definition">
                       <div className="flex items-center gap-2">
-                        <BookMarked className="h-3 w-3 text-blue-500" /> Definition
+                        <BookMarked className="h-3 w-3 text-brand-primary" /> Definition
                       </div>
                     </SelectItem>
                     <SelectItem value="process">
                       <div className="flex items-center gap-2">
-                        <Workflow className="h-3 w-3 text-green-500" /> Process
+                        <Workflow className="h-3 w-3 text-success" /> Process
                       </div>
                     </SelectItem>
                     <SelectItem value="example">
@@ -1581,7 +1581,7 @@ ${noteContent}`;
                   <Button
                     variant="outline"
                     size="sm"
-                    className="h-7 gap-1.5 text-xs bg-red-50 dark:bg-red-950 border-red-200 dark:border-red-800 text-red-700 dark:text-red-300"
+                    className="h-7 gap-1.5 text-xs bg-red-50 dark:bg-red-950 border-destructive/30 dark:border-destructive/40 text-destructive dark:text-red-300"
                     onClick={() => setShowExamPrompt(!showExamPrompt)}
                     disabled={previewMode}
                     data-testid="button-add-exam-prompt"
@@ -1594,7 +1594,7 @@ ${noteContent}`;
               </Tooltip>
 
               {showExamPrompt && (
-                <div className="flex items-center gap-2 bg-white dark:bg-slate-900 border rounded-lg px-2 py-1">
+                <div className="flex items-center gap-2 bg-card border rounded-lg px-2 py-1">
                   <Select value={examPromptType} onValueChange={setExamPromptType}>
                     <SelectTrigger className="h-6 w-20 text-xs">
                       <SelectValue />
@@ -2005,7 +2005,7 @@ Markdown formatting is supported:
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <FolderInput className="h-5 w-5 text-blue-600" />
+              <FolderInput className="h-5 w-5 text-brand-primary" />
               Move to Folder
             </DialogTitle>
             <DialogDescription>
@@ -2030,7 +2030,7 @@ Markdown formatting is supported:
                   ))}
                   <SelectItem value="__new__">
                     <div className="flex items-center gap-2">
-                      <Plus className="h-3.5 w-3.5 text-green-500" />
+                      <Plus className="h-3.5 w-3.5 text-success" />
                       Create new folder...
                     </div>
                   </SelectItem>
@@ -2378,7 +2378,7 @@ Markdown formatting is supported:
                 <div key={idx} className="border rounded-lg p-4 space-y-2 bg-white dark:bg-slate-800">
                   <div className="flex items-center justify-between">
                     <Badge variant="secondary" className={
-                      q.type === "SAQ" ? "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300" :
+                      q.type === "SAQ" ? "bg-blue-100 text-brand-primary dark:bg-blue-900 dark:text-blue-300" :
                       q.type === "MCQ" ? "bg-fuchsia-100 text-fuchsia-700 dark:bg-fuchsia-900 dark:text-fuchsia-300" :
                       "bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300"
                     }>

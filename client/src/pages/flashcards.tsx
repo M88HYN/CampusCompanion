@@ -691,7 +691,7 @@ export default function Flashcards() {
 
   if (isLoadingDecks) {
     return (
-      <div className="flex h-full items-center justify-center bg-gradient-to-b from-emerald-50 to-teal-50 dark:from-emerald-950 dark:to-teal-950">
+      <div className="flex h-full items-center justify-center bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 dark:from-emerald-950 dark:via-teal-950 dark:to-cyan-950">
         <Loader2 className="h-8 w-8 animate-spin text-emerald-500" />
       </div>
     );
@@ -700,7 +700,7 @@ export default function Flashcards() {
   // Session Summary View
   if (view === "session-summary" && sessionSummary) {
     return (
-      <div className="flex-1 overflow-auto bg-gradient-to-b from-emerald-50 to-teal-50 dark:from-emerald-950 dark:to-teal-950">
+      <div className="flex-1 overflow-auto bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 dark:from-emerald-950 dark:via-teal-950 dark:to-cyan-950">
         <div className="max-w-4xl mx-auto p-3 sm:p-6 space-y-6">
           <div className="text-center space-y-2">
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 mb-4">
@@ -716,11 +716,11 @@ export default function Flashcards() {
               <p className="text-xs sm:text-sm text-muted-foreground">Cards Reviewed</p>
             </Card>
             <Card className="text-center p-3 sm:p-4">
-              <p className="text-2xl sm:text-3xl font-bold text-blue-600">{sessionSummary.summary.accuracy}%</p>
+              <p className="text-2xl sm:text-3xl font-bold text-brand-primary">{sessionSummary.summary.accuracy}%</p>
               <p className="text-xs sm:text-sm text-muted-foreground">Accuracy</p>
             </Card>
             <Card className="text-center p-3 sm:p-4">
-              <p className="text-2xl sm:text-3xl font-bold text-green-600">{sessionSummary.summary.correctCount}</p>
+              <p className="text-2xl sm:text-3xl font-bold text-success">{sessionSummary.summary.correctCount}</p>
               <p className="text-xs sm:text-sm text-muted-foreground">Good/Easy</p>
             </Card>
             <Card className="text-center p-3 sm:p-4">
@@ -782,13 +782,13 @@ export default function Flashcards() {
                 <div 
                   key={idx} 
                   className={`p-4 rounded-lg border flex items-start gap-3 ${
-                    action.priority === 'high' ? 'bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-800' :
+                    action.priority === 'high' ? 'bg-red-50 dark:bg-red-950/20 border-destructive/30 dark:border-destructive/40' :
                     action.priority === 'medium' ? 'bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800' :
                     'bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800'
                   }`}
                 >
                   <Target className={`h-5 w-5 mt-0.5 ${
-                    action.priority === 'high' ? 'text-red-500' :
+                    action.priority === 'high' ? 'text-destructive' :
                     action.priority === 'medium' ? 'text-amber-500' :
                     'text-emerald-500'
                   }`} />
@@ -842,7 +842,7 @@ export default function Flashcards() {
     
     if (cards.length === 0) {
       return (
-        <div className="flex-1 flex items-center justify-center bg-gradient-to-b from-emerald-50 to-teal-50 dark:from-emerald-950 dark:to-teal-950">
+        <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 dark:from-emerald-950 dark:via-teal-950 dark:to-cyan-950">
           <Card className="p-8 text-center max-w-md">
             <CheckCircle2 className="h-16 w-16 mx-auto mb-4 text-emerald-500" />
             <h3 className="text-xl font-semibold mb-2">All Caught Up!</h3>
@@ -858,7 +858,7 @@ export default function Flashcards() {
     const stats = smartQueue?.stats;
 
     return (
-      <div className="flex-1 flex flex-col bg-gradient-to-b from-emerald-50 to-teal-50 dark:from-emerald-950 dark:to-teal-950">
+      <div className="flex-1 flex flex-col bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 dark:from-emerald-950 dark:via-teal-950 dark:to-cyan-950">
         {/* Header */}
         <div className="p-4 border-b bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm">
           <div className="max-w-3xl mx-auto flex items-center justify-between flex-wrap gap-3">
@@ -1067,7 +1067,7 @@ export default function Flashcards() {
     const stats = flashcardStats || smartQueue?.stats;
     
     return (
-      <div className="flex-1 overflow-auto bg-gradient-to-b from-emerald-50 to-teal-50 dark:from-emerald-950 dark:to-teal-950">
+      <div className="flex-1 overflow-auto bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 dark:from-emerald-950 dark:via-teal-950 dark:to-cyan-950">
         <div className="max-w-7xl mx-auto p-3 sm:p-6 space-y-6 sm:space-y-8">
           {/* Hero Section */}
           <div className="bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-600 rounded-2xl p-4 sm:p-8 text-white shadow-xl">
@@ -1114,11 +1114,11 @@ export default function Flashcards() {
                     <p className="text-[10px] sm:text-xs text-muted-foreground">Total Cards</p>
                   </div>
                   <div className="text-center p-2 sm:p-3 bg-red-100 dark:bg-red-900/30 rounded-lg">
-                    <p className="text-lg sm:text-2xl font-bold text-red-600">{stats?.dueNow ?? 0}</p>
+                    <p className="text-lg sm:text-2xl font-bold text-destructive">{stats?.dueNow ?? 0}</p>
                     <p className="text-[10px] sm:text-xs text-muted-foreground">Due Now</p>
                   </div>
                   <div className="text-center p-2 sm:p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                    <p className="text-lg sm:text-2xl font-bold text-blue-600">{stats?.new ?? 0}</p>
+                    <p className="text-lg sm:text-2xl font-bold text-brand-primary">{stats?.new ?? 0}</p>
                     <p className="text-[10px] sm:text-xs text-muted-foreground">New</p>
                   </div>
                   <div className="text-center p-2 sm:p-3 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
@@ -1151,7 +1151,7 @@ export default function Flashcards() {
                     data-testid="button-due-only"
                   >
                     <div className="text-center">
-                      <Clock className="h-6 w-6 mx-auto mb-1 text-red-500" />
+                      <Clock className="h-6 w-6 mx-auto mb-1 text-destructive" />
                       <span className="font-semibold">Due Cards</span>
                       <p className="text-xs text-muted-foreground mt-1">{stats?.dueNow ?? 0} cards</p>
                     </div>
@@ -1164,7 +1164,7 @@ export default function Flashcards() {
                     data-testid="button-new-only"
                   >
                     <div className="text-center">
-                      <Sparkles className="h-6 w-6 mx-auto mb-1 text-blue-500" />
+                      <Sparkles className="h-6 w-6 mx-auto mb-1 text-brand-primary" />
                       <span className="font-semibold">New Cards</span>
                       <p className="text-xs text-muted-foreground mt-1">{stats?.new ?? 0} cards</p>
                     </div>
@@ -1254,7 +1254,7 @@ export default function Flashcards() {
 
           {/* Deck List */}
           <div>
-            <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-4">Your Decks</h2>
+            <h2 className="text-2xl font-bold text-foreground mb-4">Your Decks</h2>
             
             {/* Filter Bar */}
             {decks.length > 0 && (
@@ -1389,7 +1389,7 @@ export default function Flashcards() {
                             <Button
                               size="icon"
                               variant="ghost"
-                              className="h-8 w-8 text-red-600"
+                              className="h-8 w-8 text-destructive"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 deleteDeckMutation.mutate(deck.id);
@@ -1423,15 +1423,15 @@ export default function Flashcards() {
                         </div>
 
                         <div className="grid grid-cols-3 gap-2">
-                          <div className="p-2 bg-white dark:bg-slate-900 rounded text-center">
+                          <div className="p-2 bg-card rounded text-center">
                             <p className="text-xs text-muted-foreground">Total</p>
                             <p className="font-bold text-slate-600 dark:text-slate-300">{deck.cards}</p>
                           </div>
-                          <div className="p-2 bg-white dark:bg-slate-900 rounded text-center">
+                          <div className="p-2 bg-card rounded text-center">
                             <p className="text-xs text-muted-foreground">Due</p>
                             <p className="font-bold text-orange-600 dark:text-orange-400">{deck.dueToday}</p>
                           </div>
-                          <div className="p-2 bg-white dark:bg-slate-900 rounded text-center">
+                          <div className="p-2 bg-card rounded text-center">
                             <p className="text-xs text-muted-foreground">Mastered</p>
                             <p className="font-bold text-emerald-600 dark:text-emerald-400">{deck.mastered}</p>
                           </div>
@@ -1474,7 +1474,7 @@ export default function Flashcards() {
                         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 mb-8">
                           <div className="p-3 sm:p-4 bg-slate-100 dark:bg-slate-800 rounded-lg text-center">
                             <p className="text-xs sm:text-sm text-muted-foreground mb-1">Total Cards</p>
-                            <p className="text-2xl sm:text-3xl font-bold text-slate-700 dark:text-slate-300">{stats.totalCards}</p>
+                            <p className="text-2xl sm:text-3xl font-bold text-muted-foreground">{stats.totalCards}</p>
                           </div>
                           <div className="p-3 sm:p-4 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg text-center">
                             <p className="text-xs sm:text-sm text-muted-foreground mb-1">Mastered</p>
@@ -1483,7 +1483,7 @@ export default function Flashcards() {
                           </div>
                           <div className="p-3 sm:p-4 bg-blue-100 dark:bg-blue-900/30 rounded-lg text-center">
                             <p className="text-xs sm:text-sm text-muted-foreground mb-1">New</p>
-                            <p className="text-2xl sm:text-3xl font-bold text-blue-600">{stats.new}</p>
+                            <p className="text-2xl sm:text-3xl font-bold text-brand-primary">{stats.new}</p>
                           </div>
                           <div className="p-3 sm:p-4 bg-orange-100 dark:bg-orange-900/30 rounded-lg text-center">
                             <p className="text-xs sm:text-sm text-muted-foreground mb-1">Struggling</p>
@@ -1491,7 +1491,7 @@ export default function Flashcards() {
                           </div>
                           <div className="p-3 sm:p-4 bg-red-100 dark:bg-red-900/30 rounded-lg text-center">
                             <p className="text-xs sm:text-sm text-muted-foreground mb-1">Due Now</p>
-                            <p className="text-2xl sm:text-3xl font-bold text-red-600">{stats.dueNow}</p>
+                            <p className="text-2xl sm:text-3xl font-bold text-destructive">{stats.dueNow}</p>
                           </div>
                         </div>
 
@@ -1588,29 +1588,29 @@ export default function Flashcards() {
                 </Card>
 
                 {/* Study Tips */}
-                <Card className="border-2 border-blue-200 dark:border-blue-800">
+                <Card className="border-2 border-brand-primary/30 dark:border-brand-primary/40">
                   <CardHeader className="bg-gradient-to-r from-blue-100 to-cyan-100 dark:from-blue-900 dark:to-cyan-900">
                     <CardTitle className="flex items-center gap-2 text-base">
-                      <Lightbulb className="h-5 w-5 text-blue-600" />
+                      <Lightbulb className="h-5 w-5 text-brand-primary" />
                       Study Tips
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="pt-4 space-y-3">
                     <div className="text-sm space-y-2">
                       <p className="flex items-start gap-2">
-                        <span className="text-blue-600 font-bold mt-1">→</span>
+                        <span className="text-brand-primary font-bold mt-1">→</span>
                         <span>Focus on <strong>struggling cards</strong> first to improve weak areas faster</span>
                       </p>
                       <p className="flex items-start gap-2">
-                        <span className="text-blue-600 font-bold mt-1">→</span>
+                        <span className="text-brand-primary font-bold mt-1">→</span>
                         <span>Review <strong>due cards</strong> regularly to maintain spaced repetition</span>
                       </p>
                       <p className="flex items-start gap-2">
-                        <span className="text-blue-600 font-bold mt-1">→</span>
+                        <span className="text-brand-primary font-bold mt-1">→</span>
                         <span>Aim for <strong>70%+ mastery</strong> in each deck before moving to new material</span>
                       </p>
                       <p className="flex items-start gap-2">
-                        <span className="text-blue-600 font-bold mt-1">→</span>
+                        <span className="text-brand-primary font-bold mt-1">→</span>
                         <span>Link related <strong>notes</strong> to flashcards for better context and learning</span>
                       </p>
                     </div>
@@ -1682,7 +1682,7 @@ export default function Flashcards() {
                   placeholder="What is this deck about?"
                   value={deckForm.description}
                   onChange={(e) => setDeckForm({ ...deckForm, description: e.target.value })}
-                  className="w-full p-3 border-2 border-emerald-200 dark:border-emerald-800 rounded-lg bg-white dark:bg-slate-900"
+                  className="w-full p-3 border-2 border-emerald-200 dark:border-emerald-800 rounded-lg bg-card"
                   rows={3}
                   data-testid="textarea-description"
                 />
@@ -1758,7 +1758,7 @@ export default function Flashcards() {
                   placeholder="What should students be asked?"
                   value={cardForm.front}
                   onChange={(e) => setCardForm({ ...cardForm, front: e.target.value })}
-                  className="w-full p-3 border-2 border-emerald-200 dark:border-emerald-800 rounded-lg bg-white dark:bg-slate-900 focus:ring-2 focus:ring-emerald-500"
+                  className="w-full p-3 border-2 border-emerald-200 dark:border-emerald-800 rounded-lg bg-card focus:ring-2 focus:ring-emerald-500"
                   rows={3}
                   data-testid="textarea-front"
                 />
@@ -1771,7 +1771,7 @@ export default function Flashcards() {
                   placeholder="The correct answer or explanation"
                   value={cardForm.back}
                   onChange={(e) => setCardForm({ ...cardForm, back: e.target.value })}
-                  className="w-full p-3 border-2 border-emerald-200 dark:border-emerald-800 rounded-lg bg-white dark:bg-slate-900 focus:ring-2 focus:ring-emerald-500"
+                  className="w-full p-3 border-2 border-emerald-200 dark:border-emerald-800 rounded-lg bg-card focus:ring-2 focus:ring-emerald-500"
                   rows={3}
                   data-testid="textarea-back"
                 />
@@ -1781,11 +1781,11 @@ export default function Flashcards() {
                 <div className="bg-slate-100 dark:bg-slate-800 p-4 rounded-lg">
                   <p className="text-xs font-semibold text-muted-foreground mb-2">PREVIEW</p>
                   <div className="space-y-2">
-                    <div className="p-3 bg-white dark:bg-slate-900 rounded border-l-4 border-emerald-500">
+                    <div className="p-3 bg-card rounded border-l-4 border-emerald-500">
                       <p className="text-xs text-muted-foreground">Front</p>
                       <p className="font-medium">{cardForm.front || "..."}</p>
                     </div>
-                    <div className="p-3 bg-white dark:bg-slate-900 rounded border-l-4 border-teal-500">
+                    <div className="p-3 bg-card rounded border-l-4 border-teal-500">
                       <p className="text-xs text-muted-foreground">Back</p>
                       <p className="font-medium">{cardForm.back || "..."}</p>
                     </div>
@@ -1865,7 +1865,7 @@ export default function Flashcards() {
               <CardDescription>Import multiple cards at once</CardDescription>
             </CardHeader>
             <CardContent className="pt-6 space-y-6">
-              <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+              <div className="bg-brand-primary/10 dark:bg-brand-primary/20 border border-brand-primary/30 dark:border-brand-primary/40 rounded-lg p-4">
                 <p className="text-sm text-blue-900 dark:text-blue-100">
                   <strong>Format:</strong> Enter one card per line using: <code className="bg-blue-100 dark:bg-blue-900 px-2 py-1 rounded">Front Text | Back Text</code>
                 </p>
@@ -1878,7 +1878,7 @@ export default function Flashcards() {
                   placeholder="What is React? | A JavaScript library for building UIs&#10;What is useState? | A hook for managing component state"
                   value={bulkImportText}
                   onChange={(e) => setBulkImportText(e.target.value)}
-                  className="w-full p-4 border-2 border-emerald-200 dark:border-emerald-800 rounded-lg bg-white dark:bg-slate-900 font-mono text-sm"
+                  className="w-full p-4 border-2 border-emerald-200 dark:border-emerald-800 rounded-lg bg-card font-mono text-sm"
                   rows={8}
                   data-testid="textarea-bulk-import"
                 />

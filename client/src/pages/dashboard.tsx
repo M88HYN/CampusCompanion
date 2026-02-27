@@ -109,7 +109,7 @@ function ActionCard({
 
   return (
     <Link href={href}>
-      <Card className="hover-elevate cursor-pointer transition-all border border-slate-100 shadow-md shadow-slate-200/50 dark:shadow-none dark:border-slate-800 overflow-hidden h-full bg-white dark:bg-slate-900" data-testid={testId}>
+      <Card className="hover-elevate cursor-pointer transition-all border border-slate-100 shadow-md shadow-slate-200/50 dark:shadow-none dark:border-slate-800 overflow-hidden h-full bg-card" data-testid={testId}>
         <div className={`h-1.5 ${priorityColors[priority]}`} />
         <CardContent className="p-4">
           <div className="flex gap-4 flex-wrap">
@@ -551,7 +551,7 @@ export default function Dashboard({ userRole = "student" }: DashboardProps) {
                 </Button>
               </div>
             )}
-            <p className="text-slate-500 dark:text-slate-400 text-sm">
+            <p className="text-muted-foreground text-sm">
               Your personal learning command centre. Here's what matters most today.
             </p>
           </div>
@@ -634,7 +634,7 @@ export default function Dashboard({ userRole = "student" }: DashboardProps) {
                   <FileText className="h-5 w-5 text-white" />
                 </div>
                 <div>
-                  <p className="text-xl font-bold text-slate-900 dark:text-white">{notes.length}</p>
+                  <p className="text-xl font-bold text-foreground">{notes.length}</p>
                   <p className="text-xs text-muted-foreground">Notes</p>
                 </div>
               </div>
@@ -644,7 +644,7 @@ export default function Dashboard({ userRole = "student" }: DashboardProps) {
                   <Layers className="h-5 w-5 text-white" />
                 </div>
                 <div>
-                  <p className="text-xl font-bold text-slate-900 dark:text-white">{totalCardsCount}</p>
+                  <p className="text-xl font-bold text-foreground">{totalCardsCount}</p>
                   <p className="text-xs text-muted-foreground">Flashcards</p>
                 </div>
               </div>
@@ -654,7 +654,7 @@ export default function Dashboard({ userRole = "student" }: DashboardProps) {
                   <BrainCircuit className="h-5 w-5 text-white" />
                 </div>
                 <div>
-                  <p className="text-xl font-bold text-slate-900 dark:text-white">{quizzes.length}</p>
+                  <p className="text-xl font-bold text-foreground">{quizzes.length}</p>
                   <p className="text-xs text-muted-foreground">Quizzes</p>
                 </div>
               </div>
@@ -662,7 +662,7 @@ export default function Dashboard({ userRole = "student" }: DashboardProps) {
               <div>
                 <div className="flex items-center justify-between mb-1">
                   <span className="text-xs text-muted-foreground">Flashcard Mastery</span>
-                  <span className="text-xs font-bold text-slate-900 dark:text-white">{totalCardsCount > 0 ? Math.round((masteredCardsCount / totalCardsCount) * 100) : 0}%</span>
+                  <span className="text-xs font-bold text-foreground">{totalCardsCount > 0 ? Math.round((masteredCardsCount / totalCardsCount) * 100) : 0}%</span>
                 </div>
                 <Progress value={totalCardsCount > 0 ? (masteredCardsCount / totalCardsCount) * 100 : 0} className="h-2" />
                 <p className="text-xs text-muted-foreground mt-1">{masteredCardsCount} of {totalCardsCount} cards mastered</p>
@@ -677,7 +677,7 @@ export default function Dashboard({ userRole = "student" }: DashboardProps) {
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-teal-500 to-cyan-600 shadow-md shadow-teal-500/30 flex items-center justify-center">
+                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-primary to-brand-accent shadow-md shadow-teal-500/30 flex items-center justify-center">
                       <Rocket className="h-4 w-4 text-white" />
                     </div>
                     <div>
@@ -719,7 +719,7 @@ export default function Dashboard({ userRole = "student" }: DashboardProps) {
                     data-testid={`card-${feature.title.toLowerCase().replace(/\s+/g, '-')}`}
                   >
                     {feature.urgent && (
-                      <Badge variant="destructive" className="absolute top-2 right-2 text-xs bg-white text-red-600 font-bold animate-pulse">
+                      <Badge variant="destructive" className="absolute top-2 right-2 text-xs bg-white text-destructive font-bold animate-pulse">
                         Due
                       </Badge>
                     )}

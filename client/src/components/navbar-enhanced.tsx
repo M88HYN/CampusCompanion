@@ -20,15 +20,15 @@ export function Navbar({ onLogout, userName = "Student" }: NavbarProps) {
   const isDark = theme === "dark";
 
   return (
-    <nav className="sticky top-0 z-40 w-full bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 shadow-sm">
+    <nav className="sticky top-0 z-40 w-full bg-primary text-primary-foreground backdrop-blur-md border-b border-primary/80 shadow-md transition-all duration-200 ease-in-out">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo/Title */}
           <div className="flex items-center gap-2">
-            <div className="relative w-8 h-8 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-lg flex items-center justify-center">
+            <div className="relative w-8 h-8 bg-secondary rounded-xl flex items-center justify-center">
               <span className="text-white font-bold text-sm">CC</span>
             </div>
-            <h1 className="font-bold text-lg hidden sm:inline text-slate-900 dark:text-white">
+            <h1 className="font-bold text-lg hidden sm:inline text-primary-foreground">
               Campus Companion
             </h1>
           </div>
@@ -40,12 +40,12 @@ export function Navbar({ onLogout, userName = "Student" }: NavbarProps) {
               variant="ghost"
               size="icon"
               onClick={toggleTheme}
-              className="rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              className="rounded-xl hover:bg-primary/80 text-primary-foreground"
             >
               {isDark ? (
-                <Sun className="h-5 w-5 text-amber-500" />
+                <Sun className="h-5 w-5 text-primary-foreground" />
               ) : (
-                <Moon className="h-5 w-5 text-slate-700" />
+                <Moon className="h-5 w-5 text-primary-foreground" />
               )}
             </Button>
 
@@ -54,9 +54,9 @@ export function Navbar({ onLogout, userName = "Student" }: NavbarProps) {
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="ghost"
-                  className="rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                  className="rounded-xl hover:bg-primary/80 text-primary-foreground"
                 >
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-white text-sm font-semibold mr-2">
+                  <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center text-white text-sm font-semibold mr-2">
                     {userName.charAt(0).toUpperCase()}
                   </div>
                   <span className="hidden sm:inline text-sm font-medium truncate max-w-[100px]">
@@ -76,7 +76,7 @@ export function Navbar({ onLogout, userName = "Student" }: NavbarProps) {
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   onClick={onLogout}
-                  className="flex items-center gap-2 text-red-600 dark:text-red-400"
+                  className="flex items-center gap-2 text-destructive"
                 >
                   <LogOut className="h-4 w-4" />
                   <span>Logout</span>
