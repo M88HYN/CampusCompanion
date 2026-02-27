@@ -94,64 +94,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ status: "ok", timestamp: new Date().toISOString() });
   });
 
-  // Public review page for AI/crawlers that cannot execute client-side JavaScript
+  // Route preserved for compatibility; redirect to full app UI
   app.get("/review", (_req, res) => {
-    res.setHeader("Content-Type", "text/html; charset=utf-8");
-    res.send(`<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>StudyMate Review Snapshot</title>
-    <style>
-      body { font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 0; padding: 24px; background: #f8fafc; color: #0f172a; }
-      .container { max-width: 980px; margin: 0 auto; }
-      .card { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px; margin-bottom: 12px; }
-      .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; }
-      h1 { margin: 0 0 8px; font-size: 1.5rem; }
-      p { margin: 6px 0; color: #334155; }
-      ul { margin: 8px 0 0 18px; }
-      li { margin: 4px 0; }
-      a { color: #0f766e; text-decoration: none; }
-      a:hover { text-decoration: underline; }
-      .badge { display: inline-block; padding: 4px 8px; border-radius: 999px; background: #ccfbf1; color: #115e59; font-size: 12px; font-weight: 600; }
-    </style>
-  </head>
-  <body>
-    <div class="container">
-      <div class="card">
-        <h1>StudyMate - Public Review Snapshot</h1>
-        <p>This page is intentionally server-rendered for reviewers and AI tools that cannot execute JavaScript.</p>
-        <span class="badge">Read-Only Review Surface</span>
-      </div>
-
-      <div class="card">
-        <h2>Core Product Areas</h2>
-        <div class="grid">
-          <div><strong>Dashboard</strong><p>Learning metrics and quick actions.</p></div>
-          <div><strong>Notes</strong><p>Structured notes with rich blocks.</p></div>
-          <div><strong>Flashcards</strong><p>Spaced repetition study flow.</p></div>
-          <div><strong>Quizzes</strong><p>MCQ and short-answer assessments.</p></div>
-          <div><strong>Insights</strong><p>Performance analytics and trends.</p></div>
-          <div><strong>Insight Scout</strong><p>AI-assisted study support.</p></div>
-        </div>
-      </div>
-
-      <div class="card">
-        <h2>Direct Links</h2>
-        <ul>
-          <li><a href="/">Home</a></li>
-          <li><a href="/dashboard">Dashboard</a></li>
-          <li><a href="/notes">Notes</a></li>
-          <li><a href="/flashcards">Flashcards</a></li>
-          <li><a href="/quizzes">Quizzes</a></li>
-          <li><a href="/insights">Insights</a></li>
-          <li><a href="/api/health">API Health</a></li>
-        </ul>
-      </div>
-    </div>
-  </body>
-</html>`);
+    res.redirect("/");
   });
   
   // ==================== NOTES API ====================
