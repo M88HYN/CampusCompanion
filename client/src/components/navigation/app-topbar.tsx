@@ -367,7 +367,7 @@ export function AppTopbar({ user, onLogout }: AppTopbarProps) {
             <DropdownMenuTrigger asChild>
               <Button
                 variant="ghost"
-                className="h-10 gap-2 px-2 text-primary-foreground focus-visible:ring-2 focus-visible:ring-ring"
+                className="h-10 gap-2 rounded-xl px-2 text-primary-foreground transition-all duration-300 ease-out hover:-translate-y-[1px] hover:bg-white/10 hover:shadow-sm focus-visible:ring-2 focus-visible:ring-ring"
                 aria-label="Open user menu"
               >
                 <Avatar className="h-8 w-8 border border-primary-foreground/40">
@@ -380,15 +380,23 @@ export function AppTopbar({ user, onLogout }: AppTopbarProps) {
                 </span>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuContent
+              align="end"
+              className="w-60 rounded-xl border border-border/80 bg-popover/95 p-1 shadow-xl backdrop-blur-sm data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95"
+            >
+              <DropdownMenuLabel className="px-2 py-1.5">
+                <p className="truncate text-sm font-semibold">{user?.firstName || "User"}</p>
+                <p className="truncate text-xs text-muted-foreground">{user?.email || "No email"}</p>
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
               <DropdownMenuItem asChild>
-                <Link href="/profile" className="flex items-center gap-2">
+                <Link href="/profile" className="flex items-center gap-2 rounded-md transition-colors">
                   <User className="h-4 w-4" />
                   {t("nav.profile", "Profile")}
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <Link href="/settings" className="flex items-center gap-2">
+                <Link href="/settings" className="flex items-center gap-2 rounded-md transition-colors">
                   <Settings className="h-4 w-4" />
                   {t("nav.settings", "Settings")}
                 </Link>
