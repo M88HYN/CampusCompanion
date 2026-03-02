@@ -145,7 +145,7 @@ async function ensureLocalUserFromSupabaseProfile(profile: any): Promise<AuthUse
   return created;
 }
 
-function getSupabaseAuthorizeUrl(provider: "google" | "github" | "azure"): string {
+function getSupabaseAuthorizeUrl(provider: "google" | "github"): string {
   const redirectTo = new URL("/login", FRONTEND_URL).toString();
   const params = new URLSearchParams({
     provider,
@@ -414,23 +414,5 @@ export function registerAuthRoutes(app: Express) {
     }
 
     res.redirect(getSupabaseAuthorizeUrl("github"));
-  });
-
-  // Outlook/Microsoft OAuth - Initiate (Supabase Azure provider)
-  app.get("/api/auth/outlook", (req: any, res: Response) => {
-    if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-      return res.status(500).json({ message: "Supabase OAuth not configured" });
-    }
-
-    res.redirect(getSupabaseAuthorizeUrl("azure"));
-  });
-
-  // Microsoft alias for compatibility
-  app.get("/api/auth/microsoft", (req: any, res: Response) => {
-    if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-      return res.status(500).json({ message: "Supabase OAuth not configured" });
-    }
-
-    res.redirect(getSupabaseAuthorizeUrl("azure"));
   });
 }

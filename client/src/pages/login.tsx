@@ -224,11 +224,6 @@ const handleGithubLogin = () => {
     window.location.href = "/api/auth/github";
   };
 
-const handleOutlookLogin = () => {
-    // Redirect to backend OAuth endpoint
-    window.location.href = "/api/auth/outlook";
-  };
-
   return (
     <div className="min-h-screen flex">
       <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-teal-500 via-cyan-500 to-teal-600 relative overflow-hidden">
@@ -330,26 +325,7 @@ const handleOutlookLogin = () => {
                 </svg>
                 {loading ? "Loading..." : "GitHub"}
               </Button>
-              <Button
-                type="button"
-                onClick={handleOutlookLogin}
-                disabled={loading}
-                variant="outline"
-                className="w-full h-11"
-              >
-                <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                  <rect x="2" y="2" width="9" height="9" fill="#F25022" />
-                  <rect x="13" y="2" width="9" height="9" fill="#7FBA00" />
-                  <rect x="2" y="13" width="9" height="9" fill="#00A4EF" />
-                  <rect x="13" y="13" width="9" height="9" fill="#FFB900" />
-                </svg>
-                {loading ? "Loading..." : "Outlook"}
-              </Button>
             </div>
-
-            <p className="text-xs text-center text-muted-foreground">
-              Outlook sign-in uses the Microsoft (Azure) provider in Supabase.
-            </p>
 
             <div className="text-center text-sm text-muted-foreground">
               {isLogin ? (
