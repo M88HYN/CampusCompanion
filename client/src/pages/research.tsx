@@ -1,3 +1,27 @@
+/*
+==========================================================
+File: client/src/pages/research.tsx
+
+Module: Insight Scout and Research
+
+Purpose:
+Defines responsibilities specific to this unit while preserving
+clear boundaries with adjacent modules in CampusCompanion.
+
+Architectural Layer:
+Presentation Layer (Frontend UI)
+
+System Interaction:
+- Consumes API endpoints via query/mutation utilities and renders user-facing interfaces
+- Collaborates with shared types to preserve frontend-backend contract integrity
+
+Design Rationale:
+A dedicated file-level boundary supports maintainability,
+traceability, and scalability by keeping concerns local and
+allowing safe evolution of features without cross-module side effects.
+==========================================================
+*/
+
 import { useState, useRef, useEffect } from "react";
 import {
   Send, Sparkles, StickyNote, BookOpen, HelpCircle, Copy, Check,
@@ -132,12 +156,58 @@ const PRACTICE_PROMPTS: Array<{
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
+/*
+----------------------------------------------------------
+Function: generateTitle
+
+Purpose:
+Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+Parameters:
+- query: Input consumed by this routine during execution
+
+Process:
+1. Accepts and normalizes inputs before core processing
+2. Applies relevant guards/validation to prevent invalid transitions
+3. Executes primary logic path and handles expected edge conditions
+4. Returns a deterministic output for the caller layer
+
+Why Validation is Important:
+Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+Returns:
+A value/promise representing the outcome of the executed logic path.
+----------------------------------------------------------
+*/
 function generateTitle(query: string): string {
   const cleaned = query.replace(/^(explain|summarize|compare|analyze|show|how|what|why|when|where|describe|discuss)\s+(this\s+)?(concept|topic)?:?\s*/i, "").trim();
   const title = cleaned.charAt(0).toUpperCase() + cleaned.slice(1);
   return title.length > 60 ? title.substring(0, 57) + "..." : title;
 }
 
+/*
+----------------------------------------------------------
+Function: parseInsightSections
+
+Purpose:
+Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+Parameters:
+- content: Input consumed by this routine during execution
+
+Process:
+1. Accepts and normalizes inputs before core processing
+2. Applies relevant guards/validation to prevent invalid transitions
+3. Executes primary logic path and handles expected edge conditions
+4. Returns a deterministic output for the caller layer
+
+Why Validation is Important:
+Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+Returns:
+A value/promise representing the outcome of the executed logic path.
+----------------------------------------------------------
+*/
 function parseInsightSections(content: string) {
   const sections = {
     keyInsight: "",
@@ -157,9 +227,55 @@ function parseInsightSections(content: string) {
 
   const allHeadings = Object.values(headingAliases).flat();
 
-  const escapeRegex = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    /*
+  ----------------------------------------------------------
+  Function: escapeRegex
 
-  const extractSection = (aliases: readonly string[]) => {
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - value: Input consumed by this routine during execution
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+const escapeRegex = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+    /*
+  ----------------------------------------------------------
+  Function: extractSection
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - aliases: Input consumed by this routine during execution
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+const extractSection = (aliases: readonly string[]) => {
     const aliasPattern = aliases.map(escapeRegex).join("|");
     const stopPattern = allHeadings.map(escapeRegex).join("|");
     const regex = new RegExp(
@@ -187,6 +303,32 @@ function parseInsightSections(content: string) {
 
 // ─── Sub-components ──────────────────────────────────────────────────────────
 
+/*
+----------------------------------------------------------
+Component: ExpandableSection
+
+Purpose:
+Renders a focused UI unit and orchestrates state, hooks, and user interactions for the surrounding workflow.
+
+Parameters:
+- title: Input consumed by this routine during execution
+- Icon: Input consumed by this routine during execution
+- content: Input consumed by this routine during execution
+- defaultOpen: Input consumed by this routine during execution
+
+Process:
+1. Initializes local state and framework hooks required for rendering
+2. Derives view data from props, query state, and computed conditions
+3. Applies conditional rendering to keep the interface robust for empty/loading/error states
+4. Binds event handlers and side effects to synchronize UI with backend/application state
+
+Why Validation is Important:
+State guards and defensive rendering prevent runtime errors, preserve UX continuity, and improve accessibility during asynchronous updates.
+
+Returns:
+A JSX tree representing the component view for the current state.
+----------------------------------------------------------
+*/
 function ExpandableSection({ title, icon: Icon, content, defaultOpen = false }: {
   title: string;
   icon: React.ElementType;
@@ -226,6 +368,30 @@ function ExpandableSection({ title, icon: Icon, content, defaultOpen = false }: 
   );
 }
 
+/*
+----------------------------------------------------------
+Component: ConfidenceCheck
+
+Purpose:
+Renders a focused UI unit and orchestrates state, hooks, and user interactions for the surrounding workflow.
+
+Parameters:
+- confidence: Input consumed by this routine during execution
+- onSelect: Input consumed by this routine during execution
+
+Process:
+1. Initializes local state and framework hooks required for rendering
+2. Derives view data from props, query state, and computed conditions
+3. Applies conditional rendering to keep the interface robust for empty/loading/error states
+4. Binds event handlers and side effects to synchronize UI with backend/application state
+
+Why Validation is Important:
+State guards and defensive rendering prevent runtime errors, preserve UX continuity, and improve accessibility during asynchronous updates.
+
+Returns:
+A JSX tree representing the component view for the current state.
+----------------------------------------------------------
+*/
 function ConfidenceCheck({ confidence, onSelect }: {
   confidence: ConfidenceLevel;
   onSelect: (level: ConfidenceLevel) => void;
@@ -261,6 +427,36 @@ function ConfidenceCheck({ confidence, onSelect }: {
   );
 }
 
+/*
+----------------------------------------------------------
+Component: InsightCardComponent
+
+Purpose:
+Renders a focused UI unit and orchestrates state, hooks, and user interactions for the surrounding workflow.
+
+Parameters:
+- card: Input consumed by this routine during execution
+- onSaveToNotes: Input consumed by this routine during execution
+- onCreateFlashcard: Input consumed by this routine during execution
+- onCreateQuiz: Input consumed by this routine during execution
+- onConfidenceChange: Input consumed by this routine during execution
+- onCopy: Input consumed by this routine during execution
+- copiedId: Input consumed by this routine during execution
+- isStreaming: Input consumed by this routine during execution
+
+Process:
+1. Initializes local state and framework hooks required for rendering
+2. Derives view data from props, query state, and computed conditions
+3. Applies conditional rendering to keep the interface robust for empty/loading/error states
+4. Binds event handlers and side effects to synchronize UI with backend/application state
+
+Why Validation is Important:
+State guards and defensive rendering prevent runtime errors, preserve UX continuity, and improve accessibility during asynchronous updates.
+
+Returns:
+A JSX tree representing the component view for the current state.
+----------------------------------------------------------
+*/
 function InsightCardComponent({
   card,
   onSaveToNotes,
@@ -402,6 +598,29 @@ function InsightCardComponent({
 
 // ─── Main Component ──────────────────────────────────────────────────────────
 
+/*
+----------------------------------------------------------
+Component: Research
+
+Purpose:
+Renders a focused UI unit and orchestrates state, hooks, and user interactions for the surrounding workflow.
+
+Parameters:
+- None: Operates using closure/module state only
+
+Process:
+1. Initializes local state and framework hooks required for rendering
+2. Derives view data from props, query state, and computed conditions
+3. Applies conditional rendering to keep the interface robust for empty/loading/error states
+4. Binds event handlers and side effects to synchronize UI with backend/application state
+
+Why Validation is Important:
+State guards and defensive rendering prevent runtime errors, preserve UX continuity, and improve accessibility during asynchronous updates.
+
+Returns:
+A JSX tree representing the component view for the current state.
+----------------------------------------------------------
+*/
 export default function Research() {
   const [input, setInput] = useState("");
   const [studyIntent, setStudyIntent] = useState<StudyIntent>("deep_understanding");
@@ -586,10 +805,57 @@ export default function Research() {
     setInsightCards(loadedCards);
   }, [conversationDetail, currentConversationId]);
 
-  const getConversationTitle = (query: string) =>
+    /*
+  ----------------------------------------------------------
+  Function: getConversationTitle
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - query: Input consumed by this routine during execution
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+const getConversationTitle = (query: string) =>
     query.replace(/\s+/g, " ").trim().slice(0, 72) || "New Conversation";
 
-  const handleCopy = async (content: string, id: string) => {
+    /*
+  ----------------------------------------------------------
+  Function: handleCopy
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - content: Input consumed by this routine during execution
+  - id: Input consumed by this routine during execution
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+const handleCopy = async (content: string, id: string) => {
     try {
       await navigator.clipboard.writeText(content);
       setCopiedId(id);
@@ -600,12 +866,58 @@ export default function Research() {
     }
   };
 
-  const handleSaveToNotes = (content: string) => {
+    /*
+  ----------------------------------------------------------
+  Function: handleSaveToNotes
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - content: Input consumed by this routine during execution
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+const handleSaveToNotes = (content: string) => {
     const title = content.split("\n")[0]?.substring(0, 50) || "Insight Scout Result";
     saveToNotesMutation.mutate({ title: title.replace(/[#*]/g, "").trim(), content });
   };
 
-  const openFlashcardDialog = (content: string) => {
+    /*
+  ----------------------------------------------------------
+  Function: openFlashcardDialog
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - content: Input consumed by this routine during execution
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+const openFlashcardDialog = (content: string) => {
     const lines = content.split("\n").filter(l => l.trim());
     setFlashcardFront(lines[0]?.substring(0, 200).replace(/[#*]/g, "").trim() || "Key Concept");
     setFlashcardBack(lines.slice(1).join("\n").substring(0, 500) || content.substring(0, 500));
@@ -613,7 +925,30 @@ export default function Research() {
     setShowFlashcardDialog(true);
   };
 
-  const openQuizDialog = (content: string) => {
+    /*
+  ----------------------------------------------------------
+  Function: openQuizDialog
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - content: Input consumed by this routine during execution
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+const openQuizDialog = (content: string) => {
     const lines = content.split("\n").filter(l => l.trim());
     setQuizQuestion(lines[0]?.substring(0, 200).replace(/[#*]/g, "").trim() || content.substring(0, 200));
     setQuizAnswer(lines.slice(1, 3).join(" ").substring(0, 150) || "Correct answer");
@@ -621,7 +956,31 @@ export default function Research() {
     setShowQuizDialog(true);
   };
 
-  const handleConfidenceChange = (cardId: string, level: ConfidenceLevel) => {
+    /*
+  ----------------------------------------------------------
+  Function: handleConfidenceChange
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - cardId: Input consumed by this routine during execution
+  - level: Input consumed by this routine during execution
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+const handleConfidenceChange = (cardId: string, level: ConfidenceLevel) => {
     setInsightCards(prev => prev.map(c =>
       c.id === cardId ? { ...c, confidence: level } : c
     ));
@@ -637,7 +996,30 @@ export default function Research() {
     }
   };
 
-  const handleSend = async () => {
+    /*
+  ----------------------------------------------------------
+  Function: handleSend
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - None: Operates using closure/module state only
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+const handleSend = async () => {
     if (!input.trim() || isStreaming) return;
 
     const query = input.trim();

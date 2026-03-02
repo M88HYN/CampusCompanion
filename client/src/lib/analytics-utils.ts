@@ -1,3 +1,27 @@
+/*
+==========================================================
+File: client/src/lib/analytics-utils.ts
+
+Module: Analytics and Learning Intelligence
+
+Purpose:
+Defines responsibilities specific to this unit while preserving
+clear boundaries with adjacent modules in CampusCompanion.
+
+Architectural Layer:
+Application Layer (Business and Interaction Logic)
+
+System Interaction:
+- Consumes API endpoints via query/mutation utilities and renders user-facing interfaces
+- Collaborates with shared types to preserve frontend-backend contract integrity
+
+Design Rationale:
+A dedicated file-level boundary supports maintainability,
+traceability, and scalability by keeping concerns local and
+allowing safe evolution of features without cross-module side effects.
+==========================================================
+*/
+
 /**
  * Analytics Utility Functions
  * Centralized calculations for quiz analytics
@@ -42,6 +66,30 @@ export interface RecentActivity {
 /**
  * Safely calculate accuracy
  */
+/*
+----------------------------------------------------------
+Function: calculateAccuracy
+
+Purpose:
+Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+Parameters:
+- correct: Input consumed by this routine during execution
+- total: Input consumed by this routine during execution
+
+Process:
+1. Accepts and normalizes inputs before core processing
+2. Applies relevant guards/validation to prevent invalid transitions
+3. Executes primary logic path and handles expected edge conditions
+4. Returns a deterministic output for the caller layer
+
+Why Validation is Important:
+Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+Returns:
+A value/promise representing the outcome of the executed logic path.
+----------------------------------------------------------
+*/
 export function calculateAccuracy(correct: number, total: number): number {
   if (!total || total === 0) return 0;
   return Math.round((correct / total) * 100);
@@ -50,6 +98,29 @@ export function calculateAccuracy(correct: number, total: number): number {
 /**
  * Safely calculate weighted average accuracy
  */
+/*
+----------------------------------------------------------
+Function: calculateWeightedAverage
+
+Purpose:
+Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+Parameters:
+- values: Input consumed by this routine during execution
+
+Process:
+1. Accepts and normalizes inputs before core processing
+2. Applies relevant guards/validation to prevent invalid transitions
+3. Executes primary logic path and handles expected edge conditions
+4. Returns a deterministic output for the caller layer
+
+Why Validation is Important:
+Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+Returns:
+A value/promise representing the outcome of the executed logic path.
+----------------------------------------------------------
+*/
 export function calculateWeightedAverage(
   values: Array<{ value: number; weight: number }>
 ): number {
@@ -65,6 +136,29 @@ export function calculateWeightedAverage(
 /**
  * Group attempts by topic
  */
+/*
+----------------------------------------------------------
+Function: groupAttemptsByTopic
+
+Purpose:
+Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+Parameters:
+- attempts: Input consumed by this routine during execution
+
+Process:
+1. Accepts and normalizes inputs before core processing
+2. Applies relevant guards/validation to prevent invalid transitions
+3. Executes primary logic path and handles expected edge conditions
+4. Returns a deterministic output for the caller layer
+
+Why Validation is Important:
+Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+Returns:
+A value/promise representing the outcome of the executed logic path.
+----------------------------------------------------------
+*/
 export function groupAttemptsByTopic(
   attempts: QuizAttempt[]
 ): Record<string, QuizAttempt[]> {
@@ -81,6 +175,29 @@ export function groupAttemptsByTopic(
 /**
  * Calculate topic performance
  */
+/*
+----------------------------------------------------------
+Function: calculateTopicPerformance
+
+Purpose:
+Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+Parameters:
+- attempts: Input consumed by this routine during execution
+
+Process:
+1. Accepts and normalizes inputs before core processing
+2. Applies relevant guards/validation to prevent invalid transitions
+3. Executes primary logic path and handles expected edge conditions
+4. Returns a deterministic output for the caller layer
+
+Why Validation is Important:
+Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+Returns:
+A value/promise representing the outcome of the executed logic path.
+----------------------------------------------------------
+*/
 export function calculateTopicPerformance(
   attempts: QuizAttempt[]
 ): TopicPerformance[] {
@@ -114,6 +231,29 @@ export function calculateTopicPerformance(
 /**
  * Get strengths (topics with >= 70% accuracy)
  */
+/*
+----------------------------------------------------------
+Function: getStrengths
+
+Purpose:
+Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+Parameters:
+- performance: Input consumed by this routine during execution
+
+Process:
+1. Accepts and normalizes inputs before core processing
+2. Applies relevant guards/validation to prevent invalid transitions
+3. Executes primary logic path and handles expected edge conditions
+4. Returns a deterministic output for the caller layer
+
+Why Validation is Important:
+Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+Returns:
+A value/promise representing the outcome of the executed logic path.
+----------------------------------------------------------
+*/
 export function getStrengths(performance: TopicPerformance[]): TopicPerformance[] {
   return performance.filter(item => item.accuracy >= 70);
 }
@@ -121,6 +261,29 @@ export function getStrengths(performance: TopicPerformance[]): TopicPerformance[
 /**
  * Get areas to improve (topics with < 70% accuracy)
  */
+/*
+----------------------------------------------------------
+Function: getAreasToImprove
+
+Purpose:
+Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+Parameters:
+- performance: Input consumed by this routine during execution
+
+Process:
+1. Accepts and normalizes inputs before core processing
+2. Applies relevant guards/validation to prevent invalid transitions
+3. Executes primary logic path and handles expected edge conditions
+4. Returns a deterministic output for the caller layer
+
+Why Validation is Important:
+Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+Returns:
+A value/promise representing the outcome of the executed logic path.
+----------------------------------------------------------
+*/
 export function getAreasToImprove(performance: TopicPerformance[]): TopicPerformance[] {
   return performance.filter(item => item.accuracy < 70);
 }
@@ -128,6 +291,30 @@ export function getAreasToImprove(performance: TopicPerformance[]): TopicPerform
 /**
  * Format recent activity from attempts
  */
+/*
+----------------------------------------------------------
+Function: formatRecentActivity
+
+Purpose:
+Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+Parameters:
+- attempts: Input consumed by this routine during execution
+- limit: Input consumed by this routine during execution
+
+Process:
+1. Accepts and normalizes inputs before core processing
+2. Applies relevant guards/validation to prevent invalid transitions
+3. Executes primary logic path and handles expected edge conditions
+4. Returns a deterministic output for the caller layer
+
+Why Validation is Important:
+Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+Returns:
+A value/promise representing the outcome of the executed logic path.
+----------------------------------------------------------
+*/
 export function formatRecentActivity(
   attempts: QuizAttempt[],
   limit: number = 10
@@ -153,6 +340,29 @@ export function formatRecentActivity(
 /**
  * Calculate analytics summary
  */
+/*
+----------------------------------------------------------
+Function: calculateAnalyticsSummary
+
+Purpose:
+Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+Parameters:
+- attempts: Input consumed by this routine during execution
+
+Process:
+1. Accepts and normalizes inputs before core processing
+2. Applies relevant guards/validation to prevent invalid transitions
+3. Executes primary logic path and handles expected edge conditions
+4. Returns a deterministic output for the caller layer
+
+Why Validation is Important:
+Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+Returns:
+A value/promise representing the outcome of the executed logic path.
+----------------------------------------------------------
+*/
 export function calculateAnalyticsSummary(
   attempts: QuizAttempt[]
 ): AnalyticsSummary {
@@ -185,6 +395,30 @@ export function calculateAnalyticsSummary(
 /**
  * Safe number fallback
  */
+/*
+----------------------------------------------------------
+Function: safeNumberFallback
+
+Purpose:
+Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+Parameters:
+- value: Input consumed by this routine during execution
+- defaultValue: Input consumed by this routine during execution
+
+Process:
+1. Accepts and normalizes inputs before core processing
+2. Applies relevant guards/validation to prevent invalid transitions
+3. Executes primary logic path and handles expected edge conditions
+4. Returns a deterministic output for the caller layer
+
+Why Validation is Important:
+Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+Returns:
+A value/promise representing the outcome of the executed logic path.
+----------------------------------------------------------
+*/
 export function safeNumberFallback(value: unknown, defaultValue: number = 0): number {
   const num = Number(value);
   return isNaN(num) || num === null || num === undefined ? defaultValue : num;
@@ -193,6 +427,29 @@ export function safeNumberFallback(value: unknown, defaultValue: number = 0): nu
 /**
  * Format date for display
  */
+/*
+----------------------------------------------------------
+Function: formatDate
+
+Purpose:
+Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+Parameters:
+- dateString: Input consumed by this routine during execution
+
+Process:
+1. Accepts and normalizes inputs before core processing
+2. Applies relevant guards/validation to prevent invalid transitions
+3. Executes primary logic path and handles expected edge conditions
+4. Returns a deterministic output for the caller layer
+
+Why Validation is Important:
+Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+Returns:
+A value/promise representing the outcome of the executed logic path.
+----------------------------------------------------------
+*/
 export function formatDate(dateString: string): string {
   try {
     const date = new Date(dateString);

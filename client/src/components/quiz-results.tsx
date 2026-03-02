@@ -1,3 +1,27 @@
+/*
+==========================================================
+File: client/src/components/quiz-results.tsx
+
+Module: Quiz and Assessment
+
+Purpose:
+Defines responsibilities specific to this unit while preserving
+clear boundaries with adjacent modules in CampusCompanion.
+
+Architectural Layer:
+Presentation Layer (Frontend UI)
+
+System Interaction:
+- Consumes API endpoints via query/mutation utilities and renders user-facing interfaces
+- Collaborates with shared types to preserve frontend-backend contract integrity
+
+Design Rationale:
+A dedicated file-level boundary supports maintainability,
+traceability, and scalability by keeping concerns local and
+allowing safe evolution of features without cross-module side effects.
+==========================================================
+*/
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -13,6 +37,34 @@ interface QuizResultsProps {
   onContinue: () => void;
 }
 
+/*
+----------------------------------------------------------
+Component: QuizResults
+
+Purpose:
+Renders a focused UI unit and orchestrates state, hooks, and user interactions for the surrounding workflow.
+
+Parameters:
+- score: Input consumed by this routine during execution
+- totalQuestions: Input consumed by this routine during execution
+- timeSpent: Input consumed by this routine during execution
+- xpEarned: Input consumed by this routine during execution
+- onRetry: Input consumed by this routine during execution
+- onContinue: Input consumed by this routine during execution
+
+Process:
+1. Initializes local state and framework hooks required for rendering
+2. Derives view data from props, query state, and computed conditions
+3. Applies conditional rendering to keep the interface robust for empty/loading/error states
+4. Binds event handlers and side effects to synchronize UI with backend/application state
+
+Why Validation is Important:
+State guards and defensive rendering prevent runtime errors, preserve UX continuity, and improve accessibility during asynchronous updates.
+
+Returns:
+A JSX tree representing the component view for the current state.
+----------------------------------------------------------
+*/
 export function QuizResults({
   score,
   totalQuestions,
@@ -22,7 +74,30 @@ export function QuizResults({
   onContinue,
 }: QuizResultsProps) {
   const percentage = Math.round((score / totalQuestions) * 100);
-  const getGrade = (percentage: number): string => {
+    /*
+  ----------------------------------------------------------
+  Function: getGrade
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - percentage: Input consumed by this routine during execution
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+const getGrade = (percentage: number): string => {
     if (percentage >= 90) return "A+";
     if (percentage >= 80) return "A";
     if (percentage >= 70) return "B";
@@ -31,7 +106,30 @@ export function QuizResults({
     return "F";
   };
 
-  const getEmoji = (percentage: number): string => {
+    /*
+  ----------------------------------------------------------
+  Function: getEmoji
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - percentage: Input consumed by this routine during execution
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+const getEmoji = (percentage: number): string => {
     if (percentage >= 90) return "🎉";
     if (percentage >= 80) return "👏";
     if (percentage >= 70) return "😊";
@@ -40,7 +138,30 @@ export function QuizResults({
     return "📚";
   };
 
-  const getColor = (
+    /*
+  ----------------------------------------------------------
+  Function: getColor
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - percentage: Input consumed by this routine during execution
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+const getColor = (
     percentage: number
   ): "bg-green-100" | "bg-blue-100" | "bg-amber-100" | "bg-red-100" => {
     if (percentage >= 80) return "bg-green-100";
@@ -134,6 +255,30 @@ export function QuizResults({
   );
 }
 
+/*
+----------------------------------------------------------
+Component: TimerMode
+
+Purpose:
+Renders a focused UI unit and orchestrates state, hooks, and user interactions for the surrounding workflow.
+
+Parameters:
+- timeLeft: Input consumed by this routine during execution
+- onTimeEnd: Input consumed by this routine during execution
+
+Process:
+1. Initializes local state and framework hooks required for rendering
+2. Derives view data from props, query state, and computed conditions
+3. Applies conditional rendering to keep the interface robust for empty/loading/error states
+4. Binds event handlers and side effects to synchronize UI with backend/application state
+
+Why Validation is Important:
+State guards and defensive rendering prevent runtime errors, preserve UX continuity, and improve accessibility during asynchronous updates.
+
+Returns:
+A JSX tree representing the component view for the current state.
+----------------------------------------------------------
+*/
 export function TimerMode({
   timeLeft,
   onTimeEnd,
@@ -141,7 +286,30 @@ export function TimerMode({
   timeLeft: number;
   onTimeEnd: () => void;
 }) {
-  const getTimerColor = (seconds: number) => {
+    /*
+  ----------------------------------------------------------
+  Function: getTimerColor
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - seconds: Input consumed by this routine during execution
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+const getTimerColor = (seconds: number) => {
     if (seconds <= 10) return "text-destructive";
     if (seconds <= 30) return "text-amber-600";
     return "text-emerald-600";

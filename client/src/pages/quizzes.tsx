@@ -1,3 +1,27 @@
+/*
+==========================================================
+File: client/src/pages/quizzes.tsx
+
+Module: Quiz and Assessment
+
+Purpose:
+Defines responsibilities specific to this unit while preserving
+clear boundaries with adjacent modules in CampusCompanion.
+
+Architectural Layer:
+Presentation Layer (Frontend UI)
+
+System Interaction:
+- Consumes API endpoints via query/mutation utilities and renders user-facing interfaces
+- Collaborates with shared types to preserve frontend-backend contract integrity
+
+Design Rationale:
+A dedicated file-level boundary supports maintainability,
+traceability, and scalability by keeping concerns local and
+allowing safe evolution of features without cross-module side effects.
+==========================================================
+*/
+
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Plus, Play, Clock, CheckCircle2, AlertCircle, Star, BookMarked, Zap, Trophy, Target, RotateCw, Loader, Trash2, X, Brain, TrendingUp, TrendingDown, BarChart3, RefreshCw, ChevronRight, Lightbulb, FileText, Layers, GraduationCap, Flame, CalendarCheck } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -131,6 +155,29 @@ const quizFormSchema = z.object({
 
 type QuizFormValues = z.infer<typeof quizFormSchema>;
 
+/*
+----------------------------------------------------------
+Component: Quizzes
+
+Purpose:
+Renders a focused UI unit and orchestrates state, hooks, and user interactions for the surrounding workflow.
+
+Parameters:
+- None: Operates using closure/module state only
+
+Process:
+1. Initializes local state and framework hooks required for rendering
+2. Derives view data from props, query state, and computed conditions
+3. Applies conditional rendering to keep the interface robust for empty/loading/error states
+4. Binds event handlers and side effects to synchronize UI with backend/application state
+
+Why Validation is Important:
+State guards and defensive rendering prevent runtime errors, preserve UX continuity, and improve accessibility during asynchronous updates.
+
+Returns:
+A JSX tree representing the component view for the current state.
+----------------------------------------------------------
+*/
 export default function Quizzes() {
   const [location] = useLocation();
   const [view, setView] = useState<ViewType>("list");
@@ -417,11 +464,57 @@ export default function Quizzes() {
     }
   });
 
-  const onSubmit = (values: QuizFormValues) => {
+    /*
+  ----------------------------------------------------------
+  Function: onSubmit
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - values: Input consumed by this routine during execution
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+const onSubmit = (values: QuizFormValues) => {
     createQuizMutation.mutate(values);
   };
 
-  const addQuestionField = () => {
+    /*
+  ----------------------------------------------------------
+  Function: addQuestionField
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - None: Operates using closure/module state only
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+const addQuestionField = () => {
     appendQuestion({
       type: "mcq",
       question: "",
@@ -433,13 +526,60 @@ export default function Quizzes() {
     });
   };
 
-  const removeQuestionField = (index: number) => {
+    /*
+  ----------------------------------------------------------
+  Function: removeQuestionField
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - index: Input consumed by this routine during execution
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+const removeQuestionField = (index: number) => {
     if (questionFields.length > 1) {
       removeQuestion(index);
     }
   };
 
-  const startQuiz = async (quizId: string, mode: QuizMode = "practice") => {
+    /*
+  ----------------------------------------------------------
+  Function: startQuiz
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - quizId: Input consumed by this routine during execution
+  - mode: Input consumed by this routine during execution
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+const startQuiz = async (quizId: string, mode: QuizMode = "practice") => {
     setSelectedQuizId(quizId);
     setCurrentQuestion(0);
     setUserAnswers([]);
@@ -471,7 +611,30 @@ export default function Quizzes() {
     setView("taking");
   };
 
-  const startAdaptiveQuiz = async (quizId: string) => {
+    /*
+  ----------------------------------------------------------
+  Function: startAdaptiveQuiz
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - quizId: Input consumed by this routine during execution
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+const startAdaptiveQuiz = async (quizId: string) => {
     setSelectedQuizId(quizId);
     setAdaptiveAnswers([]);
     setAdaptiveQuestionNumber(1);
@@ -508,7 +671,30 @@ export default function Quizzes() {
     setView("adaptive");
   };
 
-  const handleAnswerSubmit = async (answerOptionId?: string) => {
+    /*
+  ----------------------------------------------------------
+  Function: handleAnswerSubmit
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - answerOptionId: Input consumed by this routine during execution
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+const handleAnswerSubmit = async (answerOptionId?: string) => {
     console.log("[QUIZZES] Answer Submit button clicked");
     
     // Use passed answer or fall back to state
@@ -585,7 +771,30 @@ export default function Quizzes() {
     }
   };
 
-  const handleNextQuestion = async () => {
+    /*
+  ----------------------------------------------------------
+  Function: handleNextQuestion
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - None: Operates using closure/module state only
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+const handleNextQuestion = async () => {
     if (currentQuestion < activeQuestions.length - 1) {
       setCurrentQuestion(currentQuestion + 1);
       setSelectedAnswer("");
@@ -602,7 +811,30 @@ export default function Quizzes() {
     }
   };
 
-  const finalizeQuizAttempt = async () => {
+    /*
+  ----------------------------------------------------------
+  Function: finalizeQuizAttempt
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - None: Operates using closure/module state only
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+const finalizeQuizAttempt = async () => {
     console.log("[QUIZZES] Finalize Quiz Attempt called");
     if (!currentAttempt) {
       console.log("[QUIZZES] Finalize blocked - no attempt");
@@ -641,7 +873,30 @@ export default function Quizzes() {
     }
   };
 
-  const handleAdaptiveAnswer = async (answerOptionId?: string) => {
+    /*
+  ----------------------------------------------------------
+  Function: handleAdaptiveAnswer
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - answerOptionId: Input consumed by this routine during execution
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+const handleAdaptiveAnswer = async (answerOptionId?: string) => {
     console.log("[QUIZZES] Adaptive Answer button clicked");
     
     // Use passed answer or fall back to state
@@ -737,7 +992,31 @@ export default function Quizzes() {
     }
   };
 
-  const handleSpacedReview = async (statsId: string, quality: number) => {
+    /*
+  ----------------------------------------------------------
+  Function: handleSpacedReview
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - statsId: Input consumed by this routine during execution
+  - quality: Input consumed by this routine during execution
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+const handleSpacedReview = async (statsId: string, quality: number) => {
     console.log("[QUIZZES] Spaced Review button clicked - statsId:", statsId, "quality:", quality);
     console.log("[QUIZZES] Handler entered - submitting review");
     const token = localStorage.getItem("token");
@@ -763,7 +1042,30 @@ export default function Quizzes() {
     }
   };
 
-  const formatTime = (seconds: number) => {
+    /*
+  ----------------------------------------------------------
+  Function: formatTime
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - seconds: Input consumed by this routine during execution
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;

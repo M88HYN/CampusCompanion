@@ -1,3 +1,27 @@
+/*
+==========================================================
+File: client/src/pages/notes.tsx
+
+Module: Notes Management
+
+Purpose:
+Defines responsibilities specific to this unit while preserving
+clear boundaries with adjacent modules in CampusCompanion.
+
+Architectural Layer:
+Presentation Layer (Frontend UI)
+
+System Interaction:
+- Consumes API endpoints via query/mutation utilities and renders user-facing interfaces
+- Collaborates with shared types to preserve frontend-backend contract integrity
+
+Design Rationale:
+A dedicated file-level boundary supports maintainability,
+traceability, and scalability by keeping concerns local and
+allowing safe evolution of features without cross-module side effects.
+==========================================================
+*/
+
 import { useState, useEffect, useCallback, useRef } from "react";
 import { marked } from "marked";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -107,6 +131,29 @@ interface NoteWithBlocks extends Note {
   blocks?: { id: string; type: string; content: string; order: number }[];
 }
 
+/*
+----------------------------------------------------------
+Component: MarkdownPreview
+
+Purpose:
+Renders a focused UI unit and orchestrates state, hooks, and user interactions for the surrounding workflow.
+
+Parameters:
+- content: Input consumed by this routine during execution
+
+Process:
+1. Initializes local state and framework hooks required for rendering
+2. Derives view data from props, query state, and computed conditions
+3. Applies conditional rendering to keep the interface robust for empty/loading/error states
+4. Binds event handlers and side effects to synchronize UI with backend/application state
+
+Why Validation is Important:
+State guards and defensive rendering prevent runtime errors, preserve UX continuity, and improve accessibility during asynchronous updates.
+
+Returns:
+A JSX tree representing the component view for the current state.
+----------------------------------------------------------
+*/
 function MarkdownPreview({ content }: { content: string }) {
   const html = marked(content, {
     breaks: true,
@@ -132,6 +179,34 @@ function MarkdownPreview({ content }: { content: string }) {
   );
 }
 
+/*
+----------------------------------------------------------
+Component: FormatButton
+
+Purpose:
+Renders a focused UI unit and orchestrates state, hooks, and user interactions for the surrounding workflow.
+
+Parameters:
+- Icon: Input consumed by this routine during execution
+- label: Input consumed by this routine during execution
+- shortcut: Input consumed by this routine during execution
+- onClick: Input consumed by this routine during execution
+- active: Input consumed by this routine during execution
+- disabled: Input consumed by this routine during execution
+
+Process:
+1. Initializes local state and framework hooks required for rendering
+2. Derives view data from props, query state, and computed conditions
+3. Applies conditional rendering to keep the interface robust for empty/loading/error states
+4. Binds event handlers and side effects to synchronize UI with backend/application state
+
+Why Validation is Important:
+State guards and defensive rendering prevent runtime errors, preserve UX continuity, and improve accessibility during asynchronous updates.
+
+Returns:
+A JSX tree representing the component view for the current state.
+----------------------------------------------------------
+*/
 function FormatButton({ 
   icon: Icon, 
   label, 
@@ -168,6 +243,29 @@ function FormatButton({
   );
 }
 
+/*
+----------------------------------------------------------
+Component: Notes
+
+Purpose:
+Renders a focused UI unit and orchestrates state, hooks, and user interactions for the surrounding workflow.
+
+Parameters:
+- None: Operates using closure/module state only
+
+Process:
+1. Initializes local state and framework hooks required for rendering
+2. Derives view data from props, query state, and computed conditions
+3. Applies conditional rendering to keep the interface robust for empty/loading/error states
+4. Binds event handlers and side effects to synchronize UI with backend/application state
+
+Why Validation is Important:
+State guards and defensive rendering prevent runtime errors, preserve UX continuity, and improve accessibility during asynchronous updates.
+
+Returns:
+A JSX tree representing the component view for the current state.
+----------------------------------------------------------
+*/
 export default function Notes() {
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
   const [noteTitle, setNoteTitle] = useState("");
@@ -480,7 +578,30 @@ export default function Notes() {
     },
   });
 
-  const handleAutoGenerate = () => {
+    /*
+  ----------------------------------------------------------
+  Function: handleAutoGenerate
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - None: Operates using closure/module state only
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+const handleAutoGenerate = () => {
     console.log("[NOTES] Auto Generate button clicked - type:", autoGenerateType);
     console.log("[NOTES] Handler entered - selectedNoteId:", selectedNoteId);
     if (!selectedNoteId) {
@@ -509,7 +630,30 @@ export default function Notes() {
     }
   };
 
-  const insertExamPrompt = () => {
+    /*
+  ----------------------------------------------------------
+  Function: insertExamPrompt
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - None: Operates using closure/module state only
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+const insertExamPrompt = () => {
     const annotation = `\n\n> **${examPromptType}** (${examMarks} marks)\n`;
     setNoteContent(noteContent + annotation);
     setIsSaved(false);
@@ -517,7 +661,30 @@ export default function Notes() {
     toast({ title: "Exam prompt added", description: `Added ${examPromptType} annotation (${examMarks} marks)` });
   };
 
-  const getRecallContent = (content: string): string => {
+    /*
+  ----------------------------------------------------------
+  Function: getRecallContent
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - content: Input consumed by this routine during execution
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+const getRecallContent = (content: string): string => {
     if (!recallMode || !keyTermsInput) return content;
     
     const terms = keyTermsInput.split(',').map(t => t.trim()).filter(Boolean);
@@ -553,7 +720,31 @@ export default function Notes() {
     }
   }, [isSaved, noteTitle, noteContent, noteSubject, noteTags, handleSave, selectedNoteId, updateNoteMutation.isPending]);
 
-  const insertFormat = (before: string, after: string = "") => {
+    /*
+  ----------------------------------------------------------
+  Function: insertFormat
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - before: Input consumed by this routine during execution
+  - after: Input consumed by this routine during execution
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+const insertFormat = (before: string, after: string = "") => {
     const textarea = textareaRef.current;
     if (!textarea) return;
     
@@ -571,7 +762,30 @@ export default function Notes() {
     }, 0);
   };
 
-  const insertAtLineStart = (prefix: string) => {
+    /*
+  ----------------------------------------------------------
+  Function: insertAtLineStart
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - prefix: Input consumed by this routine during execution
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+const insertAtLineStart = (prefix: string) => {
     const textarea = textareaRef.current;
     if (!textarea) return;
     
@@ -588,7 +802,30 @@ export default function Notes() {
     }, 0);
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
+    /*
+  ----------------------------------------------------------
+  Function: handleKeyDown
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - e: Input consumed by this routine during execution
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.ctrlKey || e.metaKey) {
       switch (e.key.toLowerCase()) {
         case 'b':
@@ -611,13 +848,59 @@ export default function Notes() {
     }
   };
 
-  const getSelectedText = () => {
+    /*
+  ----------------------------------------------------------
+  Function: getSelectedText
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - None: Operates using closure/module state only
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+const getSelectedText = () => {
     const textarea = textareaRef.current;
     if (!textarea) return "";
     return noteContent.substring(textarea.selectionStart, textarea.selectionEnd);
   };
 
-  const openFlashcardDialog = () => {
+    /*
+  ----------------------------------------------------------
+  Function: openFlashcardDialog
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - None: Operates using closure/module state only
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+const openFlashcardDialog = () => {
     const selected = getSelectedText();
     setSelectedText(selected);
     setFlashcardFront(selected || noteTitle);
@@ -625,7 +908,30 @@ export default function Notes() {
     setShowFlashcardDialog(true);
   };
 
-  const openQuizDialog = () => {
+    /*
+  ----------------------------------------------------------
+  Function: openQuizDialog
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - None: Operates using closure/module state only
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+const openQuizDialog = () => {
     const selected = getSelectedText();
     setSelectedText(selected);
     setQuizQuestion(selected || "");
@@ -634,14 +940,60 @@ export default function Notes() {
     setShowQuizDialog(true);
   };
 
-  const askInsightScout = () => {
+    /*
+  ----------------------------------------------------------
+  Function: askInsightScout
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - None: Operates using closure/module state only
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+const askInsightScout = () => {
     const selected = getSelectedText() || noteTitle;
     setAiQuery(selected);
     setAiResponse("");
     setShowAiPanel(true);
   };
 
-  const sendAiQuery = async () => {
+    /*
+  ----------------------------------------------------------
+  Function: sendAiQuery
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - None: Operates using closure/module state only
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+const sendAiQuery = async () => {
     if (!aiQuery.trim()) return;
     setAiLoading(true);
     setAiResponse("");
@@ -707,7 +1059,30 @@ export default function Notes() {
     }
   };
 
-  const generateExamQuestions = () => {
+    /*
+  ----------------------------------------------------------
+  Function: generateExamQuestions
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - None: Operates using closure/module state only
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+const generateExamQuestions = () => {
     if (!noteContent.trim()) {
       toast({ title: "No content", description: "Add some note content first to generate exam questions.", variant: "destructive" });
       return;
@@ -782,7 +1157,30 @@ export default function Notes() {
     setShowExamMakerDialog(true);
   };
 
-  const autoExtractKeyTerms = () => {
+    /*
+  ----------------------------------------------------------
+  Function: autoExtractKeyTerms
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - None: Operates using closure/module state only
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+const autoExtractKeyTerms = () => {
     if (!noteContent.trim()) return;
     
     // Extract potential key terms from content
@@ -835,7 +1233,30 @@ export default function Notes() {
     }
   };
 
-  const addTag = () => {
+    /*
+  ----------------------------------------------------------
+  Function: addTag
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - None: Operates using closure/module state only
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+const addTag = () => {
     if (tagInput.trim() && !noteTags.includes(tagInput.trim())) {
       setNoteTags([...noteTags, tagInput.trim()]);
       setTagInput("");
@@ -843,12 +1264,58 @@ export default function Notes() {
     }
   };
 
-  const removeTag = (tag: string) => {
+    /*
+  ----------------------------------------------------------
+  Function: removeTag
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - tag: Input consumed by this routine during execution
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+const removeTag = (tag: string) => {
     setNoteTags(noteTags.filter(t => t !== tag));
     setIsSaved(false);
   };
 
-  const toggleSubject = (subject: string) => {
+    /*
+  ----------------------------------------------------------
+  Function: toggleSubject
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - subject: Input consumed by this routine during execution
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+const toggleSubject = (subject: string) => {
     const newExpanded = new Set(expandedSubjects);
     if (newExpanded.has(subject)) {
       newExpanded.delete(subject);
@@ -858,7 +1325,30 @@ export default function Notes() {
     setExpandedSubjects(newExpanded);
   };
 
-  const handleRenameNote = () => {
+    /*
+  ----------------------------------------------------------
+  Function: handleRenameNote
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - None: Operates using closure/module state only
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+const handleRenameNote = () => {
     if (!selectedNoteId || !renameTitle.trim()) {
       toast({ title: "Invalid title", description: "Please enter a valid note title", variant: "destructive" });
       return;
@@ -874,20 +1364,89 @@ export default function Notes() {
     setRenameTitle("");
   };
 
-  const handleDeleteNote = () => {
+    /*
+  ----------------------------------------------------------
+  Function: handleDeleteNote
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - None: Operates using closure/module state only
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+const handleDeleteNote = () => {
     if (!selectedNoteId) return;
     setDeleteNoteTrigger(selectedNoteId);
     setShowDeleteDialog(true);
   };
 
-  const confirmDeleteNote = () => {
+    /*
+  ----------------------------------------------------------
+  Function: confirmDeleteNote
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - None: Operates using closure/module state only
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+const confirmDeleteNote = () => {
     if (!deleteNoteTrigger) return;
     deleteNoteMutation.mutate(deleteNoteTrigger);
     setShowDeleteDialog(false);
     setDeleteNoteTrigger(null);
   };
 
-  const handleExportNote = () => {
+    /*
+  ----------------------------------------------------------
+  Function: handleExportNote
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - None: Operates using closure/module state only
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+const handleExportNote = () => {
     if (!selectedNoteId || !noteTitle) return;
     
     const content = `${noteTitle}
@@ -908,7 +1467,30 @@ ${noteContent}`;
     toast({ title: "Exported", description: "Note exported as text file." });
   };
 
-  const handleExportPDF = () => {
+    /*
+  ----------------------------------------------------------
+  Function: handleExportPDF
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - None: Operates using closure/module state only
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+const handleExportPDF = () => {
     if (!selectedNoteId || !noteTitle) return;
 
     // Build a styled HTML document for printing to PDF
@@ -953,7 +1535,30 @@ ${htmlContent}
     toast({ title: "PDF Export", description: "Use 'Save as PDF' in the print dialog." });
   };
 
-  const handleExportNoteById = (noteId: string) => {
+    /*
+  ----------------------------------------------------------
+  Function: handleExportNoteById
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - noteId: Input consumed by this routine during execution
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+const handleExportNoteById = (noteId: string) => {
     const note = notes.find(n => n.id === noteId);
     if (!note) return;
 
@@ -980,7 +1585,30 @@ ${"=".repeat(50)}
     toast({ title: "Exported", description: "Note exported as text file." });
   };
 
-  const handleMoveNote = () => {
+    /*
+  ----------------------------------------------------------
+  Function: handleMoveNote
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - None: Operates using closure/module state only
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+const handleMoveNote = () => {
     if (!moveNoteId) return;
     const targetFolder = moveTargetFolder === "__new__" ? newFolderName.trim() : moveTargetFolder;
     if (!targetFolder) {
@@ -1005,7 +1633,30 @@ ${"=".repeat(50)}
     toast({ title: "Note moved", description: `Moved to "${targetFolder}".` });
   };
 
-  const openMoveDialog = (noteId: string) => {
+    /*
+  ----------------------------------------------------------
+  Function: openMoveDialog
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - noteId: Input consumed by this routine during execution
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+const openMoveDialog = (noteId: string) => {
     const note = notes.find(n => n.id === noteId);
     setMoveNoteId(noteId);
     setMoveTargetFolder(note?.subject || "Uncategorized");
@@ -1013,7 +1664,30 @@ ${"=".repeat(50)}
     setShowMoveDialog(true);
   };
 
-  const handleDeleteNoteById = (noteId: string) => {
+    /*
+  ----------------------------------------------------------
+  Function: handleDeleteNoteById
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - noteId: Input consumed by this routine during execution
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+const handleDeleteNoteById = (noteId: string) => {
     setDeleteNoteTrigger(noteId);
     setShowDeleteDialog(true);
   };
@@ -1021,7 +1695,30 @@ ${"=".repeat(50)}
   // Get all unique folder/subject names for the move dropdown
   const allFolders = [...new Set(notes.map(n => n.subject || "Uncategorized"))].sort();
 
-  const handleCopyToClipboard = async () => {
+    /*
+  ----------------------------------------------------------
+  Function: handleCopyToClipboard
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - None: Operates using closure/module state only
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+const handleCopyToClipboard = async () => {
     if (!noteTitle) return;
     
     const content = `${noteTitle}
@@ -1036,7 +1733,30 @@ ${noteContent}`;
     }
   };
 
-  const handleDuplicateNote = () => {
+    /*
+  ----------------------------------------------------------
+  Function: handleDuplicateNote
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - None: Operates using closure/module state only
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+const handleDuplicateNote = () => {
     if (!selectedNoteId || !noteTitle) return;
     
     createNoteMutation.mutate({

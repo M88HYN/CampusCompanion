@@ -1,3 +1,27 @@
+/*
+==========================================================
+File: server/storage.ts
+
+Module: Persistence and Data Modeling
+
+Purpose:
+Defines responsibilities specific to this unit while preserving
+clear boundaries with adjacent modules in CampusCompanion.
+
+Architectural Layer:
+Data Access Layer
+
+System Interaction:
+- Receives HTTP requests and coordinates validation, authorization, and business workflows
+- Interacts with storage/database adapters and shared schemas for consistent persistence
+
+Design Rationale:
+A dedicated file-level boundary supports maintainability,
+traceability, and scalability by keeping concerns local and
+allowing safe evolution of features without cross-module side effects.
+==========================================================
+*/
+
 import {
   type User, type UpsertUser,
   type Note, type InsertNote,
@@ -147,17 +171,86 @@ export interface IStorage {
 export class DatabaseStorage implements IStorage {
   // ==================== USERS ====================
   
-  async getUser(id: string): Promise<User | undefined> {
+    /*
+  ----------------------------------------------------------
+  Function: getUser
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - id: Input consumed by this routine during execution
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+async getUser(id: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.id, id));
     return user || undefined;
   }
 
-  async getUserByUsername(username: string): Promise<User | undefined> {
+    /*
+  ----------------------------------------------------------
+  Function: getUserByUsername
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - username: Input consumed by this routine during execution
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+async getUserByUsername(username: string): Promise<User | undefined> {
     // Users table doesn't have username field - return undefined or use email
     return undefined;
   }
 
-  async createUser(insertUser: UpsertUser): Promise<User> {
+    /*
+  ----------------------------------------------------------
+  Function: createUser
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - insertUser: Input consumed by this routine during execution
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+async createUser(insertUser: UpsertUser): Promise<User> {
     const [user] = await db
       .insert(users)
       .values({ 
@@ -172,16 +265,85 @@ export class DatabaseStorage implements IStorage {
 
   // ==================== NOTES ====================
 
-  async getNotes(userId: string): Promise<Note[]> {
+    /*
+  ----------------------------------------------------------
+  Function: getNotes
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - userId: Input consumed by this routine during execution
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+async getNotes(userId: string): Promise<Note[]> {
     return await db.select().from(notes).where(eq(notes.userId, userId)).orderBy(desc(notes.updatedAt));
   }
 
-  async getNote(id: string): Promise<Note | undefined> {
+    /*
+  ----------------------------------------------------------
+  Function: getNote
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - id: Input consumed by this routine during execution
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+async getNote(id: string): Promise<Note | undefined> {
     const [note] = await db.select().from(notes).where(eq(notes.id, id));
     return note || undefined;
   }
 
-  async createNote(note: InsertNote): Promise<Note> {
+    /*
+  ----------------------------------------------------------
+  Function: createNote
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - note: Input consumed by this routine during execution
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+async createNote(note: InsertNote): Promise<Note> {
   if (!note.userId || !note.title) {
     throw new Error("userId and title are required");
   }
@@ -212,7 +374,31 @@ export class DatabaseStorage implements IStorage {
   return created;
 }
 
-  async updateNote(id: string, note: Partial<InsertNote>): Promise<Note | undefined> {
+    /*
+  ----------------------------------------------------------
+  Function: updateNote
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - id: Input consumed by this routine during execution
+  - note: Input consumed by this routine during execution
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+async updateNote(id: string, note: Partial<InsertNote>): Promise<Note | undefined> {
     const updateData: any = { 
       ...note,
       updatedAt: Date.now()
@@ -233,16 +419,85 @@ export class DatabaseStorage implements IStorage {
     return updated || undefined;
   }
 
-  async deleteNote(id: string): Promise<void> {
+    /*
+  ----------------------------------------------------------
+  Function: deleteNote
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - id: Input consumed by this routine during execution
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+async deleteNote(id: string): Promise<void> {
     await db.delete(noteBlocks).where(eq(noteBlocks.noteId, id));
     await db.delete(notes).where(eq(notes.id, id));
   }
 
-  async getNoteBlocks(noteId: string): Promise<NoteBlock[]> {
+    /*
+  ----------------------------------------------------------
+  Function: getNoteBlocks
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - noteId: Input consumed by this routine during execution
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+async getNoteBlocks(noteId: string): Promise<NoteBlock[]> {
     return await db.select().from(noteBlocks).where(eq(noteBlocks.noteId, noteId)).orderBy(noteBlocks.order);
   }
 
-  async createNoteBlocks(blocks: InsertNoteBlock[]): Promise<NoteBlock[]> {
+    /*
+  ----------------------------------------------------------
+  Function: createNoteBlocks
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - blocks: Input consumed by this routine during execution
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+async createNoteBlocks(blocks: InsertNoteBlock[]): Promise<NoteBlock[]> {
     if (blocks.length === 0) return [];
     try {
       const createdIds: string[] = [];
@@ -275,22 +530,114 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async deleteNoteBlocks(noteId: string): Promise<void> {
+    /*
+  ----------------------------------------------------------
+  Function: deleteNoteBlocks
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - noteId: Input consumed by this routine during execution
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+async deleteNoteBlocks(noteId: string): Promise<void> {
     await db.delete(noteBlocks).where(eq(noteBlocks.noteId, noteId));
   }
 
   // ==================== FLASHCARDS ====================
 
-  async getDecks(userId: string): Promise<Deck[]> {
+    /*
+  ----------------------------------------------------------
+  Function: getDecks
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - userId: Input consumed by this routine during execution
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+async getDecks(userId: string): Promise<Deck[]> {
     return await db.select().from(decks).where(eq(decks.userId, userId)).orderBy(desc(decks.createdAt));
   }
 
-  async getDeck(id: string): Promise<Deck | undefined> {
+    /*
+  ----------------------------------------------------------
+  Function: getDeck
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - id: Input consumed by this routine during execution
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+async getDeck(id: string): Promise<Deck | undefined> {
     const [deck] = await db.select().from(decks).where(eq(decks.id, id));
     return deck || undefined;
   }
 
-  async createDeck(deck: InsertDeck): Promise<Deck> {
+    /*
+  ----------------------------------------------------------
+  Function: createDeck
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - deck: Input consumed by this routine during execution
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+async createDeck(deck: InsertDeck): Promise<Deck> {
     const [created] = await db.insert(decks).values({ 
       id: randomUUID(), 
       ...deck, 
@@ -300,7 +647,31 @@ export class DatabaseStorage implements IStorage {
     return created;
   }
 
-  async updateDeck(id: string, deck: Partial<InsertDeck>): Promise<Deck | undefined> {
+    /*
+  ----------------------------------------------------------
+  Function: updateDeck
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - id: Input consumed by this routine during execution
+  - deck: Input consumed by this routine during execution
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+async updateDeck(id: string, deck: Partial<InsertDeck>): Promise<Deck | undefined> {
     const updateData: any = { ...deck };
     if (deck.tags !== undefined) {
       updateData.tags = deck.tags ? JSON.stringify(deck.tags) : null;
@@ -313,21 +684,113 @@ export class DatabaseStorage implements IStorage {
     return updated || undefined;
   }
 
-  async deleteDeck(id: string): Promise<void> {
+    /*
+  ----------------------------------------------------------
+  Function: deleteDeck
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - id: Input consumed by this routine during execution
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+async deleteDeck(id: string): Promise<void> {
     await db.delete(cards).where(eq(cards.deckId, id));
     await db.delete(decks).where(eq(decks.id, id));
   }
 
-  async getCards(deckId: string): Promise<Card[]> {
+    /*
+  ----------------------------------------------------------
+  Function: getCards
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - deckId: Input consumed by this routine during execution
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+async getCards(deckId: string): Promise<Card[]> {
     return await db.select().from(cards).where(eq(cards.deckId, deckId));
   }
 
-  async getCard(id: string): Promise<Card | undefined> {
+    /*
+  ----------------------------------------------------------
+  Function: getCard
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - id: Input consumed by this routine during execution
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+async getCard(id: string): Promise<Card | undefined> {
     const [card] = await db.select().from(cards).where(eq(cards.id, id));
     return card || undefined;
   }
 
-  async createCard(card: InsertCard): Promise<Card> {
+    /*
+  ----------------------------------------------------------
+  Function: createCard
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - card: Input consumed by this routine during execution
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+async createCard(card: InsertCard): Promise<Card> {
     const [created] = await db.insert(cards).values({ 
       id: randomUUID(), 
       ...card, 
@@ -337,7 +800,31 @@ export class DatabaseStorage implements IStorage {
     return created;
   }
 
-  async updateCard(id: string, card: Partial<Card>): Promise<Card | undefined> {
+    /*
+  ----------------------------------------------------------
+  Function: updateCard
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - id: Input consumed by this routine during execution
+  - card: Input consumed by this routine during execution
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+async updateCard(id: string, card: Partial<Card>): Promise<Card | undefined> {
     const [updated] = await db
       .update(cards)
       .set(card)
@@ -346,11 +833,57 @@ export class DatabaseStorage implements IStorage {
     return updated || undefined;
   }
 
-  async deleteCard(id: string): Promise<void> {
+    /*
+  ----------------------------------------------------------
+  Function: deleteCard
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - id: Input consumed by this routine during execution
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+async deleteCard(id: string): Promise<void> {
     await db.delete(cards).where(eq(cards.id, id));
   }
 
-  async getDueCards(userId: string): Promise<Card[]> {
+    /*
+  ----------------------------------------------------------
+  Function: getDueCards
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - userId: Input consumed by this routine during execution
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+async getDueCards(userId: string): Promise<Card[]> {
     const userDecks = await this.getDecks(userId);
     const deckIds = userDecks.map(d => d.id);
     
@@ -370,7 +903,32 @@ export class DatabaseStorage implements IStorage {
       .orderBy(cards.dueAt);
   }
 
-  async reviewCard(cardId: string, quality: number, userId: string): Promise<Card> {
+    /*
+  ----------------------------------------------------------
+  Function: reviewCard
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - cardId: Input consumed by this routine during execution
+  - quality: Input consumed by this routine during execution
+  - userId: Input consumed by this routine during execution
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+async reviewCard(cardId: string, quality: number, userId: string): Promise<Card> {
     // SM-2 Algorithm implementation
     const card = await this.getCard(cardId);
     if (!card) throw new Error("Card not found");
@@ -434,7 +992,30 @@ export class DatabaseStorage implements IStorage {
     return updated;
   }
 
-  async getCardReviews(cardId: string): Promise<CardReview[]> {
+    /*
+  ----------------------------------------------------------
+  Function: getCardReviews
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - cardId: Input consumed by this routine during execution
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+async getCardReviews(cardId: string): Promise<CardReview[]> {
     return await db
       .select()
       .from(cardReviews)
@@ -442,7 +1023,30 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(cardReviews.reviewedAt));
   }
 
-  async getDeckStats(deckId: string): Promise<{ total: number; mastered: number; learning: number; new: number; dueToday: number }> {
+    /*
+  ----------------------------------------------------------
+  Function: getDeckStats
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - deckId: Input consumed by this routine during execution
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+async getDeckStats(deckId: string): Promise<{ total: number; mastered: number; learning: number; new: number; dueToday: number }> {
     const deckCards = await this.getCards(deckId);
     const now = Date.now();
     const endOfDay = new Date();
@@ -460,7 +1064,30 @@ export class DatabaseStorage implements IStorage {
 
   // ==================== QUIZZES ====================
 
-  async getQuizzes(userId: string): Promise<Quiz[]> {
+    /*
+  ----------------------------------------------------------
+  Function: getQuizzes
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - userId: Input consumed by this routine during execution
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+async getQuizzes(userId: string): Promise<Quiz[]> {
     try {
       return await db.select().from(quizzes).where(eq(quizzes.userId, userId)).orderBy(desc(quizzes.createdAt));
     } catch (error) {
@@ -469,17 +1096,86 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async getQuiz(id: string): Promise<Quiz | undefined> {
+    /*
+  ----------------------------------------------------------
+  Function: getQuiz
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - id: Input consumed by this routine during execution
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+async getQuiz(id: string): Promise<Quiz | undefined> {
     const [quiz] = await db.select().from(quizzes).where(eq(quizzes.id, id));
     return quiz || undefined;
   }
 
-  async createQuiz(quiz: InsertQuiz): Promise<Quiz> {
+    /*
+  ----------------------------------------------------------
+  Function: createQuiz
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - quiz: Input consumed by this routine during execution
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+async createQuiz(quiz: InsertQuiz): Promise<Quiz> {
     const [created] = await db.insert(quizzes).values({ id: randomUUID(), ...quiz }).returning();
     return created;
   }
 
-  async deleteQuiz(id: string): Promise<void> {
+    /*
+  ----------------------------------------------------------
+  Function: deleteQuiz
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - id: Input consumed by this routine during execution
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+async deleteQuiz(id: string): Promise<void> {
     const questions = await this.getQuizQuestions(id);
     for (const question of questions) {
       await db.delete(quizOptions).where(eq(quizOptions.questionId, question.id));
@@ -488,27 +1184,142 @@ export class DatabaseStorage implements IStorage {
     await db.delete(quizzes).where(eq(quizzes.id, id));
   }
 
-  async getQuizQuestions(quizId: string): Promise<QuizQuestion[]> {
+    /*
+  ----------------------------------------------------------
+  Function: getQuizQuestions
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - quizId: Input consumed by this routine during execution
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+async getQuizQuestions(quizId: string): Promise<QuizQuestion[]> {
     return await db.select().from(quizQuestions).where(eq(quizQuestions.quizId, quizId)).orderBy(quizQuestions.order);
   }
 
-  async createQuizQuestion(question: InsertQuizQuestion): Promise<QuizQuestion> {
+    /*
+  ----------------------------------------------------------
+  Function: createQuizQuestion
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - question: Input consumed by this routine during execution
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+async createQuizQuestion(question: InsertQuizQuestion): Promise<QuizQuestion> {
     const [created] = await db.insert(quizQuestions).values({ id: randomUUID(), ...question }).returning();
     return created;
   }
 
-  async getQuizOptions(questionId: string): Promise<QuizOption[]> {
+    /*
+  ----------------------------------------------------------
+  Function: getQuizOptions
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - questionId: Input consumed by this routine during execution
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+async getQuizOptions(questionId: string): Promise<QuizOption[]> {
     return await db.select().from(quizOptions).where(eq(quizOptions.questionId, questionId)).orderBy(quizOptions.order);
   }
 
-  async createQuizOption(option: InsertQuizOption): Promise<QuizOption> {
+    /*
+  ----------------------------------------------------------
+  Function: createQuizOption
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - option: Input consumed by this routine during execution
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+async createQuizOption(option: InsertQuizOption): Promise<QuizOption> {
     const [created] = await db.insert(quizOptions).values({ id: randomUUID(), ...option }).returning();
     return created;
   }
 
   // ==================== QUIZ ATTEMPTS ====================
 
-  async createQuizAttempt(attempt: InsertQuizAttempt): Promise<QuizAttempt> {
+    /*
+  ----------------------------------------------------------
+  Function: createQuizAttempt
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - attempt: Input consumed by this routine during execution
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+async createQuizAttempt(attempt: InsertQuizAttempt): Promise<QuizAttempt> {
     const id = randomUUID();
     
     // Use raw SQL to bypass Drizzle's type checking for SQLite
@@ -533,12 +1344,62 @@ export class DatabaseStorage implements IStorage {
     return created;
   }
 
-  async getQuizAttempt(id: string): Promise<QuizAttempt | undefined> {
+    /*
+  ----------------------------------------------------------
+  Function: getQuizAttempt
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - id: Input consumed by this routine during execution
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+async getQuizAttempt(id: string): Promise<QuizAttempt | undefined> {
     const [attempt] = await db.select().from(quizAttempts).where(eq(quizAttempts.id, id));
     return attempt || undefined;
   }
 
-  async completeQuizAttempt(
+    /*
+  ----------------------------------------------------------
+  Function: completeQuizAttempt
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - id: Input consumed by this routine during execution
+  - score: Input consumed by this routine during execution
+  - earnedMarks: Input consumed by this routine during execution
+  - totalMarks: Input consumed by this routine during execution
+  - timeSpent: Input consumed by this routine during execution
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+async completeQuizAttempt(
     id: string,
     score: number,
     earnedMarks: number,
@@ -560,7 +1421,31 @@ export class DatabaseStorage implements IStorage {
     return updated || undefined;
   }
 
-  async getQuizAttempts(quizId: string, userId: string): Promise<QuizAttempt[]> {
+    /*
+  ----------------------------------------------------------
+  Function: getQuizAttempts
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - quizId: Input consumed by this routine during execution
+  - userId: Input consumed by this routine during execution
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+async getQuizAttempts(quizId: string, userId: string): Promise<QuizAttempt[]> {
     return await db
       .select()
       .from(quizAttempts)
@@ -570,7 +1455,30 @@ export class DatabaseStorage implements IStorage {
 
   // ==================== QUIZ RESPONSES ====================
 
-  async createQuizResponse(response: InsertQuizResponse): Promise<QuizResponse> {
+    /*
+  ----------------------------------------------------------
+  Function: createQuizResponse
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - response: Input consumed by this routine during execution
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+async createQuizResponse(response: InsertQuizResponse): Promise<QuizResponse> {
     const id = randomUUID();
     const isCorrectValue = typeof response.isCorrect === "boolean" ? (response.isCorrect ? 1 : 0) : null;
     
@@ -602,11 +1510,58 @@ export class DatabaseStorage implements IStorage {
     return created;
   }
 
-  async getQuizResponses(attemptId: string): Promise<QuizResponse[]> {
+    /*
+  ----------------------------------------------------------
+  Function: getQuizResponses
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - attemptId: Input consumed by this routine during execution
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+async getQuizResponses(attemptId: string): Promise<QuizResponse[]> {
     return await db.select().from(quizResponses).where(eq(quizResponses.attemptId, attemptId));
   }
 
-  async convertResponseToFlashcard(responseId: string, deckId: string): Promise<{ response: QuizResponse; card: Card }> {
+    /*
+  ----------------------------------------------------------
+  Function: convertResponseToFlashcard
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - responseId: Input consumed by this routine during execution
+  - deckId: Input consumed by this routine during execution
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+async convertResponseToFlashcard(responseId: string, deckId: string): Promise<{ response: QuizResponse; card: Card }> {
     const [response] = await db.select().from(quizResponses).where(eq(quizResponses.id, responseId));
     if (!response) throw new Error("Response not found");
 
@@ -636,7 +1591,32 @@ export class DatabaseStorage implements IStorage {
 
   // ==================== INTEGRATION HELPERS ====================
 
-  async createQuizFromNotes(noteIds: string[], userId: string, quizData: Omit<InsertQuiz, 'userId'>): Promise<Quiz> {
+    /*
+  ----------------------------------------------------------
+  Function: createQuizFromNotes
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - noteIds: Input consumed by this routine during execution
+  - userId: Input consumed by this routine during execution
+  - quizData: Input consumed by this routine during execution
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+async createQuizFromNotes(noteIds: string[], userId: string, quizData: Omit<InsertQuiz, 'userId'>): Promise<Quiz> {
     // Create the quiz
     const quiz = await this.createQuiz({ ...quizData, userId });
     
@@ -644,7 +1624,30 @@ export class DatabaseStorage implements IStorage {
     return quiz;
   }
 
-  async getQuizAnalytics(quizId: string): Promise<{
+    /*
+  ----------------------------------------------------------
+  Function: getQuizAnalytics
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - quizId: Input consumed by this routine during execution
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+async getQuizAnalytics(quizId: string): Promise<{
     totalAttempts: number;
     averageScore: number;
     averageTimeSpent: number;
@@ -706,7 +1709,31 @@ export class DatabaseStorage implements IStorage {
 
   // ==================== USER QUESTION STATS ====================
 
-  async getUserQuestionStats(userId: string, questionId: string): Promise<UserQuestionStats | undefined> {
+    /*
+  ----------------------------------------------------------
+  Function: getUserQuestionStats
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - userId: Input consumed by this routine during execution
+  - questionId: Input consumed by this routine during execution
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+async getUserQuestionStats(userId: string, questionId: string): Promise<UserQuestionStats | undefined> {
     // Use raw SQL because the Drizzle schema uses pgTable column names (lastAnsweredAt)
     // but the actual SQLite table has different column names (last_attempted_at)
     const rows: any[] = db.all(sql`
@@ -737,7 +1764,33 @@ export class DatabaseStorage implements IStorage {
     } as UserQuestionStats;
   }
 
-  async upsertUserQuestionStats(userId: string, questionId: string, isCorrect: boolean, responseTime: number): Promise<UserQuestionStats> {
+    /*
+  ----------------------------------------------------------
+  Function: upsertUserQuestionStats
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - userId: Input consumed by this routine during execution
+  - questionId: Input consumed by this routine during execution
+  - isCorrect: Input consumed by this routine during execution
+  - responseTime: Input consumed by this routine during execution
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+async upsertUserQuestionStats(userId: string, questionId: string, isCorrect: boolean, responseTime: number): Promise<UserQuestionStats> {
     const existing = await this.getUserQuestionStats(userId, questionId);
     
     if (existing) {
@@ -800,7 +1853,31 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async getDueQuestionsForReview(userId: string, limit: number = 20): Promise<UserQuestionStats[]> {
+    /*
+  ----------------------------------------------------------
+  Function: getDueQuestionsForReview
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - userId: Input consumed by this routine during execution
+  - limit: Input consumed by this routine during execution
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+async getDueQuestionsForReview(userId: string, limit: number = 20): Promise<UserQuestionStats[]> {
     // ALTERNATIVE: Get questions from incorrect quiz responses instead of userQuestionStats
     try {
       // Get all completed quiz attempts for this user
@@ -846,7 +1923,31 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async updateSpacedRepetition(statsId: string, quality: number): Promise<UserQuestionStats> {
+    /*
+  ----------------------------------------------------------
+  Function: updateSpacedRepetition
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - statsId: Input consumed by this routine during execution
+  - quality: Input consumed by this routine during execution
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+async updateSpacedRepetition(statsId: string, quality: number): Promise<UserQuestionStats> {
     const [stats] = await db.select().from(userQuestionStats).where(eq(userQuestionStats.id, statsId));
     if (!stats) throw new Error("Stats not found");
 
@@ -907,7 +2008,31 @@ export class DatabaseStorage implements IStorage {
    *   +15 fewer than 3 total attempts
    *   +25 question-level accuracy < 50%
    */
-  async getSpacedReviewQueue(userId: string, limit: number = 20): Promise<any[]> {
+    /*
+  ----------------------------------------------------------
+  Function: getSpacedReviewQueue
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - userId: Input consumed by this routine during execution
+  - limit: Input consumed by this routine during execution
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+async getSpacedReviewQueue(userId: string, limit: number = 20): Promise<any[]> {
     try {
       // 1. Get all responses for this user's completed quiz attempts
       //    JOIN with questions to get text/tags/difficulty, JOIN with quizzes for title/topic
@@ -1131,7 +2256,32 @@ export class DatabaseStorage implements IStorage {
    * Update the SM-2 review schedule for a question in user_question_stats.
    * Called after a spaced review submission.
    */
-  async updateQuestionReviewSchedule(questionId: string, userId: string, quality: number): Promise<void> {
+    /*
+  ----------------------------------------------------------
+  Function: updateQuestionReviewSchedule
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - questionId: Input consumed by this routine during execution
+  - userId: Input consumed by this routine during execution
+  - quality: Input consumed by this routine during execution
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+async updateQuestionReviewSchedule(questionId: string, userId: string, quality: number): Promise<void> {
     try {
       const existing = await this.getUserQuestionStats(userId, questionId);
       if (!existing) return; // Stats will be created by upsertUserQuestionStats
@@ -1175,7 +2325,33 @@ export class DatabaseStorage implements IStorage {
 
   // ==================== ADAPTIVE ENGINE ====================
 
-  async getNextAdaptiveQuestion(quizId: string, userId: string, currentDifficulty: number, currentAttemptId?: string): Promise<QuizQuestion | undefined> {
+    /*
+  ----------------------------------------------------------
+  Function: getNextAdaptiveQuestion
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - quizId: Input consumed by this routine during execution
+  - userId: Input consumed by this routine during execution
+  - currentDifficulty: Input consumed by this routine during execution
+  - currentAttemptId: Input consumed by this routine during execution
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+async getNextAdaptiveQuestion(quizId: string, userId: string, currentDifficulty: number, currentAttemptId?: string): Promise<QuizQuestion | undefined> {
     // Get all questions for this quiz
     const allQuestions = await this.getQuizQuestions(quizId);
     if (allQuestions.length === 0) return undefined;
@@ -1209,7 +2385,32 @@ export class DatabaseStorage implements IStorage {
     return undefined;
   }
 
-  async getQuestionsByDifficulty(quizId: string, difficulty: number, excludeIds: string[] = []): Promise<QuizQuestion[]> {
+    /*
+  ----------------------------------------------------------
+  Function: getQuestionsByDifficulty
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - quizId: Input consumed by this routine during execution
+  - difficulty: Input consumed by this routine during execution
+  - excludeIds: Input consumed by this routine during execution
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+async getQuestionsByDifficulty(quizId: string, difficulty: number, excludeIds: string[] = []): Promise<QuizQuestion[]> {
     const questions = await db
       .select()
       .from(quizQuestions)
@@ -1220,7 +2421,31 @@ export class DatabaseStorage implements IStorage {
 
   // ==================== QUIZ ATTEMPT UPDATES ====================
 
-  async updateQuizAttempt(id: string, updates: Partial<QuizAttempt>): Promise<QuizAttempt | undefined> {
+    /*
+  ----------------------------------------------------------
+  Function: updateQuizAttempt
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - id: Input consumed by this routine during execution
+  - updates: Input consumed by this routine during execution
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+async updateQuizAttempt(id: string, updates: Partial<QuizAttempt>): Promise<QuizAttempt | undefined> {
     const [updated] = await db
       .update(quizAttempts)
       .set(updates)
@@ -1229,13 +2454,59 @@ export class DatabaseStorage implements IStorage {
     return updated || undefined;
   }
 
-  async getAllQuizzes(): Promise<Quiz[]> {
+    /*
+  ----------------------------------------------------------
+  Function: getAllQuizzes
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - None: Operates using closure/module state only
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+async getAllQuizzes(): Promise<Quiz[]> {
     return await db.select().from(quizzes).orderBy(desc(quizzes.createdAt));
   }
 
   // ==================== USER ANALYTICS ====================
 
-  async getUserAnalytics(userId: string): Promise<any> {
+    /*
+  ----------------------------------------------------------
+  Function: getUserAnalytics
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - userId: Input consumed by this routine during execution
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+async getUserAnalytics(userId: string): Promise<any> {
     // Analytics are derived from quiz_attempts and quiz_responses tables
     // No separate user_analytics table - data is calculated on-demand
     // This ensures analytics are always in sync with actual quiz activity
@@ -1596,7 +2867,30 @@ export class DatabaseStorage implements IStorage {
 
   // ==================== LEARNING INSIGHTS ====================
 
-  async getLearningInsights(userId: string): Promise<{
+    /*
+  ----------------------------------------------------------
+  Function: getLearningInsights
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - userId: Input consumed by this routine during execution
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+async getLearningInsights(userId: string): Promise<{
     overview: {
       totalStudyTime: number;
       totalSessions: number;
@@ -1798,7 +3092,30 @@ export class DatabaseStorage implements IStorage {
     }
 
     // Helper function to format topic names for display
-    const formatTopicName = (topic: string): string => {
+        /*
+    ----------------------------------------------------------
+    Function: formatTopicName
+
+    Purpose:
+    Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+    Parameters:
+    - topic: Input consumed by this routine during execution
+
+    Process:
+    1. Accepts and normalizes inputs before core processing
+    2. Applies relevant guards/validation to prevent invalid transitions
+    3. Executes primary logic path and handles expected edge conditions
+    4. Returns a deterministic output for the caller layer
+
+    Why Validation is Important:
+    Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+    Returns:
+    A value/promise representing the outcome of the executed logic path.
+    ----------------------------------------------------------
+    */
+const formatTopicName = (topic: string): string => {
       // Handle common abbreviations and special cases
       const specialCases: Record<string, string> = {
         'oop': 'Object-Oriented Programming',
@@ -2022,7 +3339,30 @@ export class DatabaseStorage implements IStorage {
 
   // ==================== INSIGHT SCOUT CHAT HISTORY ====================
 
-  async getResearchConversations(userId: string): Promise<ResearchConversation[]> {
+    /*
+  ----------------------------------------------------------
+  Function: getResearchConversations
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - userId: Input consumed by this routine during execution
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+async getResearchConversations(userId: string): Promise<ResearchConversation[]> {
     return await db
       .select()
       .from(researchConversations)
@@ -2030,7 +3370,31 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(researchConversations.updatedAt));
   }
 
-  async getResearchConversation(
+    /*
+  ----------------------------------------------------------
+  Function: getResearchConversation
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - id: Input consumed by this routine during execution
+  - userId: Input consumed by this routine during execution
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+async getResearchConversation(
     id: string,
     userId: string,
   ): Promise<{ conversation: ResearchConversation; messages: ResearchMessage[] } | undefined> {
@@ -2052,7 +3416,31 @@ export class DatabaseStorage implements IStorage {
     return { conversation, messages };
   }
 
-  async createResearchConversation(userId: string, title?: string): Promise<ResearchConversation> {
+    /*
+  ----------------------------------------------------------
+  Function: createResearchConversation
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - userId: Input consumed by this routine during execution
+  - title: Input consumed by this routine during execution
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+async createResearchConversation(userId: string, title?: string): Promise<ResearchConversation> {
     const id = randomUUID();
     const now = Date.now();
 
@@ -2076,7 +3464,31 @@ export class DatabaseStorage implements IStorage {
     return created;
   }
 
-  async deleteResearchConversation(id: string, userId: string): Promise<void> {
+    /*
+  ----------------------------------------------------------
+  Function: deleteResearchConversation
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - id: Input consumed by this routine during execution
+  - userId: Input consumed by this routine during execution
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+async deleteResearchConversation(id: string, userId: string): Promise<void> {
     const [conversation] = await db
       .select()
       .from(researchConversations)
@@ -2090,7 +3502,33 @@ export class DatabaseStorage implements IStorage {
     await db.delete(researchConversations).where(eq(researchConversations.id, id));
   }
 
-  async addResearchMessage(
+    /*
+  ----------------------------------------------------------
+  Function: addResearchMessage
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - conversationId: Input consumed by this routine during execution
+  - userId: Input consumed by this routine during execution
+  - role: Input consumed by this routine during execution
+  - content: Input consumed by this routine during execution
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+async addResearchMessage(
     conversationId: string,
     userId: string,
     role: string,
@@ -2135,12 +3573,59 @@ export class DatabaseStorage implements IStorage {
 
   // ==================== USER PREFERENCES ====================
 
-  async getUserPreferences(userId: string): Promise<UserPreferences | undefined> {
+    /*
+  ----------------------------------------------------------
+  Function: getUserPreferences
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - userId: Input consumed by this routine during execution
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+async getUserPreferences(userId: string): Promise<UserPreferences | undefined> {
     const [prefs] = await db.select().from(userPreferences).where(eq(userPreferences.userId, userId));
     return prefs;
   }
 
-  async updateUserPreferences(userId: string, preferences: Partial<InsertUserPreferences>): Promise<UserPreferences> {
+    /*
+  ----------------------------------------------------------
+  Function: updateUserPreferences
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - userId: Input consumed by this routine during execution
+  - preferences: Input consumed by this routine during execution
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+async updateUserPreferences(userId: string, preferences: Partial<InsertUserPreferences>): Promise<UserPreferences> {
     const [updated] = await db
       .update(userPreferences)
       .set({ ...preferences, updatedAt: Date.now() })

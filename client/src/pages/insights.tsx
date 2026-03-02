@@ -1,3 +1,27 @@
+/*
+==========================================================
+File: client/src/pages/insights.tsx
+
+Module: Insight Scout and Research
+
+Purpose:
+Defines responsibilities specific to this unit while preserving
+clear boundaries with adjacent modules in CampusCompanion.
+
+Architectural Layer:
+Presentation Layer (Frontend UI)
+
+System Interaction:
+- Consumes API endpoints via query/mutation utilities and renders user-facing interfaces
+- Collaborates with shared types to preserve frontend-backend contract integrity
+
+Design Rationale:
+A dedicated file-level boundary supports maintainability,
+traceability, and scalability by keeping concerns local and
+allowing safe evolution of features without cross-module side effects.
+==========================================================
+*/
+
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -33,6 +57,34 @@ interface LearningInsights {
   weeklyProgress: { day: string; minutes: number; items: number }[];
 }
 
+/*
+----------------------------------------------------------
+Component: StatCard
+
+Purpose:
+Renders a focused UI unit and orchestrates state, hooks, and user interactions for the surrounding workflow.
+
+Parameters:
+- title: Input consumed by this routine during execution
+- value: Input consumed by this routine during execution
+- subtitle: Input consumed by this routine during execution
+- Icon: Input consumed by this routine during execution
+- gradient: Input consumed by this routine during execution
+- testId: Input consumed by this routine during execution
+
+Process:
+1. Initializes local state and framework hooks required for rendering
+2. Derives view data from props, query state, and computed conditions
+3. Applies conditional rendering to keep the interface robust for empty/loading/error states
+4. Binds event handlers and side effects to synchronize UI with backend/application state
+
+Why Validation is Important:
+State guards and defensive rendering prevent runtime errors, preserve UX continuity, and improve accessibility during asynchronous updates.
+
+Returns:
+A JSX tree representing the component view for the current state.
+----------------------------------------------------------
+*/
 function StatCard({ 
   title, 
   value, 
@@ -67,19 +119,91 @@ function StatCard({
   );
 }
 
+/*
+----------------------------------------------------------
+Component: TopicBar
+
+Purpose:
+Renders a focused UI unit and orchestrates state, hooks, and user interactions for the surrounding workflow.
+
+Parameters:
+- topic: Input consumed by this routine during execution
+- accuracy: Input consumed by this routine during execution
+- totalQuestions: Input consumed by this routine during execution
+- improvement: Input consumed by this routine during execution
+
+Process:
+1. Initializes local state and framework hooks required for rendering
+2. Derives view data from props, query state, and computed conditions
+3. Applies conditional rendering to keep the interface robust for empty/loading/error states
+4. Binds event handlers and side effects to synchronize UI with backend/application state
+
+Why Validation is Important:
+State guards and defensive rendering prevent runtime errors, preserve UX continuity, and improve accessibility during asynchronous updates.
+
+Returns:
+A JSX tree representing the component view for the current state.
+----------------------------------------------------------
+*/
 function TopicBar({ topic, accuracy, totalQuestions, improvement }: { 
   topic: string; 
   accuracy: number; 
   totalQuestions: number;
   improvement: number;
 }) {
-  const getColor = (acc: number) => {
+    /*
+  ----------------------------------------------------------
+  Function: getColor
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - acc: Input consumed by this routine during execution
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+const getColor = (acc: number) => {
     if (acc >= 80) return "bg-gradient-to-r from-emerald-500 to-teal-500";
     if (acc >= 60) return "bg-gradient-to-r from-amber-500 to-orange-500";
     return "bg-gradient-to-r from-rose-500 to-pink-500";
   };
 
-  const getBadgeColor = (acc: number) => {
+    /*
+  ----------------------------------------------------------
+  Function: getBadgeColor
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - acc: Input consumed by this routine during execution
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+const getBadgeColor = (acc: number) => {
     if (acc >= 80) return "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400";
     if (acc >= 60) return "bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400";
     return "bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:text-rose-400";
@@ -111,10 +235,56 @@ function TopicBar({ topic, accuracy, totalQuestions, improvement }: {
   );
 }
 
+/*
+----------------------------------------------------------
+Component: RecommendationCard
+
+Purpose:
+Renders a focused UI unit and orchestrates state, hooks, and user interactions for the surrounding workflow.
+
+Parameters:
+- recommendation: Input consumed by this routine during execution
+
+Process:
+1. Initializes local state and framework hooks required for rendering
+2. Derives view data from props, query state, and computed conditions
+3. Applies conditional rendering to keep the interface robust for empty/loading/error states
+4. Binds event handlers and side effects to synchronize UI with backend/application state
+
+Why Validation is Important:
+State guards and defensive rendering prevent runtime errors, preserve UX continuity, and improve accessibility during asynchronous updates.
+
+Returns:
+A JSX tree representing the component view for the current state.
+----------------------------------------------------------
+*/
 function RecommendationCard({ recommendation }: { 
   recommendation: { type: string; title: string; description: string; priority: 'high' | 'medium' | 'low' } 
 }) {
-  const getIcon = (type: string) => {
+    /*
+  ----------------------------------------------------------
+  Function: getIcon
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - type: Input consumed by this routine during execution
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+const getIcon = (type: string) => {
     switch (type) {
       case 'focus': return AlertTriangle;
       case 'practice': return Target;
@@ -125,7 +295,30 @@ function RecommendationCard({ recommendation }: {
     }
   };
 
-  const getPriorityStyles = (priority: string) => {
+    /*
+  ----------------------------------------------------------
+  Function: getPriorityStyles
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - priority: Input consumed by this routine during execution
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+const getPriorityStyles = (priority: string) => {
     switch (priority) {
       case 'high': return {
         border: 'border-l-4 border-l-rose-500',
@@ -168,6 +361,29 @@ function RecommendationCard({ recommendation }: {
   );
 }
 
+/*
+----------------------------------------------------------
+Component: Insights
+
+Purpose:
+Renders a focused UI unit and orchestrates state, hooks, and user interactions for the surrounding workflow.
+
+Parameters:
+- None: Operates using closure/module state only
+
+Process:
+1. Initializes local state and framework hooks required for rendering
+2. Derives view data from props, query state, and computed conditions
+3. Applies conditional rendering to keep the interface robust for empty/loading/error states
+4. Binds event handlers and side effects to synchronize UI with backend/application state
+
+Why Validation is Important:
+State guards and defensive rendering prevent runtime errors, preserve UX continuity, and improve accessibility during asynchronous updates.
+
+Returns:
+A JSX tree representing the component view for the current state.
+----------------------------------------------------------
+*/
 export default function Insights() {
   const { data: insights, isLoading } = useQuery<LearningInsights>({
     queryKey: ['/api/learning-insights'],
@@ -200,7 +416,30 @@ export default function Insights() {
     overallAccuracy: 0
   };
 
-  const formatStudyTime = (minutes: number) => {
+    /*
+  ----------------------------------------------------------
+  Function: formatStudyTime
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - minutes: Input consumed by this routine during execution
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+const formatStudyTime = (minutes: number) => {
     if (minutes < 60) return `${minutes}m`;
     const hours = Math.floor(minutes / 60);
     const mins = minutes % 60;

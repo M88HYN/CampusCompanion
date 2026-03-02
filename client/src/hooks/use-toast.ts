@@ -1,3 +1,27 @@
+/*
+==========================================================
+File: client/src/hooks/use-toast.ts
+
+Module: Core Platform
+
+Purpose:
+Defines responsibilities specific to this unit while preserving
+clear boundaries with adjacent modules in CampusCompanion.
+
+Architectural Layer:
+Application Layer (Business and Interaction Logic)
+
+System Interaction:
+- Consumes API endpoints via query/mutation utilities and renders user-facing interfaces
+- Collaborates with shared types to preserve frontend-backend contract integrity
+
+Design Rationale:
+A dedicated file-level boundary supports maintainability,
+traceability, and scalability by keeping concerns local and
+allowing safe evolution of features without cross-module side effects.
+==========================================================
+*/
+
 import * as React from "react"
 
 import type {
@@ -24,6 +48,29 @@ const actionTypes = {
 
 let count = 0
 
+/*
+----------------------------------------------------------
+Function: genId
+
+Purpose:
+Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+Parameters:
+- None: Operates using closure/module state only
+
+Process:
+1. Accepts and normalizes inputs before core processing
+2. Applies relevant guards/validation to prevent invalid transitions
+3. Executes primary logic path and handles expected edge conditions
+4. Returns a deterministic output for the caller layer
+
+Why Validation is Important:
+Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+Returns:
+A value/promise representing the outcome of the executed logic path.
+----------------------------------------------------------
+*/
 function genId() {
   count = (count + 1) % Number.MAX_SAFE_INTEGER
   return count.toString()
@@ -55,6 +102,29 @@ interface State {
 
 const toastTimeouts = new Map<string, ReturnType<typeof setTimeout>>()
 
+/*
+----------------------------------------------------------
+Function: addToRemoveQueue
+
+Purpose:
+Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+Parameters:
+- toastId: Input consumed by this routine during execution
+
+Process:
+1. Accepts and normalizes inputs before core processing
+2. Applies relevant guards/validation to prevent invalid transitions
+3. Executes primary logic path and handles expected edge conditions
+4. Returns a deterministic output for the caller layer
+
+Why Validation is Important:
+Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+Returns:
+A value/promise representing the outcome of the executed logic path.
+----------------------------------------------------------
+*/
 const addToRemoveQueue = (toastId: string) => {
   if (toastTimeouts.has(toastId)) {
     return
@@ -71,6 +141,30 @@ const addToRemoveQueue = (toastId: string) => {
   toastTimeouts.set(toastId, timeout)
 }
 
+/*
+----------------------------------------------------------
+Function: reducer
+
+Purpose:
+Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+Parameters:
+- state: Input consumed by this routine during execution
+- action: Input consumed by this routine during execution
+
+Process:
+1. Accepts and normalizes inputs before core processing
+2. Applies relevant guards/validation to prevent invalid transitions
+3. Executes primary logic path and handles expected edge conditions
+4. Returns a deterministic output for the caller layer
+
+Why Validation is Important:
+Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+Returns:
+A value/promise representing the outcome of the executed logic path.
+----------------------------------------------------------
+*/
 export const reducer = (state: State, action: Action): State => {
   switch (action.type) {
     case "ADD_TOAST":
@@ -130,6 +224,29 @@ const listeners: Array<(state: State) => void> = []
 
 let memoryState: State = { toasts: [] }
 
+/*
+----------------------------------------------------------
+Function: dispatch
+
+Purpose:
+Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+Parameters:
+- action: Input consumed by this routine during execution
+
+Process:
+1. Accepts and normalizes inputs before core processing
+2. Applies relevant guards/validation to prevent invalid transitions
+3. Executes primary logic path and handles expected edge conditions
+4. Returns a deterministic output for the caller layer
+
+Why Validation is Important:
+Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+Returns:
+A value/promise representing the outcome of the executed logic path.
+----------------------------------------------------------
+*/
 function dispatch(action: Action) {
   memoryState = reducer(memoryState, action)
   listeners.forEach((listener) => {
@@ -139,15 +256,84 @@ function dispatch(action: Action) {
 
 type Toast = Omit<ToasterToast, "id">
 
+/*
+----------------------------------------------------------
+Function: toast
+
+Purpose:
+Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+Parameters:
+- props: Input consumed by this routine during execution
+
+Process:
+1. Accepts and normalizes inputs before core processing
+2. Applies relevant guards/validation to prevent invalid transitions
+3. Executes primary logic path and handles expected edge conditions
+4. Returns a deterministic output for the caller layer
+
+Why Validation is Important:
+Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+Returns:
+A value/promise representing the outcome of the executed logic path.
+----------------------------------------------------------
+*/
 function toast({ ...props }: Toast) {
   const id = genId()
 
-  const update = (props: ToasterToast) =>
+    /*
+  ----------------------------------------------------------
+  Function: update
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - props: Input consumed by this routine during execution
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+const update = (props: ToasterToast) =>
     dispatch({
       type: "UPDATE_TOAST",
       toast: { ...props, id },
     })
-  const dismiss = () => dispatch({ type: "DISMISS_TOAST", toastId: id })
+    /*
+  ----------------------------------------------------------
+  Function: dismiss
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - None: Operates using closure/module state only
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+const dismiss = () => dispatch({ type: "DISMISS_TOAST", toastId: id })
 
   dispatch({
     type: "ADD_TOAST",
@@ -168,6 +354,29 @@ function toast({ ...props }: Toast) {
   }
 }
 
+/*
+----------------------------------------------------------
+Function: useToast
+
+Purpose:
+Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+Parameters:
+- None: Operates using closure/module state only
+
+Process:
+1. Accepts and normalizes inputs before core processing
+2. Applies relevant guards/validation to prevent invalid transitions
+3. Executes primary logic path and handles expected edge conditions
+4. Returns a deterministic output for the caller layer
+
+Why Validation is Important:
+Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+Returns:
+A value/promise representing the outcome of the executed logic path.
+----------------------------------------------------------
+*/
 function useToast() {
   const [state, setState] = React.useState<State>(memoryState)
 

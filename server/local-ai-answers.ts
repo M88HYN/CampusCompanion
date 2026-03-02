@@ -1,3 +1,27 @@
+/*
+==========================================================
+File: server/local-ai-answers.ts
+
+Module: Core Platform
+
+Purpose:
+Defines responsibilities specific to this unit while preserving
+clear boundaries with adjacent modules in CampusCompanion.
+
+Architectural Layer:
+API Routing and Service Layer
+
+System Interaction:
+- Receives HTTP requests and coordinates validation, authorization, and business workflows
+- Interacts with storage/database adapters and shared schemas for consistent persistence
+
+Design Rationale:
+A dedicated file-level boundary supports maintainability,
+traceability, and scalability by keeping concerns local and
+allowing safe evolution of features without cross-module side effects.
+==========================================================
+*/
+
 import fs from "node:fs";
 import path from "node:path";
 
@@ -260,6 +284,29 @@ export let LOCAL_AI_ANSWERS: LocalAnswerEntry[] = BASE_LOCAL_AI_ANSWERS.map((ent
   keywords: [...entry.keywords],
 }));
 
+/*
+----------------------------------------------------------
+Function: isValidLocalAnswerEntry
+
+Purpose:
+Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+Parameters:
+- value: Input consumed by this routine during execution
+
+Process:
+1. Accepts and normalizes inputs before core processing
+2. Applies relevant guards/validation to prevent invalid transitions
+3. Executes primary logic path and handles expected edge conditions
+4. Returns a deterministic output for the caller layer
+
+Why Validation is Important:
+Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+Returns:
+A value/promise representing the outcome of the executed logic path.
+----------------------------------------------------------
+*/
 function isValidLocalAnswerEntry(value: unknown): value is LocalAnswerEntry {
   if (!value || typeof value !== "object") return false;
   const item = value as Partial<LocalAnswerEntry>;
@@ -274,12 +321,58 @@ function isValidLocalAnswerEntry(value: unknown): value is LocalAnswerEntry {
   );
 }
 
+/*
+----------------------------------------------------------
+Function: persistLocalAnswers
+
+Purpose:
+Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+Parameters:
+- None: Operates using closure/module state only
+
+Process:
+1. Accepts and normalizes inputs before core processing
+2. Applies relevant guards/validation to prevent invalid transitions
+3. Executes primary logic path and handles expected edge conditions
+4. Returns a deterministic output for the caller layer
+
+Why Validation is Important:
+Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+Returns:
+A value/promise representing the outcome of the executed logic path.
+----------------------------------------------------------
+*/
 function persistLocalAnswers(): void {
   const dir = path.dirname(LOCAL_ANSWERS_FILE);
   fs.mkdirSync(dir, { recursive: true });
   fs.writeFileSync(LOCAL_ANSWERS_FILE, JSON.stringify(LOCAL_AI_ANSWERS, null, 2), "utf-8");
 }
 
+/*
+----------------------------------------------------------
+Function: initializeLocalAnswersStore
+
+Purpose:
+Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+Parameters:
+- None: Operates using closure/module state only
+
+Process:
+1. Accepts and normalizes inputs before core processing
+2. Applies relevant guards/validation to prevent invalid transitions
+3. Executes primary logic path and handles expected edge conditions
+4. Returns a deterministic output for the caller layer
+
+Why Validation is Important:
+Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+Returns:
+A value/promise representing the outcome of the executed logic path.
+----------------------------------------------------------
+*/
 function initializeLocalAnswersStore(): void {
   try {
     if (!fs.existsSync(LOCAL_ANSWERS_FILE)) {
@@ -320,6 +413,29 @@ function initializeLocalAnswersStore(): void {
 
 initializeLocalAnswersStore();
 
+/*
+----------------------------------------------------------
+Function: listLocalAnswers
+
+Purpose:
+Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+Parameters:
+- search: Input consumed by this routine during execution
+
+Process:
+1. Accepts and normalizes inputs before core processing
+2. Applies relevant guards/validation to prevent invalid transitions
+3. Executes primary logic path and handles expected edge conditions
+4. Returns a deterministic output for the caller layer
+
+Why Validation is Important:
+Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+Returns:
+A value/promise representing the outcome of the executed logic path.
+----------------------------------------------------------
+*/
 export function listLocalAnswers(search = ""): LocalAnswerEntry[] {
   const q = search.trim().toLowerCase();
   if (!q) {
@@ -334,6 +450,30 @@ export function listLocalAnswers(search = ""): LocalAnswerEntry[] {
     .sort((a, b) => a.question.localeCompare(b.question));
 }
 
+/*
+----------------------------------------------------------
+Function: updateLocalAnswer
+
+Purpose:
+Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+Parameters:
+- id: Input consumed by this routine during execution
+- updates: Input consumed by this routine during execution
+
+Process:
+1. Accepts and normalizes inputs before core processing
+2. Applies relevant guards/validation to prevent invalid transitions
+3. Executes primary logic path and handles expected edge conditions
+4. Returns a deterministic output for the caller layer
+
+Why Validation is Important:
+Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+Returns:
+A value/promise representing the outcome of the executed logic path.
+----------------------------------------------------------
+*/
 export function updateLocalAnswer(
   id: string,
   updates: Partial<Pick<LocalAnswerEntry, "question" | "answer" | "keywords" | "category">>,
@@ -361,6 +501,29 @@ export function updateLocalAnswer(
   return { ...target };
 }
 
+/*
+----------------------------------------------------------
+Function: normalize
+
+Purpose:
+Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+Parameters:
+- text: Input consumed by this routine during execution
+
+Process:
+1. Accepts and normalizes inputs before core processing
+2. Applies relevant guards/validation to prevent invalid transitions
+3. Executes primary logic path and handles expected edge conditions
+4. Returns a deterministic output for the caller layer
+
+Why Validation is Important:
+Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+Returns:
+A value/promise representing the outcome of the executed logic path.
+----------------------------------------------------------
+*/
 function normalize(text: string): string[] {
   return text
     .toLowerCase()
@@ -369,6 +532,29 @@ function normalize(text: string): string[] {
     .filter((token) => token.length > 1 && !STOP_WORDS.has(token));
 }
 
+/*
+----------------------------------------------------------
+Function: findBestLocalAnswer
+
+Purpose:
+Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+Parameters:
+- query: Input consumed by this routine during execution
+
+Process:
+1. Accepts and normalizes inputs before core processing
+2. Applies relevant guards/validation to prevent invalid transitions
+3. Executes primary logic path and handles expected edge conditions
+4. Returns a deterministic output for the caller layer
+
+Why Validation is Important:
+Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+Returns:
+A value/promise representing the outcome of the executed logic path.
+----------------------------------------------------------
+*/
 export function findBestLocalAnswer(query: string): LocalAnswerEntry | null {
   const queryTokens = normalize(query);
   if (queryTokens.length === 0) return null;

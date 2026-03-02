@@ -1,5 +1,52 @@
+/*
+==========================================================
+File: client/src/lib/queryClient.ts
+
+Module: Core Platform
+
+Purpose:
+Defines responsibilities specific to this unit while preserving
+clear boundaries with adjacent modules in CampusCompanion.
+
+Architectural Layer:
+Application Layer (Business and Interaction Logic)
+
+System Interaction:
+- Consumes API endpoints via query/mutation utilities and renders user-facing interfaces
+- Collaborates with shared types to preserve frontend-backend contract integrity
+
+Design Rationale:
+A dedicated file-level boundary supports maintainability,
+traceability, and scalability by keeping concerns local and
+allowing safe evolution of features without cross-module side effects.
+==========================================================
+*/
+
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
+/*
+----------------------------------------------------------
+Function: throwIfResNotOk
+
+Purpose:
+Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+Parameters:
+- res: Input consumed by this routine during execution
+
+Process:
+1. Accepts and normalizes inputs before core processing
+2. Applies relevant guards/validation to prevent invalid transitions
+3. Executes primary logic path and handles expected edge conditions
+4. Returns a deterministic output for the caller layer
+
+Why Validation is Important:
+Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+Returns:
+A value/promise representing the outcome of the executed logic path.
+----------------------------------------------------------
+*/
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
     // On 401, clear the token since it's invalid
@@ -15,6 +62,31 @@ async function throwIfResNotOk(res: Response) {
   }
 }
 
+/*
+----------------------------------------------------------
+Function: apiRequest
+
+Purpose:
+Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+Parameters:
+- method: Input consumed by this routine during execution
+- url: Input consumed by this routine during execution
+- data: Input consumed by this routine during execution
+
+Process:
+1. Accepts and normalizes inputs before core processing
+2. Applies relevant guards/validation to prevent invalid transitions
+3. Executes primary logic path and handles expected edge conditions
+4. Returns a deterministic output for the caller layer
+
+Why Validation is Important:
+Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+Returns:
+A value/promise representing the outcome of the executed logic path.
+----------------------------------------------------------
+*/
 export async function apiRequest(
   method: string,
   url: string,
@@ -50,6 +122,29 @@ export async function apiRequest(
 }
 
 type UnauthorizedBehavior = "returnNull" | "throw";
+/*
+----------------------------------------------------------
+Function: getQueryFn
+
+Purpose:
+Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+Parameters:
+- unauthorizedBehavior: Input consumed by this routine during execution
+
+Process:
+1. Accepts and normalizes inputs before core processing
+2. Applies relevant guards/validation to prevent invalid transitions
+3. Executes primary logic path and handles expected edge conditions
+4. Returns a deterministic output for the caller layer
+
+Why Validation is Important:
+Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+Returns:
+A value/promise representing the outcome of the executed logic path.
+----------------------------------------------------------
+*/
 export const getQueryFn: <T>(options: {
   on401: UnauthorizedBehavior;
 }) => QueryFunction<T> =

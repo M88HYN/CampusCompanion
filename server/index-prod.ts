@@ -1,3 +1,27 @@
+/*
+==========================================================
+File: server/index-prod.ts
+
+Module: Core Platform
+
+Purpose:
+Defines responsibilities specific to this unit while preserving
+clear boundaries with adjacent modules in CampusCompanion.
+
+Architectural Layer:
+API Routing and Service Layer
+
+System Interaction:
+- Receives HTTP requests and coordinates validation, authorization, and business workflows
+- Interacts with storage/database adapters and shared schemas for consistent persistence
+
+Design Rationale:
+A dedicated file-level boundary supports maintainability,
+traceability, and scalability by keeping concerns local and
+allowing safe evolution of features without cross-module side effects.
+==========================================================
+*/
+
 import fs from "node:fs";
 import path from "node:path";
 import { type Server } from "node:http";
@@ -9,6 +33,30 @@ import { storage } from "./storage";
 import { seedComputerScienceData } from "./seed-computer-science";
 import { seedCompletedQuizzes } from "./seed-completed-quizzes";
 
+/*
+----------------------------------------------------------
+Function: serveStatic
+
+Purpose:
+Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+Parameters:
+- app: Input consumed by this routine during execution
+- _server: Input consumed by this routine during execution
+
+Process:
+1. Accepts and normalizes inputs before core processing
+2. Applies relevant guards/validation to prevent invalid transitions
+3. Executes primary logic path and handles expected edge conditions
+4. Returns a deterministic output for the caller layer
+
+Why Validation is Important:
+Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+Returns:
+A value/promise representing the outcome of the executed logic path.
+----------------------------------------------------------
+*/
 export async function serveStatic(app: Express, _server: Server) {
   const enableDemoUser = process.env.ENABLE_DEMO_USER !== "false";
   const enableDemoSeed = process.env.ENABLE_DEMO_SEED !== "false";

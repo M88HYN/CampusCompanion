@@ -1,3 +1,27 @@
+/*
+==========================================================
+File: shared/schema.ts
+
+Module: Persistence and Data Modeling
+
+Purpose:
+Defines responsibilities specific to this unit while preserving
+clear boundaries with adjacent modules in CampusCompanion.
+
+Architectural Layer:
+Data Access Layer
+
+System Interaction:
+- Defines shared contracts and schema primitives consumed by both frontend and backend
+- Provides type-safe boundaries that reduce coupling and integration defects
+
+Design Rationale:
+A dedicated file-level boundary supports maintainability,
+traceability, and scalability by keeping concerns local and
+allowing safe evolution of features without cross-module side effects.
+==========================================================
+*/
+
 import { sql } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -10,6 +34,19 @@ export { users, sessions, type User, type UpsertUser };
 
 import { sqliteTable, text, integer, index, real } from "drizzle-orm/sqlite-core";
 
+/*
+Table: notes (notes)
+
+Purpose:
+Stores a normalized entity used by the learning platform while preserving user-scoped ownership and query efficiency.
+
+Relationships:
+- Participates in relational workflows through explicit identifier fields and indexed lookup paths
+- Supports higher-level modules such as notes, quizzes, flashcards, analytics, or authentication
+
+Design Justification:
+A table-per-aggregate strategy improves maintainability, reduces data redundancy, and enables scalable feature growth through clear persistence boundaries.
+*/
 export const notes = sqliteTable("notes", {
   id: text("id").primaryKey(),
   userId: text("user_id").notNull(),
@@ -27,6 +64,19 @@ export const notes = sqliteTable("notes", {
 export const noteTypeEnum = ["concept", "definition", "process", "example", "exam_tip", "general"] as const;
 export type NoteType = typeof noteTypeEnum[number];
 
+/*
+Table: noteBlocks (note_blocks)
+
+Purpose:
+Stores a normalized entity used by the learning platform while preserving user-scoped ownership and query efficiency.
+
+Relationships:
+- Participates in relational workflows through explicit identifier fields and indexed lookup paths
+- Supports higher-level modules such as notes, quizzes, flashcards, analytics, or authentication
+
+Design Justification:
+A table-per-aggregate strategy improves maintainability, reduces data redundancy, and enables scalable feature growth through clear persistence boundaries.
+*/
 export const noteBlocks = sqliteTable("note_blocks", {
   id: text("id").primaryKey(),
   noteId: text("note_id").notNull(),
@@ -63,6 +113,19 @@ export type InsertNoteBlock = z.infer<typeof insertNoteBlockSchema>;
 
 // ==================== INSIGHT SCOUT: CONVERSATIONS ====================
 
+/*
+Table: researchConversations (conversations)
+
+Purpose:
+Stores a normalized entity used by the learning platform while preserving user-scoped ownership and query efficiency.
+
+Relationships:
+- Participates in relational workflows through explicit identifier fields and indexed lookup paths
+- Supports higher-level modules such as notes, quizzes, flashcards, analytics, or authentication
+
+Design Justification:
+A table-per-aggregate strategy improves maintainability, reduces data redundancy, and enables scalable feature growth through clear persistence boundaries.
+*/
 export const researchConversations = sqliteTable("conversations", {
   id: text("id").primaryKey(),
   userId: text("user_id").notNull(),
@@ -74,6 +137,19 @@ export const researchConversations = sqliteTable("conversations", {
   updatedAtIdx: index("research_conversations_updated_at_idx").on(table.updatedAt),
 }));
 
+/*
+Table: researchMessages (messages)
+
+Purpose:
+Stores a normalized entity used by the learning platform while preserving user-scoped ownership and query efficiency.
+
+Relationships:
+- Participates in relational workflows through explicit identifier fields and indexed lookup paths
+- Supports higher-level modules such as notes, quizzes, flashcards, analytics, or authentication
+
+Design Justification:
+A table-per-aggregate strategy improves maintainability, reduces data redundancy, and enables scalable feature growth through clear persistence boundaries.
+*/
 export const researchMessages = sqliteTable("messages", {
   id: text("id").primaryKey(),
   conversationId: text("conversation_id").notNull(),
@@ -103,6 +179,19 @@ export type InsertResearchMessage = z.infer<typeof insertResearchMessageSchema>;
 
 // ==================== FLASHCARDS ====================
 
+/*
+Table: decks (decks)
+
+Purpose:
+Stores a normalized entity used by the learning platform while preserving user-scoped ownership and query efficiency.
+
+Relationships:
+- Participates in relational workflows through explicit identifier fields and indexed lookup paths
+- Supports higher-level modules such as notes, quizzes, flashcards, analytics, or authentication
+
+Design Justification:
+A table-per-aggregate strategy improves maintainability, reduces data redundancy, and enables scalable feature growth through clear persistence boundaries.
+*/
 export const decks = sqliteTable("decks", {
   id: text("id").primaryKey(),
   userId: text("user_id").notNull(),
@@ -117,6 +206,19 @@ export const decks = sqliteTable("decks", {
   subjectIdx: index("decks_subject_idx").on(table.subject),
 }));
 
+/*
+Table: cards (cards)
+
+Purpose:
+Stores a normalized entity used by the learning platform while preserving user-scoped ownership and query efficiency.
+
+Relationships:
+- Participates in relational workflows through explicit identifier fields and indexed lookup paths
+- Supports higher-level modules such as notes, quizzes, flashcards, analytics, or authentication
+
+Design Justification:
+A table-per-aggregate strategy improves maintainability, reduces data redundancy, and enables scalable feature growth through clear persistence boundaries.
+*/
 export const cards = sqliteTable("cards", {
   id: text("id").primaryKey(),
   deckId: text("deck_id").notNull(),
@@ -143,6 +245,19 @@ export const cards = sqliteTable("cards", {
   statusIdx: index("cards_status_idx").on(table.status),
 }));
 
+/*
+Table: cardReviews (card_reviews)
+
+Purpose:
+Stores a normalized entity used by the learning platform while preserving user-scoped ownership and query efficiency.
+
+Relationships:
+- Participates in relational workflows through explicit identifier fields and indexed lookup paths
+- Supports higher-level modules such as notes, quizzes, flashcards, analytics, or authentication
+
+Design Justification:
+A table-per-aggregate strategy improves maintainability, reduces data redundancy, and enables scalable feature growth through clear persistence boundaries.
+*/
 export const cardReviews = sqliteTable("card_reviews", {
   id: text("id").primaryKey(),
   cardId: text("card_id").notNull(),
@@ -188,6 +303,19 @@ export type InsertCardReview = z.infer<typeof insertCardReviewSchema>;
 
 // ==================== QUIZZES ====================
 
+/*
+Table: quizzes (quizzes)
+
+Purpose:
+Stores a normalized entity used by the learning platform while preserving user-scoped ownership and query efficiency.
+
+Relationships:
+- Participates in relational workflows through explicit identifier fields and indexed lookup paths
+- Supports higher-level modules such as notes, quizzes, flashcards, analytics, or authentication
+
+Design Justification:
+A table-per-aggregate strategy improves maintainability, reduces data redundancy, and enables scalable feature growth through clear persistence boundaries.
+*/
 export const quizzes = sqliteTable("quizzes", {
   id: text("id").primaryKey(),
   userId: text("user_id").notNull(),
@@ -205,6 +333,19 @@ export const quizzes = sqliteTable("quizzes", {
   subjectIdx: index("quizzes_subject_idx").on(table.subject),
 }));
 
+/*
+Table: quizQuestions (quiz_questions)
+
+Purpose:
+Stores a normalized entity used by the learning platform while preserving user-scoped ownership and query efficiency.
+
+Relationships:
+- Participates in relational workflows through explicit identifier fields and indexed lookup paths
+- Supports higher-level modules such as notes, quizzes, flashcards, analytics, or authentication
+
+Design Justification:
+A table-per-aggregate strategy improves maintainability, reduces data redundancy, and enables scalable feature growth through clear persistence boundaries.
+*/
 export const quizQuestions = sqliteTable("quiz_questions", {
   id: text("id").primaryKey(),
   quizId: text("quiz_id").notNull(),
@@ -226,6 +367,19 @@ export const quizQuestions = sqliteTable("quiz_questions", {
   difficultyIdx: index("quiz_questions_difficulty_idx").on(table.difficulty),
 }));
 
+/*
+Table: quizOptions (quiz_options)
+
+Purpose:
+Stores a normalized entity used by the learning platform while preserving user-scoped ownership and query efficiency.
+
+Relationships:
+- Participates in relational workflows through explicit identifier fields and indexed lookup paths
+- Supports higher-level modules such as notes, quizzes, flashcards, analytics, or authentication
+
+Design Justification:
+A table-per-aggregate strategy improves maintainability, reduces data redundancy, and enables scalable feature growth through clear persistence boundaries.
+*/
 export const quizOptions = sqliteTable("quiz_options", {
   id: text("id").primaryKey(),
   questionId: text("question_id").notNull(),
@@ -236,6 +390,19 @@ export const quizOptions = sqliteTable("quiz_options", {
   questionIdIdx: index("quiz_options_question_id_idx").on(table.questionId),
 }));
 
+/*
+Table: quizAttempts (quiz_attempts)
+
+Purpose:
+Stores a normalized entity used by the learning platform while preserving user-scoped ownership and query efficiency.
+
+Relationships:
+- Participates in relational workflows through explicit identifier fields and indexed lookup paths
+- Supports higher-level modules such as notes, quizzes, flashcards, analytics, or authentication
+
+Design Justification:
+A table-per-aggregate strategy improves maintainability, reduces data redundancy, and enables scalable feature growth through clear persistence boundaries.
+*/
 export const quizAttempts = sqliteTable("quiz_attempts", {
   id: text("id").primaryKey(),
   quizId: text("quiz_id").notNull(),
@@ -257,6 +424,19 @@ export const quizAttempts = sqliteTable("quiz_attempts", {
   statusIdx: index("quiz_attempts_status_idx").on(table.status),
 }));
 
+/*
+Table: quizResponses (quiz_responses)
+
+Purpose:
+Stores a normalized entity used by the learning platform while preserving user-scoped ownership and query efficiency.
+
+Relationships:
+- Participates in relational workflows through explicit identifier fields and indexed lookup paths
+- Supports higher-level modules such as notes, quizzes, flashcards, analytics, or authentication
+
+Design Justification:
+A table-per-aggregate strategy improves maintainability, reduces data redundancy, and enables scalable feature growth through clear persistence boundaries.
+*/
 export const quizResponses = sqliteTable("quiz_responses", {
   id: text("id").primaryKey(),
   attemptId: text("attempt_id").notNull(),
@@ -279,6 +459,19 @@ export const quizResponses = sqliteTable("quiz_responses", {
 }));
 
 // User question stats for adaptive engine and spaced repetition
+/*
+Table: userQuestionStats (user_question_stats)
+
+Purpose:
+Stores a normalized entity used by the learning platform while preserving user-scoped ownership and query efficiency.
+
+Relationships:
+- Participates in relational workflows through explicit identifier fields and indexed lookup paths
+- Supports higher-level modules such as notes, quizzes, flashcards, analytics, or authentication
+
+Design Justification:
+A table-per-aggregate strategy improves maintainability, reduces data redundancy, and enables scalable feature growth through clear persistence boundaries.
+*/
 export const userQuestionStats = sqliteTable("user_question_stats", {
   id: text("id").primaryKey(),
   userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
@@ -350,6 +543,19 @@ export type InsertUserQuestionStats = z.infer<typeof insertUserQuestionStatsSche
 
 // ==================== GAMIFICATION: ACHIEVEMENTS & BADGES ====================
 
+/*
+Table: achievements (achievements)
+
+Purpose:
+Stores a normalized entity used by the learning platform while preserving user-scoped ownership and query efficiency.
+
+Relationships:
+- Participates in relational workflows through explicit identifier fields and indexed lookup paths
+- Supports higher-level modules such as notes, quizzes, flashcards, analytics, or authentication
+
+Design Justification:
+A table-per-aggregate strategy improves maintainability, reduces data redundancy, and enables scalable feature growth through clear persistence boundaries.
+*/
 export const achievements = sqliteTable("achievements", {
   id: text("id").primaryKey(),
   name: text("name").notNull().unique(),
@@ -364,6 +570,19 @@ export const achievements = sqliteTable("achievements", {
   categoryIdx: index("achievements_category_idx").on(table.category),
 }));
 
+/*
+Table: userAchievements (user_achievements)
+
+Purpose:
+Stores a normalized entity used by the learning platform while preserving user-scoped ownership and query efficiency.
+
+Relationships:
+- Participates in relational workflows through explicit identifier fields and indexed lookup paths
+- Supports higher-level modules such as notes, quizzes, flashcards, analytics, or authentication
+
+Design Justification:
+A table-per-aggregate strategy improves maintainability, reduces data redundancy, and enables scalable feature growth through clear persistence boundaries.
+*/
 export const userAchievements = sqliteTable("user_achievements", {
   id: text("id").primaryKey(),
   userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
@@ -393,6 +612,19 @@ export type InsertUserAchievement = z.infer<typeof insertUserAchievementSchema>;
 
 // ==================== PROGRESS & ANALYTICS ====================
 
+/*
+Table: studyStreaks (study_streaks)
+
+Purpose:
+Stores a normalized entity used by the learning platform while preserving user-scoped ownership and query efficiency.
+
+Relationships:
+- Participates in relational workflows through explicit identifier fields and indexed lookup paths
+- Supports higher-level modules such as notes, quizzes, flashcards, analytics, or authentication
+
+Design Justification:
+A table-per-aggregate strategy improves maintainability, reduces data redundancy, and enables scalable feature growth through clear persistence boundaries.
+*/
 export const studyStreaks = sqliteTable("study_streaks", {
   id: text("id").primaryKey(),
   userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }).unique(),
@@ -405,6 +637,19 @@ export const studyStreaks = sqliteTable("study_streaks", {
   userIdIdx: index("study_streaks_user_id_idx").on(table.userId),
 }));
 
+/*
+Table: studySessions (study_sessions)
+
+Purpose:
+Stores a normalized entity used by the learning platform while preserving user-scoped ownership and query efficiency.
+
+Relationships:
+- Participates in relational workflows through explicit identifier fields and indexed lookup paths
+- Supports higher-level modules such as notes, quizzes, flashcards, analytics, or authentication
+
+Design Justification:
+A table-per-aggregate strategy improves maintainability, reduces data redundancy, and enables scalable feature growth through clear persistence boundaries.
+*/
 export const studySessions = sqliteTable("study_sessions", {
   id: text("id").primaryKey(),
   userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
@@ -421,6 +666,19 @@ export const studySessions = sqliteTable("study_sessions", {
   startedAtIdx: index("study_sessions_started_at_idx").on(table.startedAt),
 }));
 
+/*
+Table: learningGoals (learning_goals)
+
+Purpose:
+Stores a normalized entity used by the learning platform while preserving user-scoped ownership and query efficiency.
+
+Relationships:
+- Participates in relational workflows through explicit identifier fields and indexed lookup paths
+- Supports higher-level modules such as notes, quizzes, flashcards, analytics, or authentication
+
+Design Justification:
+A table-per-aggregate strategy improves maintainability, reduces data redundancy, and enables scalable feature growth through clear persistence boundaries.
+*/
 export const learningGoals = sqliteTable("learning_goals", {
   id: text("id").primaryKey(),
   userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
@@ -468,6 +726,19 @@ export type InsertLearningGoal = z.infer<typeof insertLearningGoalSchema>;
 
 // ==================== INSIGHT SCOUT: SAVED RESOURCES ====================
 
+/*
+Table: savedResources (saved_resources)
+
+Purpose:
+Stores a normalized entity used by the learning platform while preserving user-scoped ownership and query efficiency.
+
+Relationships:
+- Participates in relational workflows through explicit identifier fields and indexed lookup paths
+- Supports higher-level modules such as notes, quizzes, flashcards, analytics, or authentication
+
+Design Justification:
+A table-per-aggregate strategy improves maintainability, reduces data redundancy, and enables scalable feature growth through clear persistence boundaries.
+*/
 export const savedResources = sqliteTable("saved_resources", {
   id: text("id").primaryKey(),
   userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
@@ -487,6 +758,19 @@ export const savedResources = sqliteTable("saved_resources", {
   resourceTypeIdx: index("saved_resources_resource_type_idx").on(table.resourceType),
 }));
 
+/*
+Table: searchHistory (search_history)
+
+Purpose:
+Stores a normalized entity used by the learning platform while preserving user-scoped ownership and query efficiency.
+
+Relationships:
+- Participates in relational workflows through explicit identifier fields and indexed lookup paths
+- Supports higher-level modules such as notes, quizzes, flashcards, analytics, or authentication
+
+Design Justification:
+A table-per-aggregate strategy improves maintainability, reduces data redundancy, and enables scalable feature growth through clear persistence boundaries.
+*/
 export const searchHistory = sqliteTable("search_history", {
   id: text("id").primaryKey(),
   userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
@@ -516,6 +800,19 @@ export type InsertSearchHistory = z.infer<typeof insertSearchHistorySchema>;
 
 // ==================== USER PREFERENCES ====================
 
+/*
+Table: userPreferences (user_preferences)
+
+Purpose:
+Stores a normalized entity used by the learning platform while preserving user-scoped ownership and query efficiency.
+
+Relationships:
+- Participates in relational workflows through explicit identifier fields and indexed lookup paths
+- Supports higher-level modules such as notes, quizzes, flashcards, analytics, or authentication
+
+Design Justification:
+A table-per-aggregate strategy improves maintainability, reduces data redundancy, and enables scalable feature growth through clear persistence boundaries.
+*/
 export const userPreferences = sqliteTable("user_preferences", {
   id: text("id").primaryKey(),
   userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }).unique(),

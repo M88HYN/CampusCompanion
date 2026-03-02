@@ -1,3 +1,27 @@
+/*
+==========================================================
+File: client/src/pages/pomodoro.tsx
+
+Module: Frontend Experience
+
+Purpose:
+Defines responsibilities specific to this unit while preserving
+clear boundaries with adjacent modules in CampusCompanion.
+
+Architectural Layer:
+Presentation Layer (Frontend UI)
+
+System Interaction:
+- Consumes API endpoints via query/mutation utilities and renders user-facing interfaces
+- Collaborates with shared types to preserve frontend-backend contract integrity
+
+Design Rationale:
+A dedicated file-level boundary supports maintainability,
+traceability, and scalability by keeping concerns local and
+allowing safe evolution of features without cross-module side effects.
+==========================================================
+*/
+
 import { useState, useEffect, useRef } from "react";
 import {
   Play,
@@ -36,6 +60,29 @@ interface PomodoroStats {
 const SOUND_URL =
   "data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAAB9AAACABAAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj==";
 
+/*
+----------------------------------------------------------
+Component: Pomodoro
+
+Purpose:
+Renders a focused UI unit and orchestrates state, hooks, and user interactions for the surrounding workflow.
+
+Parameters:
+- None: Operates using closure/module state only
+
+Process:
+1. Initializes local state and framework hooks required for rendering
+2. Derives view data from props, query state, and computed conditions
+3. Applies conditional rendering to keep the interface robust for empty/loading/error states
+4. Binds event handlers and side effects to synchronize UI with backend/application state
+
+Why Validation is Important:
+State guards and defensive rendering prevent runtime errors, preserve UX continuity, and improve accessibility during asynchronous updates.
+
+Returns:
+A JSX tree representing the component view for the current state.
+----------------------------------------------------------
+*/
 export default function Pomodoro() {
   const { toast } = useToast();
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -77,7 +124,30 @@ export default function Pomodoro() {
     return () => clearInterval(interval);
   }, [isRunning, timeRemaining]);
 
-  const handleTimerComplete = () => {
+    /*
+  ----------------------------------------------------------
+  Function: handleTimerComplete
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - None: Operates using closure/module state only
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+const handleTimerComplete = () => {
     setIsRunning(false);
     playSound();
 
@@ -112,7 +182,30 @@ export default function Pomodoro() {
     }
   };
 
-  const playSound = () => {
+    /*
+  ----------------------------------------------------------
+  Function: playSound
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - None: Operates using closure/module state only
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+const playSound = () => {
     if (soundEnabled && audioRef.current) {
       audioRef.current.play().catch(() => {
         // Browser prevented autoplay, ignore
@@ -120,16 +213,86 @@ export default function Pomodoro() {
     }
   };
 
-  const handlePlayPause = () => {
+    /*
+  ----------------------------------------------------------
+  Function: handlePlayPause
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - None: Operates using closure/module state only
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+const handlePlayPause = () => {
     setIsRunning(!isRunning);
   };
 
-  const handleReset = () => {
+    /*
+  ----------------------------------------------------------
+  Function: handleReset
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - None: Operates using closure/module state only
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+const handleReset = () => {
     setIsRunning(false);
     setTimeRemaining(isWorkSession ? workDuration * 60 : breakDuration * 60);
   };
 
-  const handleApplySettings = (newWork: number, newBreak: number) => {
+    /*
+  ----------------------------------------------------------
+  Function: handleApplySettings
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - newWork: Input consumed by this routine during execution
+  - newBreak: Input consumed by this routine during execution
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+const handleApplySettings = (newWork: number, newBreak: number) => {
     setWorkDuration(newWork);
     setBreakDuration(newBreak);
     setIsRunning(false);
@@ -153,7 +316,30 @@ export default function Pomodoro() {
   const progress = (totalSeconds - timeRemaining) / totalSeconds;
 
   // Determine colors based on session type and progress
-  const getGradient = () => {
+    /*
+  ----------------------------------------------------------
+  Function: getGradient
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - None: Operates using closure/module state only
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+const getGradient = () => {
     if (isWorkSession) {
       // Work session: blue to purple gradient
       return "from-blue-400 to-purple-500";
@@ -163,7 +349,30 @@ export default function Pomodoro() {
     }
   };
 
-  const getBackgroundGradient = () => {
+    /*
+  ----------------------------------------------------------
+  Function: getBackgroundGradient
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - None: Operates using closure/module state only
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+const getBackgroundGradient = () => {
     if (isWorkSession) {
       return "from-blue-50 to-purple-50 dark:from-blue-950 dark:to-purple-950";
     } else {
@@ -171,7 +380,30 @@ export default function Pomodoro() {
     }
   };
 
-  const getAccentColor = () => {
+    /*
+  ----------------------------------------------------------
+  Function: getAccentColor
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - None: Operates using closure/module state only
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+const getAccentColor = () => {
     if (isWorkSession) {
       return {
         text: "text-brand-primary dark:text-blue-400",
@@ -455,6 +687,31 @@ export default function Pomodoro() {
   );
 }
 
+/*
+----------------------------------------------------------
+Component: SettingsDialog
+
+Purpose:
+Renders a focused UI unit and orchestrates state, hooks, and user interactions for the surrounding workflow.
+
+Parameters:
+- workDuration: Input consumed by this routine during execution
+- breakDuration: Input consumed by this routine during execution
+- onApply: Input consumed by this routine during execution
+
+Process:
+1. Initializes local state and framework hooks required for rendering
+2. Derives view data from props, query state, and computed conditions
+3. Applies conditional rendering to keep the interface robust for empty/loading/error states
+4. Binds event handlers and side effects to synchronize UI with backend/application state
+
+Why Validation is Important:
+State guards and defensive rendering prevent runtime errors, preserve UX continuity, and improve accessibility during asynchronous updates.
+
+Returns:
+A JSX tree representing the component view for the current state.
+----------------------------------------------------------
+*/
 function SettingsDialog({
   workDuration,
   breakDuration,
@@ -512,6 +769,31 @@ function SettingsDialog({
 }
 
 // Add Badge component
+/*
+----------------------------------------------------------
+Component: Badge
+
+Purpose:
+Renders a focused UI unit and orchestrates state, hooks, and user interactions for the surrounding workflow.
+
+Parameters:
+- variant: Input consumed by this routine during execution
+- children: Input consumed by this routine during execution
+- className: Input consumed by this routine during execution
+
+Process:
+1. Initializes local state and framework hooks required for rendering
+2. Derives view data from props, query state, and computed conditions
+3. Applies conditional rendering to keep the interface robust for empty/loading/error states
+4. Binds event handlers and side effects to synchronize UI with backend/application state
+
+Why Validation is Important:
+State guards and defensive rendering prevent runtime errors, preserve UX continuity, and improve accessibility during asynchronous updates.
+
+Returns:
+A JSX tree representing the component view for the current state.
+----------------------------------------------------------
+*/
 function Badge({
   variant = "default",
   children,

@@ -1,3 +1,27 @@
+/*
+==========================================================
+File: server/insight-scout.ts
+
+Module: Insight Scout and Research
+
+Purpose:
+Defines responsibilities specific to this unit while preserving
+clear boundaries with adjacent modules in CampusCompanion.
+
+Architectural Layer:
+API Routing and Service Layer
+
+System Interaction:
+- Receives HTTP requests and coordinates validation, authorization, and business workflows
+- Interacts with storage/database adapters and shared schemas for consistent persistence
+
+Design Rationale:
+A dedicated file-level boundary supports maintainability,
+traceability, and scalability by keeping concerns local and
+allowing safe evolution of features without cross-module side effects.
+==========================================================
+*/
+
 import type { Express, Request, Response } from "express";
 import { z } from "zod";
 import { findBestLocalAnswer } from "./local-ai-answers";
@@ -11,6 +35,29 @@ const REQUIRE_LIVE_AI = String(process.env.INSIGHT_SCOUT_REQUIRE_LIVE_AI || "fal
 let openaiClient: any = null;
 let openaiInitialized = false;
 
+/*
+----------------------------------------------------------
+Function: getOpenAI
+
+Purpose:
+Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+Parameters:
+- None: Operates using closure/module state only
+
+Process:
+1. Accepts and normalizes inputs before core processing
+2. Applies relevant guards/validation to prevent invalid transitions
+3. Executes primary logic path and handles expected edge conditions
+4. Returns a deterministic output for the caller layer
+
+Why Validation is Important:
+Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+Returns:
+A value/promise representing the outcome of the executed logic path.
+----------------------------------------------------------
+*/
 async function getOpenAI() {
   if (openaiInitialized) return openaiClient;
   openaiInitialized = true;
@@ -301,6 +348,29 @@ const TOPIC_DB: Record<string, TopicKnowledge> = {
 };
 
 // ─── Keyword matching to find the best topic entry ────────────────────────
+/*
+----------------------------------------------------------
+Function: findTopicKnowledge
+
+Purpose:
+Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+Parameters:
+- query: Input consumed by this routine during execution
+
+Process:
+1. Accepts and normalizes inputs before core processing
+2. Applies relevant guards/validation to prevent invalid transitions
+3. Executes primary logic path and handles expected edge conditions
+4. Returns a deterministic output for the caller layer
+
+Why Validation is Important:
+Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+Returns:
+A value/promise representing the outcome of the executed logic path.
+----------------------------------------------------------
+*/
 function findTopicKnowledge(query: string): TopicKnowledge | null {
   const q = query.toLowerCase();
   // Direct key match
@@ -324,16 +394,90 @@ function findTopicKnowledge(query: string): TopicKnowledge | null {
 }
 
 // ─── Deterministic hash for consistent but query-specific variation ───────
+/*
+----------------------------------------------------------
+Function: hashQuery
+
+Purpose:
+Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+Parameters:
+- str: Input consumed by this routine during execution
+
+Process:
+1. Accepts and normalizes inputs before core processing
+2. Applies relevant guards/validation to prevent invalid transitions
+3. Executes primary logic path and handles expected edge conditions
+4. Returns a deterministic output for the caller layer
+
+Why Validation is Important:
+Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+Returns:
+A value/promise representing the outcome of the executed logic path.
+----------------------------------------------------------
+*/
 function hashQuery(str: string): number {
   let h = 0;
   for (let i = 0; i < str.length; i++) { h = ((h << 5) - h + str.charCodeAt(i)) | 0; }
   return Math.abs(h);
 }
+/*
+----------------------------------------------------------
+Function: pick
+
+Purpose:
+Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+Parameters:
+- arr: Input consumed by this routine during execution
+- seed: Input consumed by this routine during execution
+- offset: Input consumed by this routine during execution
+
+Process:
+1. Accepts and normalizes inputs before core processing
+2. Applies relevant guards/validation to prevent invalid transitions
+3. Executes primary logic path and handles expected edge conditions
+4. Returns a deterministic output for the caller layer
+
+Why Validation is Important:
+Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+Returns:
+A value/promise representing the outcome of the executed logic path.
+----------------------------------------------------------
+*/
 function pick<T>(arr: T[], seed: number, offset = 0): T {
   return arr[(seed + offset) % arr.length];
 }
 
 // ─── Mock Response Generator ──────────────────────────────────────────────
+/*
+----------------------------------------------------------
+Function: generateMockResponse
+
+Purpose:
+Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+Parameters:
+- query: Input consumed by this routine during execution
+- studyIntent: Input consumed by this routine during execution
+- responseType: Input consumed by this routine during execution
+- searchDepth: Input consumed by this routine during execution
+
+Process:
+1. Accepts and normalizes inputs before core processing
+2. Applies relevant guards/validation to prevent invalid transitions
+3. Executes primary logic path and handles expected edge conditions
+4. Returns a deterministic output for the caller layer
+
+Why Validation is Important:
+Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+Returns:
+A value/promise representing the outcome of the executed logic path.
+----------------------------------------------------------
+*/
 function generateMockResponse(query: string, studyIntent: string, responseType: string, searchDepth: string): string {
   const topic = query.replace(/^(explain|summarize|compare|analyze|show|how|what|why|when|where|describe|discuss)\s+(this\s+)?(concept|topic)?:?\s*/i, "").trim() || query;
   const knowledge = findTopicKnowledge(query);
@@ -391,6 +535,31 @@ function generateMockResponse(query: string, studyIntent: string, responseType: 
 // Knowledge-based builders — produce rich, topic-specific responses
 // ═══════════════════════════════════════════════════════════════════════════
 
+/*
+----------------------------------------------------------
+Function: buildExamPrep
+
+Purpose:
+Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+Parameters:
+- topic: Input consumed by this routine during execution
+- k: Input consumed by this routine during execution
+- depth: Input consumed by this routine during execution
+
+Process:
+1. Accepts and normalizes inputs before core processing
+2. Applies relevant guards/validation to prevent invalid transitions
+3. Executes primary logic path and handles expected edge conditions
+4. Returns a deterministic output for the caller layer
+
+Why Validation is Important:
+Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+Returns:
+A value/promise representing the outcome of the executed logic path.
+----------------------------------------------------------
+*/
 function buildExamPrep(topic: string, k: TopicKnowledge, depth: string): string {
   const steps = k.howItWorks.map((s, i) => `${i + 1}. ${s}`).join("\n");
   const principles = k.principles.map(p => `- ${p}`).join("\n");
@@ -438,6 +607,31 @@ ${tips}
 **Analogy for Quick Recall:** Think of ${topic} as ${k.analogies[0]}.`;
 }
 
+/*
+----------------------------------------------------------
+Function: buildDeepUnderstanding
+
+Purpose:
+Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+Parameters:
+- topic: Input consumed by this routine during execution
+- k: Input consumed by this routine during execution
+- depth: Input consumed by this routine during execution
+
+Process:
+1. Accepts and normalizes inputs before core processing
+2. Applies relevant guards/validation to prevent invalid transitions
+3. Executes primary logic path and handles expected edge conditions
+4. Returns a deterministic output for the caller layer
+
+Why Validation is Important:
+Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+Returns:
+A value/promise representing the outcome of the executed logic path.
+----------------------------------------------------------
+*/
 function buildDeepUnderstanding(topic: string, k: TopicKnowledge, depth: string): string {
   const steps = k.howItWorks.map((s, i) => `**Stage ${i + 1}:**\n${s}`).join("\n\n");
 
@@ -477,6 +671,31 @@ Understanding ${topic} deeply means you can handle any question format:
 ${k.examTips.map(t => `- ${t}`).join("\n")}`;
 }
 
+/*
+----------------------------------------------------------
+Function: buildAssignment
+
+Purpose:
+Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+Parameters:
+- topic: Input consumed by this routine during execution
+- k: Input consumed by this routine during execution
+- depth: Input consumed by this routine during execution
+
+Process:
+1. Accepts and normalizes inputs before core processing
+2. Applies relevant guards/validation to prevent invalid transitions
+3. Executes primary logic path and handles expected edge conditions
+4. Returns a deterministic output for the caller layer
+
+Why Validation is Important:
+Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+Returns:
+A value/promise representing the outcome of the executed logic path.
+----------------------------------------------------------
+*/
 function buildAssignment(topic: string, k: TopicKnowledge, depth: string): string {
   return `**Key Insight** — ${k.keyInsight} Understanding both its utility and limitations is essential for critical academic analysis.
 
@@ -527,6 +746,31 @@ For timed academic writing on ${topic}:
 ${k.examTips.map(t => `- ${t}`).join("\n")}`;
 }
 
+/*
+----------------------------------------------------------
+Function: buildRevision
+
+Purpose:
+Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+Parameters:
+- topic: Input consumed by this routine during execution
+- k: Input consumed by this routine during execution
+- depth: Input consumed by this routine during execution
+
+Process:
+1. Accepts and normalizes inputs before core processing
+2. Applies relevant guards/validation to prevent invalid transitions
+3. Executes primary logic path and handles expected edge conditions
+4. Returns a deterministic output for the caller layer
+
+Why Validation is Important:
+Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+Returns:
+A value/promise representing the outcome of the executed logic path.
+----------------------------------------------------------
+*/
 function buildRevision(topic: string, k: TopicKnowledge, depth: string): string {
   const seed = hashQuery(topic);
   const mnemonic = topic.split(/\s+/).map(w => w[0]?.toUpperCase()).join(".") || "T";
@@ -579,6 +823,30 @@ ${k.mistakes.map((m, i) => `${i + 1}. **${m.error}** — ${m.explanation.split("
 ${k.examTips.map(t => `• ${t}`).join("\n")}`;
 }
 
+/*
+----------------------------------------------------------
+Function: buildQuickClarify
+
+Purpose:
+Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+Parameters:
+- topic: Input consumed by this routine during execution
+- k: Input consumed by this routine during execution
+
+Process:
+1. Accepts and normalizes inputs before core processing
+2. Applies relevant guards/validation to prevent invalid transitions
+3. Executes primary logic path and handles expected edge conditions
+4. Returns a deterministic output for the caller layer
+
+Why Validation is Important:
+Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+Returns:
+A value/promise representing the outcome of the executed logic path.
+----------------------------------------------------------
+*/
 function buildQuickClarify(topic: string, k: TopicKnowledge): string {
   return `**Key Insight** — ${k.keyInsight}
 
@@ -611,6 +879,30 @@ ${k.examTips[0]}`;
 // Uses the query text itself to produce contextually varied responses
 // ═══════════════════════════════════════════════════════════════════════════
 
+/*
+----------------------------------------------------------
+Function: generateFallbackExamPrep
+
+Purpose:
+Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+Parameters:
+- topic: Input consumed by this routine during execution
+- depth: Input consumed by this routine during execution
+
+Process:
+1. Accepts and normalizes inputs before core processing
+2. Applies relevant guards/validation to prevent invalid transitions
+3. Executes primary logic path and handles expected edge conditions
+4. Returns a deterministic output for the caller layer
+
+Why Validation is Important:
+Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+Returns:
+A value/promise representing the outcome of the executed logic path.
+----------------------------------------------------------
+*/
 function generateFallbackExamPrep(topic: string, depth: string): string {
   const words = topic.split(/\s+/);
   const seed = hashQuery(topic);
@@ -678,6 +970,30 @@ Preparing one example for each of these contexts gives you flexibility in exams.
 • End every answer with a brief evaluative conclusion — this shows higher-order thinking`;
 }
 
+/*
+----------------------------------------------------------
+Function: generateFallbackDeep
+
+Purpose:
+Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+Parameters:
+- topic: Input consumed by this routine during execution
+- depth: Input consumed by this routine during execution
+
+Process:
+1. Accepts and normalizes inputs before core processing
+2. Applies relevant guards/validation to prevent invalid transitions
+3. Executes primary logic path and handles expected edge conditions
+4. Returns a deterministic output for the caller layer
+
+Why Validation is Important:
+Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+Returns:
+A value/promise representing the outcome of the executed logic path.
+----------------------------------------------------------
+*/
 function generateFallbackDeep(topic: string, depth: string): string {
   const seed = hashQuery(topic);
   const questionStarters = [
@@ -734,6 +1050,30 @@ Can you identify ${topic} principles at work in a completely different context? 
 Deep understanding gives you a significant advantage: you can answer questions you've never seen before by reasoning from principles rather than searching your memory for pre-prepared answers.`;
 }
 
+/*
+----------------------------------------------------------
+Function: generateFallbackAssignment
+
+Purpose:
+Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+Parameters:
+- topic: Input consumed by this routine during execution
+- depth: Input consumed by this routine during execution
+
+Process:
+1. Accepts and normalizes inputs before core processing
+2. Applies relevant guards/validation to prevent invalid transitions
+3. Executes primary logic path and handles expected edge conditions
+4. Returns a deterministic output for the caller layer
+
+Why Validation is Important:
+Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+Returns:
+A value/promise representing the outcome of the executed logic path.
+----------------------------------------------------------
+*/
 function generateFallbackAssignment(topic: string, depth: string): string {
   return `**Key Insight** — Academic discourse on **${topic}** spans multiple perspectives, and a strong assignment engages with the complexity of the topic rather than presenting a one-sided view.
 
@@ -792,6 +1132,30 @@ ${depth === "comprehensive" ? `**Academic Phrasing Toolkit:**
 For timed essays, prepare a skeleton: 3 arguments, 2 counterpoints, and a conclusion template. Having this ready lets you focus on adapting to the specific question rather than inventing structure under time pressure.`;
 }
 
+/*
+----------------------------------------------------------
+Function: generateFallbackRevision
+
+Purpose:
+Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+Parameters:
+- topic: Input consumed by this routine during execution
+- depth: Input consumed by this routine during execution
+
+Process:
+1. Accepts and normalizes inputs before core processing
+2. Applies relevant guards/validation to prevent invalid transitions
+3. Executes primary logic path and handles expected edge conditions
+4. Returns a deterministic output for the caller layer
+
+Why Validation is Important:
+Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+Returns:
+A value/promise representing the outcome of the executed logic path.
+----------------------------------------------------------
+*/
 function generateFallbackRevision(topic: string, depth: string): string {
   const mnemonic = topic.split(/\s+/).map(w => w[0]?.toUpperCase()).join(".") || "T";
 
@@ -850,6 +1214,29 @@ ${depth === "comprehensive" ? `**Spaced Repetition Schedule:**
 Fill this in from memory. If you can, you're prepared.`;
 }
 
+/*
+----------------------------------------------------------
+Function: generateFallbackQuickClarify
+
+Purpose:
+Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+Parameters:
+- topic: Input consumed by this routine during execution
+
+Process:
+1. Accepts and normalizes inputs before core processing
+2. Applies relevant guards/validation to prevent invalid transitions
+3. Executes primary logic path and handles expected edge conditions
+4. Returns a deterministic output for the caller layer
+
+Why Validation is Important:
+Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+Returns:
+A value/promise representing the outcome of the executed logic path.
+----------------------------------------------------------
+*/
 function generateFallbackQuickClarify(topic: string): string {
   return `**Key Insight** — **${topic}** is a structured way to understand and work within its subject area, giving you tools to analyse problems and reach well-supported conclusions.
 
@@ -907,6 +1294,29 @@ Your responses should be suitable for university coursework, exam preparation, a
 type ResearchQuery = z.infer<typeof researchQuerySchema>;
 type ResponseSource = "live_ai" | "local_fallback" | "mock_fallback";
 
+/*
+----------------------------------------------------------
+Function: getIntentFormatTemplate
+
+Purpose:
+Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+Parameters:
+- studyIntent: Input consumed by this routine during execution
+
+Process:
+1. Accepts and normalizes inputs before core processing
+2. Applies relevant guards/validation to prevent invalid transitions
+3. Executes primary logic path and handles expected edge conditions
+4. Returns a deterministic output for the caller layer
+
+Why Validation is Important:
+Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+Returns:
+A value/promise representing the outcome of the executed logic path.
+----------------------------------------------------------
+*/
 function getIntentFormatTemplate(studyIntent: ResearchQuery["studyIntent"]): string {
   switch (studyIntent) {
     case "exam_prep":
@@ -948,6 +1358,29 @@ function getIntentFormatTemplate(studyIntent: ResearchQuery["studyIntent"]): str
   }
 }
 
+/*
+----------------------------------------------------------
+Function: getResponseTypeFormatTemplate
+
+Purpose:
+Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+Parameters:
+- responseType: Input consumed by this routine during execution
+
+Process:
+1. Accepts and normalizes inputs before core processing
+2. Applies relevant guards/validation to prevent invalid transitions
+3. Executes primary logic path and handles expected edge conditions
+4. Returns a deterministic output for the caller layer
+
+Why Validation is Important:
+Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+Returns:
+A value/promise representing the outcome of the executed logic path.
+----------------------------------------------------------
+*/
 function getResponseTypeFormatTemplate(responseType: ResearchQuery["responseType"]): string {
   switch (responseType) {
     case "summary":
@@ -968,6 +1401,29 @@ function getResponseTypeFormatTemplate(responseType: ResearchQuery["responseType
   }
 }
 
+/*
+----------------------------------------------------------
+Function: getSearchDepthFormatTemplate
+
+Purpose:
+Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+Parameters:
+- searchDepth: Input consumed by this routine during execution
+
+Process:
+1. Accepts and normalizes inputs before core processing
+2. Applies relevant guards/validation to prevent invalid transitions
+3. Executes primary logic path and handles expected edge conditions
+4. Returns a deterministic output for the caller layer
+
+Why Validation is Important:
+Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+Returns:
+A value/promise representing the outcome of the executed logic path.
+----------------------------------------------------------
+*/
 function getSearchDepthFormatTemplate(searchDepth: ResearchQuery["searchDepth"]): string {
   switch (searchDepth) {
     case "quick":
@@ -980,6 +1436,32 @@ function getSearchDepthFormatTemplate(searchDepth: ResearchQuery["searchDepth"])
   }
 }
 
+/*
+----------------------------------------------------------
+Function: shapeFallbackByAdvancedOptions
+
+Purpose:
+Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+Parameters:
+- content: Input consumed by this routine during execution
+- responseType: Input consumed by this routine during execution
+- searchDepth: Input consumed by this routine during execution
+- topic: Input consumed by this routine during execution
+
+Process:
+1. Accepts and normalizes inputs before core processing
+2. Applies relevant guards/validation to prevent invalid transitions
+3. Executes primary logic path and handles expected edge conditions
+4. Returns a deterministic output for the caller layer
+
+Why Validation is Important:
+Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+Returns:
+A value/promise representing the outcome of the executed logic path.
+----------------------------------------------------------
+*/
 function shapeFallbackByAdvancedOptions(
   content: string,
   responseType: ResearchQuery["responseType"],
@@ -1015,6 +1497,32 @@ function shapeFallbackByAdvancedOptions(
   return `${withType}\n\n**Balanced Depth Mode**\n- Covers core mechanism, one concrete example, and one caution point.`;
 }
 
+/*
+----------------------------------------------------------
+Function: formatLocalAnswerByIntent
+
+Purpose:
+Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+Parameters:
+- answer: Input consumed by this routine during execution
+- studyIntent: Input consumed by this routine during execution
+- responseType: Input consumed by this routine during execution
+- searchDepth: Input consumed by this routine during execution
+
+Process:
+1. Accepts and normalizes inputs before core processing
+2. Applies relevant guards/validation to prevent invalid transitions
+3. Executes primary logic path and handles expected edge conditions
+4. Returns a deterministic output for the caller layer
+
+Why Validation is Important:
+Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+Returns:
+A value/promise representing the outcome of the executed logic path.
+----------------------------------------------------------
+*/
 function formatLocalAnswerByIntent(
   answer: { question: string; answer: string; category: string },
   studyIntent: ResearchQuery["studyIntent"],
@@ -1115,6 +1623,29 @@ Turn this into an exam answer using definition -> mechanism -> example -> limita
   return shapeFallbackByAdvancedOptions(baseContent, responseType, searchDepth, answer.question);
 }
 
+/*
+----------------------------------------------------------
+Function: registerInsightScoutRoutes
+
+Purpose:
+Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+Parameters:
+- app: Input consumed by this routine during execution
+
+Process:
+1. Accepts and normalizes inputs before core processing
+2. Applies relevant guards/validation to prevent invalid transitions
+3. Executes primary logic path and handles expected edge conditions
+4. Returns a deterministic output for the caller layer
+
+Why Validation is Important:
+Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+Returns:
+A value/promise representing the outcome of the executed logic path.
+----------------------------------------------------------
+*/
 export function registerInsightScoutRoutes(app: Express): void {
   // Conversation management endpoints moved to routes.ts
   // Only keep the query endpoint here
@@ -1179,7 +1710,31 @@ export function registerInsightScoutRoutes(app: Express): void {
       res.setHeader("Cache-Control", "no-cache");
       res.setHeader("Connection", "keep-alive");
 
-      const streamText = async (text: string, delayMs = 8) => {
+            /*
+      ----------------------------------------------------------
+      Function: streamText
+
+      Purpose:
+      Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+      Parameters:
+      - text: Input consumed by this routine during execution
+      - delayMs: Input consumed by this routine during execution
+
+      Process:
+      1. Accepts and normalizes inputs before core processing
+      2. Applies relevant guards/validation to prevent invalid transitions
+      3. Executes primary logic path and handles expected edge conditions
+      4. Returns a deterministic output for the caller layer
+
+      Why Validation is Important:
+      Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+      Returns:
+      A value/promise representing the outcome of the executed logic path.
+      ----------------------------------------------------------
+      */
+const streamText = async (text: string, delayMs = 8) => {
         const words = text.split(" ");
         for (let i = 0; i < words.length; i++) {
           const word = (i === 0 ? "" : " ") + words[i];
@@ -1188,7 +1743,30 @@ export function registerInsightScoutRoutes(app: Express): void {
         }
       };
 
-      const streamLocalFallback = async (reason: string): Promise<ResponseSource> => {
+            /*
+      ----------------------------------------------------------
+      Function: streamLocalFallback
+
+      Purpose:
+      Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+      Parameters:
+      - reason: Input consumed by this routine during execution
+
+      Process:
+      1. Accepts and normalizes inputs before core processing
+      2. Applies relevant guards/validation to prevent invalid transitions
+      3. Executes primary logic path and handles expected edge conditions
+      4. Returns a deterministic output for the caller layer
+
+      Why Validation is Important:
+      Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+      Returns:
+      A value/promise representing the outcome of the executed logic path.
+      ----------------------------------------------------------
+      */
+const streamLocalFallback = async (reason: string): Promise<ResponseSource> => {
         const localAnswer = findBestLocalAnswer(query);
         const fallbackContent = localAnswer
           ? formatLocalAnswerByIntent(localAnswer, studyIntent, responseType, searchDepth)

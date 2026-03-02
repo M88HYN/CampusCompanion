@@ -1,3 +1,27 @@
+/*
+==========================================================
+File: server/dashboard-analytics.ts
+
+Module: Analytics and Learning Intelligence
+
+Purpose:
+Defines responsibilities specific to this unit while preserving
+clear boundaries with adjacent modules in CampusCompanion.
+
+Architectural Layer:
+API Routing and Service Layer
+
+System Interaction:
+- Receives HTTP requests and coordinates validation, authorization, and business workflows
+- Interacts with storage/database adapters and shared schemas for consistent persistence
+
+Design Rationale:
+A dedicated file-level boundary supports maintainability,
+traceability, and scalability by keeping concerns local and
+allowing safe evolution of features without cross-module side effects.
+==========================================================
+*/
+
 /**
  * Dashboard Analytics Module
  * 
@@ -49,7 +73,30 @@ export class DashboardAnalytics {
   /**
    * Get dashboard metrics - all real data from database
    */
-  static async getDashboardMetrics(userId: string): Promise<DashboardMetrics> {
+    /*
+  ----------------------------------------------------------
+  Function: getDashboardMetrics
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - userId: Input consumed by this routine during execution
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+static async getDashboardMetrics(userId: string): Promise<DashboardMetrics> {
     try {
       const now = Date.now();
       const endOfToday = new Date();
@@ -105,7 +152,31 @@ export class DashboardAnalytics {
   /**
    * Get due flashcards sorted by urgency, filtered by userId
    */
-  static async getDueFlashcards(userId: string, limit: number = 20): Promise<DueFlashcard[]> {
+    /*
+  ----------------------------------------------------------
+  Function: getDueFlashcards
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - userId: Input consumed by this routine during execution
+  - limit: Input consumed by this routine during execution
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+static async getDueFlashcards(userId: string, limit: number = 20): Promise<DueFlashcard[]> {
     try {
       const now = Date.now();
       const dueCards: any[] = db.all(sql`
@@ -137,7 +208,30 @@ export class DashboardAnalytics {
   /**
    * Get lowest scoring quiz for retake recommendation
    */
-  static async getLowestScoringQuiz(userId: string): Promise<LowestScoringQuiz | null> {
+    /*
+  ----------------------------------------------------------
+  Function: getLowestScoringQuiz
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - userId: Input consumed by this routine during execution
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+static async getLowestScoringQuiz(userId: string): Promise<LowestScoringQuiz | null> {
     try {
       const results: any[] = db.all(sql`
         SELECT qa.score, qa.completed_at, q.id, q.title, q.subject
@@ -173,7 +267,31 @@ export class DashboardAnalytics {
   /**
    * Get most recently edited notes
    */
-  static async getRecentNotes(userId: string, limit: number = 5): Promise<RecentNote[]> {
+    /*
+  ----------------------------------------------------------
+  Function: getRecentNotes
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - userId: Input consumed by this routine during execution
+  - limit: Input consumed by this routine during execution
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+static async getRecentNotes(userId: string, limit: number = 5): Promise<RecentNote[]> {
     try {
       const recentNotes: any[] = db.all(sql`
         SELECT id, title, updated_at, subject
@@ -198,7 +316,35 @@ export class DashboardAnalytics {
   /**
    * Create a study session entry (SQLite-compatible — no .returning())
    */
-  static async createStudySession(
+    /*
+  ----------------------------------------------------------
+  Function: createStudySession
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - userId: Input consumed by this routine during execution
+  - sessionType: Input consumed by this routine during execution
+  - durationMinutes: Input consumed by this routine during execution
+  - resourceId: Input consumed by this routine during execution
+  - itemsReviewed: Input consumed by this routine during execution
+  - correctAnswers: Input consumed by this routine during execution
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+static async createStudySession(
     userId: string,
     sessionType: string,
     durationMinutes: number,

@@ -1,3 +1,27 @@
+/*
+==========================================================
+File: server/seed-completed-quizzes.ts
+
+Module: Quiz and Assessment
+
+Purpose:
+Defines responsibilities specific to this unit while preserving
+clear boundaries with adjacent modules in CampusCompanion.
+
+Architectural Layer:
+API Routing and Service Layer
+
+System Interaction:
+- Receives HTTP requests and coordinates validation, authorization, and business workflows
+- Interacts with storage/database adapters and shared schemas for consistent persistence
+
+Design Rationale:
+A dedicated file-level boundary supports maintainability,
+traceability, and scalability by keeping concerns local and
+allowing safe evolution of features without cross-module side effects.
+==========================================================
+*/
+
 import { db } from "./db";
 import { sql } from "drizzle-orm";
 import { randomUUID } from "crypto";
@@ -7,6 +31,29 @@ import { randomUUID } from "crypto";
  * Also seeds user_question_stats rows so spaced review works immediately.
  * Idempotent — skips if user already has completed attempts.
  */
+/*
+----------------------------------------------------------
+Function: seedCompletedQuizzes
+
+Purpose:
+Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+Parameters:
+- userId: Input consumed by this routine during execution
+
+Process:
+1. Accepts and normalizes inputs before core processing
+2. Applies relevant guards/validation to prevent invalid transitions
+3. Executes primary logic path and handles expected edge conditions
+4. Returns a deterministic output for the caller layer
+
+Why Validation is Important:
+Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+Returns:
+A value/promise representing the outcome of the executed logic path.
+----------------------------------------------------------
+*/
 export async function seedCompletedQuizzes(userId: string) {
   console.log("[COMPLETED QUIZ SEED] Starting seed for userId:", userId);
 
@@ -75,6 +122,33 @@ export async function seedCompletedQuizzes(userId: string) {
   }
 }
 
+/*
+----------------------------------------------------------
+Function: seedQuizAttempt
+
+Purpose:
+Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+Parameters:
+- userId: Input consumed by this routine during execution
+- quiz: Input consumed by this routine during execution
+- targetAccuracy: Input consumed by this routine during execution
+- timeSpentMinutes: Input consumed by this routine during execution
+- attemptIndex: Input consumed by this routine during execution
+
+Process:
+1. Accepts and normalizes inputs before core processing
+2. Applies relevant guards/validation to prevent invalid transitions
+3. Executes primary logic path and handles expected edge conditions
+4. Returns a deterministic output for the caller layer
+
+Why Validation is Important:
+Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+Returns:
+A value/promise representing the outcome of the executed logic path.
+----------------------------------------------------------
+*/
 async function seedQuizAttempt(
   userId: string,
   quiz: any,
@@ -167,6 +241,30 @@ async function seedQuizAttempt(
  * Seed user_question_stats from quiz responses so spaced repetition
  * has initial data and the submit endpoint can update existing rows.
  */
+/*
+----------------------------------------------------------
+Function: seedQuestionStats
+
+Purpose:
+Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+Parameters:
+- userId: Input consumed by this routine during execution
+- responses: Input consumed by this routine during execution
+
+Process:
+1. Accepts and normalizes inputs before core processing
+2. Applies relevant guards/validation to prevent invalid transitions
+3. Executes primary logic path and handles expected edge conditions
+4. Returns a deterministic output for the caller layer
+
+Why Validation is Important:
+Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+Returns:
+A value/promise representing the outcome of the executed logic path.
+----------------------------------------------------------
+*/
 async function seedQuestionStats(
   userId: string,
   responses: Array<{ questionId: string; isCorrect: boolean; responseTime: number }>

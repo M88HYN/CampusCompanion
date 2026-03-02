@@ -1,3 +1,27 @@
+/*
+==========================================================
+File: client/src/pages/flashcards.tsx
+
+Module: Flashcards and Spaced Repetition
+
+Purpose:
+Defines responsibilities specific to this unit while preserving
+clear boundaries with adjacent modules in CampusCompanion.
+
+Architectural Layer:
+Presentation Layer (Frontend UI)
+
+System Interaction:
+- Consumes API endpoints via query/mutation utilities and renders user-facing interfaces
+- Collaborates with shared types to preserve frontend-backend contract integrity
+
+Design Rationale:
+A dedicated file-level boundary supports maintainability,
+traceability, and scalability by keeping concerns local and
+allowing safe evolution of features without cross-module side effects.
+==========================================================
+*/
+
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { Plus, Play, RotateCw, Upload, Trash2, Eye, EyeOff, Tags, Settings, Loader2, ArrowLeft, Search, Brain, Target, Zap, Clock, TrendingUp, CheckCircle2, AlertTriangle, Lightbulb, Keyboard, ChevronRight, Sparkles, BarChart3, BookOpen, X, TrendingDown, Award } from "lucide-react";
 import { normalizeTags } from "@/lib/tag-utils";
@@ -162,6 +186,29 @@ interface SessionSummary {
 type ViewState = "decks" | "create-deck" | "create-card" | "studying" | "bulk-import" | "session-summary" | "smart-study";
 type StudyMode = "smart" | "due-only" | "new-only" | "struggling" | "deck";
 
+/*
+----------------------------------------------------------
+Component: Flashcards
+
+Purpose:
+Renders a focused UI unit and orchestrates state, hooks, and user interactions for the surrounding workflow.
+
+Parameters:
+- None: Operates using closure/module state only
+
+Process:
+1. Initializes local state and framework hooks required for rendering
+2. Derives view data from props, query state, and computed conditions
+3. Applies conditional rendering to keep the interface robust for empty/loading/error states
+4. Binds event handlers and side effects to synchronize UI with backend/application state
+
+Why Validation is Important:
+State guards and defensive rendering prevent runtime errors, preserve UX continuity, and improve accessibility during asynchronous updates.
+
+Returns:
+A JSX tree representing the component view for the current state.
+----------------------------------------------------------
+*/
 export default function Flashcards() {
   const [view, setView] = useState<ViewState>("decks");
     const [location] = useLocation();
@@ -382,7 +429,30 @@ export default function Flashcards() {
     },
   });
 
-  const handleCreateDeck = () => {
+    /*
+  ----------------------------------------------------------
+  Function: handleCreateDeck
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - None: Operates using closure/module state only
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+const handleCreateDeck = () => {
     console.log("[FLASHCARDS] Create Deck button clicked");
     console.log("[FLASHCARDS] Handler entered - deck form:", deckForm);
     const token = localStorage.getItem("token");
@@ -398,7 +468,30 @@ export default function Flashcards() {
     });
   };
 
-  const handleAddCard = () => {
+    /*
+  ----------------------------------------------------------
+  Function: handleAddCard
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - None: Operates using closure/module state only
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+const handleAddCard = () => {
     console.log("[FLASHCARDS] Add Card button clicked");
     console.log("[FLASHCARDS] Handler entered - card form:", cardForm);
     
@@ -419,7 +512,31 @@ export default function Flashcards() {
     });
   };
 
-  const startSmartStudy = (mode: StudyMode, deckId?: string) => {
+    /*
+  ----------------------------------------------------------
+  Function: startSmartStudy
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - mode: Input consumed by this routine during execution
+  - deckId: Input consumed by this routine during execution
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+const startSmartStudy = (mode: StudyMode, deckId?: string) => {
     console.log("[FLASHCARDS] Study Deck button clicked");
     console.log("[FLASHCARDS] Handler entered - mode:", mode, "deckId:", deckId);
     const token = localStorage.getItem("token");
@@ -511,7 +628,30 @@ export default function Flashcards() {
     }
   }, [smartCards, smartQueue?.cards, currentCard, reviewCardMutation, sessionCardIds, sessionResponses, studyPreferences.showThinkingPrompt, getSessionSummaryMutation]);
 
-  const parseBulkImport = () => {
+    /*
+  ----------------------------------------------------------
+  Function: parseBulkImport
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - None: Operates using closure/module state only
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+const parseBulkImport = () => {
     const lines = bulkImportText.split("\n").filter(line => line.trim());
     return lines.map(line => {
       const [front, back] = line.split("|").map(s => s.trim());
@@ -519,7 +659,30 @@ export default function Flashcards() {
     });
   };
 
-  const handleBulkImport = async () => {
+    /*
+  ----------------------------------------------------------
+  Function: handleBulkImport
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - None: Operates using closure/module state only
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+const handleBulkImport = async () => {
     const cards = parseBulkImport().filter(c => c.front && c.back);
     for (const card of cards) {
       await createCardMutation.mutateAsync({
@@ -533,7 +696,30 @@ export default function Flashcards() {
     toast({ title: "Import complete!", description: `${cards.length} cards added.` });
   };
 
-  const getSubjectColor = (subject?: string | null) => {
+    /*
+  ----------------------------------------------------------
+  Function: getSubjectColor
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - subject: Input consumed by this routine during execution
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+const getSubjectColor = (subject?: string | null) => {
     const colors: Record<string, string> = {
       "Computer Science": "from-blue-100 to-cyan-100 dark:from-blue-900 dark:to-cyan-900 border-blue-300 dark:border-blue-700",
       "Mathematics": "from-purple-100 to-violet-100 dark:from-purple-900 dark:to-violet-900 border-purple-300 dark:border-purple-700",
@@ -577,7 +763,30 @@ export default function Flashcards() {
   useEffect(() => {
     if (view !== "smart-study" && view !== "studying") return;
     
-    const handleKeyDown = (e: KeyboardEvent) => {
+        /*
+    ----------------------------------------------------------
+    Function: handleKeyDown
+
+    Purpose:
+    Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+    Parameters:
+    - e: Input consumed by this routine during execution
+
+    Process:
+    1. Accepts and normalizes inputs before core processing
+    2. Applies relevant guards/validation to prevent invalid transitions
+    3. Executes primary logic path and handles expected edge conditions
+    4. Returns a deterministic output for the caller layer
+
+    Why Validation is Important:
+    Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+    Returns:
+    A value/promise representing the outcome of the executed logic path.
+    ----------------------------------------------------------
+    */
+const handleKeyDown = (e: KeyboardEvent) => {
       // Prevent keyboard handlers when input is focused
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
       

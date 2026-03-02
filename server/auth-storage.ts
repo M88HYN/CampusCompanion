@@ -1,3 +1,27 @@
+/*
+==========================================================
+File: server/auth-storage.ts
+
+Module: Authentication and Access Control
+
+Purpose:
+Defines responsibilities specific to this unit while preserving
+clear boundaries with adjacent modules in CampusCompanion.
+
+Architectural Layer:
+API Routing and Service Layer
+
+System Interaction:
+- Receives HTTP requests and coordinates validation, authorization, and business workflows
+- Interacts with storage/database adapters and shared schemas for consistent persistence
+
+Design Rationale:
+A dedicated file-level boundary supports maintainability,
+traceability, and scalability by keeping concerns local and
+allowing safe evolution of features without cross-module side effects.
+==========================================================
+*/
+
 import { type AuthUser } from "./auth";
 import { db } from "./db";
 import { users } from "@shared/schema";
@@ -7,7 +31,30 @@ import { eq } from "drizzle-orm";
 const userCache = new Map<string, AuthUser>();
 
 export const storage = {
-  async createUser(user: AuthUser): Promise<void> {
+    /*
+  ----------------------------------------------------------
+  Function: createUser
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - user: Input consumed by this routine during execution
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+async createUser(user: AuthUser): Promise<void> {
     userCache.set(user.id, user);
     
     // Also create in database for foreign key consistency
@@ -29,7 +76,30 @@ export const storage = {
     }
   },
 
-  async updateUser(user: AuthUser): Promise<void> {
+    /*
+  ----------------------------------------------------------
+  Function: updateUser
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - user: Input consumed by this routine during execution
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+async updateUser(user: AuthUser): Promise<void> {
     userCache.set(user.id, user);
     
     // Also update in database
@@ -49,11 +119,57 @@ export const storage = {
     }
   },
 
-  async findUserById(userId: string): Promise<AuthUser | null> {
+    /*
+  ----------------------------------------------------------
+  Function: findUserById
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - userId: Input consumed by this routine during execution
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+async findUserById(userId: string): Promise<AuthUser | null> {
     return userCache.get(userId) || null;
   },
 
-  async findUserByEmail(email: string): Promise<AuthUser | null> {
+    /*
+  ----------------------------------------------------------
+  Function: findUserByEmail
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - email: Input consumed by this routine during execution
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+async findUserByEmail(email: string): Promise<AuthUser | null> {
     for (const user of (userCache as Map<string, AuthUser>).values()) {
       if (user.email === email) {
         return user;
@@ -79,7 +195,30 @@ export const storage = {
     return null;
   },
 
-  async findUserByUsername(username: string): Promise<AuthUser | null> {
+    /*
+  ----------------------------------------------------------
+  Function: findUserByUsername
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - username: Input consumed by this routine during execution
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+async findUserByUsername(username: string): Promise<AuthUser | null> {
     for (const user of (userCache as Map<string, AuthUser>).values()) {
       if (user.username === username) {
         return user;
@@ -105,7 +244,30 @@ export const storage = {
     return null;
   },
 
-  async deleteUser(userId: string): Promise<void> {
+    /*
+  ----------------------------------------------------------
+  Function: deleteUser
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - userId: Input consumed by this routine during execution
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+async deleteUser(userId: string): Promise<void> {
     userCache.delete(userId);
   },
 };

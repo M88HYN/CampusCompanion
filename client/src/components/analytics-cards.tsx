@@ -1,3 +1,27 @@
+/*
+==========================================================
+File: client/src/components/analytics-cards.tsx
+
+Module: Flashcards and Spaced Repetition
+
+Purpose:
+Defines responsibilities specific to this unit while preserving
+clear boundaries with adjacent modules in CampusCompanion.
+
+Architectural Layer:
+Presentation Layer (Frontend UI)
+
+System Interaction:
+- Consumes API endpoints via query/mutation utilities and renders user-facing interfaces
+- Collaborates with shared types to preserve frontend-backend contract integrity
+
+Design Rationale:
+A dedicated file-level boundary supports maintainability,
+traceability, and scalability by keeping concerns local and
+allowing safe evolution of features without cross-module side effects.
+==========================================================
+*/
+
 /**
  * Analytics Card Components
  * Reusable UI components for analytics display
@@ -22,6 +46,36 @@ interface AnalyticsStatCardProps {
   borderColor: string;
 }
 
+/*
+----------------------------------------------------------
+Component: AnalyticsStatCard
+
+Purpose:
+Renders a focused UI unit and orchestrates state, hooks, and user interactions for the surrounding workflow.
+
+Parameters:
+- icon: Input consumed by this routine during execution
+- title: Input consumed by this routine during execution
+- value: Input consumed by this routine during execution
+- subtitle: Input consumed by this routine during execution
+- iconBgColor: Input consumed by this routine during execution
+- iconColor: Input consumed by this routine during execution
+- textColor: Input consumed by this routine during execution
+- borderColor: Input consumed by this routine during execution
+
+Process:
+1. Initializes local state and framework hooks required for rendering
+2. Derives view data from props, query state, and computed conditions
+3. Applies conditional rendering to keep the interface robust for empty/loading/error states
+4. Binds event handlers and side effects to synchronize UI with backend/application state
+
+Why Validation is Important:
+State guards and defensive rendering prevent runtime errors, preserve UX continuity, and improve accessibility during asynchronous updates.
+
+Returns:
+A JSX tree representing the component view for the current state.
+----------------------------------------------------------
+*/
 export function AnalyticsStatCard({
   icon,
   title,
@@ -63,6 +117,38 @@ interface InsightCardProps {
   emptyMessage?: string;
 }
 
+/*
+----------------------------------------------------------
+Component: InsightCard
+
+Purpose:
+Renders a focused UI unit and orchestrates state, hooks, and user interactions for the surrounding workflow.
+
+Parameters:
+- title: Input consumed by this routine during execution
+- subtitle: Input consumed by this routine during execution
+- icon: Input consumed by this routine during execution
+- items: Input consumed by this routine during execution
+- borderColor: Input consumed by this routine during execution
+- accentColor: Input consumed by this routine during execution
+- itemBgColor: Input consumed by this routine during execution
+- titleColor: Input consumed by this routine during execution
+- badgeColor: Input consumed by this routine during execution
+- emptyMessage: Input consumed by this routine during execution
+
+Process:
+1. Initializes local state and framework hooks required for rendering
+2. Derives view data from props, query state, and computed conditions
+3. Applies conditional rendering to keep the interface robust for empty/loading/error states
+4. Binds event handlers and side effects to synchronize UI with backend/application state
+
+Why Validation is Important:
+State guards and defensive rendering prevent runtime errors, preserve UX continuity, and improve accessibility during asynchronous updates.
+
+Returns:
+A JSX tree representing the component view for the current state.
+----------------------------------------------------------
+*/
 export function InsightCard({
   title,
   subtitle,
@@ -121,6 +207,29 @@ interface ActivityCardProps {
   activities: RecentActivity[];
 }
 
+/*
+----------------------------------------------------------
+Component: ActivityCard
+
+Purpose:
+Renders a focused UI unit and orchestrates state, hooks, and user interactions for the surrounding workflow.
+
+Parameters:
+- activities: Input consumed by this routine during execution
+
+Process:
+1. Initializes local state and framework hooks required for rendering
+2. Derives view data from props, query state, and computed conditions
+3. Applies conditional rendering to keep the interface robust for empty/loading/error states
+4. Binds event handlers and side effects to synchronize UI with backend/application state
+
+Why Validation is Important:
+State guards and defensive rendering prevent runtime errors, preserve UX continuity, and improve accessibility during asynchronous updates.
+
+Returns:
+A JSX tree representing the component view for the current state.
+----------------------------------------------------------
+*/
 export function ActivityCard({ activities }: ActivityCardProps) {
   return (
     <Card>

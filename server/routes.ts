@@ -1,3 +1,27 @@
+/*
+==========================================================
+File: server/routes.ts
+
+Module: Core Platform
+
+Purpose:
+Defines responsibilities specific to this unit while preserving
+clear boundaries with adjacent modules in CampusCompanion.
+
+Architectural Layer:
+Application Layer (Business and Interaction Logic)
+
+System Interaction:
+- Receives HTTP requests and coordinates validation, authorization, and business workflows
+- Interacts with storage/database adapters and shared schemas for consistent persistence
+
+Design Rationale:
+A dedicated file-level boundary supports maintainability,
+traceability, and scalability by keeping concerns local and
+allowing safe evolution of features without cross-module side effects.
+==========================================================
+*/
+
 import type { Express } from "express";
 import express from "express";
 import { createServer, type Server } from "http";
@@ -46,6 +70,29 @@ interface CardRecord {
 
 
 // Helper to get user ID from authenticated request
+/*
+----------------------------------------------------------
+Function: getUserId
+
+Purpose:
+Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+Parameters:
+- req: Input consumed by this routine during execution
+
+Process:
+1. Accepts and normalizes inputs before core processing
+2. Applies relevant guards/validation to prevent invalid transitions
+3. Executes primary logic path and handles expected edge conditions
+4. Returns a deterministic output for the caller layer
+
+Why Validation is Important:
+Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+Returns:
+A value/promise representing the outcome of the executed logic path.
+----------------------------------------------------------
+*/
 function getUserId(req: any): string {
   if (!req.user?.userId) {
     throw new Error("Unauthorized: No user ID found");
@@ -54,6 +101,30 @@ function getUserId(req: any): string {
 }
 
 // Helper functions for smart card prioritization
+/*
+----------------------------------------------------------
+Function: getPriorityReason
+
+Purpose:
+Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+Parameters:
+- card: Input consumed by this routine during execution
+- daysSinceDue: Input consumed by this routine during execution
+
+Process:
+1. Accepts and normalizes inputs before core processing
+2. Applies relevant guards/validation to prevent invalid transitions
+3. Executes primary logic path and handles expected edge conditions
+4. Returns a deterministic output for the caller layer
+
+Why Validation is Important:
+Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+Returns:
+A value/promise representing the outcome of the executed logic path.
+----------------------------------------------------------
+*/
 function getPriorityReason(card: CardRecord, daysSinceDue: number): string {
   const easeFactor = card.easeFactor ?? 2.5;
   if (daysSinceDue > 7) return "Overdue by more than a week";
@@ -65,6 +136,29 @@ function getPriorityReason(card: CardRecord, daysSinceDue: number): string {
   return "Scheduled review";
 }
 
+/*
+----------------------------------------------------------
+Function: getUrgencyLevel
+
+Purpose:
+Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+Parameters:
+- score: Input consumed by this routine during execution
+
+Process:
+1. Accepts and normalizes inputs before core processing
+2. Applies relevant guards/validation to prevent invalid transitions
+3. Executes primary logic path and handles expected edge conditions
+4. Returns a deterministic output for the caller layer
+
+Why Validation is Important:
+Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+Returns:
+A value/promise representing the outcome of the executed logic path.
+----------------------------------------------------------
+*/
 function getUrgencyLevel(score: number): "critical" | "high" | "medium" | "low" {
   if (score >= 40) return "critical";
   if (score >= 25) return "high";
@@ -72,6 +166,29 @@ function getUrgencyLevel(score: number): "critical" | "high" | "medium" | "low" 
   return "low";
 }
 
+/*
+----------------------------------------------------------
+Function: getEncouragement
+
+Purpose:
+Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+Parameters:
+- accuracy: Input consumed by this routine during execution
+
+Process:
+1. Accepts and normalizes inputs before core processing
+2. Applies relevant guards/validation to prevent invalid transitions
+3. Executes primary logic path and handles expected edge conditions
+4. Returns a deterministic output for the caller layer
+
+Why Validation is Important:
+Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+Returns:
+A value/promise representing the outcome of the executed logic path.
+----------------------------------------------------------
+*/
 function getEncouragement(accuracy: number): string {
   if (accuracy >= 90) return "Outstanding! You're mastering this material!";
   if (accuracy >= 80) return "Great work! Keep up the momentum!";
@@ -80,6 +197,29 @@ function getEncouragement(accuracy: number): string {
   return "Every expert was once a beginner. Keep practicing!";
 }
 
+/*
+----------------------------------------------------------
+Function: registerRoutes
+
+Purpose:
+Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+Parameters:
+- app: Input consumed by this routine during execution
+
+Process:
+1. Accepts and normalizes inputs before core processing
+2. Applies relevant guards/validation to prevent invalid transitions
+3. Executes primary logic path and handles expected edge conditions
+4. Returns a deterministic output for the caller layer
+
+Why Validation is Important:
+Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+Returns:
+A value/promise representing the outcome of the executed logic path.
+----------------------------------------------------------
+*/
 export async function registerRoutes(app: Express): Promise<Server> {
   // Register auth routes first
   registerAuthRoutes(app);

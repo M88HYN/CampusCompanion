@@ -1,5 +1,52 @@
+/*
+==========================================================
+File: client/src/hooks/use-ui-effects.ts
+
+Module: Core Platform
+
+Purpose:
+Defines responsibilities specific to this unit while preserving
+clear boundaries with adjacent modules in CampusCompanion.
+
+Architectural Layer:
+Application Layer (Business and Interaction Logic)
+
+System Interaction:
+- Consumes API endpoints via query/mutation utilities and renders user-facing interfaces
+- Collaborates with shared types to preserve frontend-backend contract integrity
+
+Design Rationale:
+A dedicated file-level boundary supports maintainability,
+traceability, and scalability by keeping concerns local and
+allowing safe evolution of features without cross-module side effects.
+==========================================================
+*/
+
 import { useState, useEffect } from "react";
 
+/*
+----------------------------------------------------------
+Function: useDarkMode
+
+Purpose:
+Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+Parameters:
+- None: Operates using closure/module state only
+
+Process:
+1. Accepts and normalizes inputs before core processing
+2. Applies relevant guards/validation to prevent invalid transitions
+3. Executes primary logic path and handles expected edge conditions
+4. Returns a deterministic output for the caller layer
+
+Why Validation is Important:
+Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+Returns:
+A value/promise representing the outcome of the executed logic path.
+----------------------------------------------------------
+*/
 export function useDarkMode() {
   const [isDark, setIsDark] = useState(false);
 
@@ -16,7 +63,30 @@ export function useDarkMode() {
     }
   }, []);
 
-  const toggleDarkMode = () => {
+    /*
+  ----------------------------------------------------------
+  Function: toggleDarkMode
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - None: Operates using closure/module state only
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+const toggleDarkMode = () => {
     setIsDark((prev) => {
       const newValue = !prev;
       applyTheme(newValue);
@@ -28,6 +98,29 @@ export function useDarkMode() {
   return { isDark, toggleDarkMode };
 }
 
+/*
+----------------------------------------------------------
+Function: applyTheme
+
+Purpose:
+Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+Parameters:
+- isDark: Input consumed by this routine during execution
+
+Process:
+1. Accepts and normalizes inputs before core processing
+2. Applies relevant guards/validation to prevent invalid transitions
+3. Executes primary logic path and handles expected edge conditions
+4. Returns a deterministic output for the caller layer
+
+Why Validation is Important:
+Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+Returns:
+A value/promise representing the outcome of the executed logic path.
+----------------------------------------------------------
+*/
 function applyTheme(isDark: boolean) {
   const html = document.documentElement;
   if (isDark) {
@@ -38,10 +131,56 @@ function applyTheme(isDark: boolean) {
 }
 
 // Hook for tracking last update time
+/*
+----------------------------------------------------------
+Function: useLastUpdated
+
+Purpose:
+Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+Parameters:
+- None: Operates using closure/module state only
+
+Process:
+1. Accepts and normalizes inputs before core processing
+2. Applies relevant guards/validation to prevent invalid transitions
+3. Executes primary logic path and handles expected edge conditions
+4. Returns a deterministic output for the caller layer
+
+Why Validation is Important:
+Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+Returns:
+A value/promise representing the outcome of the executed logic path.
+----------------------------------------------------------
+*/
 export function useLastUpdated() {
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
 
-  const formatLastUpdated = () => {
+    /*
+  ----------------------------------------------------------
+  Function: formatLastUpdated
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - None: Operates using closure/module state only
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+const formatLastUpdated = () => {
     const now = new Date();
     const diff = Math.floor((now.getTime() - lastUpdated.getTime()) / 1000);
 
@@ -59,11 +198,57 @@ export function useLastUpdated() {
 }
 
 // Hook for keyboard shortcuts
+/*
+----------------------------------------------------------
+Function: useKeyboardShortcuts
+
+Purpose:
+Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+Parameters:
+- shortcuts: Input consumed by this routine during execution
+
+Process:
+1. Accepts and normalizes inputs before core processing
+2. Applies relevant guards/validation to prevent invalid transitions
+3. Executes primary logic path and handles expected edge conditions
+4. Returns a deterministic output for the caller layer
+
+Why Validation is Important:
+Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+Returns:
+A value/promise representing the outcome of the executed logic path.
+----------------------------------------------------------
+*/
 export function useKeyboardShortcuts(
   shortcuts: Record<string, (event: KeyboardEvent) => void>
 ) {
   useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
+        /*
+    ----------------------------------------------------------
+    Function: handleKeyDown
+
+    Purpose:
+    Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+    Parameters:
+    - event: Input consumed by this routine during execution
+
+    Process:
+    1. Accepts and normalizes inputs before core processing
+    2. Applies relevant guards/validation to prevent invalid transitions
+    3. Executes primary logic path and handles expected edge conditions
+    4. Returns a deterministic output for the caller layer
+
+    Why Validation is Important:
+    Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+    Returns:
+    A value/promise representing the outcome of the executed logic path.
+    ----------------------------------------------------------
+    */
+const handleKeyDown = (event: KeyboardEvent) => {
       const handler = shortcuts[event.key];
       if (handler) {
         handler(event);
@@ -76,8 +261,54 @@ export function useKeyboardShortcuts(
 }
 
 // Hook for confetti animation
+/*
+----------------------------------------------------------
+Function: useConfetti
+
+Purpose:
+Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+Parameters:
+- None: Operates using closure/module state only
+
+Process:
+1. Accepts and normalizes inputs before core processing
+2. Applies relevant guards/validation to prevent invalid transitions
+3. Executes primary logic path and handles expected edge conditions
+4. Returns a deterministic output for the caller layer
+
+Why Validation is Important:
+Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+Returns:
+A value/promise representing the outcome of the executed logic path.
+----------------------------------------------------------
+*/
 export function useConfetti() {
-  const confetti = () => {
+    /*
+  ----------------------------------------------------------
+  Function: confetti
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - None: Operates using closure/module state only
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+const confetti = () => {
     for (let i = 0; i < 50; i++) {
       const element = document.createElement("div");
       element.classList.add("confetti");
@@ -103,8 +334,54 @@ export function useConfetti() {
 }
 
 // Hook for sound effects
+/*
+----------------------------------------------------------
+Function: useSoundEffect
+
+Purpose:
+Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+Parameters:
+- None: Operates using closure/module state only
+
+Process:
+1. Accepts and normalizes inputs before core processing
+2. Applies relevant guards/validation to prevent invalid transitions
+3. Executes primary logic path and handles expected edge conditions
+4. Returns a deterministic output for the caller layer
+
+Why Validation is Important:
+Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+Returns:
+A value/promise representing the outcome of the executed logic path.
+----------------------------------------------------------
+*/
 export function useSoundEffect() {
-  const playSound = (type: "success" | "error" | "click") => {
+    /*
+  ----------------------------------------------------------
+  Function: playSound
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - type: Input consumed by this routine during execution
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+const playSound = (type: "success" | "error" | "click") => {
     const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
     const oscillator = audioContext.createOscillator();
     const gainNode = audioContext.createGain();

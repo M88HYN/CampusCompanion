@@ -1,3 +1,27 @@
+/*
+==========================================================
+File: client/src/pages/dashboard.tsx
+
+Module: Analytics and Learning Intelligence
+
+Purpose:
+Defines responsibilities specific to this unit while preserving
+clear boundaries with adjacent modules in CampusCompanion.
+
+Architectural Layer:
+Presentation Layer (Frontend UI)
+
+System Interaction:
+- Consumes API endpoints via query/mutation utilities and renders user-facing interfaces
+- Collaborates with shared types to preserve frontend-backend contract integrity
+
+Design Rationale:
+A dedicated file-level boundary supports maintainability,
+traceability, and scalability by keeping concerns local and
+allowing safe evolution of features without cross-module side effects.
+==========================================================
+*/
+
 import { useState, useEffect } from "react";
 import { 
   BookOpen, BrainCircuit, GraduationCap, Sparkles, Clock, TrendingUp, 
@@ -80,6 +104,37 @@ interface DashboardProps {
   userRole?: UserRole;
 }
 
+/*
+----------------------------------------------------------
+Component: ActionCard
+
+Purpose:
+Renders a focused UI unit and orchestrates state, hooks, and user interactions for the surrounding workflow.
+
+Parameters:
+- title: Input consumed by this routine during execution
+- description: Input consumed by this routine during execution
+- reason: Input consumed by this routine during execution
+- timeEstimate: Input consumed by this routine during execution
+- priority: Input consumed by this routine during execution
+- Icon: Input consumed by this routine during execution
+- href: Input consumed by this routine during execution
+- gradient: Input consumed by this routine during execution
+- testId: Input consumed by this routine during execution
+
+Process:
+1. Initializes local state and framework hooks required for rendering
+2. Derives view data from props, query state, and computed conditions
+3. Applies conditional rendering to keep the interface robust for empty/loading/error states
+4. Binds event handlers and side effects to synchronize UI with backend/application state
+
+Why Validation is Important:
+State guards and defensive rendering prevent runtime errors, preserve UX continuity, and improve accessibility during asynchronous updates.
+
+Returns:
+A JSX tree representing the component view for the current state.
+----------------------------------------------------------
+*/
 function ActionCard({ 
   title, 
   description, 
@@ -138,8 +193,56 @@ function ActionCard({
   );
 }
 
+/*
+----------------------------------------------------------
+Component: WeakTopicCard
+
+Purpose:
+Renders a focused UI unit and orchestrates state, hooks, and user interactions for the surrounding workflow.
+
+Parameters:
+- topic: Input consumed by this routine during execution
+- accuracy: Input consumed by this routine during execution
+- suggestion: Input consumed by this routine during execution
+
+Process:
+1. Initializes local state and framework hooks required for rendering
+2. Derives view data from props, query state, and computed conditions
+3. Applies conditional rendering to keep the interface robust for empty/loading/error states
+4. Binds event handlers and side effects to synchronize UI with backend/application state
+
+Why Validation is Important:
+State guards and defensive rendering prevent runtime errors, preserve UX continuity, and improve accessibility during asynchronous updates.
+
+Returns:
+A JSX tree representing the component view for the current state.
+----------------------------------------------------------
+*/
 function WeakTopicCard({ topic, accuracy, suggestion }: { topic: string; accuracy: number; suggestion: string }) {
-  const getUrgencyColor = (acc: number) => {
+    /*
+  ----------------------------------------------------------
+  Function: getUrgencyColor
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - acc: Input consumed by this routine during execution
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+const getUrgencyColor = (acc: number) => {
     if (acc < 50) return 'border-l-rose-500 bg-rose-50 dark:bg-rose-950/20';
     if (acc < 70) return 'border-l-amber-500 bg-amber-50 dark:bg-amber-950/20';
     return 'border-l-sky-500 bg-sky-50 dark:bg-sky-950/20';
@@ -158,6 +261,33 @@ function WeakTopicCard({ topic, accuracy, suggestion }: { topic: string; accurac
   );
 }
 
+/*
+----------------------------------------------------------
+Component: QuickWinCard
+
+Purpose:
+Renders a focused UI unit and orchestrates state, hooks, and user interactions for the surrounding workflow.
+
+Parameters:
+- title: Input consumed by this routine during execution
+- description: Input consumed by this routine during execution
+- href: Input consumed by this routine during execution
+- Icon: Input consumed by this routine during execution
+- action: Input consumed by this routine during execution
+
+Process:
+1. Initializes local state and framework hooks required for rendering
+2. Derives view data from props, query state, and computed conditions
+3. Applies conditional rendering to keep the interface robust for empty/loading/error states
+4. Binds event handlers and side effects to synchronize UI with backend/application state
+
+Why Validation is Important:
+State guards and defensive rendering prevent runtime errors, preserve UX continuity, and improve accessibility during asynchronous updates.
+
+Returns:
+A JSX tree representing the component view for the current state.
+----------------------------------------------------------
+*/
 function QuickWinCard({ title, description, href, icon: Icon, action }: { 
   title: string; 
   description: string;
@@ -183,6 +313,29 @@ function QuickWinCard({ title, description, href, icon: Icon, action }: {
   );
 }
 
+/*
+----------------------------------------------------------
+Component: Dashboard
+
+Purpose:
+Renders a focused UI unit and orchestrates state, hooks, and user interactions for the surrounding workflow.
+
+Parameters:
+- userRole: Input consumed by this routine during execution
+
+Process:
+1. Initializes local state and framework hooks required for rendering
+2. Derives view data from props, query state, and computed conditions
+3. Applies conditional rendering to keep the interface robust for empty/loading/error states
+4. Binds event handlers and side effects to synchronize UI with backend/application state
+
+Why Validation is Important:
+State guards and defensive rendering prevent runtime errors, preserve UX continuity, and improve accessibility during asynchronous updates.
+
+Returns:
+A JSX tree representing the component view for the current state.
+----------------------------------------------------------
+*/
 export default function Dashboard({ userRole = "student" }: DashboardProps) {
   const { user } = useAuth();
   const [userName, setUserName] = useState("");
@@ -344,17 +497,86 @@ export default function Dashboard({ userRole = "student" }: DashboardProps) {
     },
   ];
 
-  const handleSaveName = () => {
+    /*
+  ----------------------------------------------------------
+  Function: handleSaveName
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - None: Operates using closure/module state only
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+const handleSaveName = () => {
     setUserName(tempName);
     setIsEditingName(false);
   };
 
-  const handleCancelName = () => {
+    /*
+  ----------------------------------------------------------
+  Function: handleCancelName
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - None: Operates using closure/module state only
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+const handleCancelName = () => {
     setTempName(userName);
     setIsEditingName(false);
   };
 
-  const generateStudyNowActions = () => {
+    /*
+  ----------------------------------------------------------
+  Function: generateStudyNowActions
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - None: Operates using closure/module state only
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+const generateStudyNowActions = () => {
     const actions: Array<{
       title: string;
       description: string;
@@ -450,7 +672,30 @@ export default function Dashboard({ userRole = "student" }: DashboardProps) {
     return actions.slice(0, 4);
   };
 
-  const generateQuickWins = () => {
+    /*
+  ----------------------------------------------------------
+  Function: generateQuickWins
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - None: Operates using closure/module state only
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+const generateQuickWins = () => {
     const wins: Array<{
       title: string;
       description: string;

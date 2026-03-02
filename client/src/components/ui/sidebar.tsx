@@ -1,3 +1,27 @@
+/*
+==========================================================
+File: client/src/components/ui/sidebar.tsx
+
+Module: Frontend Experience
+
+Purpose:
+Defines responsibilities specific to this unit while preserving
+clear boundaries with adjacent modules in CampusCompanion.
+
+Architectural Layer:
+Presentation Layer (Frontend UI)
+
+System Interaction:
+- Consumes API endpoints via query/mutation utilities and renders user-facing interfaces
+- Collaborates with shared types to preserve frontend-backend contract integrity
+
+Design Rationale:
+A dedicated file-level boundary supports maintainability,
+traceability, and scalability by keeping concerns local and
+allowing safe evolution of features without cross-module side effects.
+==========================================================
+*/
+
 "use client"
 
 import * as React from "react"
@@ -44,6 +68,29 @@ type SidebarContextProps = {
 
 const SidebarContext = React.createContext<SidebarContextProps | null>(null)
 
+/*
+----------------------------------------------------------
+Function: useSidebar
+
+Purpose:
+Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+Parameters:
+- None: Operates using closure/module state only
+
+Process:
+1. Accepts and normalizes inputs before core processing
+2. Applies relevant guards/validation to prevent invalid transitions
+3. Executes primary logic path and handles expected edge conditions
+4. Returns a deterministic output for the caller layer
+
+Why Validation is Important:
+Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+Returns:
+A value/promise representing the outcome of the executed logic path.
+----------------------------------------------------------
+*/
 function useSidebar() {
   const context = React.useContext(SidebarContext)
   if (!context) {
@@ -53,6 +100,35 @@ function useSidebar() {
   return context
 }
 
+/*
+----------------------------------------------------------
+Component: SidebarProvider
+
+Purpose:
+Renders a focused UI unit and orchestrates state, hooks, and user interactions for the surrounding workflow.
+
+Parameters:
+- defaultOpen: Input consumed by this routine during execution
+- openProp: Input consumed by this routine during execution
+- setOpenProp: Input consumed by this routine during execution
+- className: Input consumed by this routine during execution
+- style: Input consumed by this routine during execution
+- children: Input consumed by this routine during execution
+- props: Input consumed by this routine during execution
+
+Process:
+1. Initializes local state and framework hooks required for rendering
+2. Derives view data from props, query state, and computed conditions
+3. Applies conditional rendering to keep the interface robust for empty/loading/error states
+4. Binds event handlers and side effects to synchronize UI with backend/application state
+
+Why Validation is Important:
+State guards and defensive rendering prevent runtime errors, preserve UX continuity, and improve accessibility during asynchronous updates.
+
+Returns:
+A JSX tree representing the component view for the current state.
+----------------------------------------------------------
+*/
 function SidebarProvider({
   defaultOpen = true,
   open: openProp,
@@ -95,7 +171,30 @@ function SidebarProvider({
 
   // Adds a keyboard shortcut to toggle the sidebar.
   React.useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
+        /*
+    ----------------------------------------------------------
+    Function: handleKeyDown
+
+    Purpose:
+    Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+    Parameters:
+    - event: Input consumed by this routine during execution
+
+    Process:
+    1. Accepts and normalizes inputs before core processing
+    2. Applies relevant guards/validation to prevent invalid transitions
+    3. Executes primary logic path and handles expected edge conditions
+    4. Returns a deterministic output for the caller layer
+
+    Why Validation is Important:
+    Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+    Returns:
+    A value/promise representing the outcome of the executed logic path.
+    ----------------------------------------------------------
+    */
+const handleKeyDown = (event: KeyboardEvent) => {
       if (
         event.key === SIDEBAR_KEYBOARD_SHORTCUT &&
         (event.metaKey || event.ctrlKey)
@@ -151,6 +250,34 @@ function SidebarProvider({
   )
 }
 
+/*
+----------------------------------------------------------
+Component: Sidebar
+
+Purpose:
+Renders a focused UI unit and orchestrates state, hooks, and user interactions for the surrounding workflow.
+
+Parameters:
+- side: Input consumed by this routine during execution
+- variant: Input consumed by this routine during execution
+- collapsible: Input consumed by this routine during execution
+- className: Input consumed by this routine during execution
+- children: Input consumed by this routine during execution
+- props: Input consumed by this routine during execution
+
+Process:
+1. Initializes local state and framework hooks required for rendering
+2. Derives view data from props, query state, and computed conditions
+3. Applies conditional rendering to keep the interface robust for empty/loading/error states
+4. Binds event handlers and side effects to synchronize UI with backend/application state
+
+Why Validation is Important:
+State guards and defensive rendering prevent runtime errors, preserve UX continuity, and improve accessibility during asynchronous updates.
+
+Returns:
+A JSX tree representing the component view for the current state.
+----------------------------------------------------------
+*/
 function Sidebar({
   side = "left",
   variant = "sidebar",
@@ -253,6 +380,31 @@ function Sidebar({
   )
 }
 
+/*
+----------------------------------------------------------
+Component: SidebarTrigger
+
+Purpose:
+Renders a focused UI unit and orchestrates state, hooks, and user interactions for the surrounding workflow.
+
+Parameters:
+- className: Input consumed by this routine during execution
+- onClick: Input consumed by this routine during execution
+- props: Input consumed by this routine during execution
+
+Process:
+1. Initializes local state and framework hooks required for rendering
+2. Derives view data from props, query state, and computed conditions
+3. Applies conditional rendering to keep the interface robust for empty/loading/error states
+4. Binds event handlers and side effects to synchronize UI with backend/application state
+
+Why Validation is Important:
+State guards and defensive rendering prevent runtime errors, preserve UX continuity, and improve accessibility during asynchronous updates.
+
+Returns:
+A JSX tree representing the component view for the current state.
+----------------------------------------------------------
+*/
 function SidebarTrigger({
   className,
   onClick,
@@ -279,6 +431,30 @@ function SidebarTrigger({
   )
 }
 
+/*
+----------------------------------------------------------
+Component: SidebarRail
+
+Purpose:
+Renders a focused UI unit and orchestrates state, hooks, and user interactions for the surrounding workflow.
+
+Parameters:
+- className: Input consumed by this routine during execution
+- props: Input consumed by this routine during execution
+
+Process:
+1. Initializes local state and framework hooks required for rendering
+2. Derives view data from props, query state, and computed conditions
+3. Applies conditional rendering to keep the interface robust for empty/loading/error states
+4. Binds event handlers and side effects to synchronize UI with backend/application state
+
+Why Validation is Important:
+State guards and defensive rendering prevent runtime errors, preserve UX continuity, and improve accessibility during asynchronous updates.
+
+Returns:
+A JSX tree representing the component view for the current state.
+----------------------------------------------------------
+*/
 function SidebarRail({ className, ...props }: React.ComponentProps<"button">) {
   const { toggleSidebar } = useSidebar()
 
@@ -305,6 +481,30 @@ function SidebarRail({ className, ...props }: React.ComponentProps<"button">) {
   )
 }
 
+/*
+----------------------------------------------------------
+Component: SidebarInset
+
+Purpose:
+Renders a focused UI unit and orchestrates state, hooks, and user interactions for the surrounding workflow.
+
+Parameters:
+- className: Input consumed by this routine during execution
+- props: Input consumed by this routine during execution
+
+Process:
+1. Initializes local state and framework hooks required for rendering
+2. Derives view data from props, query state, and computed conditions
+3. Applies conditional rendering to keep the interface robust for empty/loading/error states
+4. Binds event handlers and side effects to synchronize UI with backend/application state
+
+Why Validation is Important:
+State guards and defensive rendering prevent runtime errors, preserve UX continuity, and improve accessibility during asynchronous updates.
+
+Returns:
+A JSX tree representing the component view for the current state.
+----------------------------------------------------------
+*/
 function SidebarInset({ className, ...props }: React.ComponentProps<"main">) {
   return (
     <main
@@ -319,6 +519,30 @@ function SidebarInset({ className, ...props }: React.ComponentProps<"main">) {
   )
 }
 
+/*
+----------------------------------------------------------
+Component: SidebarInput
+
+Purpose:
+Renders a focused UI unit and orchestrates state, hooks, and user interactions for the surrounding workflow.
+
+Parameters:
+- className: Input consumed by this routine during execution
+- props: Input consumed by this routine during execution
+
+Process:
+1. Initializes local state and framework hooks required for rendering
+2. Derives view data from props, query state, and computed conditions
+3. Applies conditional rendering to keep the interface robust for empty/loading/error states
+4. Binds event handlers and side effects to synchronize UI with backend/application state
+
+Why Validation is Important:
+State guards and defensive rendering prevent runtime errors, preserve UX continuity, and improve accessibility during asynchronous updates.
+
+Returns:
+A JSX tree representing the component view for the current state.
+----------------------------------------------------------
+*/
 function SidebarInput({
   className,
   ...props
@@ -333,6 +557,30 @@ function SidebarInput({
   )
 }
 
+/*
+----------------------------------------------------------
+Component: SidebarHeader
+
+Purpose:
+Renders a focused UI unit and orchestrates state, hooks, and user interactions for the surrounding workflow.
+
+Parameters:
+- className: Input consumed by this routine during execution
+- props: Input consumed by this routine during execution
+
+Process:
+1. Initializes local state and framework hooks required for rendering
+2. Derives view data from props, query state, and computed conditions
+3. Applies conditional rendering to keep the interface robust for empty/loading/error states
+4. Binds event handlers and side effects to synchronize UI with backend/application state
+
+Why Validation is Important:
+State guards and defensive rendering prevent runtime errors, preserve UX continuity, and improve accessibility during asynchronous updates.
+
+Returns:
+A JSX tree representing the component view for the current state.
+----------------------------------------------------------
+*/
 function SidebarHeader({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
@@ -344,6 +592,30 @@ function SidebarHeader({ className, ...props }: React.ComponentProps<"div">) {
   )
 }
 
+/*
+----------------------------------------------------------
+Component: SidebarFooter
+
+Purpose:
+Renders a focused UI unit and orchestrates state, hooks, and user interactions for the surrounding workflow.
+
+Parameters:
+- className: Input consumed by this routine during execution
+- props: Input consumed by this routine during execution
+
+Process:
+1. Initializes local state and framework hooks required for rendering
+2. Derives view data from props, query state, and computed conditions
+3. Applies conditional rendering to keep the interface robust for empty/loading/error states
+4. Binds event handlers and side effects to synchronize UI with backend/application state
+
+Why Validation is Important:
+State guards and defensive rendering prevent runtime errors, preserve UX continuity, and improve accessibility during asynchronous updates.
+
+Returns:
+A JSX tree representing the component view for the current state.
+----------------------------------------------------------
+*/
 function SidebarFooter({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
@@ -355,6 +627,30 @@ function SidebarFooter({ className, ...props }: React.ComponentProps<"div">) {
   )
 }
 
+/*
+----------------------------------------------------------
+Component: SidebarSeparator
+
+Purpose:
+Renders a focused UI unit and orchestrates state, hooks, and user interactions for the surrounding workflow.
+
+Parameters:
+- className: Input consumed by this routine during execution
+- props: Input consumed by this routine during execution
+
+Process:
+1. Initializes local state and framework hooks required for rendering
+2. Derives view data from props, query state, and computed conditions
+3. Applies conditional rendering to keep the interface robust for empty/loading/error states
+4. Binds event handlers and side effects to synchronize UI with backend/application state
+
+Why Validation is Important:
+State guards and defensive rendering prevent runtime errors, preserve UX continuity, and improve accessibility during asynchronous updates.
+
+Returns:
+A JSX tree representing the component view for the current state.
+----------------------------------------------------------
+*/
 function SidebarSeparator({
   className,
   ...props
@@ -369,6 +665,30 @@ function SidebarSeparator({
   )
 }
 
+/*
+----------------------------------------------------------
+Component: SidebarContent
+
+Purpose:
+Renders a focused UI unit and orchestrates state, hooks, and user interactions for the surrounding workflow.
+
+Parameters:
+- className: Input consumed by this routine during execution
+- props: Input consumed by this routine during execution
+
+Process:
+1. Initializes local state and framework hooks required for rendering
+2. Derives view data from props, query state, and computed conditions
+3. Applies conditional rendering to keep the interface robust for empty/loading/error states
+4. Binds event handlers and side effects to synchronize UI with backend/application state
+
+Why Validation is Important:
+State guards and defensive rendering prevent runtime errors, preserve UX continuity, and improve accessibility during asynchronous updates.
+
+Returns:
+A JSX tree representing the component view for the current state.
+----------------------------------------------------------
+*/
 function SidebarContent({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
@@ -383,6 +703,30 @@ function SidebarContent({ className, ...props }: React.ComponentProps<"div">) {
   )
 }
 
+/*
+----------------------------------------------------------
+Component: SidebarGroup
+
+Purpose:
+Renders a focused UI unit and orchestrates state, hooks, and user interactions for the surrounding workflow.
+
+Parameters:
+- className: Input consumed by this routine during execution
+- props: Input consumed by this routine during execution
+
+Process:
+1. Initializes local state and framework hooks required for rendering
+2. Derives view data from props, query state, and computed conditions
+3. Applies conditional rendering to keep the interface robust for empty/loading/error states
+4. Binds event handlers and side effects to synchronize UI with backend/application state
+
+Why Validation is Important:
+State guards and defensive rendering prevent runtime errors, preserve UX continuity, and improve accessibility during asynchronous updates.
+
+Returns:
+A JSX tree representing the component view for the current state.
+----------------------------------------------------------
+*/
 function SidebarGroup({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
@@ -394,6 +738,31 @@ function SidebarGroup({ className, ...props }: React.ComponentProps<"div">) {
   )
 }
 
+/*
+----------------------------------------------------------
+Component: SidebarGroupLabel
+
+Purpose:
+Renders a focused UI unit and orchestrates state, hooks, and user interactions for the surrounding workflow.
+
+Parameters:
+- className: Input consumed by this routine during execution
+- asChild: Input consumed by this routine during execution
+- props: Input consumed by this routine during execution
+
+Process:
+1. Initializes local state and framework hooks required for rendering
+2. Derives view data from props, query state, and computed conditions
+3. Applies conditional rendering to keep the interface robust for empty/loading/error states
+4. Binds event handlers and side effects to synchronize UI with backend/application state
+
+Why Validation is Important:
+State guards and defensive rendering prevent runtime errors, preserve UX continuity, and improve accessibility during asynchronous updates.
+
+Returns:
+A JSX tree representing the component view for the current state.
+----------------------------------------------------------
+*/
 function SidebarGroupLabel({
   className,
   asChild = false,
@@ -415,6 +784,31 @@ function SidebarGroupLabel({
   )
 }
 
+/*
+----------------------------------------------------------
+Component: SidebarGroupAction
+
+Purpose:
+Renders a focused UI unit and orchestrates state, hooks, and user interactions for the surrounding workflow.
+
+Parameters:
+- className: Input consumed by this routine during execution
+- asChild: Input consumed by this routine during execution
+- props: Input consumed by this routine during execution
+
+Process:
+1. Initializes local state and framework hooks required for rendering
+2. Derives view data from props, query state, and computed conditions
+3. Applies conditional rendering to keep the interface robust for empty/loading/error states
+4. Binds event handlers and side effects to synchronize UI with backend/application state
+
+Why Validation is Important:
+State guards and defensive rendering prevent runtime errors, preserve UX continuity, and improve accessibility during asynchronous updates.
+
+Returns:
+A JSX tree representing the component view for the current state.
+----------------------------------------------------------
+*/
 function SidebarGroupAction({
   className,
   asChild = false,
@@ -438,6 +832,30 @@ function SidebarGroupAction({
   )
 }
 
+/*
+----------------------------------------------------------
+Component: SidebarGroupContent
+
+Purpose:
+Renders a focused UI unit and orchestrates state, hooks, and user interactions for the surrounding workflow.
+
+Parameters:
+- className: Input consumed by this routine during execution
+- props: Input consumed by this routine during execution
+
+Process:
+1. Initializes local state and framework hooks required for rendering
+2. Derives view data from props, query state, and computed conditions
+3. Applies conditional rendering to keep the interface robust for empty/loading/error states
+4. Binds event handlers and side effects to synchronize UI with backend/application state
+
+Why Validation is Important:
+State guards and defensive rendering prevent runtime errors, preserve UX continuity, and improve accessibility during asynchronous updates.
+
+Returns:
+A JSX tree representing the component view for the current state.
+----------------------------------------------------------
+*/
 function SidebarGroupContent({
   className,
   ...props
@@ -452,6 +870,30 @@ function SidebarGroupContent({
   )
 }
 
+/*
+----------------------------------------------------------
+Component: SidebarMenu
+
+Purpose:
+Renders a focused UI unit and orchestrates state, hooks, and user interactions for the surrounding workflow.
+
+Parameters:
+- className: Input consumed by this routine during execution
+- props: Input consumed by this routine during execution
+
+Process:
+1. Initializes local state and framework hooks required for rendering
+2. Derives view data from props, query state, and computed conditions
+3. Applies conditional rendering to keep the interface robust for empty/loading/error states
+4. Binds event handlers and side effects to synchronize UI with backend/application state
+
+Why Validation is Important:
+State guards and defensive rendering prevent runtime errors, preserve UX continuity, and improve accessibility during asynchronous updates.
+
+Returns:
+A JSX tree representing the component view for the current state.
+----------------------------------------------------------
+*/
 function SidebarMenu({ className, ...props }: React.ComponentProps<"ul">) {
   return (
     <ul
@@ -463,6 +905,30 @@ function SidebarMenu({ className, ...props }: React.ComponentProps<"ul">) {
   )
 }
 
+/*
+----------------------------------------------------------
+Component: SidebarMenuItem
+
+Purpose:
+Renders a focused UI unit and orchestrates state, hooks, and user interactions for the surrounding workflow.
+
+Parameters:
+- className: Input consumed by this routine during execution
+- props: Input consumed by this routine during execution
+
+Process:
+1. Initializes local state and framework hooks required for rendering
+2. Derives view data from props, query state, and computed conditions
+3. Applies conditional rendering to keep the interface robust for empty/loading/error states
+4. Binds event handlers and side effects to synchronize UI with backend/application state
+
+Why Validation is Important:
+State guards and defensive rendering prevent runtime errors, preserve UX continuity, and improve accessibility during asynchronous updates.
+
+Returns:
+A JSX tree representing the component view for the current state.
+----------------------------------------------------------
+*/
 function SidebarMenuItem({ className, ...props }: React.ComponentProps<"li">) {
   return (
     <li
@@ -496,6 +962,35 @@ const sidebarMenuButtonVariants = cva(
   }
 )
 
+/*
+----------------------------------------------------------
+Component: SidebarMenuButton
+
+Purpose:
+Renders a focused UI unit and orchestrates state, hooks, and user interactions for the surrounding workflow.
+
+Parameters:
+- asChild: Input consumed by this routine during execution
+- isActive: Input consumed by this routine during execution
+- variant: Input consumed by this routine during execution
+- size: Input consumed by this routine during execution
+- tooltip: Input consumed by this routine during execution
+- className: Input consumed by this routine during execution
+- props: Input consumed by this routine during execution
+
+Process:
+1. Initializes local state and framework hooks required for rendering
+2. Derives view data from props, query state, and computed conditions
+3. Applies conditional rendering to keep the interface robust for empty/loading/error states
+4. Binds event handlers and side effects to synchronize UI with backend/application state
+
+Why Validation is Important:
+State guards and defensive rendering prevent runtime errors, preserve UX continuity, and improve accessibility during asynchronous updates.
+
+Returns:
+A JSX tree representing the component view for the current state.
+----------------------------------------------------------
+*/
 function SidebarMenuButton({
   asChild = false,
   isActive = false,
@@ -546,6 +1041,32 @@ function SidebarMenuButton({
   )
 }
 
+/*
+----------------------------------------------------------
+Component: SidebarMenuAction
+
+Purpose:
+Renders a focused UI unit and orchestrates state, hooks, and user interactions for the surrounding workflow.
+
+Parameters:
+- className: Input consumed by this routine during execution
+- asChild: Input consumed by this routine during execution
+- showOnHover: Input consumed by this routine during execution
+- props: Input consumed by this routine during execution
+
+Process:
+1. Initializes local state and framework hooks required for rendering
+2. Derives view data from props, query state, and computed conditions
+3. Applies conditional rendering to keep the interface robust for empty/loading/error states
+4. Binds event handlers and side effects to synchronize UI with backend/application state
+
+Why Validation is Important:
+State guards and defensive rendering prevent runtime errors, preserve UX continuity, and improve accessibility during asynchronous updates.
+
+Returns:
+A JSX tree representing the component view for the current state.
+----------------------------------------------------------
+*/
 function SidebarMenuAction({
   className,
   asChild = false,
@@ -578,6 +1099,30 @@ function SidebarMenuAction({
   )
 }
 
+/*
+----------------------------------------------------------
+Component: SidebarMenuBadge
+
+Purpose:
+Renders a focused UI unit and orchestrates state, hooks, and user interactions for the surrounding workflow.
+
+Parameters:
+- className: Input consumed by this routine during execution
+- props: Input consumed by this routine during execution
+
+Process:
+1. Initializes local state and framework hooks required for rendering
+2. Derives view data from props, query state, and computed conditions
+3. Applies conditional rendering to keep the interface robust for empty/loading/error states
+4. Binds event handlers and side effects to synchronize UI with backend/application state
+
+Why Validation is Important:
+State guards and defensive rendering prevent runtime errors, preserve UX continuity, and improve accessibility during asynchronous updates.
+
+Returns:
+A JSX tree representing the component view for the current state.
+----------------------------------------------------------
+*/
 function SidebarMenuBadge({
   className,
   ...props
@@ -600,6 +1145,31 @@ function SidebarMenuBadge({
   )
 }
 
+/*
+----------------------------------------------------------
+Component: SidebarMenuSkeleton
+
+Purpose:
+Renders a focused UI unit and orchestrates state, hooks, and user interactions for the surrounding workflow.
+
+Parameters:
+- className: Input consumed by this routine during execution
+- showIcon: Input consumed by this routine during execution
+- props: Input consumed by this routine during execution
+
+Process:
+1. Initializes local state and framework hooks required for rendering
+2. Derives view data from props, query state, and computed conditions
+3. Applies conditional rendering to keep the interface robust for empty/loading/error states
+4. Binds event handlers and side effects to synchronize UI with backend/application state
+
+Why Validation is Important:
+State guards and defensive rendering prevent runtime errors, preserve UX continuity, and improve accessibility during asynchronous updates.
+
+Returns:
+A JSX tree representing the component view for the current state.
+----------------------------------------------------------
+*/
 function SidebarMenuSkeleton({
   className,
   showIcon = false,
@@ -638,6 +1208,30 @@ function SidebarMenuSkeleton({
   )
 }
 
+/*
+----------------------------------------------------------
+Component: SidebarMenuSub
+
+Purpose:
+Renders a focused UI unit and orchestrates state, hooks, and user interactions for the surrounding workflow.
+
+Parameters:
+- className: Input consumed by this routine during execution
+- props: Input consumed by this routine during execution
+
+Process:
+1. Initializes local state and framework hooks required for rendering
+2. Derives view data from props, query state, and computed conditions
+3. Applies conditional rendering to keep the interface robust for empty/loading/error states
+4. Binds event handlers and side effects to synchronize UI with backend/application state
+
+Why Validation is Important:
+State guards and defensive rendering prevent runtime errors, preserve UX continuity, and improve accessibility during asynchronous updates.
+
+Returns:
+A JSX tree representing the component view for the current state.
+----------------------------------------------------------
+*/
 function SidebarMenuSub({ className, ...props }: React.ComponentProps<"ul">) {
   return (
     <ul
@@ -653,6 +1247,30 @@ function SidebarMenuSub({ className, ...props }: React.ComponentProps<"ul">) {
   )
 }
 
+/*
+----------------------------------------------------------
+Component: SidebarMenuSubItem
+
+Purpose:
+Renders a focused UI unit and orchestrates state, hooks, and user interactions for the surrounding workflow.
+
+Parameters:
+- className: Input consumed by this routine during execution
+- props: Input consumed by this routine during execution
+
+Process:
+1. Initializes local state and framework hooks required for rendering
+2. Derives view data from props, query state, and computed conditions
+3. Applies conditional rendering to keep the interface robust for empty/loading/error states
+4. Binds event handlers and side effects to synchronize UI with backend/application state
+
+Why Validation is Important:
+State guards and defensive rendering prevent runtime errors, preserve UX continuity, and improve accessibility during asynchronous updates.
+
+Returns:
+A JSX tree representing the component view for the current state.
+----------------------------------------------------------
+*/
 function SidebarMenuSubItem({
   className,
   ...props
@@ -667,6 +1285,33 @@ function SidebarMenuSubItem({
   )
 }
 
+/*
+----------------------------------------------------------
+Component: SidebarMenuSubButton
+
+Purpose:
+Renders a focused UI unit and orchestrates state, hooks, and user interactions for the surrounding workflow.
+
+Parameters:
+- asChild: Input consumed by this routine during execution
+- size: Input consumed by this routine during execution
+- isActive: Input consumed by this routine during execution
+- className: Input consumed by this routine during execution
+- props: Input consumed by this routine during execution
+
+Process:
+1. Initializes local state and framework hooks required for rendering
+2. Derives view data from props, query state, and computed conditions
+3. Applies conditional rendering to keep the interface robust for empty/loading/error states
+4. Binds event handlers and side effects to synchronize UI with backend/application state
+
+Why Validation is Important:
+State guards and defensive rendering prevent runtime errors, preserve UX continuity, and improve accessibility during asynchronous updates.
+
+Returns:
+A JSX tree representing the component view for the current state.
+----------------------------------------------------------
+*/
 function SidebarMenuSubButton({
   asChild = false,
   size = "md",

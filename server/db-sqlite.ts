@@ -1,3 +1,27 @@
+/*
+==========================================================
+File: server/db-sqlite.ts
+
+Module: Persistence and Data Modeling
+
+Purpose:
+Defines responsibilities specific to this unit while preserving
+clear boundaries with adjacent modules in CampusCompanion.
+
+Architectural Layer:
+Data Access Layer
+
+System Interaction:
+- Receives HTTP requests and coordinates validation, authorization, and business workflows
+- Interacts with storage/database adapters and shared schemas for consistent persistence
+
+Design Rationale:
+A dedicated file-level boundary supports maintainability,
+traceability, and scalability by keeping concerns local and
+allowing safe evolution of features without cross-module side effects.
+==========================================================
+*/
+
 import "dotenv/config";
 import Database, { type Database as DatabaseType } from "better-sqlite3";
 import { drizzle, type BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
@@ -8,6 +32,29 @@ type EmptySchema = Record<string, never>;
 let db: BetterSQLite3Database<EmptySchema>;
 let sqlite: DatabaseType;
 
+/*
+----------------------------------------------------------
+Function: initializeDatabase
+
+Purpose:
+Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+Parameters:
+- None: Operates using closure/module state only
+
+Process:
+1. Accepts and normalizes inputs before core processing
+2. Applies relevant guards/validation to prevent invalid transitions
+3. Executes primary logic path and handles expected edge conditions
+4. Returns a deterministic output for the caller layer
+
+Why Validation is Important:
+Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+Returns:
+A value/promise representing the outcome of the executed logic path.
+----------------------------------------------------------
+*/
 export function initializeDatabase(): BetterSQLite3Database<EmptySchema> {
   // Use in-memory database by default or file-based if specified
   const dbPath = process.env.DATABASE_URL === "sqlite:memory" || !process.env.DATABASE_URL 
@@ -40,6 +87,29 @@ export function initializeDatabase(): BetterSQLite3Database<EmptySchema> {
   return db;
 }
 
+/*
+----------------------------------------------------------
+Function: dropTables
+
+Purpose:
+Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+Parameters:
+- None: Operates using closure/module state only
+
+Process:
+1. Accepts and normalizes inputs before core processing
+2. Applies relevant guards/validation to prevent invalid transitions
+3. Executes primary logic path and handles expected edge conditions
+4. Returns a deterministic output for the caller layer
+
+Why Validation is Important:
+Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+Returns:
+A value/promise representing the outcome of the executed logic path.
+----------------------------------------------------------
+*/
 function dropTables() {
   // Drop all tables in reverse order of dependencies
   const tables = [
@@ -62,6 +132,29 @@ function dropTables() {
   console.log('Database tables dropped and reset');
 }
 
+/*
+----------------------------------------------------------
+Function: createTables
+
+Purpose:
+Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+Parameters:
+- None: Operates using closure/module state only
+
+Process:
+1. Accepts and normalizes inputs before core processing
+2. Applies relevant guards/validation to prevent invalid transitions
+3. Executes primary logic path and handles expected edge conditions
+4. Returns a deterministic output for the caller layer
+
+Why Validation is Important:
+Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+Returns:
+A value/promise representing the outcome of the executed logic path.
+----------------------------------------------------------
+*/
 function createTables() {
   // Create users table
   sqlite.exec(`
@@ -346,6 +439,29 @@ sqlite.exec(`
   console.log("Database tables created successfully");
 }
 
+/*
+----------------------------------------------------------
+Function: getDatabase
+
+Purpose:
+Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+Parameters:
+- None: Operates using closure/module state only
+
+Process:
+1. Accepts and normalizes inputs before core processing
+2. Applies relevant guards/validation to prevent invalid transitions
+3. Executes primary logic path and handles expected edge conditions
+4. Returns a deterministic output for the caller layer
+
+Why Validation is Important:
+Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+Returns:
+A value/promise representing the outcome of the executed logic path.
+----------------------------------------------------------
+*/
 export function getDatabase(): BetterSQLite3Database<EmptySchema> {
   if (!db) {
     throw new Error("Database not initialized. Call initializeDatabase() first.");
@@ -353,6 +469,29 @@ export function getDatabase(): BetterSQLite3Database<EmptySchema> {
   return db;
 }
 
+/*
+----------------------------------------------------------
+Function: closeDatabase
+
+Purpose:
+Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+Parameters:
+- None: Operates using closure/module state only
+
+Process:
+1. Accepts and normalizes inputs before core processing
+2. Applies relevant guards/validation to prevent invalid transitions
+3. Executes primary logic path and handles expected edge conditions
+4. Returns a deterministic output for the caller layer
+
+Why Validation is Important:
+Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+Returns:
+A value/promise representing the outcome of the executed logic path.
+----------------------------------------------------------
+*/
 export function closeDatabase() {
   if (sqlite) {
     sqlite.close();

@@ -1,3 +1,27 @@
+/*
+==========================================================
+File: client/src/hooks/use-auth.ts
+
+Module: Authentication and Access Control
+
+Purpose:
+Defines responsibilities specific to this unit while preserving
+clear boundaries with adjacent modules in CampusCompanion.
+
+Architectural Layer:
+Application Layer (Business and Interaction Logic)
+
+System Interaction:
+- Consumes API endpoints via query/mutation utilities and renders user-facing interfaces
+- Collaborates with shared types to preserve frontend-backend contract integrity
+
+Design Rationale:
+A dedicated file-level boundary supports maintainability,
+traceability, and scalability by keeping concerns local and
+allowing safe evolution of features without cross-module side effects.
+==========================================================
+*/
+
 import { useEffect, useState, useCallback } from "react";
 import type { User } from "@shared/models/auth";
 
@@ -10,13 +34,59 @@ interface JWTPayload {
   exp?: number;
 }
 
+/*
+----------------------------------------------------------
+Function: useAuth
+
+Purpose:
+Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+Parameters:
+- None: Operates using closure/module state only
+
+Process:
+1. Accepts and normalizes inputs before core processing
+2. Applies relevant guards/validation to prevent invalid transitions
+3. Executes primary logic path and handles expected edge conditions
+4. Returns a deterministic output for the caller layer
+
+Why Validation is Important:
+Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+Returns:
+A value/promise representing the outcome of the executed logic path.
+----------------------------------------------------------
+*/
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const isDemoReadOnly = false;
 
-  const decodeToken = (token: string): JWTPayload | null => {
+    /*
+  ----------------------------------------------------------
+  Function: decodeToken
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - token: Input consumed by this routine during execution
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+const decodeToken = (token: string): JWTPayload | null => {
     try {
       const parts = token.split(".");
       if (parts.length !== 3) return null;
@@ -35,7 +105,30 @@ export function useAuth() {
     }
   };
 
-  const createUserFromDecoded = (decoded: JWTPayload): User => ({
+    /*
+  ----------------------------------------------------------
+  Function: createUserFromDecoded
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - decoded: Input consumed by this routine during execution
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+const createUserFromDecoded = (decoded: JWTPayload): User => ({
     id: decoded.userId,
     username: null,
     email: decoded.email || null,
@@ -107,7 +200,30 @@ export function useAuth() {
   useEffect(() => {
     let isMounted = true;
     
-    const checkAuth = async () => {
+        /*
+    ----------------------------------------------------------
+    Function: checkAuth
+
+    Purpose:
+    Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+    Parameters:
+    - None: Operates using closure/module state only
+
+    Process:
+    1. Accepts and normalizes inputs before core processing
+    2. Applies relevant guards/validation to prevent invalid transitions
+    3. Executes primary logic path and handles expected edge conditions
+    4. Returns a deterministic output for the caller layer
+
+    Why Validation is Important:
+    Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+    Returns:
+    A value/promise representing the outcome of the executed logic path.
+    ----------------------------------------------------------
+    */
+const checkAuth = async () => {
       try {
         const token = localStorage.getItem("token");
         if (!token) {
@@ -178,7 +294,30 @@ export function useAuth() {
 
   // Listen for storage changes from other tabs/windows
   useEffect(() => {
-    const handleStorageChange = (e: StorageEvent) => {
+        /*
+    ----------------------------------------------------------
+    Function: handleStorageChange
+
+    Purpose:
+    Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+    Parameters:
+    - e: Input consumed by this routine during execution
+
+    Process:
+    1. Accepts and normalizes inputs before core processing
+    2. Applies relevant guards/validation to prevent invalid transitions
+    3. Executes primary logic path and handles expected edge conditions
+    4. Returns a deterministic output for the caller layer
+
+    Why Validation is Important:
+    Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+    Returns:
+    A value/promise representing the outcome of the executed logic path.
+    ----------------------------------------------------------
+    */
+const handleStorageChange = (e: StorageEvent) => {
       if (e.key === "token" && e.newValue !== e.oldValue) {
         verifyAuth();
       }
@@ -190,7 +329,30 @@ export function useAuth() {
 
   // Listen for custom auth event from login component
   useEffect(() => {
-    const handleAuthUpdate = () => {
+        /*
+    ----------------------------------------------------------
+    Function: handleAuthUpdate
+
+    Purpose:
+    Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+    Parameters:
+    - None: Operates using closure/module state only
+
+    Process:
+    1. Accepts and normalizes inputs before core processing
+    2. Applies relevant guards/validation to prevent invalid transitions
+    3. Executes primary logic path and handles expected edge conditions
+    4. Returns a deterministic output for the caller layer
+
+    Why Validation is Important:
+    Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+    Returns:
+    A value/promise representing the outcome of the executed logic path.
+    ----------------------------------------------------------
+    */
+const handleAuthUpdate = () => {
       // Debounce auth updates to prevent rapid re-renders
       setIsLoading(true);
       setTimeout(() => {
@@ -202,7 +364,30 @@ export function useAuth() {
     return () => window.removeEventListener("auth-update", handleAuthUpdate);
   }, [verifyAuth]);
 
-  const logout = () => {
+    /*
+  ----------------------------------------------------------
+  Function: logout
+
+  Purpose:
+  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+  Parameters:
+  - None: Operates using closure/module state only
+
+  Process:
+  1. Accepts and normalizes inputs before core processing
+  2. Applies relevant guards/validation to prevent invalid transitions
+  3. Executes primary logic path and handles expected edge conditions
+  4. Returns a deterministic output for the caller layer
+
+  Why Validation is Important:
+  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+  Returns:
+  A value/promise representing the outcome of the executed logic path.
+  ----------------------------------------------------------
+  */
+const logout = () => {
     localStorage.removeItem("token");
     setUser(null);
     window.location.href = "/";

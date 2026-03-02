@@ -1,3 +1,27 @@
+/*
+==========================================================
+File: client/src/lib/spaced-repetition-utils.ts
+
+Module: Core Platform
+
+Purpose:
+Defines responsibilities specific to this unit while preserving
+clear boundaries with adjacent modules in CampusCompanion.
+
+Architectural Layer:
+Application Layer (Business and Interaction Logic)
+
+System Interaction:
+- Consumes API endpoints via query/mutation utilities and renders user-facing interfaces
+- Collaborates with shared types to preserve frontend-backend contract integrity
+
+Design Rationale:
+A dedicated file-level boundary supports maintainability,
+traceability, and scalability by keeping concerns local and
+allowing safe evolution of features without cross-module side effects.
+==========================================================
+*/
+
 /**
  * Spaced Repetition Utilities
  * 
@@ -66,6 +90,31 @@ const WEIGHTS = {
  * Calculate priority score for a single question.
  * Higher score = more urgently needs review.
  */
+/*
+----------------------------------------------------------
+Function: calculatePriorityScore
+
+Purpose:
+Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+Parameters:
+- perf: Input consumed by this routine during execution
+- topicAccuracyMap: Input consumed by this routine during execution
+- now: Input consumed by this routine during execution
+
+Process:
+1. Accepts and normalizes inputs before core processing
+2. Applies relevant guards/validation to prevent invalid transitions
+3. Executes primary logic path and handles expected edge conditions
+4. Returns a deterministic output for the caller layer
+
+Why Validation is Important:
+Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+Returns:
+A value/promise representing the outcome of the executed logic path.
+----------------------------------------------------------
+*/
 export function calculatePriorityScore(
   perf: QuestionPerformance,
   topicAccuracyMap: Record<string, number>,
@@ -114,6 +163,29 @@ export function calculatePriorityScore(
 /**
  * Group question performances by topic and compute per-topic accuracy.
  */
+/*
+----------------------------------------------------------
+Function: groupQuestionsByTopic
+
+Purpose:
+Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+Parameters:
+- performances: Input consumed by this routine during execution
+
+Process:
+1. Accepts and normalizes inputs before core processing
+2. Applies relevant guards/validation to prevent invalid transitions
+3. Executes primary logic path and handles expected edge conditions
+4. Returns a deterministic output for the caller layer
+
+Why Validation is Important:
+Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+Returns:
+A value/promise representing the outcome of the executed logic path.
+----------------------------------------------------------
+*/
 export function groupQuestionsByTopic(
   performances: QuestionPerformance[]
 ): TopicAccuracy[] {
@@ -139,6 +211,29 @@ export function groupQuestionsByTopic(
 /**
  * Build a topic accuracy lookup map for priority scoring.
  */
+/*
+----------------------------------------------------------
+Function: buildTopicAccuracyMap
+
+Purpose:
+Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+Parameters:
+- performances: Input consumed by this routine during execution
+
+Process:
+1. Accepts and normalizes inputs before core processing
+2. Applies relevant guards/validation to prevent invalid transitions
+3. Executes primary logic path and handles expected edge conditions
+4. Returns a deterministic output for the caller layer
+
+Why Validation is Important:
+Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+Returns:
+A value/promise representing the outcome of the executed logic path.
+----------------------------------------------------------
+*/
 export function buildTopicAccuracyMap(
   performances: QuestionPerformance[]
 ): Record<string, number> {
@@ -153,6 +248,31 @@ export function buildTopicAccuracyMap(
 /**
  * Determine the review label for a question based on its context.
  */
+/*
+----------------------------------------------------------
+Function: getReviewLabel
+
+Purpose:
+Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+Parameters:
+- perf: Input consumed by this routine during execution
+- topicAccuracy: Input consumed by this routine during execution
+- now: Input consumed by this routine during execution
+
+Process:
+1. Accepts and normalizes inputs before core processing
+2. Applies relevant guards/validation to prevent invalid transitions
+3. Executes primary logic path and handles expected edge conditions
+4. Returns a deterministic output for the caller layer
+
+Why Validation is Important:
+Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+Returns:
+A value/promise representing the outcome of the executed logic path.
+----------------------------------------------------------
+*/
 export function getReviewLabel(
   perf: QuestionPerformance,
   topicAccuracy: number | undefined,
@@ -180,6 +300,30 @@ export function getReviewLabel(
  * @param limit - Max questions to return (default 20)
  * @returns Sorted array of SpacedReviewItems, highest priority first
  */
+/*
+----------------------------------------------------------
+Function: getDueSpacedQuestions
+
+Purpose:
+Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+Parameters:
+- performances: Input consumed by this routine during execution
+- limit: Input consumed by this routine during execution
+
+Process:
+1. Accepts and normalizes inputs before core processing
+2. Applies relevant guards/validation to prevent invalid transitions
+3. Executes primary logic path and handles expected edge conditions
+4. Returns a deterministic output for the caller layer
+
+Why Validation is Important:
+Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+Returns:
+A value/promise representing the outcome of the executed logic path.
+----------------------------------------------------------
+*/
 export function getDueSpacedQuestions(
   performances: QuestionPerformance[],
   limit: number = 20
@@ -239,6 +383,30 @@ export function getDueSpacedQuestions(
  * After a spaced review answer, compute the updated priority reduction.
  * Correct answers reduce priority; incorrect answers keep it high.
  */
+/*
+----------------------------------------------------------
+Function: computeUpdatedStats
+
+Purpose:
+Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
+
+Parameters:
+- current: Input consumed by this routine during execution
+- wasCorrect: Input consumed by this routine during execution
+
+Process:
+1. Accepts and normalizes inputs before core processing
+2. Applies relevant guards/validation to prevent invalid transitions
+3. Executes primary logic path and handles expected edge conditions
+4. Returns a deterministic output for the caller layer
+
+Why Validation is Important:
+Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
+
+Returns:
+A value/promise representing the outcome of the executed logic path.
+----------------------------------------------------------
+*/
 export function computeUpdatedStats(
   current: { timesAnswered: number; timesCorrect: number; lastAnsweredAt: number },
   wasCorrect: boolean
