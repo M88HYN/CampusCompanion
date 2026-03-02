@@ -22,8 +22,8 @@ allowing safe evolution of features without cross-module side effects.
 ==========================================================
 */
 
-import { useState, useEffect, useCallback, useMemo } from "react";
-import { Plus, Play, RotateCw, Upload, Trash2, Eye, EyeOff, Tags, Settings, Loader2, ArrowLeft, Search, Brain, Target, Zap, Clock, TrendingUp, CheckCircle2, AlertTriangle, Lightbulb, Keyboard, ChevronRight, Sparkles, BarChart3, BookOpen, X, TrendingDown, Award } from "lucide-react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { Plus, Play, RotateCw, Upload, Trash2, Eye, EyeOff, Tags, Settings, Loader2, ArrowLeft, Search, Brain, Target, Zap, Clock, TrendingUp, CheckCircle2, AlertTriangle, Lightbulb, Keyboard, ChevronRight, ChevronDown, Sparkles, BarChart3, BookOpen, X, TrendingDown, Award } from "lucide-react";
 import { normalizeTags } from "@/lib/tag-utils";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -40,6 +40,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -183,7 +189,7 @@ interface SessionSummary {
   encouragement: string;
 }
 
-type ViewState = "decks" | "create-deck" | "create-card" | "studying" | "bulk-import" | "session-summary" | "smart-study";
+type ViewState = "decks" | "create-deck" | "create-card" | "studying" | "bulk-import" | "session-summary" | "smart-study" | "smart-transition";
 type StudyMode = "smart" | "due-only" | "new-only" | "struggling" | "deck";
 
 /*
@@ -218,8 +224,10 @@ export default function Flashcards() {
   const [showStudySettings, setShowStudySettings] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [bulkImportText, setBulkImportText] = useState("");
+  const transitionTimeoutRef = useRef<number | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [studyMode, setStudyMode] = useState<StudyMode>("smart");
+  const [smartQueueDeckId, setSmartQueueDeckId] = useState<string>("");
   const [showThinkingPrompt, setShowThinkingPrompt] = useState(true);
   const [sessionResponses, setSessionResponses] = useState<number[]>([]);
   const [sessionCardIds, setSessionCardIds] = useState<string[]>([]);
@@ -251,14 +259,14 @@ export default function Flashcards() {
 
   // Get smart queue data BEFORE useEffect hooks that reference it
   const { data: smartQueue, refetch: refetchSmartQueue } = useQuery<SmartQueueResponse>({
-    queryKey: ["/api/cards/smart-queue", studyMode, selectedDeckId],
+    queryKey: ["/api/cards/smart-queue", studyMode, smartQueueDeckId, studyPreferences.sessionSize],
     queryFn: async () => {
       const params = new URLSearchParams({
         mode: studyMode === "deck" ? "smart" : studyMode,
         limit: studyPreferences.sessionSize,
       });
-      if (studyMode === "deck" && selectedDeckId) {
-        params.append("deckId", selectedDeckId);
+      if (smartQueueDeckId) {
+        params.append("deckId", smartQueueDeckId);
       }
       // Use apiRequest to include auth token in headers
       const res = await apiRequest("GET", `/api/cards/smart-queue?${params}`);
@@ -544,12 +552,25 @@ const startSmartStudy = (mode: StudyMode, deckId?: string) => {
     
     setStudyMode(mode);
     if (deckId) setSelectedDeckId(deckId);
+    setSmartQueueDeckId(deckId || "");
     setCurrentCard(0);
     setFlipped(false);
     setShowThinkingPrompt(studyPreferences.showThinkingPrompt);
     setSessionResponses([]);
     setSessionCardIds([]);
-    setView("smart-study");
+    setSmartCards([]);
+    setView("smart-transition");
+
+    if (transitionTimeoutRef.current !== null) {
+      window.clearTimeout(transitionTimeoutRef.current);
+      transitionTimeoutRef.current = null;
+    }
+
+    transitionTimeoutRef.current = window.setTimeout(() => {
+      setView("smart-study");
+      transitionTimeoutRef.current = null;
+    }, 850);
+
     console.log("[FLASHCARDS] Refetching smart queue");
     refetchSmartQueue();
   };
@@ -758,6 +779,14 @@ const getSubjectColor = (subject?: string | null) => {
     medium: "bg-yellow-500",
     low: "bg-emerald-500",
   };
+
+  useEffect(() => {
+    return () => {
+      if (transitionTimeoutRef.current !== null) {
+        window.clearTimeout(transitionTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -1046,6 +1075,39 @@ const handleKeyDown = (e: KeyboardEvent) => {
   }
 
   // Smart Study Mode
+  if (view === "smart-transition") {
+    const modeTitle =
+      studyMode === "struggling" ? "Switching to Struggling Cards" :
+      studyMode === "due-only" ? "Switching to Due Cards" :
+      studyMode === "new-only" ? "Switching to New Cards" :
+      studyMode === "deck" ? "Preparing Deck Session" :
+      "Switching to Smart Mix";
+
+    const modeSubtitle =
+      studyMode === "struggling" ? "Focusing on your weakest cards for faster improvement." :
+      studyMode === "due-only" ? "Prioritizing cards due right now." :
+      studyMode === "new-only" ? "Loading fresh cards to build momentum." :
+      studyMode === "deck" ? "Building your focused deck study flow." :
+      "Building an AI-balanced review queue for you.";
+
+    return (
+      <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 dark:from-emerald-950 dark:via-teal-950 dark:to-cyan-950">
+        <Card className="w-full max-w-lg mx-4 border-2 border-emerald-200 dark:border-emerald-800 bg-white/90 dark:bg-slate-900/90">
+          <CardContent className="py-10 text-center space-y-5">
+            <div className="mx-auto w-14 h-14 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white">
+              <Loader2 className="h-7 w-7 animate-spin" />
+            </div>
+            <div>
+              <h3 className="text-xl font-semibold">{modeTitle}</h3>
+              <p className="text-sm text-muted-foreground mt-2">{modeSubtitle}</p>
+            </div>
+            <Progress value={78} className="h-2" />
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   if (view === "smart-study") {
     const cards = smartCards.length > 0 ? smartCards : (smartQueue?.cards || []);
     
@@ -1274,6 +1336,37 @@ const handleKeyDown = (e: KeyboardEvent) => {
   if (view === "decks") {
     // Use real stats from the API, fallback to smartQueue stats
     const stats = flashcardStats || smartQueue?.stats;
+    const totalCards = Number(stats?.totalCards ?? 0);
+    const dueNow = Number(stats?.dueNow ?? 0);
+    const newCards = Number(stats?.new ?? stats?.newCards ?? 0);
+    const strugglingCards = Number(stats?.struggling ?? stats?.strugglingCards ?? 0);
+    const masteredCards = Number(stats?.mastered ?? stats?.masteredCards ?? 0);
+    const readiness = totalCards > 0 ? Math.min(100, Math.round((masteredCards / totalCards) * 100)) : 0;
+    const pressure = totalCards > 0 ? Math.min(100, Math.round(((dueNow + strugglingCards) / totalCards) * 100)) : 0;
+
+    const recommendedMode: StudyMode =
+      strugglingCards > 0 ? "struggling" :
+      dueNow > 0 ? "due-only" :
+      newCards > 0 ? "new-only" :
+      "smart";
+
+    const recommendationTitle =
+      recommendedMode === "struggling" ? "Focus weak cards first" :
+      recommendedMode === "due-only" ? "Clear due cards now" :
+      recommendedMode === "new-only" ? "Build momentum with new cards" :
+      "Balanced smart mix";
+
+    const recommendationHint =
+      recommendedMode === "struggling" ? `${strugglingCards} struggling cards need reinforcement.` :
+      recommendedMode === "due-only" ? `${dueNow} due cards are ready for review.` :
+      recommendedMode === "new-only" ? `${newCards} new cards are waiting to be learned.` :
+      "Use AI-prioritized mix for a balanced session.";
+
+    const recommendationCta =
+      recommendedMode === "struggling" ? "Start Recovery Session" :
+      recommendedMode === "due-only" ? "Start Due Session" :
+      recommendedMode === "new-only" ? "Start New Session" :
+      "Start Smart Session";
     
     return (
       <div className="flex-1 overflow-auto bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 dark:from-emerald-950 dark:via-teal-950 dark:to-cyan-950">
@@ -1307,35 +1400,69 @@ const handleKeyDown = (e: KeyboardEvent) => {
             {/* Decks Tab */}
             <TabsContent value="decks" className="space-y-6 sm:space-y-8 mt-6">
               {/* Quick Stats & Smart Study */}
-              {stats && stats.totalCards > 0 && (
+              {stats && totalCards > 0 && (
             <Card className="border-2 border-emerald-200 dark:border-emerald-800 overflow-hidden">
               <CardHeader className="bg-gradient-to-r from-emerald-100 to-teal-100 dark:from-emerald-900 dark:to-teal-900">
                 <CardTitle className="flex items-center gap-2">
                   <Zap className="h-5 w-5 text-amber-500" />
                   Smart Study Session
                 </CardTitle>
-                <CardDescription>AI-prioritized cards based on your learning patterns</CardDescription>
+                <CardDescription>AI-guided sessions that adapt to your progress and priorities</CardDescription>
               </CardHeader>
               <CardContent className="p-4 sm:p-6">
+                <div className="mb-5 p-4 rounded-lg border border-emerald-200/70 dark:border-emerald-700 bg-white/80 dark:bg-slate-900/70">
+                  <div className="flex items-start justify-between gap-3 flex-wrap">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Recommended next move</p>
+                      <p className="text-lg font-semibold text-emerald-700 dark:text-emerald-300">{recommendationTitle}</p>
+                      <p className="text-sm text-muted-foreground mt-1">{recommendationHint}</p>
+                    </div>
+                    <Button
+                      onClick={() => startSmartStudy(recommendedMode)}
+                      className="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white"
+                      data-testid="button-recommended-study"
+                    >
+                      <Play className="h-4 w-4 mr-2" />
+                      {recommendationCta}
+                    </Button>
+                  </div>
+                  <div className="grid sm:grid-cols-2 gap-4 mt-4">
+                    <div>
+                      <div className="flex items-center justify-between text-xs mb-1">
+                        <span className="text-muted-foreground">Mastery readiness</span>
+                        <span className="font-medium">{readiness}%</span>
+                      </div>
+                      <Progress value={readiness} className="h-2" />
+                    </div>
+                    <div>
+                      <div className="flex items-center justify-between text-xs mb-1">
+                        <span className="text-muted-foreground">Review pressure</span>
+                        <span className="font-medium">{pressure}%</span>
+                      </div>
+                      <Progress value={pressure} className="h-2" />
+                    </div>
+                  </div>
+                </div>
+
                 <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 sm:gap-4 mb-6">
                   <div className="text-center p-2 sm:p-3 bg-slate-100 dark:bg-slate-800 rounded-lg">
-                    <p className="text-lg sm:text-2xl font-bold text-slate-700 dark:text-slate-200">{stats?.totalCards ?? 0}</p>
+                    <p className="text-lg sm:text-2xl font-bold text-slate-700 dark:text-slate-200">{totalCards}</p>
                     <p className="text-[10px] sm:text-xs text-muted-foreground">Total Cards</p>
                   </div>
                   <div className="text-center p-2 sm:p-3 bg-red-100 dark:bg-red-900/30 rounded-lg">
-                    <p className="text-lg sm:text-2xl font-bold text-destructive">{stats?.dueNow ?? 0}</p>
+                    <p className="text-lg sm:text-2xl font-bold text-destructive">{dueNow}</p>
                     <p className="text-[10px] sm:text-xs text-muted-foreground">Due Now</p>
                   </div>
                   <div className="text-center p-2 sm:p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                    <p className="text-lg sm:text-2xl font-bold text-brand-primary">{stats?.new ?? 0}</p>
+                    <p className="text-lg sm:text-2xl font-bold text-brand-primary">{newCards}</p>
                     <p className="text-[10px] sm:text-xs text-muted-foreground">New</p>
                   </div>
                   <div className="text-center p-2 sm:p-3 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
-                    <p className="text-lg sm:text-2xl font-bold text-orange-600">{stats?.struggling ?? 0}</p>
+                    <p className="text-lg sm:text-2xl font-bold text-orange-600">{strugglingCards}</p>
                     <p className="text-[10px] sm:text-xs text-muted-foreground">Struggling</p>
                   </div>
                   <div className="text-center p-2 sm:p-3 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg">
-                    <p className="text-lg sm:text-2xl font-bold text-emerald-600">{stats?.mastered ?? 0}</p>
+                    <p className="text-lg sm:text-2xl font-bold text-emerald-600">{masteredCards}</p>
                     <p className="text-[10px] sm:text-xs text-muted-foreground">Mastered</p>
                   </div>
                 </div>
@@ -1356,39 +1483,39 @@ const handleKeyDown = (e: KeyboardEvent) => {
                     onClick={() => startSmartStudy("due-only")}
                     variant="outline"
                     className="h-auto py-4 border-2"
-                    disabled={(stats?.dueNow ?? 0) === 0}
+                    disabled={dueNow === 0}
                     data-testid="button-due-only"
                   >
                     <div className="text-center">
                       <Clock className="h-6 w-6 mx-auto mb-1 text-destructive" />
                       <span className="font-semibold">Due Cards</span>
-                      <p className="text-xs text-muted-foreground mt-1">{stats?.dueNow ?? 0} cards</p>
+                      <p className="text-xs text-muted-foreground mt-1">{dueNow} cards</p>
                     </div>
                   </Button>
                   <Button
                     onClick={() => startSmartStudy("new-only")}
                     variant="outline"
                     className="h-auto py-4 border-2"
-                    disabled={(stats?.new ?? 0) === 0}
+                    disabled={newCards === 0}
                     data-testid="button-new-only"
                   >
                     <div className="text-center">
                       <Sparkles className="h-6 w-6 mx-auto mb-1 text-brand-primary" />
                       <span className="font-semibold">New Cards</span>
-                      <p className="text-xs text-muted-foreground mt-1">{stats?.new ?? 0} cards</p>
+                      <p className="text-xs text-muted-foreground mt-1">{newCards} cards</p>
                     </div>
                   </Button>
                   <Button
                     onClick={() => startSmartStudy("struggling")}
                     variant="outline"
                     className="h-auto py-4 border-2"
-                    disabled={(stats?.struggling ?? 0) === 0}
+                    disabled={strugglingCards === 0}
                     data-testid="button-struggling"
                   >
                     <div className="text-center">
                       <Target className="h-6 w-6 mx-auto mb-1 text-orange-500" />
                       <span className="font-semibold">Struggling</span>
-                      <p className="text-xs text-muted-foreground mt-1">{stats?.struggling ?? 0} cards</p>
+                      <p className="text-xs text-muted-foreground mt-1">{strugglingCards} cards</p>
                     </div>
                   </Button>
                 </div>
@@ -1646,15 +1773,52 @@ const handleKeyDown = (e: KeyboardEvent) => {
                           </div>
                         </div>
 
-                        <Button
-                          onClick={() => startSmartStudy("deck", deck.id)}
-                          disabled={deck.cards === 0}
-                          className="w-full mt-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white"
-                          data-testid={`button-study-deck-${deck.id}`}
-                        >
-                          <Play className="h-4 w-4 mr-2" />
-                          {deck.cards === 0 ? "No Cards" : "Study Deck"}
-                        </Button>
+                        {deck.cards === 0 ? (
+                          <Button
+                            disabled
+                            className="w-full mt-2 bg-gradient-to-r from-emerald-600 to-teal-600 text-white"
+                            data-testid={`button-study-deck-${deck.id}`}
+                          >
+                            <Play className="h-4 w-4 mr-2" />
+                            No Cards
+                          </Button>
+                        ) : (
+                          <div className="grid grid-cols-[1fr_auto] gap-2 mt-2">
+                            <Button
+                              onClick={() => startSmartStudy("deck", deck.id)}
+                              className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white"
+                              data-testid={`button-study-deck-${deck.id}`}
+                            >
+                              <Play className="h-4 w-4 mr-2" />
+                              Study Deck
+                            </Button>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button
+                                  variant="outline"
+                                  className="px-3 border-emerald-300 dark:border-emerald-700"
+                                  data-testid={`button-study-deck-modes-${deck.id}`}
+                                >
+                                  <ChevronDown className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => startSmartStudy("deck", deck.id)}>
+                                  Smart Mix (This Deck)
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => startSmartStudy("due-only", deck.id)}>
+                                  Due First (This Deck)
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => startSmartStudy("new-only", deck.id)}>
+                                  New First (This Deck)
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => startSmartStudy("struggling", deck.id)}>
+                                  Struggling Focus (This Deck)
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
+                        )}
                       </CardContent>
                     </Card>
                   );

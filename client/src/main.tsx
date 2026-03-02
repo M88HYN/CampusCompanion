@@ -24,6 +24,7 @@ allowing safe evolution of features without cross-module side effects.
 
 import { createRoot } from "react-dom/client";
 import App from "./App";
+import "./styles/animations.css";
 import "./index.css";
 
 console.log("[main.tsx] Starting app initialization");
