@@ -416,6 +416,18 @@ export default function Insights() {
     overallAccuracy: 0
   };
 
+  const avgSessionMinutes = overview.totalSessions > 0
+    ? Math.round(overview.totalStudyTime / overview.totalSessions)
+    : 0;
+  const streakReliability = overview.longestStreak > 0
+    ? Math.round((overview.currentStreak / overview.longestStreak) * 100)
+    : 0;
+  const topicCoverage = insights?.topicPerformance?.filter((topic) => topic.totalQuestions > 0).length || 0;
+  const maxTopicQuestions = Math.max(...(insights?.topicPerformance?.map((topic) => topic.totalQuestions) || [1]));
+  const cardsPerQuiz = overview.quizzesTaken > 0
+    ? (overview.cardsReviewed / overview.quizzesTaken).toFixed(1)
+    : "0.0";
+
     /*
   ----------------------------------------------------------
   Function: formatStudyTime
@@ -458,43 +470,43 @@ const formatStudyTime = (minutes: number) => {
               Learning Insights
             </h1>
             <p className="text-sm text-muted-foreground">
-              Data-driven analysis of your study patterns and performance
+              Data-driven analysis of your study behavior, rhythm, and engagement quality
             </p>
           </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4" data-testid="insights-stats-grid">
           <StatCard
-            title="Overall Accuracy"
-            value={`${overview.overallAccuracy}%`}
-            subtitle="Across all activities"
-            icon={Target}
-            gradient="bg-gradient-to-br from-emerald-500 to-teal-600"
-            testId="stat-overall-accuracy"
-          />
-          <StatCard
             title="Study Time"
             value={formatStudyTime(overview.totalStudyTime)}
-            subtitle={`${overview.totalSessions} sessions`}
+            subtitle={`${overview.totalSessions} sessions logged`}
             icon={Clock}
             gradient="bg-gradient-to-br from-sky-500 to-blue-600"
             testId="stat-study-time"
           />
           <StatCard
-            title="Current Streak"
-            value={`${overview.currentStreak} days`}
-            subtitle={`Best: ${overview.longestStreak} days`}
-            icon={Flame}
-            gradient="bg-gradient-to-br from-orange-500 to-red-600"
-            testId="stat-current-streak"
+            title="Session Depth"
+            value={`${avgSessionMinutes}m`}
+            subtitle="Average minutes per session"
+            icon={Zap}
+            gradient="bg-gradient-to-br from-violet-500 to-purple-600"
+            testId="stat-session-depth"
           />
           <StatCard
-            title="Cards Reviewed"
-            value={overview.cardsReviewed}
-            subtitle={`${overview.quizzesTaken} quizzes taken`}
+            title="Streak Reliability"
+            value={`${streakReliability}%`}
+            subtitle={`${overview.currentStreak}/${overview.longestStreak || 0} days`}
+            icon={Flame}
+            gradient="bg-gradient-to-br from-orange-500 to-red-600"
+            testId="stat-streak-reliability"
+          />
+          <StatCard
+            title="Revision Mix"
+            value={cardsPerQuiz}
+            subtitle="Flashcards reviewed per quiz"
             icon={BookOpen}
-            gradient="bg-gradient-to-br from-violet-500 to-purple-600"
-            testId="stat-cards-reviewed"
+            gradient="bg-gradient-to-br from-emerald-500 to-teal-600"
+            testId="stat-revision-mix"
           />
         </div>
 
@@ -507,7 +519,7 @@ const formatStudyTime = (minutes: number) => {
                 </div>
                 Accuracy Trends
               </CardTitle>
-              <CardDescription>Your performance over the last 14 days</CardDescription>
+              <CardDescription>Tracks how quiz and flashcard accuracy evolve together over time.</CardDescription>
             </CardHeader>
             <CardContent>
               {insights?.accuracyTrends && insights.accuracyTrends.length > 0 ? (
@@ -575,7 +587,7 @@ const formatStudyTime = (minutes: number) => {
                 </div>
                 Weekly Progress
               </CardTitle>
-              <CardDescription>Study activity over the past week</CardDescription>
+              <CardDescription>Compares learning volume (minutes) and throughput (items reviewed) by day.</CardDescription>
             </CardHeader>
             <CardContent>
               {insights?.weeklyProgress && insights.weeklyProgress.length > 0 ? (
@@ -608,25 +620,37 @@ const formatStudyTime = (minutes: number) => {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <Card className="border-0 shadow-lg bg-card backdrop-blur lg:col-span-2" data-testid="card-topic-performance">
+          <Card className="border-0 shadow-lg bg-card backdrop-blur lg:col-span-2" data-testid="card-topic-engagement">
             <CardHeader className="pb-2">
               <CardTitle className="text-lg flex items-center gap-2">
                 <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
                   <BarChart3 className="w-4 h-4 text-white" />
                 </div>
-                Topic Performance
+                Topic Engagement Distribution
               </CardTitle>
-              <CardDescription>How you're doing in each subject area</CardDescription>
+              <CardDescription>Shows where your question volume is concentrated, independent of accuracy scores.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               {insights?.topicPerformance && insights.topicPerformance.length > 0 ? (
-                insights.topicPerformance.slice(0, 6).map((topic, i) => (
-                  <TopicBar key={i} {...topic} />
+                insights.topicPerformance
+                  .sort((a, b) => b.totalQuestions - a.totalQuestions)
+                  .slice(0, 6)
+                  .map((topic, i) => (
+                  <div key={i} className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <p className="font-medium text-sm text-foreground">{topic.topic}</p>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline" className="text-xs">{topic.totalQuestions} questions</Badge>
+                        <span className="text-xs text-muted-foreground">{topicCoverage} active topics</span>
+                      </div>
+                    </div>
+                    <Progress value={(topic.totalQuestions / maxTopicQuestions) * 100} className="h-2" />
+                  </div>
                 ))
               ) : (
                 <div className="py-10 text-center text-muted-foreground">
                   <HelpCircle className="w-10 h-10 mx-auto mb-2 opacity-50" />
-                  <p className="text-sm">Answer quiz questions to see topic performance</p>
+                  <p className="text-sm">Answer quiz questions to see topic engagement distribution</p>
                 </div>
               )}
             </CardContent>
@@ -640,7 +664,7 @@ const formatStudyTime = (minutes: number) => {
                 </div>
                 Peak Study Times
               </CardTitle>
-              <CardDescription>When you perform best</CardDescription>
+                <CardDescription>When your study activity is most frequent and productive.</CardDescription>
             </CardHeader>
             <CardContent>
               {insights?.studyPatterns && insights.studyPatterns.length > 0 ? (
@@ -689,59 +713,56 @@ const formatStudyTime = (minutes: number) => {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card className="border-0 shadow-lg bg-card backdrop-blur" data-testid="card-strengths">
+          <Card className="border-0 shadow-lg bg-card backdrop-blur" data-testid="card-learning-signals">
             <CardHeader className="pb-2">
               <CardTitle className="text-lg flex items-center gap-2">
                 <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center">
                   <Award className="w-4 h-4 text-white" />
                 </div>
-                Your Strengths
+                Learning Signals
               </CardTitle>
-              <CardDescription>Topics where you excel</CardDescription>
+              <CardDescription>Behavior-oriented indicators that describe how you are studying.</CardDescription>
             </CardHeader>
             <CardContent>
-              {insights?.strengths && insights.strengths.length > 0 ? (
-                <div className="space-y-3">
-                  {insights.strengths.map((strength, i) => (
-                    <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950/20 dark:to-teal-950/20 border border-emerald-200 dark:border-emerald-900/30 shadow-sm">
-                      <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white font-bold text-sm shadow-lg">
-                          {i + 1}
-                        </div>
-                        <div>
-                          <p className="font-medium text-sm text-foreground">{strength.topic}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {strength.masteredConcepts} concepts mastered
-                          </p>
-                        </div>
-                      </div>
-                      <Badge className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white border-0 shadow-md">{strength.accuracy}%</Badge>
-                    </div>
-                  ))}
+              <div className="space-y-3">
+                <div className="p-3 rounded-lg border bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950/20 dark:to-teal-950/20 border-emerald-200 dark:border-emerald-900/30">
+                  <p className="text-sm font-medium text-foreground">Consistency Health</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {streakReliability >= 70
+                      ? "Your current streak is close to your best streak, indicating steady routine adherence."
+                      : "Your streak is below your historical best; small daily sessions can restore consistency quickly."}
+                  </p>
                 </div>
-              ) : (
-                <div className="py-10 text-center text-muted-foreground">
-                  <Award className="w-10 h-10 mx-auto mb-2 opacity-50" />
-                  <p className="text-sm">Keep practicing to identify your strengths</p>
+                <div className="p-3 rounded-lg border bg-gradient-to-r from-sky-50 to-blue-50 dark:from-sky-950/20 dark:to-blue-950/20 border-sky-200 dark:border-sky-900/30">
+                  <p className="text-sm font-medium text-foreground">Session Depth</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    You currently average {avgSessionMinutes} minutes per study session across {overview.totalSessions} sessions.
+                  </p>
                 </div>
-              )}
+                <div className="p-3 rounded-lg border bg-gradient-to-r from-violet-50 to-purple-50 dark:from-violet-950/20 dark:to-purple-950/20 border-violet-200 dark:border-violet-900/30">
+                  <p className="text-sm font-medium text-foreground">Topic Breadth</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    You have engaged with {topicCoverage} topic areas so far, which reflects your current revision breadth.
+                  </p>
+                </div>
+              </div>
             </CardContent>
           </Card>
 
-          <Card className="border-0 shadow-lg bg-card backdrop-blur" data-testid="card-weak-areas">
+          <Card className="border-0 shadow-lg bg-card backdrop-blur" data-testid="card-focus-queue">
             <CardHeader className="pb-2">
               <CardTitle className="text-lg flex items-center gap-2">
                 <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center">
                   <AlertTriangle className="w-4 h-4 text-white" />
                 </div>
-                Areas to Improve
+                Focus Queue
               </CardTitle>
-              <CardDescription>Topics that need more attention</CardDescription>
+              <CardDescription>Action-oriented queue generated from your current weak areas.</CardDescription>
             </CardHeader>
             <CardContent>
               {insights?.weakAreas && insights.weakAreas.length > 0 ? (
                 <div className="space-y-3">
-                  {insights.weakAreas.map((area, i) => (
+                  {insights.weakAreas.slice(0, 5).map((area, i) => (
                     <div key={i} className="p-3 rounded-lg bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20 border border-amber-200 dark:border-amber-900/30 shadow-sm">
                       <div className="flex items-center justify-between mb-2">
                         <p className="font-medium text-sm text-foreground">{area.topic}</p>
@@ -750,13 +771,14 @@ const formatStudyTime = (minutes: number) => {
                         </Badge>
                       </div>
                       <p className="text-xs text-muted-foreground">{area.suggestion}</p>
+                      <p className="text-[11px] text-foreground/70 mt-1">Suggested cadence: 2 short targeted reviews this week.</p>
                     </div>
                   ))}
                 </div>
               ) : (
                 <div className="py-10 text-center text-muted-foreground">
                   <AlertTriangle className="w-10 h-10 mx-auto mb-2 opacity-50" />
-                  <p className="text-sm">No weak areas identified yet - great job!</p>
+                  <p className="text-sm">No active focus queue right now — your coverage is balanced.</p>
                 </div>
               )}
             </CardContent>
@@ -771,7 +793,7 @@ const formatStudyTime = (minutes: number) => {
               </div>
               Personalized Recommendations
             </CardTitle>
-            <CardDescription>Suggestions to improve your learning</CardDescription>
+            <CardDescription>Study-strategy suggestions based on behavior patterns and coverage.</CardDescription>
           </CardHeader>
           <CardContent>
             {insights?.recommendations && insights.recommendations.length > 0 ? (

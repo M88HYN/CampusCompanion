@@ -260,7 +260,7 @@ const formatLastSaved = () => {
               placeholder="Note Title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="text-2xl font-bold h-10 border-0 bg-transparent p-0"
+              className="text-xl md:text-2xl font-bold h-10 border-0 bg-transparent p-0"
             />
 
             {/* Tags */}
@@ -287,8 +287,8 @@ const formatLastSaved = () => {
             </div>
 
             {/* Stats Bar */}
-            <div className="flex items-center justify-between text-xs text-muted-foreground pt-2 border-t">
-              <div className="flex gap-4">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between text-xs text-muted-foreground pt-2 border-t">
+              <div className="flex flex-wrap gap-3 sm:gap-4">
                 <span>📝 {wordCount} words</span>
                 <span>⏱️ {readingTime} min read</span>
               </div>
@@ -304,17 +304,18 @@ const formatLastSaved = () => {
       {/* Editor */}
       <Card className="glassmorphic">
         <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <CardTitle className="text-base flex items-center gap-2">
               <PenTool className="h-4 w-4" />
               Editor
             </CardTitle>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => applyFormatting("**", "**")}
                 title="Bold"
+                className="h-9 w-9 p-0"
               >
                 <Bold className="h-4 w-4" />
               </Button>
@@ -323,6 +324,7 @@ const formatLastSaved = () => {
                 size="sm"
                 onClick={() => applyFormatting("_", "_")}
                 title="Italic"
+                className="h-9 w-9 p-0"
               >
                 <Italic className="h-4 w-4" />
               </Button>
@@ -331,6 +333,7 @@ const formatLastSaved = () => {
                 size="sm"
                 onClick={() => applyFormatting("`", "`")}
                 title="Code"
+                className="h-9 w-9 p-0"
               >
                 <Code className="h-4 w-4" />
               </Button>
@@ -339,6 +342,7 @@ const formatLastSaved = () => {
                 size="sm"
                 onClick={() => applyFormatting("## ", "")}
                 title="Heading"
+                className="h-9 w-9 p-0"
               >
                 <Heading2 className="h-4 w-4" />
               </Button>
@@ -351,7 +355,7 @@ const formatLastSaved = () => {
             value={content}
             onChange={(e) => setContent(e.target.value)}
             placeholder="Start typing your note... You can use markdown formatting like **bold**, _italic_, `code`, etc."
-            className="w-full h-96 p-4 border border-border rounded-lg bg-card text-foreground resize-none focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            className="w-full h-[52vh] sm:h-96 p-3 sm:p-4 border border-border rounded-lg bg-card text-foreground resize-none focus:outline-none focus:ring-2 focus:ring-emerald-500"
           />
         </CardContent>
       </Card>

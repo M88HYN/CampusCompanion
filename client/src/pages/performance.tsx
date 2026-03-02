@@ -27,6 +27,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Switch } from "@/components/ui/switch";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { AnalyticsStatCard, ActivityCard } from "@/components/analytics-cards";
 import { useQuizAnalytics } from "@/hooks/use-quiz-analytics";
 import {
@@ -38,7 +39,32 @@ import {
   TrendingUp,
   TrendingDown,
   Gauge,
+  SlidersHorizontal,
+  CircleHelp,
 } from "lucide-react";
+
+interface InfoHintProps {
+  text: string;
+}
+
+function InfoHint({ text }: InfoHintProps) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button
+          type="button"
+          aria-label="More information"
+          className="inline-flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <CircleHelp className="h-4 w-4" />
+        </button>
+      </TooltipTrigger>
+      <TooltipContent className="max-w-xs text-xs leading-relaxed">
+        <p>{text}</p>
+      </TooltipContent>
+    </Tooltip>
+  );
+}
 
 /*
 ----------------------------------------------------------
@@ -66,6 +92,11 @@ A JSX tree representing the component view for the current state.
 export default function Performance() {
   const [showWeeklyProgress, setShowWeeklyProgress] = useState(true);
   const [showAccuracyTrends, setShowAccuracyTrends] = useState(true);
+  const [showDataQuality, setShowDataQuality] = useState(true);
+  const [showTopicInsights, setShowTopicInsights] = useState(true);
+  const [showDifficultyBreakdown, setShowDifficultyBreakdown] = useState(true);
+  const [showQuizRealism, setShowQuizRealism] = useState(true);
+  const [showMetricGuide, setShowMetricGuide] = useState(false);
 
   const {
     summary,
@@ -78,19 +109,6 @@ export default function Performance() {
     studyOverview,
     isLoading,
   } = useQuizAnalytics();
-
-  if (isLoading) {
-    return (
-      <div className="p-6 md:p-8 space-y-6 bg-gradient-to-br from-cyan-50 via-teal-50 to-indigo-50 dark:from-slate-950 dark:via-cyan-950/30 dark:to-indigo-950/30 min-h-full">
-        <div className="h-9 w-64 animate-pulse rounded bg-slate-200 dark:bg-slate-800" />
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-36 animate-pulse rounded-xl bg-slate-200 dark:bg-slate-800" />
-          ))}
-        </div>
-      </div>
-    );
-  }
 
   const hasPerformanceData = summary.totalQuizzesTaken > 0;
 
@@ -105,6 +123,19 @@ export default function Performance() {
   const previousWindow = sortedRecent.slice(-6, -3);
   const latestSeven = sortedRecent.slice(-7);
   const priorSeven = sortedRecent.slice(-14, -7);
+
+  if (isLoading) {
+    return (
+      <div className="p-6 md:p-8 space-y-6 bg-gradient-to-br from-cyan-50 via-teal-50 to-indigo-50 dark:from-slate-950 dark:via-cyan-950/30 dark:to-indigo-950/30 min-h-full">
+        <div className="h-9 w-64 animate-pulse rounded bg-slate-200 dark:bg-slate-800" />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="h-36 animate-pulse rounded-xl bg-slate-200 dark:bg-slate-800" />
+          ))}
+        </div>
+      </div>
+    );
+  }
 
     /*
   ----------------------------------------------------------
@@ -231,7 +262,19 @@ const getPacingBand = (avgTimeSeconds: number) => {
     )
     .slice(0, 5);
 
+  const momentumDirection = momentumDelta >= 0 ? "Improving" : "Slipping";
+  const consistencyBand = consistencyScore >= 80 ? "Very stable" : consistencyScore >= 60 ? "Moderately stable" : "Volatile";
+  const strongestDifficulty =
+    performanceByDifficulty.length > 0
+      ? [...performanceByDifficulty].sort((a, b) => b.accuracy - a.accuracy)[0]
+      : null;
+  const weakestDifficulty =
+    performanceByDifficulty.length > 0
+      ? [...performanceByDifficulty].sort((a, b) => a.accuracy - b.accuracy)[0]
+      : null;
+
   return (
+    <TooltipProvider delayDuration={120}>
     <div className="p-6 md:p-8 space-y-6 bg-gradient-to-br from-cyan-50 via-teal-50 to-indigo-50 dark:from-slate-950 dark:via-cyan-950/30 dark:to-indigo-950/30 min-h-full">
       <div className="flex items-start justify-between gap-4">
         <div>
@@ -294,6 +337,7 @@ const getPacingBand = (avgTimeSeconds: number) => {
                 <CardTitle className="flex items-center gap-2">
                   <Gauge className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
                   Performance Signals
+                  <InfoHint text="These signals are generated from your recent quiz history to highlight meaningful strengths, weak spots, and trend shifts." />
                 </CardTitle>
                 <CardDescription>Automatically detected trends from your quiz attempts.</CardDescription>
               </CardHeader>
@@ -327,10 +371,14 @@ const getPacingBand = (avgTimeSeconds: number) => {
 
           <Card className="border border-border">
             <CardHeader>
-              <CardTitle>Insight Controls</CardTitle>
-              <CardDescription>Customize which performance insight blocks are visible.</CardDescription>
+              <CardTitle className="flex items-center gap-2">
+                <SlidersHorizontal className="h-4 w-4 text-brand-primary" />
+                Insight Controls
+                <InfoHint text="Use these toggles to simplify or expand the dashboard based on whether you want a quick snapshot or a deeper analysis session." />
+              </CardTitle>
+              <CardDescription>Customize which performance blocks are visible to match your preferred detail level.</CardDescription>
             </CardHeader>
-            <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <CardContent className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
               <div className="flex items-center justify-between rounded-lg border border-border p-3">
                 <div>
                   <p className="font-medium text-foreground">Weekly progress</p>
@@ -353,19 +401,155 @@ const getPacingBand = (avgTimeSeconds: number) => {
                   data-testid="switch-accuracy-trends"
                 />
               </div>
+              <div className="flex items-center justify-between rounded-lg border border-border p-3">
+                <div>
+                  <p className="font-medium text-foreground">Data quality panel</p>
+                  <p className="text-xs text-muted-foreground">Show confidence and sample representativeness panel</p>
+                </div>
+                <Switch
+                  checked={showDataQuality}
+                  onCheckedChange={setShowDataQuality}
+                  data-testid="switch-data-quality"
+                />
+              </div>
+              <div className="flex items-center justify-between rounded-lg border border-border p-3">
+                <div>
+                  <p className="font-medium text-foreground">Topic insights</p>
+                  <p className="text-xs text-muted-foreground">Show strengths and improvement areas by topic</p>
+                </div>
+                <Switch
+                  checked={showTopicInsights}
+                  onCheckedChange={setShowTopicInsights}
+                  data-testid="switch-topic-insights"
+                />
+              </div>
+              <div className="flex items-center justify-between rounded-lg border border-border p-3">
+                <div>
+                  <p className="font-medium text-foreground">Difficulty breakdown</p>
+                  <p className="text-xs text-muted-foreground">Show easy/medium/hard accuracy distribution</p>
+                </div>
+                <Switch
+                  checked={showDifficultyBreakdown}
+                  onCheckedChange={setShowDifficultyBreakdown}
+                  data-testid="switch-difficulty-breakdown"
+                />
+              </div>
+              <div className="flex items-center justify-between rounded-lg border border-border p-3">
+                <div>
+                  <p className="font-medium text-foreground">Quiz realism view</p>
+                  <p className="text-xs text-muted-foreground">Show latest-vs-average quiz-level comparison</p>
+                </div>
+                <Switch
+                  checked={showQuizRealism}
+                  onCheckedChange={setShowQuizRealism}
+                  data-testid="switch-quiz-realism"
+                />
+              </div>
+              <div className="flex items-center justify-between rounded-lg border border-border p-3">
+                <div>
+                  <p className="font-medium text-foreground">Metric guide</p>
+                  <p className="text-xs text-muted-foreground">Show plain-language explanations for key analytics terms</p>
+                </div>
+                <Switch
+                  checked={showMetricGuide}
+                  onCheckedChange={setShowMetricGuide}
+                  data-testid="switch-metric-guide"
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          {showMetricGuide ? (
+            <Card className="border border-border">
+              <CardHeader>
+                <CardTitle>Metric Guide</CardTitle>
+                <CardDescription>Quick definitions to make performance analytics easier to interpret.</CardDescription>
+              </CardHeader>
+              <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="rounded-lg border border-border p-3">
+                  <p className="font-medium text-foreground">Momentum</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Change in average accuracy between your latest attempts and the previous attempt window.
+                  </p>
+                </div>
+                <div className="rounded-lg border border-border p-3">
+                  <p className="font-medium text-foreground">Consistency score</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    A stability indicator based on variation in recent scores; higher means more predictable performance.
+                  </p>
+                </div>
+                <div className="rounded-lg border border-border p-3">
+                  <p className="font-medium text-foreground">Confidence label</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Reflects how representative the analytics are given your current sample size of answered questions.
+                  </p>
+                </div>
+                <div className="rounded-lg border border-border p-3">
+                  <p className="font-medium text-foreground">Realism view</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Compares your latest score to long-term average per quiz to reduce overreaction to one-off attempts.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          ) : null}
+
+          <Card className="border border-border">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                At a Glance Interpretation
+                <InfoHint text="A concise summary of your current learning posture using momentum, stability, and difficulty performance signals." />
+              </CardTitle>
+              <CardDescription>High-level reading of your current analytics profile.</CardDescription>
+            </CardHeader>
+            <CardContent className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+              <div className="rounded-lg border border-border p-3">
+                <div className="flex items-center gap-1">
+                  <p className="text-xs uppercase tracking-wide text-muted-foreground">Momentum status</p>
+                  <InfoHint text="Direction of change between your latest attempt window and the one immediately before it." />
+                </div>
+                <p className={`text-lg font-semibold mt-1 ${momentumDelta >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
+                  {momentumDirection}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">{momentumDelta >= 0 ? "+" : ""}{momentumDelta}% change</p>
+              </div>
+              <div className="rounded-lg border border-border p-3">
+                <div className="flex items-center gap-1">
+                  <p className="text-xs uppercase tracking-wide text-muted-foreground">Stability band</p>
+                  <InfoHint text="Derived from score variance: higher stability means your results are more consistent across attempts." />
+                </div>
+                <p className="text-lg font-semibold text-foreground mt-1">{consistencyBand}</p>
+                <p className="text-xs text-muted-foreground mt-1">Score: {consistencyScore}/100</p>
+              </div>
+              <div className="rounded-lg border border-border p-3">
+                <p className="text-xs uppercase tracking-wide text-muted-foreground">Best difficulty</p>
+                <p className="text-lg font-semibold text-foreground mt-1 capitalize">{strongestDifficulty?.level ?? "N/A"}</p>
+                <p className="text-xs text-muted-foreground mt-1">{strongestDifficulty?.accuracy ?? 0}% accuracy</p>
+              </div>
+              <div className="rounded-lg border border-border p-3">
+                <p className="text-xs uppercase tracking-wide text-muted-foreground">Needs support</p>
+                <p className="text-lg font-semibold text-foreground mt-1 capitalize">{weakestDifficulty?.level ?? "N/A"}</p>
+                <p className="text-xs text-muted-foreground mt-1">{weakestDifficulty?.accuracy ?? 0}% accuracy</p>
+              </div>
             </CardContent>
           </Card>
 
           <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
             <Card className="border border-border xl:col-span-2">
               <CardHeader>
-                <CardTitle>Momentum & Stability</CardTitle>
+                <CardTitle className="flex items-center gap-2">
+                  Momentum & Stability
+                  <InfoHint text="Tracks short-term trajectory and consistency to help you judge whether progress is reliable or noisy." />
+                </CardTitle>
                 <CardDescription>Recent trend quality based on your latest attempts.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="rounded-lg border border-border p-4">
-                    <p className="text-xs uppercase tracking-wide text-muted-foreground">Recent momentum</p>
+                    <div className="flex items-center gap-1">
+                      <p className="text-xs uppercase tracking-wide text-muted-foreground">Recent momentum</p>
+                      <InfoHint text="Calculated as: latest 3-attempt average minus the previous 3-attempt average." />
+                    </div>
                     <p className="text-2xl font-semibold text-foreground mt-1">
                       {momentumDelta >= 0 ? "+" : ""}{momentumDelta}%
                     </p>
@@ -374,7 +558,10 @@ const getPacingBand = (avgTimeSeconds: number) => {
                     </p>
                   </div>
                   <div className="rounded-lg border border-border p-4">
-                    <p className="text-xs uppercase tracking-wide text-muted-foreground">Consistency score</p>
+                    <div className="flex items-center gap-1">
+                      <p className="text-xs uppercase tracking-wide text-muted-foreground">Consistency score</p>
+                      <InfoHint text="A transformed variance score from recent attempts; lower spread in results yields a higher consistency score." />
+                    </div>
                     <p className="text-2xl font-semibold text-foreground mt-1">{consistencyScore}/100</p>
                     <div className="mt-2">
                       <Progress value={consistencyScore} className="h-2" />
@@ -387,9 +574,13 @@ const getPacingBand = (avgTimeSeconds: number) => {
               </CardContent>
             </Card>
 
+            {showDataQuality ? (
             <Card className="border border-border">
               <CardHeader>
-                <CardTitle>Data quality</CardTitle>
+                <CardTitle className="flex items-center gap-2">
+                  Data quality
+                  <InfoHint text="Shows how reliable current analytics are based on sample size and number of recorded attempts." />
+                </CardTitle>
                 <CardDescription>How representative your current metrics are.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
@@ -407,12 +598,16 @@ const getPacingBand = (avgTimeSeconds: number) => {
                 </div>
               </CardContent>
             </Card>
+            ) : null}
           </div>
 
           {showWeeklyProgress ? (
             <Card className="border border-border">
               <CardHeader>
-                <CardTitle>Weekly Progress</CardTitle>
+                <CardTitle className="flex items-center gap-2">
+                  Weekly Progress
+                  <InfoHint text="Compares your latest 7 attempts against the prior 7 to show medium-term direction." />
+                </CardTitle>
                 <CardDescription>Compares your last 7 attempts against the prior 7 attempts.</CardDescription>
               </CardHeader>
               <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -434,13 +629,14 @@ const getPacingBand = (avgTimeSeconds: number) => {
             </Card>
           ) : null}
 
-          {(rankedStrengths.length > 0 || rankedImprovements.length > 0) ? (
+          {showTopicInsights && (rankedStrengths.length > 0 || rankedImprovements.length > 0) ? (
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
               <Card className="border border-emerald-200 dark:border-emerald-800">
                 <CardHeader>
                   <CardTitle className="text-emerald-700 dark:text-emerald-300 flex items-center gap-2">
                     <TrendingUp className="h-5 w-5" />
                     Strength Areas
+                    <InfoHint text="Topics are ranked by performance quality and sample strength, not just a single high score." />
                   </CardTitle>
                   <CardDescription>Weighted by accuracy and sample size to avoid noisy one-off scores.</CardDescription>
                 </CardHeader>
@@ -476,6 +672,7 @@ const getPacingBand = (avgTimeSeconds: number) => {
                   <CardTitle className="text-rose-700 dark:text-rose-300 flex items-center gap-2">
                     <Target className="h-5 w-5" />
                     Improvement Areas
+                    <InfoHint text="Prioritized topics combine lower accuracy with sufficient data to avoid overreacting to outliers." />
                   </CardTitle>
                   <CardDescription>Prioritized by consistently lower accuracy with enough attempts to be meaningful.</CardDescription>
                 </CardHeader>
@@ -519,9 +716,13 @@ const getPacingBand = (avgTimeSeconds: number) => {
           ) : null}
 
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+            {showDifficultyBreakdown ? (
             <Card className="border border-border">
               <CardHeader>
-                <CardTitle>Difficulty Breakdown</CardTitle>
+                <CardTitle className="flex items-center gap-2">
+                  Difficulty Breakdown
+                  <InfoHint text="Highlights whether performance drops as question complexity increases." />
+                </CardTitle>
                 <CardDescription>Accuracy by question difficulty level.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
@@ -541,14 +742,18 @@ const getPacingBand = (avgTimeSeconds: number) => {
                 ))}
               </CardContent>
             </Card>
+            ) : null}
 
             <ActivityCard activities={recentActivity} />
           </div>
 
-          {quizPerformance.length > 0 ? (
+          {showQuizRealism && quizPerformance.length > 0 ? (
             <Card className="border border-border">
               <CardHeader>
-                <CardTitle>Quiz-level realism view</CardTitle>
+                <CardTitle className="flex items-center gap-2">
+                  Quiz-level realism view
+                  <InfoHint text="Compares your latest attempt to your historical average for each quiz to provide a reality check." />
+                </CardTitle>
                 <CardDescription>Compare latest vs average performance by quiz topic.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
@@ -575,7 +780,10 @@ const getPacingBand = (avgTimeSeconds: number) => {
           {showAccuracyTrends ? (
             <Card className="border border-border">
               <CardHeader>
-                <CardTitle>Accuracy Trends</CardTitle>
+                <CardTitle className="flex items-center gap-2">
+                  Accuracy Trends
+                  <InfoHint text="Shows recent attempt-by-attempt changes so you can identify short-term drift or recovery." />
+                </CardTitle>
                 <CardDescription>Recent attempt-level accuracy movement.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
@@ -604,5 +812,6 @@ const getPacingBand = (avgTimeSeconds: number) => {
         </Card>
       )}
     </div>
+    </TooltipProvider>
   );
 }

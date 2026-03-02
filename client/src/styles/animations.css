@@ -203,12 +203,12 @@
 }
 
 .route-transition {
-  animation: route-transition-in 260ms cubic-bezier(0.22, 0.61, 0.36, 1);
+  animation: route-transition-in 340ms cubic-bezier(0.22, 1, 0.36, 1);
   will-change: opacity, transform;
 }
 
 .tabs-trigger-transition {
-  transition: background-color 180ms ease, color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+  transition: background-color 240ms cubic-bezier(0.22, 1, 0.36, 1), color 240ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 240ms cubic-bezier(0.22, 1, 0.36, 1), transform 240ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .tabs-trigger-transition:active {
@@ -216,13 +216,21 @@
 }
 
 .tabs-content-transition[data-state="active"] {
-  animation: fade-in 220ms ease-out;
+  animation: fade-in 300ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .search-dropdown-transition {
-  animation: slide-in-down-soft 180ms ease-out;
+  animation: slide-in-down-soft 240ms cubic-bezier(0.22, 1, 0.36, 1);
   transform-origin: top center;
   will-change: opacity, transform;
+}
+
+.button-priority-transition {
+  transition: background-color 260ms cubic-bezier(0.22, 1, 0.36, 1), border-color 260ms cubic-bezier(0.22, 1, 0.36, 1), color 260ms cubic-bezier(0.22, 1, 0.36, 1), transform 260ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 260ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.button-priority-transition:hover {
+  transform: translateY(-1px);
 }
 
 @keyframes slide-in-down-soft {

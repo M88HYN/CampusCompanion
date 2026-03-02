@@ -136,6 +136,7 @@ export function AppTopbar({ user, onLogout }: AppTopbarProps) {
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
 
   const { data: settings } = useQuery({
@@ -316,6 +317,7 @@ const handleSearchNavigate = (target: SearchTarget) => {
     setLocation(target.path);
     setSearchQuery("");
     setIsSearchOpen(false);
+  setIsMobileSearchOpen(false);
   };
 
     /*
@@ -382,16 +384,16 @@ const handleSearchSubmit = (event: React.FormEvent) => {
           : "border-b border-primary/60 bg-gradient-to-r from-primary via-brand-primary to-secondary text-primary-foreground backdrop-blur"
       }`}
     >
-      <div className="flex items-center gap-4">
-        <div className="flex items-center gap-3 md:min-w-[220px]">
+      <div className="flex items-center gap-2 md:gap-4">
+        <div className="flex items-center gap-2 md:gap-3 md:min-w-[220px]">
           <SidebarTrigger
-            className="transition-colors"
+            className="button-priority-transition"
             aria-label="Open navigation menu"
           >
             <Menu className="h-4 w-4" />
           </SidebarTrigger>
 
-          <Link href="/dashboard" className="flex items-center gap-2" aria-label="Go to dashboard">
+          <Link href="/dashboard" className="flex items-center gap-2 min-w-0" aria-label="Go to dashboard">
             <StudyMateLogo sizeClassName="h-8 w-8" />
             <span className="hidden text-sm font-semibold text-primary-foreground sm:inline">StudyMate</span>
           </Link>
@@ -441,7 +443,20 @@ const handleSearchSubmit = (event: React.FormEvent) => {
           </form>
         </div>
 
-        <div className="ml-auto flex items-center gap-2 md:gap-3">
+        <div className="ml-auto flex items-center gap-1.5 md:gap-3">
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label="Toggle mobile search"
+                className="button-priority-transition md:hidden text-primary-foreground focus-visible:ring-2 focus-visible:ring-ring"
+            onClick={() => {
+              setIsMobileSearchOpen((prev) => !prev);
+              setIsSearchOpen((prev) => !prev);
+            }}
+          >
+            <Search className="h-4 w-4" />
+          </Button>
+
           <ThemeToggle />
 
           <DropdownMenu>
@@ -450,7 +465,7 @@ const handleSearchSubmit = (event: React.FormEvent) => {
                 variant="ghost"
                 size="icon"
                 aria-label="Notification preferences"
-                className="relative text-primary-foreground focus-visible:ring-2 focus-visible:ring-ring"
+                className="button-priority-transition relative text-primary-foreground focus-visible:ring-2 focus-visible:ring-ring"
               >
                 <Bell className="h-4 w-4" />
                 {dueCards.length > 0 ? (
@@ -507,7 +522,7 @@ const handleSearchSubmit = (event: React.FormEvent) => {
             <DropdownMenuTrigger asChild>
               <Button
                 variant="ghost"
-                className="h-10 gap-2 rounded-xl px-2 text-primary-foreground transition-all duration-300 ease-out hover:-translate-y-[1px] hover:bg-white/10 hover:shadow-sm focus-visible:ring-2 focus-visible:ring-ring"
+                className="button-priority-transition h-10 gap-2 rounded-xl px-2 text-primary-foreground hover:bg-white/10 hover:shadow-sm focus-visible:ring-2 focus-visible:ring-ring"
                 aria-label="Open user menu"
               >
                 <Avatar className="h-8 w-8 border border-primary-foreground/40">
@@ -547,6 +562,46 @@ const handleSearchSubmit = (event: React.FormEvent) => {
           </DropdownMenu>
         </div>
       </div>
+
+      {isMobileSearchOpen ? (
+        <div className="md:hidden mt-3">
+          <form onSubmit={handleSearchSubmit} className="relative w-full">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-foreground/70" />
+            <Input
+              aria-label="Mobile search and navigate"
+              placeholder={t("topbar.searchPlaceholder", "Search pages, tabs, sections...")}
+              className="h-10 pl-9"
+              value={searchQuery}
+              onChange={(event) => {
+                setSearchQuery(event.target.value);
+                setIsSearchOpen(true);
+              }}
+              onFocus={() => setIsSearchOpen(true)}
+            />
+
+            {isSearchOpen && filteredTargets.length > 0 ? (
+              <div
+                className="search-dropdown-transition absolute z-40 mt-2 w-full rounded-xl border border-border bg-card shadow-md max-h-[50vh] overflow-auto"
+                role="listbox"
+                aria-label="Mobile search results"
+              >
+                {filteredTargets.map((target) => (
+                  <button
+                    key={`mobile-${target.path}`}
+                    type="button"
+                    className="w-full px-3 py-2 text-left hover:bg-accent/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    onMouseDown={() => handleSearchNavigate(target)}
+                    aria-label={`Go to ${target.label}`}
+                  >
+                    <p className="text-sm font-medium text-foreground truncate">{target.label}</p>
+                    <p className="text-xs text-muted-foreground truncate">{target.description}</p>
+                  </button>
+                ))}
+              </div>
+            ) : null}
+          </form>
+        </div>
+      ) : null}
     </header>
   );
 }

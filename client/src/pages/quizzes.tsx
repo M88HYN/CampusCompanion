@@ -23,7 +23,7 @@ allowing safe evolution of features without cross-module side effects.
 */
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { Plus, Play, Clock, CheckCircle2, AlertCircle, Star, BookMarked, Zap, Trophy, Target, RotateCw, Loader, Trash2, X, Brain, TrendingUp, TrendingDown, BarChart3, RefreshCw, ChevronRight, Lightbulb, FileText, Layers, GraduationCap, Flame, CalendarCheck } from "lucide-react";
+import { Plus, Play, Clock, CheckCircle2, AlertCircle, Star, BookMarked, Zap, Trophy, Target, RotateCw, Loader, Trash2, X, Brain, TrendingUp, TrendingDown, BarChart3, RefreshCw, ChevronRight, Lightbulb, FileText, Layers, GraduationCap, Flame, CalendarCheck, Rocket, Medal, Crown, Sparkles } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
@@ -319,6 +319,29 @@ export default function Quizzes() {
     enabled: activeTab === "review",
     retry: 1,
   });
+
+  const quizXp = summary.totalQuizzesTaken * 25 + summary.totalQuestionsAnswered + Math.round(summary.overallAccuracy * 1.8) + studyOverview.currentStreak * 12;
+  const learnerLevel = Math.max(1, Math.floor(quizXp / 140) + 1);
+  const levelFloorXp = (learnerLevel - 1) * 140;
+  const levelCeilXp = learnerLevel * 140;
+  const levelProgress = Math.min(100, Math.round(((quizXp - levelFloorXp) / Math.max(levelCeilXp - levelFloorXp, 1)) * 100));
+
+  const quizGoalProgress = Math.min(100, Math.round((summary.totalQuizzesTaken / 20) * 100));
+  const questionGoalProgress = Math.min(100, Math.round((summary.totalQuestionsAnswered / 250) * 100));
+  const streakGoalProgress = Math.min(100, Math.round((studyOverview.currentStreak / 14) * 100));
+  const accuracyGoalProgress = Math.min(100, Math.round((summary.overallAccuracy / 85) * 100));
+
+  const readinessScore = Math.max(
+    0,
+    Math.min(
+      100,
+      Math.round(
+        summary.overallAccuracy * 0.45 +
+          Math.min(summary.totalQuizzesTaken, 20) * 2.0 +
+          Math.min(studyOverview.currentStreak, 14) * 1.5
+      )
+    )
+  );
 
   // Remove duplicate refetch - query already fetches on mount
   // useEffect(() => {
@@ -2201,211 +2224,127 @@ const formatTime = (seconds: number) => {
               </div>
             ) : summary.totalQuizzesTaken > 0 ? (
               <div className="space-y-6">
-                {/* Overview Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
-                  <AnalyticsStatCard
-                    icon={<Trophy className="h-8 w-8" />}
-                    title="Quizzes Taken"
-                    value={summary.totalQuizzesTaken}
-                    subtitle={`${summary.totalQuestionsAnswered} questions answered`}
-                    iconBgColor="bg-brand-primary/10 dark:bg-brand-primary/20"
-                    iconColor="text-brand-primary dark:text-brand-accent"
-                    textColor="text-brand-primary dark:text-brand-accent"
-                    borderColor="border-brand-primary/30 dark:border-brand-primary/40 bg-gradient-to-br from-brand-primary/10 to-brand-primary/20 dark:from-brand-primary/20 dark:to-brand-primary/30 border"
-                  />
-                  <AnalyticsStatCard
-                    icon={<Target className="h-8 w-8" />}
-                    title="Overall Accuracy"
-                    value={`${summary.overallAccuracy}%`}
-                    subtitle={`Based on ${summary.totalQuestionsAnswered} questions`}
-                    iconBgColor="bg-green-100 dark:bg-green-900"
-                    iconColor="text-success dark:text-green-400"
-                    textColor="text-success dark:text-green-300"
-                    borderColor="border-success/30 dark:border-success/40 bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950 dark:to-green-900 border"
-                  />
-                  <AnalyticsStatCard
-                    icon={<Clock className="h-8 w-8" />}
-                    title="Avg Time / Question"
-                    value={`${summary.avgTimePerQuestion}s`}
-                    subtitle="Across all attempts"
-                    iconBgColor="bg-blue-100 dark:bg-blue-900"
-                    iconColor="text-brand-primary dark:text-blue-400"
-                    textColor="text-brand-primary dark:text-blue-300"
-                    borderColor="border-brand-primary/30 dark:border-brand-primary/40 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900 border"
-                  />
-                  <AnalyticsStatCard
-                    icon={<CheckCircle2 className="h-8 w-8" />}
-                    title="Correct Answers"
-                    value={studyOverview.correctAnswers}
-                    subtitle={`${summary.totalQuestionsAnswered} total answered`}
-                    iconBgColor="bg-emerald-100 dark:bg-emerald-900"
-                    iconColor="text-emerald-600 dark:text-emerald-400"
-                    textColor="text-emerald-700 dark:text-emerald-300"
-                    borderColor="border-emerald-200 dark:border-emerald-800 bg-gradient-to-br from-emerald-50 to-emerald-100 dark:from-emerald-950 dark:to-emerald-900 border"
-                  />
-                  <AnalyticsStatCard
-                    icon={<AlertCircle className="h-8 w-8" />}
-                    title="Incorrect Answers"
-                    value={studyOverview.incorrectAnswers}
-                    subtitle={`${summary.totalQuestionsAnswered} total answered`}
-                    iconBgColor="bg-rose-100 dark:bg-rose-900"
-                    iconColor="text-rose-600 dark:text-rose-400"
-                    textColor="text-rose-700 dark:text-rose-300"
-                    borderColor="border-rose-200 dark:border-rose-800 bg-gradient-to-br from-rose-50 to-rose-100 dark:from-rose-950 dark:to-rose-900 border"
-                  />
-                  <AnalyticsStatCard
-                    icon={<Flame className="h-8 w-8" />}
-                    title="Current Streak"
-                    value={`${studyOverview.currentStreak} days`}
-                    subtitle={`Best ${studyOverview.longestStreak} days`}
-                    iconBgColor="bg-amber-100 dark:bg-amber-900"
-                    iconColor="text-amber-600 dark:text-amber-400"
-                    textColor="text-amber-700 dark:text-amber-300"
-                    borderColor="border-amber-200 dark:border-amber-800 bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-950 dark:to-amber-900 border"
-                  />
-                </div>
-
-                {/* Study Overview — Cross-feature Stats */}
-                <Card className="border-2 border-violet-200 dark:border-violet-800 bg-gradient-to-br from-violet-50/50 to-purple-50/30 dark:from-violet-950/30 dark:to-purple-950/20">
+                <Card className="border-2 border-brand-primary/30 dark:border-brand-primary/40 bg-gradient-to-br from-brand-primary/10 via-white to-brand-accent/15 dark:from-brand-primary/20 dark:via-slate-900 dark:to-brand-accent/20">
                   <CardHeader>
-                    <CardTitle className="text-violet-700 dark:text-violet-300 flex items-center gap-2">
-                      <GraduationCap className="h-5 w-5" />
-                      Study Overview
+                    <CardTitle className="flex items-center justify-between gap-3 text-brand-primary dark:text-brand-accent">
+                      <span className="flex items-center gap-2">
+                        <Rocket className="h-5 w-5" />
+                        Quiz Mission Control
+                      </span>
+                      <Badge className="bg-gradient-to-r from-brand-primary to-brand-accent text-white border-0">Level {learnerLevel}</Badge>
                     </CardTitle>
+                    <CardDescription>Progression-first analytics designed to keep your quiz practice consistent and rewarding.</CardDescription>
                   </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-                      <div className="flex flex-col items-center p-3 rounded-lg bg-brand-primary/10 dark:bg-brand-primary/20 border border-brand-primary/30 dark:border-brand-primary/40">
-                        <FileText className="h-6 w-6 text-brand-primary dark:text-blue-400 mb-1" />
-                        <span className="text-2xl font-bold text-brand-primary dark:text-blue-300">{studyOverview.noteCount}</span>
-                        <span className="text-xs text-brand-primary/80 dark:text-blue-400/80">Notes</span>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                      <div className="rounded-lg border border-brand-primary/30 bg-brand-primary/10 p-3">
+                        <p className="text-xs text-muted-foreground">Quiz XP</p>
+                        <p className="text-2xl font-bold text-brand-primary dark:text-brand-accent">{quizXp}</p>
                       </div>
-                      <div className="flex flex-col items-center p-3 rounded-lg bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800">
-                        <Layers className="h-6 w-6 text-emerald-600 dark:text-emerald-400 mb-1" />
-                        <span className="text-2xl font-bold text-emerald-700 dark:text-emerald-300">{studyOverview.deckCount}</span>
-                        <span className="text-xs text-emerald-600/80 dark:text-emerald-400/80">Decks</span>
+                      <div className="rounded-lg border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/40 p-3">
+                        <p className="text-xs text-muted-foreground">Readiness Score</p>
+                        <p className="text-2xl font-bold text-emerald-700 dark:text-emerald-300">{readinessScore}%</p>
                       </div>
-                      <div className="flex flex-col items-center p-3 rounded-lg bg-brand-primary/10 dark:bg-brand-primary/20 border border-brand-primary/30 dark:border-brand-primary/40">
-                        <BookMarked className="h-6 w-6 text-brand-primary dark:text-brand-accent mb-1" />
-                        <span className="text-2xl font-bold text-brand-primary dark:text-brand-accent">{studyOverview.flashcardCount}</span>
-                        <span className="text-xs text-brand-primary/80 dark:text-brand-accent/80">Flashcards</span>
+                      <div className="rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 p-3">
+                        <p className="text-xs text-muted-foreground">Current Streak</p>
+                        <p className="text-2xl font-bold text-amber-700 dark:text-amber-300">{studyOverview.currentStreak}d</p>
                       </div>
-                      <div className="flex flex-col items-center p-3 rounded-lg bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800">
-                        <Star className="h-6 w-6 text-amber-600 dark:text-amber-400 mb-1" />
-                        <span className="text-2xl font-bold text-amber-700 dark:text-amber-300">{studyOverview.masteredCardCount}</span>
-                        <span className="text-xs text-amber-600/80 dark:text-amber-400/80">Mastered</span>
-                      </div>
-                      <div className="flex flex-col items-center p-3 rounded-lg bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-800">
-                        <CalendarCheck className="h-6 w-6 text-rose-600 dark:text-rose-400 mb-1" />
-                        <span className="text-2xl font-bold text-rose-700 dark:text-rose-300">{studyOverview.reviewQueueSize}</span>
-                        <span className="text-xs text-rose-600/80 dark:text-rose-400/80">Due for Review</span>
+                      <div className="rounded-lg border border-sky-200 dark:border-sky-800 bg-sky-50 dark:bg-sky-950/40 p-3">
+                        <p className="text-xs text-muted-foreground">Accuracy</p>
+                        <p className="text-2xl font-bold text-sky-700 dark:text-sky-300">{summary.overallAccuracy}%</p>
                       </div>
                     </div>
 
-                    {/* Accuracy Breakdown */}
-                    {(studyOverview.correctAnswers > 0 || studyOverview.incorrectAnswers > 0) && (
-                      <div className="mt-4 pt-4 border-t border-violet-200 dark:border-violet-800">
-                        <div className="flex items-center justify-between text-sm mb-2">
-                          <span className="text-violet-600 dark:text-violet-400 font-medium">Answer Accuracy</span>
-                          <span className="text-violet-500 dark:text-violet-400">
-                            {studyOverview.correctAnswers + studyOverview.incorrectAnswers > 0
-                              ? Math.round((studyOverview.correctAnswers / (studyOverview.correctAnswers + studyOverview.incorrectAnswers)) * 100)
-                              : 0}%
-                          </span>
-                        </div>
-                        <div className="flex h-3 rounded-full overflow-hidden bg-muted">
-                          <div
-                            className="bg-success/100 dark:bg-green-400 transition-all"
-                            style={{ width: `${studyOverview.correctAnswers + studyOverview.incorrectAnswers > 0 ? (studyOverview.correctAnswers / (studyOverview.correctAnswers + studyOverview.incorrectAnswers)) * 100 : 0}%` }}
-                          />
-                          <div
-                            className="bg-red-400 dark:bg-red-500 transition-all"
-                            style={{ width: `${studyOverview.correctAnswers + studyOverview.incorrectAnswers > 0 ? (studyOverview.incorrectAnswers / (studyOverview.correctAnswers + studyOverview.incorrectAnswers)) * 100 : 0}%` }}
-                          />
-                        </div>
-                        <div className="flex justify-between text-xs mt-1">
-                          <span className="text-success dark:text-green-400">{studyOverview.correctAnswers} correct</span>
-                          <span className="text-destructive dark:text-red-400">{studyOverview.incorrectAnswers} incorrect</span>
-                        </div>
+                    <div className="rounded-lg border border-border p-3">
+                      <div className="mb-2 flex items-center justify-between text-sm">
+                        <span className="font-medium text-foreground">Level Progress</span>
+                        <span className="text-muted-foreground">{quizXp - levelFloorXp}/{Math.max(levelCeilXp - levelFloorXp, 1)} XP</span>
                       </div>
-                    )}
-
-                    {/* Streak */}
-                    {studyOverview.currentStreak > 0 && (
-                      <div className="mt-4 pt-4 border-t border-violet-200 dark:border-violet-800 flex items-center gap-3">
-                        <Flame className="h-6 w-6 text-orange-500" />
-                        <div>
-                          <span className="text-lg font-bold text-orange-600 dark:text-orange-400">{studyOverview.currentStreak}-day streak</span>
-                          {studyOverview.longestStreak > studyOverview.currentStreak && (
-                            <span className="text-xs text-muted-foreground ml-2">(Best: {studyOverview.longestStreak} days)</span>
-                          )}
-                        </div>
-                      </div>
-                    )}
+                      <Progress value={levelProgress} className="h-2" />
+                    </div>
                   </CardContent>
                 </Card>
 
-                {/* Performance Insights — Smart Analysis */}
-                {smartInsights.length > 0 && (
-                  <Card className="border-2 border-indigo-200 dark:border-indigo-800 bg-gradient-to-br from-indigo-50/50 to-violet-50/30 dark:from-indigo-950/30 dark:to-violet-950/20">
-                    <CardHeader>
-                      <CardTitle className="text-indigo-700 dark:text-indigo-300 flex items-center gap-2">
-                        <Lightbulb className="h-5 w-5" />
-                        Performance Insights
-                      </CardTitle>
-                      <CardDescription>AI-detected patterns in your quiz performance</CardDescription>
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+                  <Card className="border border-border">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm">20 Quiz Milestone</CardTitle>
                     </CardHeader>
-                    <CardContent className="space-y-3">
-                      {smartInsights.map((insight, idx) => (
-                        <div
-                          key={idx}
-                          className={`flex items-start gap-3 p-3 rounded-lg ${
-                            insight.type === "strength"
-                              ? "bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800"
-                              : insight.type === "weakness"
-                              ? "bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-800"
-                              : insight.type === "tip"
-                              ? "bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800"
-                              : "bg-brand-primary/10 dark:bg-brand-primary/20 border border-brand-primary/30 dark:border-brand-primary/40"
-                          }`}
-                        >
-                          <div className={`flex-shrink-0 mt-0.5 ${
-                            insight.type === "strength" ? "text-emerald-600 dark:text-emerald-400"
-                              : insight.type === "weakness" ? "text-rose-600 dark:text-rose-400"
-                              : insight.type === "tip" ? "text-amber-600 dark:text-amber-400"
-                              : "text-brand-primary dark:text-blue-400"
-                          }`}>
-                            {insight.type === "strength" ? <TrendingUp className="h-4 w-4" />
-                              : insight.type === "weakness" ? <TrendingDown className="h-4 w-4" />
-                              : insight.type === "tip" ? <Lightbulb className="h-4 w-4" />
-                              : <BarChart3 className="h-4 w-4" />}
-                          </div>
-                          <div className="flex-1">
-                            <span className={`text-xs font-semibold uppercase tracking-wider ${
-                              insight.type === "strength" ? "text-emerald-700 dark:text-emerald-300"
-                                : insight.type === "weakness" ? "text-rose-700 dark:text-rose-300"
-                                : insight.type === "tip" ? "text-amber-700 dark:text-amber-300"
-                                : "text-brand-primary dark:text-blue-300"
-                            }`}>
-                              {insight.type === "strength" ? "Doing Well" : insight.type === "weakness" ? "Needs Work" : insight.type === "tip" ? "Tip" : "Info"}
-                            </span>
-                            <p className="text-sm text-muted-foreground mt-0.5">{insight.text}</p>
-                          </div>
-                        </div>
-                      ))}
+                    <CardContent>
+                      <p className="text-2xl font-bold text-brand-primary dark:text-brand-accent">{summary.totalQuizzesTaken}/20</p>
+                      <Progress value={quizGoalProgress} className="mt-2 h-2" />
                     </CardContent>
                   </Card>
-                )}
+                  <Card className="border border-border">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm">250 Questions Goal</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-2xl font-bold text-brand-primary dark:text-brand-accent">{summary.totalQuestionsAnswered}/250</p>
+                      <Progress value={questionGoalProgress} className="mt-2 h-2" />
+                    </CardContent>
+                  </Card>
+                  <Card className="border border-border">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm">14-Day Consistency</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-2xl font-bold text-amber-600 dark:text-amber-400">{studyOverview.currentStreak}/14</p>
+                      <Progress value={streakGoalProgress} className="mt-2 h-2" />
+                    </CardContent>
+                  </Card>
+                  <Card className="border border-border">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm">85% Mastery Target</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{summary.overallAccuracy}%</p>
+                      <Progress value={accuracyGoalProgress} className="mt-2 h-2" />
+                    </CardContent>
+                  </Card>
+                </div>
 
-                {/* Per-Quiz Performance Breakdown */}
+                <Card className="border border-border">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Medal className="h-5 w-5 text-brand-primary dark:text-brand-accent" />
+                      Reward Track
+                    </CardTitle>
+                    <CardDescription>Unlock badges by building consistency and quiz volume.</CardDescription>
+                  </CardHeader>
+                  <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className={`rounded-lg border p-4 ${summary.totalQuizzesTaken >= 5 ? "border-amber-300 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/40" : "border-border bg-muted/30"}`}>
+                      <div className="flex items-center justify-between">
+                        <p className="font-medium">Bronze Learner</p>
+                        <Star className="h-4 w-4 text-amber-500" />
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">Complete 5 quizzes</p>
+                    </div>
+                    <div className={`rounded-lg border p-4 ${summary.totalQuizzesTaken >= 12 ? "border-slate-300 bg-slate-50 dark:border-slate-700 dark:bg-slate-900/40" : "border-border bg-muted/30"}`}>
+                      <div className="flex items-center justify-between">
+                        <p className="font-medium">Silver Strategist</p>
+                        <Sparkles className="h-4 w-4 text-slate-500" />
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">Complete 12 quizzes</p>
+                    </div>
+                    <div className={`rounded-lg border p-4 ${summary.totalQuizzesTaken >= 20 && summary.overallAccuracy >= 80 ? "border-yellow-300 bg-yellow-50 dark:border-yellow-800 dark:bg-yellow-950/40" : "border-border bg-muted/30"}`}>
+                      <div className="flex items-center justify-between">
+                        <p className="font-medium">Gold Champion</p>
+                        <Crown className="h-4 w-4 text-yellow-500" />
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">20 quizzes + 80% accuracy</p>
+                    </div>
+                  </CardContent>
+                </Card>
+
                 {quizPerformance.length > 0 && (
                   <Card className="border border-border">
                     <CardHeader>
                       <CardTitle className="flex items-center gap-2">
                         <BarChart3 className="h-5 w-5 text-brand-primary dark:text-brand-accent" />
-                        Quiz Performance Breakdown
+                        Quiz Mastery Ladder
                       </CardTitle>
-                      <CardDescription>Your accuracy across different quizzes</CardDescription>
+                      <CardDescription>Ranked quiz topics by sustained average performance.</CardDescription>
                     </CardHeader>
                     <CardContent>
                       <div className="space-y-4">
@@ -2462,9 +2401,9 @@ const formatTime = (seconds: number) => {
                     <CardHeader>
                       <CardTitle className="flex items-center gap-2">
                         <Target className="h-5 w-5 text-brand-primary dark:text-blue-400" />
-                        Performance by Difficulty
+                        Difficulty Adaptation Matrix
                       </CardTitle>
-                      <CardDescription>How you perform across easy, medium, and hard questions</CardDescription>
+                      <CardDescription>Tracks how well you adapt as question complexity increases.</CardDescription>
                     </CardHeader>
                     <CardContent>
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -2496,41 +2435,73 @@ const formatTime = (seconds: number) => {
                   </Card>
                 )}
 
-                {/* Strengths & Weaknesses (from topic tags) */}
-                {(strengths.length > 0 || areasToImprove.length > 0) && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {strengths && strengths.length > 0 ? (
-                      <InsightCard
-                        title="Your Strengths"
-                        subtitle="Topics with ≥70% accuracy"
-                        items={strengths}
-                        badgeColor="bg-emerald-600"
-                        icon={<Zap className="h-5 w-5" />}
-                        borderColor="border-2 border-emerald-200 dark:border-emerald-800"
-                        accentColor="text-emerald-700 dark:text-emerald-300"
-                        itemBgColor="bg-emerald-50 dark:bg-emerald-950"
-                        titleColor="text-emerald-700 dark:text-emerald-300"
-                      />
-                    ) : null}
-                    {areasToImprove && areasToImprove.length > 0 ? (
-                      <InsightCard
-                        title="Areas to Improve"
-                        subtitle="Topics with <70% accuracy"
-                        items={areasToImprove}
-                        badgeColor="bg-rose-600"
-                        icon={<Target className="h-5 w-5" />}
-                        borderColor="border-2 border-rose-200 dark:border-rose-800"
-                        accentColor="text-rose-700 dark:text-rose-300"
-                        itemBgColor="bg-rose-50 dark:bg-rose-950"
-                        titleColor="text-rose-700 dark:text-rose-300"
-                      />
-                    ) : null}
-                  </div>
-                )}
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                  <Card className="border border-rose-200 dark:border-rose-800">
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2 text-rose-700 dark:text-rose-300">
+                        <Target className="h-5 w-5" />
+                        Tactical Focus Queue
+                      </CardTitle>
+                      <CardDescription>Your next highest-impact quiz topics to improve this week.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      {areasToImprove.slice(0, 4).map((item) => (
+                        <div key={item.topic} className="rounded-lg border border-rose-200 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/40 p-3">
+                          <div className="flex items-center justify-between gap-2">
+                            <p className="font-medium text-foreground">{item.topic}</p>
+                            <Badge className="bg-rose-600 text-white">{item.accuracy}%</Badge>
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-1">{item.questionsAnswered} questions answered • Target 2 focused sessions</p>
+                        </div>
+                      ))}
+                      {areasToImprove.length === 0 ? (
+                        <p className="text-sm text-muted-foreground">No critical weak topics right now. Keep momentum by maintaining your routine.</p>
+                      ) : null}
+                    </CardContent>
+                  </Card>
 
-                {/* Recent Activity */}
-                {recentActivity && recentActivity.length > 0 ? (
-                  <ActivityCard activities={recentActivity} />
+                  <Card className="border border-emerald-200 dark:border-emerald-800">
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2 text-emerald-700 dark:text-emerald-300">
+                        <Zap className="h-5 w-5" />
+                        Momentum Feed
+                      </CardTitle>
+                      <CardDescription>Recent quiz wins and movement over your latest attempts.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      {recentActivity.slice(-4).reverse().map((attempt, idx) => (
+                        <div key={`${attempt.quizTitle}-${idx}`} className="rounded-lg border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/40 p-3">
+                          <div className="flex items-center justify-between gap-2">
+                            <p className="font-medium text-foreground truncate">{attempt.quizTitle}</p>
+                            <Badge className="bg-emerald-600 text-white">{attempt.accuracy}%</Badge>
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-1">{attempt.topic} • Score {attempt.score}/{attempt.maxScore}</p>
+                        </div>
+                      ))}
+                      {recentActivity.length === 0 ? (
+                        <p className="text-sm text-muted-foreground">Complete more quizzes to populate your momentum feed.</p>
+                      ) : null}
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {smartInsights.length > 0 ? (
+                  <Card className="border border-indigo-200 dark:border-indigo-800">
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2 text-indigo-700 dark:text-indigo-300">
+                        <Lightbulb className="h-5 w-5" />
+                        Coach Notes
+                      </CardTitle>
+                      <CardDescription>Concise coaching prompts generated from your latest data.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-2">
+                      {smartInsights.slice(0, 4).map((insight, idx) => (
+                        <div key={`coach-${idx}`} className="rounded-md border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-950/30 p-3">
+                          <p className="text-sm text-muted-foreground">{insight.text}</p>
+                        </div>
+                      ))}
+                    </CardContent>
+                  </Card>
                 ) : null}
               </div>
             ) : (

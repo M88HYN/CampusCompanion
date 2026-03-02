@@ -34,7 +34,9 @@ import {
   Settings,
   User,
 } from "lucide-react";
+import { useEffect, useMemo } from "react";
 import { useLocation } from "wouter";
+import { useQuery } from "@tanstack/react-query";
 import {
   Sidebar,
   SidebarContent,
@@ -51,6 +53,7 @@ import type { User as AppUser } from "@shared/models/auth";
 import { NavItem } from "./nav-item";
 import { StudyMateLogo } from "./studymate-logo";
 import { useAppLanguage } from "@/lib/app-language";
+import { apiRequest } from "@/lib/queryClient";
 
 interface AppNavigationProps {
   user: AppUser | null;
@@ -83,9 +86,87 @@ A JSX tree representing the component view for the current state.
 */
 export function AppNavigation({ user, onLogout }: AppNavigationProps) {
   const { t } = useAppLanguage();
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
   const { state, isMobile } = useSidebar();
   const isCollapsed = state === "collapsed" && !isMobile;
+
+  const { data: notes = [] } = useQuery<{ id: string }[]>({
+    queryKey: ["/api/notes"],
+    queryFn: async () => {
+      const response = await apiRequest("GET", "/api/notes");
+      return (await response.json()) as { id: string }[];
+    },
+    staleTime: 30000,
+  });
+
+  const { data: dueCards = [] } = useQuery<{ id: string }[]>({
+    queryKey: ["/api/cards/due"],
+    queryFn: async () => {
+      const response = await apiRequest("GET", "/api/cards/due");
+      return (await response.json()) as { id: string }[];
+    },
+    staleTime: 30000,
+  });
+
+  const { data: quizzes = [] } = useQuery<{ id: string; bestScore?: number | null }[]>({
+    queryKey: ["/api/quizzes"],
+    queryFn: async () => {
+      const response = await apiRequest("GET", "/api/quizzes");
+      return (await response.json()) as { id: string; bestScore?: number | null }[];
+    },
+    staleTime: 30000,
+  });
+
+  const quizzesCompleted = useMemo(() => quizzes.filter((quiz) => quiz.bestScore !== null && quiz.bestScore !== undefined).length, [quizzes]);
+
+  const navBadges: Record<string, number | undefined> = {
+    "/notes": notes.length > 0 ? notes.length : undefined,
+    "/flashcards": dueCards.length > 0 ? dueCards.length : undefined,
+    "/quizzes": quizzesCompleted > 0 ? quizzesCompleted : undefined,
+  };
+
+  const shortcuts: Record<string, string> = {
+    "/dashboard": "Alt+1",
+    "/notes": "Alt+2",
+    "/flashcards": "Alt+3",
+    "/quizzes": "Alt+4",
+    "/insights": "Alt+5",
+    "/performance": "Alt+6",
+    "/profile": "Alt+7",
+    "/settings": "Alt+8",
+  };
+
+  useEffect(() => {
+    const handleShortcut = (event: KeyboardEvent) => {
+      if (!event.altKey) return;
+      if (event.ctrlKey || event.metaKey || event.shiftKey) return;
+
+      const target = event.target as HTMLElement | null;
+      const tagName = target?.tagName?.toLowerCase();
+      const isTypingContext = target?.isContentEditable || ["input", "textarea", "select"].includes(tagName || "");
+      if (isTypingContext) return;
+
+      const mapping: Record<string, string> = {
+        "1": "/dashboard",
+        "2": "/notes",
+        "3": "/flashcards",
+        "4": "/quizzes",
+        "5": "/insights",
+        "6": "/performance",
+        "7": "/profile",
+        "8": "/settings",
+      };
+
+      const destination = mapping[event.key];
+      if (!destination) return;
+
+      event.preventDefault();
+      setLocation(destination);
+    };
+
+    window.addEventListener("keydown", handleShortcut);
+    return () => window.removeEventListener("keydown", handleShortcut);
+  }, [setLocation]);
 
   const sections = [
     {
@@ -152,7 +233,9 @@ export function AppNavigation({ user, onLogout }: AppNavigationProps) {
                     href={item.href}
                     label={item.label}
                     icon={item.icon}
-                    isActive={location === item.href}
+                    isActive={location === item.href || location.startsWith(`${item.href}?`) || location.startsWith(`${item.href}/`)}
+                    badgeCount={navBadges[item.href]}
+                    shortcutHint={shortcuts[item.href]}
                     testId={`nav-${item.label.toLowerCase().replace(/\s+/g, "-")}`}
                   />
                 ))}
