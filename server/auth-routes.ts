@@ -30,12 +30,12 @@ import {
   findUserByEmail,
   findUserByUsername,
   findUserById,
-  findOrCreateOAuthUser,
   comparePasswords,
   generateToken,
   verifyToken,
   type AuthUser,
 } from "./auth";
+import { storage as authStorage } from "./auth-storage";
 import { db } from "./db";
 import { users } from "@shared/schema";
 import { eq } from "drizzle-orm";
@@ -57,13 +57,102 @@ const registerSchema = z.object({
 });
 
 // OAuth Configuration
-const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || "";
-const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || "";
-const GOOGLE_REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI || "http://localhost:3000/api/auth/google/callback";
+const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
+const SUPABASE_URL = (process.env.SUPABASE_URL || "").replace(/\/$/, "");
+const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || "";
 
-const GITHUB_CLIENT_ID = process.env.GITHUB_CLIENT_ID || "";
-const GITHUB_CLIENT_SECRET = process.env.GITHUB_CLIENT_SECRET || "";
-const GITHUB_REDIRECT_URI = process.env.GITHUB_REDIRECT_URI || "http://localhost:3000/api/auth/github/callback";
+function splitName(fullName: string): { firstName?: string; lastName?: string } {
+  const normalized = fullName.trim();
+  if (!normalized) {
+    return {};
+  }
+
+  const parts = normalized.split(/\s+/);
+  if (parts.length === 1) {
+    return { firstName: parts[0] };
+  }
+
+  return {
+    firstName: parts[0],
+    lastName: parts.slice(1).join(" "),
+  };
+}
+
+async function getSupabaseUser(token: string): Promise<any | null> {
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+    return null;
+  }
+
+  try {
+    const response = await axios.get(`${SUPABASE_URL}/auth/v1/user`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        apikey: SUPABASE_ANON_KEY,
+      },
+    });
+
+    return response.data;
+  } catch {
+    return null;
+  }
+}
+
+async function ensureLocalUserFromSupabaseProfile(profile: any): Promise<AuthUser | null> {
+  const id = typeof profile?.id === "string" ? profile.id : "";
+  if (!id) {
+    return null;
+  }
+
+  const metadata = profile?.user_metadata || {};
+  const metadataFullName = typeof metadata?.full_name === "string" ? metadata.full_name : (typeof metadata?.name === "string" ? metadata.name : "");
+  const fromFullName = splitName(metadataFullName);
+  const firstName =
+    (typeof metadata?.given_name === "string" && metadata.given_name) ||
+    fromFullName.firstName;
+  const lastName =
+    (typeof metadata?.family_name === "string" && metadata.family_name) ||
+    fromFullName.lastName;
+  const email =
+    (typeof profile?.email === "string" && profile.email) ||
+    `${id}@supabase.local`;
+
+  let existing = await findUserById(id);
+  if (!existing) {
+    existing = await findUserByEmail(email);
+  }
+
+  if (existing) {
+    const merged: AuthUser = {
+      ...existing,
+      id,
+      email,
+      firstName: firstName || existing.firstName,
+      lastName: lastName || existing.lastName,
+      provider: "supabase",
+    };
+    await authStorage.updateUser(merged);
+    return merged;
+  }
+
+  const created: AuthUser = {
+    id,
+    email,
+    firstName,
+    lastName,
+    provider: "supabase",
+  };
+  await authStorage.createUser(created);
+  return created;
+}
+
+function getSupabaseAuthorizeUrl(provider: "google" | "github" | "azure"): string {
+  const redirectTo = new URL("/login", FRONTEND_URL).toString();
+  const params = new URLSearchParams({
+    provider,
+    redirect_to: redirectTo,
+  });
+  return `${SUPABASE_URL}/auth/v1/authorize?${params}`;
+}
 
 /*
 ----------------------------------------------------------
@@ -98,19 +187,32 @@ export async function authMiddleware(req: any, res: Response, next: NextFunction
     return res.status(401).json({ message: "Unauthorized" });
   }
 
-  const payload = verifyToken(token);
-  if (!payload) {
-    console.error("Auth failed: Invalid token - verification failed. Token length:", token.length);
+  const localPayload = verifyToken(token);
+  if (localPayload) {
+    const localUser = await findUserById(localPayload.userId);
+    if (localUser) {
+      req.user = localPayload;
+      return next();
+    }
+  }
+
+  const supabaseProfile = await getSupabaseUser(token);
+  if (!supabaseProfile) {
+    console.error("Auth failed: Invalid token - not recognized by local JWT or Supabase");
     return res.status(401).json({ message: "Invalid token" });
   }
 
-  const user = await findUserById(payload.userId);
+  const user = await ensureLocalUserFromSupabaseProfile(supabaseProfile);
   if (!user) {
-    console.error("Auth failed: Token is valid but user no longer exists:", payload.userId);
     return res.status(401).json({ message: "Invalid token" });
   }
 
-  req.user = payload;
+  req.user = {
+    userId: user.id,
+    email: user.email,
+    firstName: user.firstName,
+    lastName: user.lastName,
+  };
   
   next();
 }
@@ -270,6 +372,28 @@ export function registerAuthRoutes(app: Express) {
     }
   });
 
+  app.get("/api/auth/verify", authMiddleware, async (req: any, res: Response) => {
+    try {
+      const user = await findUserById(req.user.userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      res.json({
+        valid: true,
+        user: {
+          id: user.id,
+          username: user.username,
+          email: user.email,
+          firstName: user.firstName,
+          lastName: user.lastName,
+        },
+      });
+    } catch {
+      res.status(500).json({ message: "Verification failed" });
+    }
+  });
+
   // Logout (client-side handled, but endpoint for completeness)
   app.post("/api/auth/logout", (req: any, res: Response) => {
     res.json({ message: "Logged out" });
@@ -277,137 +401,36 @@ export function registerAuthRoutes(app: Express) {
 
   // Google OAuth - Initiate
   app.get("/api/auth/google", (req: any, res: Response) => {
-    if (!GOOGLE_CLIENT_ID) {
-      return res.status(500).json({ message: "Google OAuth not configured" });
+    if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+      return res.status(500).json({ message: "Supabase OAuth not configured" });
     }
-
-    const params = new URLSearchParams({
-      client_id: GOOGLE_CLIENT_ID,
-      redirect_uri: GOOGLE_REDIRECT_URI,
-      response_type: "code",
-      scope: "openid email profile",
-      access_type: "offline",
-      prompt: "consent",
-    });
-
-    res.redirect(`https://accounts.google.com/o/oauth2/v2/auth?${params}`);
+    res.redirect(getSupabaseAuthorizeUrl("google"));
   });
 
-  // Google OAuth - Callback
-  app.get("/api/auth/google/callback", async (req: any, res: Response) => {
-    try {
-      const { code, error } = req.query;
-
-      if (error) {
-        return res.redirect(`/?error=${error}`);
-      }
-
-      if (!code) {
-        return res.status(400).json({ message: "No authorization code" });
-      }
-
-      // Exchange code for token
-      const tokenResponse = await axios.post("https://oauth2.googleapis.com/token", {
-        code,
-        client_id: GOOGLE_CLIENT_ID,
-        client_secret: GOOGLE_CLIENT_SECRET,
-        redirect_uri: GOOGLE_REDIRECT_URI,
-        grant_type: "authorization_code",
-      });
-
-      const accessToken = tokenResponse.data.access_token;
-
-      // Get user info
-      const userResponse = await axios.get("https://www.googleapis.com/oauth2/v2/userinfo", {
-        headers: { Authorization: `Bearer ${accessToken}` },
-      });
-
-      const googleUser = userResponse.data;
-      const email = googleUser.email;
-      const firstName = googleUser.given_name || "";
-      const lastName = googleUser.family_name || "";
-      const googleId = googleUser.id;
-
-      // Create or find user
-      const user = await findOrCreateOAuthUser(email, "google", googleId, firstName, lastName);
-      const token = generateToken(user);
-
-      // Redirect to frontend with token
-      res.redirect(`/?token=${token}`);
-    } catch (error) {
-      console.error("Google auth callback error:", error);
-      res.redirect(`/?error=google_auth_failed`);
-    }
-  });
-
-  // Microsoft OAuth - Initiate
+  // GitHub OAuth - Initiate
   app.get("/api/auth/github", (req: any, res: Response) => {
-    if (!GITHUB_CLIENT_ID) {
-      return res.status(500).json({ message: "GitHub OAuth not configured" });
+    if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+      return res.status(500).json({ message: "Supabase OAuth not configured" });
     }
 
-    const params = new URLSearchParams({
-      client_id: GITHUB_CLIENT_ID,
-      redirect_uri: GITHUB_REDIRECT_URI,
-      scope: "user:email",
-      allow_signup: "true",
-    });
-
-    res.redirect(`https://github.com/login/oauth/authorize?${params}`);
+    res.redirect(getSupabaseAuthorizeUrl("github"));
   });
 
-  // Microsoft OAuth - Callback
-  app.get("/api/auth/microsoft/callback", async (req: any, res: Response) => {
-    try {
-      const { code, error } = req.query;
-
-      if (error) {
-        return res.redirect(`/?error=${error}`);
-      }
-
-      if (!code) {
-        return res.status(400).json({ message: "No authorization code" });
-      }
-
-      // Exchange code for token
-      const tokenResponse = await axios.post("https://github.com/login/oauth/access_token", {
-        client_id: GITHUB_CLIENT_ID,
-        client_secret: GITHUB_CLIENT_SECRET,
-        code,
-        redirect_uri: GITHUB_REDIRECT_URI,
-      }, {
-        headers: { Accept: "application/json" }
-      });
-
-      const accessToken = tokenResponse.data.access_token;
-
-      if (!accessToken) {
-        return res.redirect(`/?error=github_auth_failed`);
-      }
-
-      // Get user info
-      const userResponse = await axios.get("https://api.github.com/user", {
-        headers: { 
-          Authorization: `Bearer ${accessToken}`,
-          Accept: "application/vnd.github.v3+json"
-        },
-      });
-
-      const githubUser = userResponse.data;
-      const email = githubUser.email || `${githubUser.login}@github.com`;
-      const firstName = githubUser.name ? githubUser.name.split(" ")[0] : githubUser.login;
-      const lastName = githubUser.name ? githubUser.name.split(" ").slice(1).join(" ") : "";
-      const githubId = githubUser.id.toString();
-
-      // Create or find user
-      const user = await findOrCreateOAuthUser(email, "github", githubId, firstName, lastName);
-      const token = generateToken(user);
-
-      // Redirect to frontend with token
-      res.redirect(`/?token=${token}`);
-    } catch (error) {
-      console.error("GitHub auth callback error:", error);
-      res.redirect(`/?error=github_auth_failed`);
+  // Outlook/Microsoft OAuth - Initiate (Supabase Azure provider)
+  app.get("/api/auth/outlook", (req: any, res: Response) => {
+    if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+      return res.status(500).json({ message: "Supabase OAuth not configured" });
     }
+
+    res.redirect(getSupabaseAuthorizeUrl("azure"));
+  });
+
+  // Microsoft alias for compatibility
+  app.get("/api/auth/microsoft", (req: any, res: Response) => {
+    if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+      return res.status(500).json({ message: "Supabase OAuth not configured" });
+    }
+
+    res.redirect(getSupabaseAuthorizeUrl("azure"));
   });
 }
