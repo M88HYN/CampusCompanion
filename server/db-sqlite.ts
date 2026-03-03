@@ -25,6 +25,8 @@ allowing safe evolution of features without cross-module side effects.
 import "dotenv/config";
 import Database, { type Database as DatabaseType } from "better-sqlite3";
 import { drizzle, type BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
+import fs from "fs";
+import path from "path";
 
 // No schema import needed - tables are created manually via SQL
 type EmptySchema = Record<string, never>;
@@ -56,10 +58,7 @@ A value/promise representing the outcome of the executed logic path.
 ----------------------------------------------------------
 */
 export function initializeDatabase(): BetterSQLite3Database<EmptySchema> {
-  // Use in-memory database by default or file-based if specified
-  const dbPath = process.env.DATABASE_URL === "sqlite:memory" || !process.env.DATABASE_URL 
-    ? ":memory:" 
-    : process.env.DATABASE_URL.replace("sqlite:", "");
+  const dbPath = resolveDatabasePath();
 
   console.log(`Initializing SQLite database at: ${dbPath}`);
 
@@ -85,6 +84,42 @@ export function initializeDatabase(): BetterSQLite3Database<EmptySchema> {
   createTables();
 
   return db;
+}
+
+function resolveDatabasePath(): string {
+  const databaseUrl = process.env.DATABASE_URL?.trim();
+
+  if (!databaseUrl || databaseUrl.length === 0) {
+    const dataDir = path.resolve(process.cwd(), "data");
+    fs.mkdirSync(dataDir, { recursive: true });
+    return path.join(dataDir, "campus-companion.sqlite");
+  }
+
+  if (databaseUrl === "sqlite:memory") {
+    return ":memory:";
+  }
+
+  if (databaseUrl.startsWith("sqlite:")) {
+    const configuredPath = databaseUrl.replace("sqlite:", "").trim();
+    if (!configuredPath || configuredPath === "memory") {
+      return ":memory:";
+    }
+
+    if (configuredPath === ":memory:") {
+      return ":memory:";
+    }
+
+    const absolutePath = path.isAbsolute(configuredPath)
+      ? configuredPath
+      : path.resolve(process.cwd(), configuredPath);
+
+    fs.mkdirSync(path.dirname(absolutePath), { recursive: true });
+    return absolutePath;
+  }
+
+  throw new Error(
+    "Unsupported DATABASE_URL. Use sqlite:<path> for file persistence or sqlite:memory for in-memory mode."
+  );
 }
 
 /*

@@ -1799,18 +1799,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/dashboard/stats", async (req, res) => {
+  app.get("/api/dashboard/stats", authMiddleware, async (req: any, res) => {
     try {
+      const userId = getUserId(req);
       const [notes, decks, quizzes, dueCards] = await Promise.all([
-        storage.getNotes(getUserId(req)),
-        storage.getDecks(getUserId(req)),
-        storage.getQuizzes(getUserId(req)),
-        storage.getDueCards(getUserId(req)),
+        storage.getNotes(userId),
+        storage.getDecks(userId),
+        storage.getQuizzes(userId),
+        storage.getDueCards(userId),
       ]);
+
+      const { DashboardAnalytics } = await import("./dashboard-analytics");
+      const metrics = await DashboardAnalytics.getDashboardMetrics(userId);
+      const analytics = await storage.getUserAnalytics(userId);
       
       // Calculate accuracy from quiz attempts
       const allAttempts = await Promise.all(
-        quizzes.map(q => storage.getQuizAttempts(q.id, getUserId(req)))
+        quizzes.map(q => storage.getQuizAttempts(q.id, userId))
       );
       const completedAttempts = allAttempts.flat().filter(a => a.completedAt && a.score !== null);
       const averageAccuracy = completedAttempts.length > 0
@@ -1822,9 +1827,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         deckCount: decks.length,
         quizCount: quizzes.length,
         dueCardsCount: dueCards.length,
-        averageAccuracy,
-        studyStreak: 7, // Mock data - would track in DB
-        weeklyStudyTime: "12h 30m", // Mock data
+        averageAccuracy: Math.max(averageAccuracy, metrics.accuracy || 0),
+        studyStreak: analytics.currentStreak || 0,
+        weeklyStudyTime: `${Math.floor((metrics.weeklyStudyTime || 0) / 60)}h ${(metrics.weeklyStudyTime || 0) % 60}m`,
       });
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch dashboard stats" });
