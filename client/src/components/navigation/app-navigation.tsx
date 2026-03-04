@@ -45,6 +45,7 @@ import {
   SidebarGroupContent,
   SidebarGroupLabel,
   SidebarHeader,
+  SidebarRail,
   useSidebar,
 } from "@/components/ui/sidebar";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -269,6 +270,8 @@ export function AppNavigation({ user, onLogout }: AppNavigationProps) {
           {t("common.logout", "Log out")}
         </Button>
       </SidebarFooter>
+
+      <SidebarRail />
     </Sidebar>
   );
 }

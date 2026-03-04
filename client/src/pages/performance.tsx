@@ -27,6 +27,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Switch } from "@/components/ui/switch";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { AnalyticsStatCard, ActivityCard } from "@/components/analytics-cards";
 import { useQuizAnalytics } from "@/hooks/use-quiz-analytics";
@@ -40,6 +41,7 @@ import {
   TrendingDown,
   Gauge,
   SlidersHorizontal,
+  ChevronDown,
   CircleHelp,
 } from "lucide-react";
 
@@ -90,12 +92,13 @@ A JSX tree representing the component view for the current state.
 ----------------------------------------------------------
 */
 export default function Performance() {
+  const [showInsightControls, setShowInsightControls] = useState(false);
   const [showWeeklyProgress, setShowWeeklyProgress] = useState(true);
   const [showAccuracyTrends, setShowAccuracyTrends] = useState(true);
-  const [showDataQuality, setShowDataQuality] = useState(true);
+  const [showDataQuality, setShowDataQuality] = useState(false);
   const [showTopicInsights, setShowTopicInsights] = useState(true);
   const [showDifficultyBreakdown, setShowDifficultyBreakdown] = useState(true);
-  const [showQuizRealism, setShowQuizRealism] = useState(true);
+  const [showQuizRealism, setShowQuizRealism] = useState(false);
   const [showMetricGuide, setShowMetricGuide] = useState(false);
 
   const {
@@ -370,93 +373,115 @@ const getPacingBand = (avgTimeSeconds: number) => {
           ) : null}
 
           <Card className="border border-border">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <SlidersHorizontal className="h-4 w-4 text-brand-primary" />
-                Insight Controls
-                <InfoHint text="Use these toggles to simplify or expand the dashboard based on whether you want a quick snapshot or a deeper analysis session." />
-              </CardTitle>
-              <CardDescription>Customize which performance blocks are visible to match your preferred detail level.</CardDescription>
-            </CardHeader>
-            <CardContent className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-              <div className="flex items-center justify-between rounded-lg border border-border p-3">
-                <div>
-                  <p className="font-medium text-foreground">Weekly progress</p>
-                  <p className="text-xs text-muted-foreground">Show recent vs prior week momentum block</p>
+            <Collapsible open={showInsightControls} onOpenChange={setShowInsightControls}>
+              <CardHeader className="pb-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
+                      <SlidersHorizontal className="h-4 w-4 text-brand-primary" />
+                      Insight Controls
+                      <InfoHint text="Use these toggles to simplify or expand the dashboard based on whether you want a quick snapshot or a deeper analysis session." />
+                    </CardTitle>
+                    <CardDescription>
+                      Keep this panel collapsed for a focused view, or open it to show and hide analytics blocks.
+                    </CardDescription>
+                  </div>
+                  <CollapsibleTrigger asChild>
+                    <button
+                      type="button"
+                      className="inline-flex items-center gap-1 rounded-md border border-border px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-muted"
+                    >
+                      {showInsightControls ? "Hide controls" : "Customize view"}
+                      <ChevronDown
+                        className={`h-3.5 w-3.5 transition-transform ${showInsightControls ? "rotate-180" : "rotate-0"}`}
+                      />
+                    </button>
+                  </CollapsibleTrigger>
                 </div>
-                <Switch
-                  checked={showWeeklyProgress}
-                  onCheckedChange={setShowWeeklyProgress}
-                  data-testid="switch-weekly-progress"
-                />
-              </div>
-              <div className="flex items-center justify-between rounded-lg border border-border p-3">
-                <div>
-                  <p className="font-medium text-foreground">Accuracy trends</p>
-                  <p className="text-xs text-muted-foreground">Show attempt-by-attempt trend snapshot</p>
-                </div>
-                <Switch
-                  checked={showAccuracyTrends}
-                  onCheckedChange={setShowAccuracyTrends}
-                  data-testid="switch-accuracy-trends"
-                />
-              </div>
-              <div className="flex items-center justify-between rounded-lg border border-border p-3">
-                <div>
-                  <p className="font-medium text-foreground">Data quality panel</p>
-                  <p className="text-xs text-muted-foreground">Show confidence and sample representativeness panel</p>
-                </div>
-                <Switch
-                  checked={showDataQuality}
-                  onCheckedChange={setShowDataQuality}
-                  data-testid="switch-data-quality"
-                />
-              </div>
-              <div className="flex items-center justify-between rounded-lg border border-border p-3">
-                <div>
-                  <p className="font-medium text-foreground">Topic insights</p>
-                  <p className="text-xs text-muted-foreground">Show strengths and improvement areas by topic</p>
-                </div>
-                <Switch
-                  checked={showTopicInsights}
-                  onCheckedChange={setShowTopicInsights}
-                  data-testid="switch-topic-insights"
-                />
-              </div>
-              <div className="flex items-center justify-between rounded-lg border border-border p-3">
-                <div>
-                  <p className="font-medium text-foreground">Difficulty breakdown</p>
-                  <p className="text-xs text-muted-foreground">Show easy/medium/hard accuracy distribution</p>
-                </div>
-                <Switch
-                  checked={showDifficultyBreakdown}
-                  onCheckedChange={setShowDifficultyBreakdown}
-                  data-testid="switch-difficulty-breakdown"
-                />
-              </div>
-              <div className="flex items-center justify-between rounded-lg border border-border p-3">
-                <div>
-                  <p className="font-medium text-foreground">Quiz realism view</p>
-                  <p className="text-xs text-muted-foreground">Show latest-vs-average quiz-level comparison</p>
-                </div>
-                <Switch
-                  checked={showQuizRealism}
-                  onCheckedChange={setShowQuizRealism}
-                  data-testid="switch-quiz-realism"
-                />
-              </div>
-              <div className="flex items-center justify-between rounded-lg border border-border p-3">
-                <div>
-                  <p className="font-medium text-foreground">Metric guide</p>
-                  <p className="text-xs text-muted-foreground">Show plain-language explanations for key analytics terms</p>
-                </div>
-                <Switch
-                  checked={showMetricGuide}
-                  onCheckedChange={setShowMetricGuide}
-                  data-testid="switch-metric-guide"
-                />
-              </div>
-            </CardContent>
+              </CardHeader>
+
+              <CollapsibleContent>
+                <CardContent className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+                  <div className="flex items-center justify-between rounded-lg border border-border p-3">
+                    <div>
+                      <p className="font-medium text-foreground">Weekly progress</p>
+                      <p className="text-xs text-muted-foreground">Show recent vs prior week momentum block</p>
+                    </div>
+                    <Switch
+                      checked={showWeeklyProgress}
+                      onCheckedChange={setShowWeeklyProgress}
+                      data-testid="switch-weekly-progress"
+                    />
+                  </div>
+                  <div className="flex items-center justify-between rounded-lg border border-border p-3">
+                    <div>
+                      <p className="font-medium text-foreground">Accuracy trends</p>
+                      <p className="text-xs text-muted-foreground">Show attempt-by-attempt trend snapshot</p>
+                    </div>
+                    <Switch
+                      checked={showAccuracyTrends}
+                      onCheckedChange={setShowAccuracyTrends}
+                      data-testid="switch-accuracy-trends"
+                    />
+                  </div>
+                  <div className="flex items-center justify-between rounded-lg border border-border p-3">
+                    <div>
+                      <p className="font-medium text-foreground">Data quality panel</p>
+                      <p className="text-xs text-muted-foreground">Show confidence and sample representativeness panel</p>
+                    </div>
+                    <Switch
+                      checked={showDataQuality}
+                      onCheckedChange={setShowDataQuality}
+                      data-testid="switch-data-quality"
+                    />
+                  </div>
+                  <div className="flex items-center justify-between rounded-lg border border-border p-3">
+                    <div>
+                      <p className="font-medium text-foreground">Topic insights</p>
+                      <p className="text-xs text-muted-foreground">Show strengths and improvement areas by topic</p>
+                    </div>
+                    <Switch
+                      checked={showTopicInsights}
+                      onCheckedChange={setShowTopicInsights}
+                      data-testid="switch-topic-insights"
+                    />
+                  </div>
+                  <div className="flex items-center justify-between rounded-lg border border-border p-3">
+                    <div>
+                      <p className="font-medium text-foreground">Difficulty breakdown</p>
+                      <p className="text-xs text-muted-foreground">Show easy/medium/hard accuracy distribution</p>
+                    </div>
+                    <Switch
+                      checked={showDifficultyBreakdown}
+                      onCheckedChange={setShowDifficultyBreakdown}
+                      data-testid="switch-difficulty-breakdown"
+                    />
+                  </div>
+                  <div className="flex items-center justify-between rounded-lg border border-border p-3">
+                    <div>
+                      <p className="font-medium text-foreground">Quiz realism view</p>
+                      <p className="text-xs text-muted-foreground">Show latest-vs-average quiz-level comparison</p>
+                    </div>
+                    <Switch
+                      checked={showQuizRealism}
+                      onCheckedChange={setShowQuizRealism}
+                      data-testid="switch-quiz-realism"
+                    />
+                  </div>
+                  <div className="flex items-center justify-between rounded-lg border border-border p-3">
+                    <div>
+                      <p className="font-medium text-foreground">Metric guide</p>
+                      <p className="text-xs text-muted-foreground">Show plain-language explanations for key analytics terms</p>
+                    </div>
+                    <Switch
+                      checked={showMetricGuide}
+                      onCheckedChange={setShowMetricGuide}
+                      data-testid="switch-metric-guide"
+                    />
+                  </div>
+                </CardContent>
+              </CollapsibleContent>
+            </Collapsible>
           </Card>
 
           {showMetricGuide ? (

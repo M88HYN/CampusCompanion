@@ -233,6 +233,116 @@
   transform: translateY(-1px);
 }
 
+@keyframes public-page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.995);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes public-page-exit {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.995);
+  }
+}
+
+@keyframes float-soft {
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+.public-page-transition {
+  animation: public-page-enter 360ms cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: opacity, transform;
+}
+
+.public-page-transition.exiting {
+  animation: public-page-exit 240ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.stagger-fade-up {
+  animation: fade-in 420ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.stagger-fade-up.delay-1 {
+  animation-delay: 70ms;
+}
+
+.stagger-fade-up.delay-2 {
+  animation-delay: 140ms;
+}
+
+.stagger-fade-up.delay-3 {
+  animation-delay: 210ms;
+}
+
+.interactive-surface {
+  transition: transform 240ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 240ms cubic-bezier(0.22, 1, 0.36, 1), border-color 240ms cubic-bezier(0.22, 1, 0.36, 1), background-color 240ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.interactive-surface:hover {
+  transform: translateY(-2px);
+}
+
+.float-soft {
+  animation: float-soft 3.4s ease-in-out infinite;
+}
+
+.quirky-hover-card {
+  transition: transform 280ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 280ms cubic-bezier(0.22, 1, 0.36, 1), border-color 280ms cubic-bezier(0.22, 1, 0.36, 1), filter 280ms cubic-bezier(0.22, 1, 0.36, 1);
+  transform-origin: center;
+}
+
+.quirky-hover-card:hover {
+  transform: translateY(-5px) scale(1.015);
+  box-shadow: 0 16px 30px rgba(15, 23, 42, 0.13);
+  border-color: rgba(14, 165, 233, 0.35);
+}
+
+.quirky-hover-chip {
+  transition: transform 240ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 240ms cubic-bezier(0.22, 1, 0.36, 1), border-color 240ms cubic-bezier(0.22, 1, 0.36, 1), background-color 240ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.quirky-hover-chip:hover {
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 12px 20px rgba(6, 182, 212, 0.15);
+  border-color: rgba(6, 182, 212, 0.4);
+}
+
+.quirky-hover-cta {
+  transition: transform 240ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 240ms cubic-bezier(0.22, 1, 0.36, 1), filter 240ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.quirky-hover-cta:hover {
+  transform: translateY(-3px) scale(1.02);
+  filter: saturate(1.06);
+  box-shadow: 0 12px 24px rgba(14, 165, 233, 0.2);
+}
+
+.quirky-hover-icon {
+  transition: transform 260ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 260ms cubic-bezier(0.22, 1, 0.36, 1), filter 260ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.quirky-hover-icon:hover {
+  transform: translateY(-2px) scale(1.05);
+  filter: brightness(1.05);
+  box-shadow: 0 10px 22px rgba(30, 58, 138, 0.2);
+}
+
 @keyframes slide-in-down-soft {
   from {
     opacity: 0;
@@ -247,11 +357,26 @@
 @media (prefers-reduced-motion: reduce) {
   .route-transition,
   .tabs-content-transition[data-state="active"],
-  .search-dropdown-transition {
+  .search-dropdown-transition,
+  .public-page-transition,
+  .public-page-transition.exiting,
+  .stagger-fade-up,
+  .float-soft,
+  .quirky-hover-card:hover,
+  .quirky-hover-chip:hover,
+  .quirky-hover-cta:hover,
+  .quirky-hover-icon:hover {
     animation: none;
   }
 
   .tabs-trigger-transition {
+    transition: none;
+  }
+
+  .quirky-hover-card,
+  .quirky-hover-chip,
+  .quirky-hover-cta,
+  .quirky-hover-icon {
     transition: none;
   }
 }

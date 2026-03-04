@@ -45,6 +45,7 @@ import Performance from "@/pages/performance";
 import Profile from "@/pages/profile";
 import Settings from "@/pages/settings";
 import Login from "@/pages/login";
+import Landing from "@/pages/landing";
 
 console.log("[App.tsx] Module loading");
 
@@ -183,30 +184,37 @@ function AuthenticatedApp() {
       <div className="w-full min-h-screen bg-app-gradient">
         <Login />
       </div>
+    ) : location === "/" ? (
+      <Landing />
     ) : (
-      <Redirect to="/login" />
+      <Redirect to="/" />
     );
   }
 
-  // Not authenticated - show login only
+  // Not authenticated - allow public landing and login pages
   if (!isAuthenticated) {
-    console.log("[AuthenticatedApp] User not authenticated, showing login");
-    // Only redirect if not already on login page to prevent loops
-    if (location !== "/login") {
-      return <Redirect to="/login" />;
+    console.log("[AuthenticatedApp] User not authenticated, showing public entry");
+
+    if (location === "/") {
+      return <Landing />;
     }
-    return (
-      <div className="w-full min-h-screen bg-app-gradient">
-        <Login />
-      </div>
-    );
+
+    if (location === "/login") {
+      return (
+        <div className="w-full min-h-screen bg-app-gradient">
+          <Login />
+        </div>
+      );
+    }
+
+    return <Redirect to="/" />;
   }
 
   console.log("[AuthenticatedApp] User authenticated", { email: user?.email });
 
   // User is authenticated - show main app
-  // If they try to access login, redirect to dashboard
-  if (location === "/login") {
+  // If authenticated user lands on public routes, redirect to dashboard
+  if (location === "/" || location === "/login") {
     return <Redirect to="/dashboard" />;
   }
 

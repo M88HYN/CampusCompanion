@@ -32,6 +32,7 @@ import {
   Sparkles, 
   Target,
   GraduationCap,
+  ArrowLeft,
 } from "lucide-react";
 import { useLocation } from "wouter";
 
@@ -60,15 +61,59 @@ A JSX tree representing the component view for the current state.
 */
 export default function Login() {
   console.log("[login.tsx] Login page rendering");
-  const [, setLocation] = useLocation();
-  const [isLogin, setIsLogin] = useState(true);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [username, setUsername] = useState("");
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
+  const [location, setLocation] = useLocation();
+  const [isLogin, setIsLogin] = useState(() => {
+    const mode = new URLSearchParams(window.location.search).get("mode");
+    return mode !== "signup";
+  });
+  const [signInEmailOrUsername, setSignInEmailOrUsername] = useState("");
+  const [signInPassword, setSignInPassword] = useState("");
+  const [signUpUsername, setSignUpUsername] = useState("");
+  const [signUpFirstName, setSignUpFirstName] = useState("");
+  const [signUpLastName, setSignUpLastName] = useState("");
+  const [signUpEmail, setSignUpEmail] = useState("");
+  const [signUpPassword, setSignUpPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [isNavigating, setIsNavigating] = useState(false);
+  const [isModeTransitioning, setIsModeTransitioning] = useState(false);
+
+  const navigateHome = () => {
+    if (isNavigating) return;
+    setIsNavigating(true);
+    window.setTimeout(() => {
+      setLocation("/");
+    }, 220);
+  };
+
+  const handleModeChange = (nextModeIsLogin: boolean) => {
+    if (isModeTransitioning || nextModeIsLogin === isLogin) return;
+
+    setError("");
+    setIsModeTransitioning(true);
+    window.setTimeout(() => {
+      setIsLogin(nextModeIsLogin);
+      window.history.replaceState(
+        {},
+        document.title,
+        nextModeIsLogin ? "/login" : "/login?mode=signup"
+      );
+      window.requestAnimationFrame(() => {
+        window.requestAnimationFrame(() => {
+          setIsModeTransitioning(false);
+        });
+      });
+    }, 140);
+  };
+
+  useEffect(() => {
+    const mode = new URLSearchParams(window.location.search).get("mode");
+    const nextIsLogin = mode !== "signup";
+    if (nextIsLogin !== isLogin && !isModeTransitioning) {
+      setIsLogin(nextIsLogin);
+      setError("");
+    }
+  }, [location, isLogin, isModeTransitioning]);
 
   // Check if we have auth callback params
   useEffect(() => {
@@ -136,8 +181,17 @@ const handleSubmit = async (e: React.FormEvent) => {
     try {
       const endpoint = isLogin ? "/api/auth/login" : "/api/auth/register";
       const body = isLogin
-        ? { emailOrUsername: email, password }
-        : { username, email, password, firstName, lastName };
+        ? {
+            emailOrUsername: signInEmailOrUsername,
+            password: signInPassword,
+          }
+        : {
+            username: signUpUsername,
+            email: signUpEmail,
+            password: signUpPassword,
+            firstName: signUpFirstName,
+            lastName: signUpLastName,
+          };
 
       const response = await fetch(endpoint, {
         method: "POST",
@@ -225,8 +279,8 @@ const handleGithubLogin = () => {
   };
 
   return (
-    <div className="min-h-screen flex">
-      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-teal-500 via-cyan-500 to-teal-600 relative overflow-hidden">
+    <div className={`min-h-screen flex public-page-transition ${isNavigating ? "exiting" : ""}`}>
+      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-teal-500 via-cyan-500 to-teal-600 relative overflow-hidden slide-in-left">
         <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmZmZmYiIGZpbGwtb3BhY2l0eT0iMC4xIj48cGF0aCBkPSJNMzYgMzRjMC0yLjIwOS0xLjc5MS00LTQtNHMtNCAxLjc5MS00IDQgMS43OTEgNCA0IDQgNC0xLjc5MSA0LTR6bS0yIDBjMCAxLjEwNS0uODk1IDItMiAycy0yLS44OTUtMi0yIC44OTUtMiAyLTIgMiAuODk1IDIgMzoiLz48L2c+PC9nPjwvc3ZnPg==')] opacity-30" />
         
         <div className="relative z-10 flex flex-col justify-center p-12 text-white">
@@ -243,7 +297,7 @@ const handleGithubLogin = () => {
 
           <div className="space-y-4">
             {features.map((feature, index) => (
-              <div key={index} className="flex items-center gap-4 p-4 bg-white/10 backdrop-blur-sm rounded-xl hover:bg-white/15 transition-colors">
+              <div key={index} className="interactive-surface flex items-center gap-4 p-4 bg-white/10 backdrop-blur-sm rounded-xl hover:bg-white/15 transition-colors">
                 <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
                   <feature.icon className="w-5 h-5 text-white" />
                 </div>
@@ -257,9 +311,21 @@ const handleGithubLogin = () => {
         </div>
       </div>
 
-      <div className="flex-1 flex items-center justify-center p-4 sm:p-6 bg-gradient-to-br from-slate-50 to-teal-50/30 dark:from-slate-900 dark:to-teal-950/30">
+      <div className="flex-1 flex items-center justify-center p-4 sm:p-6 bg-gradient-to-br from-slate-50 to-teal-50/30 dark:from-slate-900 dark:to-teal-950/30 slide-in-right">
         <Card className="w-full max-w-md border-0 shadow-xl bg-card backdrop-blur-sm">
           <CardHeader className="text-center pb-6">
+            <div className="mb-3 flex justify-start">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={navigateHome}
+                className="button-priority-transition text-muted-foreground"
+              >
+                <ArrowLeft className="mr-1 h-4 w-4" />
+                Back to Home
+              </Button>
+            </div>
             <div className="lg:hidden flex items-center justify-center gap-2 mb-6">
               <div className="w-12 h-12 bg-gradient-to-br from-brand-primary to-brand-accent rounded-xl flex items-center justify-center">
                 <GraduationCap className="w-7 h-7 text-white" />
@@ -275,22 +341,82 @@ const handleGithubLogin = () => {
               <div className="p-3 bg-red-100 border border-red-300 rounded text-destructive text-sm">{error}</div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {!isLogin && (
-                <>
-                  <Input type="text" placeholder="Username" value={username} onChange={(e) => setUsername(e.target.value)} className="h-11" required />
-                  <div className="grid grid-cols-2 gap-2">
-                    <Input type="text" placeholder="First Name" value={firstName} onChange={(e) => setFirstName(e.target.value)} className="h-11" required />
-                    <Input type="text" placeholder="Last Name" value={lastName} onChange={(e) => setLastName(e.target.value)} className="h-11" required />
-                  </div>
-                </>
-              )}
-              <Input type={isLogin ? "text" : "email"} placeholder={isLogin ? "Email or Username" : "Email address"} value={email} onChange={(e) => setEmail(e.target.value)} required className="h-11" />
-              <Input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required className="h-11" />
-              <Button type="submit" disabled={loading} className="w-full h-11 bg-gradient-to-r from-brand-primary to-brand-accent hover:from-[#1A3175] hover:to-[#0891B2] text-white font-semibold">
-                {loading ? "Loading..." : (isLogin ? "Sign In" : "Sign Up")}
-              </Button>
-            </form>
+            <div
+              className={`transition-all duration-200 ease-out ${
+                isModeTransitioning ? "opacity-0 translate-y-1" : "opacity-100 translate-y-0"
+              }`}
+            >
+              <form onSubmit={handleSubmit} className="space-y-4">
+                {isLogin ? (
+                  <>
+                    <Input
+                      type="text"
+                      placeholder="Email or Username"
+                      value={signInEmailOrUsername}
+                      onChange={(e) => setSignInEmailOrUsername(e.target.value)}
+                      required
+                      className="h-11"
+                    />
+                    <Input
+                      type="password"
+                      placeholder="Password"
+                      value={signInPassword}
+                      onChange={(e) => setSignInPassword(e.target.value)}
+                      required
+                      className="h-11"
+                    />
+                  </>
+                ) : (
+                  <>
+                    <Input
+                      type="text"
+                      placeholder="Username"
+                      value={signUpUsername}
+                      onChange={(e) => setSignUpUsername(e.target.value)}
+                      className="h-11"
+                      required
+                    />
+                    <div className="grid grid-cols-2 gap-2">
+                      <Input
+                        type="text"
+                        placeholder="First Name"
+                        value={signUpFirstName}
+                        onChange={(e) => setSignUpFirstName(e.target.value)}
+                        className="h-11"
+                        required
+                      />
+                      <Input
+                        type="text"
+                        placeholder="Last Name"
+                        value={signUpLastName}
+                        onChange={(e) => setSignUpLastName(e.target.value)}
+                        className="h-11"
+                        required
+                      />
+                    </div>
+                    <Input
+                      type="email"
+                      placeholder="Email address"
+                      value={signUpEmail}
+                      onChange={(e) => setSignUpEmail(e.target.value)}
+                      required
+                      className="h-11"
+                    />
+                    <Input
+                      type="password"
+                      placeholder="Create password"
+                      value={signUpPassword}
+                      onChange={(e) => setSignUpPassword(e.target.value)}
+                      required
+                      className="h-11"
+                    />
+                  </>
+                )}
+                <Button type="submit" disabled={loading || isModeTransitioning} className="button-priority-transition w-full h-11 bg-gradient-to-r from-brand-primary to-brand-accent hover:from-[#1A3175] hover:to-[#0891B2] text-white font-semibold">
+                  {loading ? "Loading..." : (isLogin ? "Sign In" : "Sign Up")}
+                </Button>
+              </form>
+            </div>
 
             <div className="relative">
               <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-border" /></div>
@@ -303,7 +429,7 @@ const handleGithubLogin = () => {
                 onClick={handleGoogleLogin}
                 disabled={loading}
                 variant="outline" 
-                className="w-full h-11"
+                className="button-priority-transition w-full h-11"
               >
                 <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
                   <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -318,7 +444,7 @@ const handleGithubLogin = () => {
                 onClick={handleGithubLogin}
                 disabled={loading}
                 variant="outline" 
-                className="w-full h-11"
+                className="button-priority-transition w-full h-11"
               >
                 <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v 3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
@@ -329,9 +455,9 @@ const handleGithubLogin = () => {
 
             <div className="text-center text-sm text-muted-foreground">
               {isLogin ? (
-                <>Don't have an account? <button type="button" onClick={() => setIsLogin(false)} className="text-teal-600 hover:text-teal-700 font-semibold">Sign up</button></>
+                <>Don't have an account? <button type="button" onClick={() => handleModeChange(false)} className="text-teal-600 hover:text-teal-700 font-semibold">Sign up</button></>
               ) : (
-                <>Already have an account? <button type="button" onClick={() => setIsLogin(true)} className="text-teal-600 hover:text-teal-700 font-semibold">Sign in</button></>
+                <>Already have an account? <button type="button" onClick={() => handleModeChange(true)} className="text-teal-600 hover:text-teal-700 font-semibold">Sign in</button></>
               )}
             </div>
           </CardContent>
