@@ -1290,7 +1290,14 @@ async getQuizOptions(questionId: string): Promise<QuizOption[]> {
   ----------------------------------------------------------
   */
 async createQuizOption(option: InsertQuizOption): Promise<QuizOption> {
-    const [created] = await db.insert(quizOptions).values({ id: randomUUID(), ...option }).returning();
+    const normalizedIsCorrect = typeof option.isCorrect === "boolean"
+      ? (option.isCorrect ? 1 : 0)
+      : (option.isCorrect ? 1 : 0);
+
+    const [created] = await db
+      .insert(quizOptions)
+      .values({ id: randomUUID(), ...option, isCorrect: normalizedIsCorrect })
+      .returning();
     return created;
   }
 

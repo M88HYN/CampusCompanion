@@ -454,7 +454,7 @@ export default function Dashboard({ userRole = "student" }: DashboardProps) {
     {
       title: "Notes",
       description: notes.length > 0 ? `${notes.length} notes across subjects` : "Start writing notes",
-      icon: BookOpen,
+      icon: FileText,
       bgGradient: "bg-gradient-to-br from-sky-400 via-blue-500 to-indigo-600",
       href: "/notes",
       count: notes.length,
@@ -463,7 +463,7 @@ export default function Dashboard({ userRole = "student" }: DashboardProps) {
     {
       title: "Quizzes",
       description: quizzes.length > 0 ? `${quizzes.length} quizzes available` : "Create your first quiz",
-      icon: BrainCircuit,
+      icon: Activity,
       bgGradient: "bg-gradient-to-br from-fuchsia-500 via-pink-500 to-rose-500",
       href: "/quizzes",
       count: quizzes.length,
@@ -472,7 +472,7 @@ export default function Dashboard({ userRole = "student" }: DashboardProps) {
     {
       title: "Flashcards",
       description: decks.length > 0 ? `${decks.length} decks` : "Create a deck",
-      icon: GraduationCap,
+      icon: Layers,
       bgGradient: "bg-gradient-to-br from-emerald-400 via-green-500 to-teal-600",
       href: "/flashcards",
       count: decks.length,
@@ -482,7 +482,7 @@ export default function Dashboard({ userRole = "student" }: DashboardProps) {
     {
       title: "Insight Scout",
       description: "AI-powered insight support",
-      icon: Sparkles,
+      icon: Rocket,
       bgGradient: "bg-gradient-to-br from-amber-400 via-orange-500 to-red-500",
       href: "/research",
       subtitle: "Ask anything, get explanations",
@@ -490,7 +490,7 @@ export default function Dashboard({ userRole = "student" }: DashboardProps) {
     {
       title: "Revision Aids",
       description: "Spaced review queue",
-      icon: Lightbulb,
+      icon: Brain,
       bgGradient: "bg-gradient-to-br from-yellow-400 via-lime-500 to-green-500",
       href: "/revision",
       subtitle: "Focus on weak areas",
@@ -596,7 +596,7 @@ const generateStudyNowActions = () => {
         reason: "Spaced repetition due",
         timeEstimate: `${Math.ceil(dueCards.length * 0.5)} min`,
         priority: dueCards.length > 10 ? 'high' : 'medium',
-        icon: GraduationCap,
+        icon: Layers,
         href: "/flashcards",
         gradient: "bg-gradient-to-br from-emerald-400 to-teal-500"
       });
@@ -636,10 +636,10 @@ const generateStudyNowActions = () => {
       insights.recommendations.slice(0, 1).forEach(rec => {
         const iconMap: Record<string, React.ElementType> = {
           'focus': AlertTriangle,
-          'practice': Target,
+          'practice': Activity,
           'timing': Clock,
           'challenge': Zap,
-          'flashcards': GraduationCap,
+          'flashcards': Layers,
         };
         actions.push({
           title: rec.title,
@@ -733,7 +733,7 @@ const generateQuickWins = () => {
         title: `Review: ${mostRecent.title.substring(0, 20)}...`,
         description: "Refresh your latest study material",
         href: `/notes/${mostRecent.id}`,
-        icon: BookOpen,
+        icon: FileText,
         action: "3 min"
       });
     }

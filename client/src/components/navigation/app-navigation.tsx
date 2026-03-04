@@ -23,15 +23,20 @@ allowing safe evolution of features without cross-module side effects.
 */
 
 import {
-  BarChart3,
+  Activity,
   BookOpen,
   BrainCircuit,
+  FileText,
   FlaskConical,
   Gauge,
+  Layers,
   LayoutDashboard,
   Repeat,
+  Rocket,
   Search,
   Settings,
+  SlidersHorizontal,
+  Sparkles,
   User,
 } from "lucide-react";
 import { useEffect, useMemo } from "react";
@@ -173,23 +178,23 @@ export function AppNavigation({ user, onLogout }: AppNavigationProps) {
     {
       heading: t("nav.study", "STUDY"),
       items: [
-        { label: t("nav.dashboard", "Dashboard"), href: "/dashboard", icon: LayoutDashboard },
-        { label: t("nav.notes", "Notes"), href: "/notes", icon: BookOpen },
+        { label: t("nav.dashboard", "Dashboard"), href: "/dashboard", icon: Rocket },
+        { label: t("nav.notes", "Notes"), href: "/notes", icon: FileText },
         { label: t("nav.revision", "Revision Aids"), href: "/revision", icon: FlaskConical },
-        { label: t("nav.research", "Insight Scout"), href: "/research", icon: Search },
+        { label: t("nav.research", "Insight Scout"), href: "/research", icon: Sparkles },
       ],
     },
     {
       heading: t("nav.practice", "PRACTICE"),
       items: [
-        { label: t("nav.flashcards", "Flashcards"), href: "/flashcards", icon: Repeat },
+        { label: t("nav.flashcards", "Flashcards"), href: "/flashcards", icon: Layers },
         { label: t("nav.quizzes", "Quizzes"), href: "/quizzes", icon: BrainCircuit },
       ],
     },
     {
       heading: t("nav.insightsGroup", "INSIGHTS"),
       items: [
-        { label: t("nav.insights", "Insights"), href: "/insights", icon: BarChart3 },
+        { label: t("nav.insights", "Insights"), href: "/insights", icon: Activity },
         { label: t("nav.performance", "Performance"), href: "/performance", icon: Gauge },
       ],
     },
@@ -197,7 +202,7 @@ export function AppNavigation({ user, onLogout }: AppNavigationProps) {
       heading: t("nav.account", "ACCOUNT"),
       items: [
         { label: t("nav.profile", "Profile"), href: "/profile", icon: User },
-        { label: t("nav.settings", "Settings"), href: "/settings", icon: Settings },
+        { label: t("nav.settings", "Settings"), href: "/settings", icon: SlidersHorizontal },
       ],
     },
   ];

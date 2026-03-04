@@ -100,6 +100,151 @@ function getUserId(req: any): string {
   return req.user.userId;
 }
 
+function buildQuizQuestionTypes(count: number, format: "mixed" | "mcq" | "saq" | "laq"): Array<"mcq" | "saq" | "laq"> {
+  if (format !== "mixed") {
+    return Array.from({ length: count }, () => format);
+  }
+
+  const sequence: Array<"mcq" | "saq" | "laq"> = [];
+  const cycle: Array<"mcq" | "saq" | "laq"> = ["mcq", "saq", "laq"];
+  for (let i = 0; i < count; i++) {
+    sequence.push(cycle[i % cycle.length]);
+  }
+  return sequence;
+}
+
+type DifficultyProfile = "balanced" | "easy" | "medium" | "hard" | "challenge";
+
+function resolveDifficultyForIndex(index: number, count: number, profile: DifficultyProfile): number {
+  if (profile === "easy") {
+    return [1, 1, 2, 2, 3][index % 5];
+  }
+
+  if (profile === "medium") {
+    return [2, 3, 3, 3, 4][index % 5];
+  }
+
+  if (profile === "hard") {
+    return [3, 4, 4, 5, 5][index % 5];
+  }
+
+  if (profile === "challenge") {
+    if (count <= 1) return 5;
+    return Math.max(1, Math.min(5, Math.round(3 + (index / (count - 1)) * 2)));
+  }
+
+  return [1, 2, 3, 4, 5][index % 5];
+}
+
+function buildAiQuizQuestion(topic: string, index: number, type: "mcq" | "saq" | "laq", difficulty: number) {
+  const prompts = [
+    `Explain the core idea behind ${topic}.`,
+    `Apply ${topic} to a realistic scenario.`,
+    `Compare two approaches used in ${topic}.`,
+    `Identify common mistakes made in ${topic}.`,
+    `Evaluate why ${topic} matters in practice.`,
+    `Break down the process flow in ${topic}.`,
+  ];
+
+  const basePrompt = prompts[index % prompts.length];
+
+  if (type === "mcq") {
+    const correct = `Most accurate explanation of ${topic} concept ${index + 1}`;
+    return {
+      type,
+      question: `Q${index + 1}. ${basePrompt} Choose the best answer.`,
+      explanation: `This option best matches the core principle for ${topic}.`,
+      difficulty,
+      marks: 1,
+      correctAnswer: null as string | null,
+      options: [
+        { text: correct, isCorrect: true },
+        { text: `Partially correct but incomplete interpretation of ${topic}`, isCorrect: false },
+        { text: `Common misconception about ${topic}`, isCorrect: false },
+        { text: `Unrelated method that does not address ${topic} directly`, isCorrect: false },
+      ],
+    };
+  }
+
+  if (type === "saq") {
+    return {
+      type,
+      question: `Q${index + 1}. ${basePrompt} Keep your answer concise (3-5 lines).`,
+      explanation: `A strong short answer should be precise, structured, and include one practical example.`,
+      difficulty,
+      marks: 2,
+      correctAnswer: `Key points: define ${topic}, include one applied example, and justify the reasoning clearly.`,
+      options: [] as Array<{ text: string; isCorrect: boolean }>,
+    };
+  }
+
+  return {
+    type,
+    question: `Q${index + 1}. ${basePrompt} Write a structured long-form response.`,
+    explanation: `A strong long answer should include structure, reasoning depth, and evaluation.`,
+    difficulty,
+    marks: 4,
+    correctAnswer: `Suggested structure: introduction, core explanation of ${topic}, applied analysis, limitations, and conclusion.`,
+    options: [] as Array<{ text: string; isCorrect: boolean }>,
+  };
+}
+
+function resolveFlashcardDifficultyForIndex(index: number, count: number, profile: DifficultyProfile): number {
+  if (profile === "easy") {
+    return [1, 1, 2, 2, 3][index % 5];
+  }
+
+  if (profile === "medium") {
+    return [2, 3, 3, 3, 4][index % 5];
+  }
+
+  if (profile === "hard") {
+    return [3, 4, 4, 5, 5][index % 5];
+  }
+
+  if (profile === "challenge") {
+    if (count <= 1) return 5;
+    return Math.max(1, Math.min(5, Math.round(3 + (index / (count - 1)) * 2)));
+  }
+
+  return [1, 2, 3, 4, 5][index % 5];
+}
+
+function buildAiFlashcard(
+  topic: string,
+  index: number,
+  style: "definition" | "qna" | "application" | "mixed",
+  difficulty: number
+) {
+  const resolvedStyle = style === "mixed"
+    ? (["definition", "qna", "application"] as const)[index % 3]
+    : style;
+
+  const difficultyLabel = difficulty <= 2 ? "foundational" : difficulty === 3 ? "intermediate" : "advanced";
+
+  if (resolvedStyle === "definition") {
+    return {
+      type: "definition",
+      front: `Define ${topic}: ${difficultyLabel} concept ${index + 1}`,
+      back: `${topic} concept ${index + 1} is a ${difficultyLabel} principle used to solve related learning tasks effectively.`,
+    };
+  }
+
+  if (resolvedStyle === "application") {
+    return {
+      type: "basic",
+      front: `How would you apply ${topic} in a ${difficultyLabel} scenario ${index + 1}?`,
+      back: `Apply ${topic} by identifying constraints, selecting a suitable method, and validating outcomes with a concrete check at ${difficultyLabel} depth.`,
+    };
+  }
+
+  return {
+    type: "basic",
+    front: `What is an important ${difficultyLabel} checkpoint for ${topic} (${index + 1})?`,
+    back: `A key checkpoint is to verify assumptions, test edge cases, and summarize why the chosen approach is valid at ${difficultyLabel} level.`,
+  };
+}
+
 // Helper functions for smart card prioritization
 /*
 ----------------------------------------------------------
@@ -694,6 +839,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: error.errors });
       }
       res.status(500).json({ error: "Failed to create deck" });
+    }
+  });
+
+  const aiDeckGenerateSchema = z.object({
+    topic: z.string().min(2).max(120),
+    title: z.string().min(2).max(140).optional(),
+    subject: z.string().max(120).optional(),
+    description: z.string().max(500).optional(),
+    cardCount: z.number().int().min(1).max(100).default(20),
+    style: z.enum(["definition", "qna", "application", "mixed"]).default("mixed"),
+    difficultyProfile: z.enum(["balanced", "easy", "medium", "hard", "challenge"]).default("balanced"),
+  });
+
+  app.post("/api/decks/ai-generate", authMiddleware, async (req: any, res) => {
+    try {
+      const userId = getUserId(req);
+      const parsed = aiDeckGenerateSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ error: "Invalid request", details: parsed.error.errors });
+      }
+
+      const { topic, title, subject, description, cardCount, style, difficultyProfile } = parsed.data;
+
+      const deck = await storage.createDeck(insertDeckSchema.parse({
+        userId,
+        title: title?.trim() || `${topic} AI Deck`,
+        subject: subject?.trim() || topic,
+        description: description?.trim() || `AI-generated flashcards for ${topic}`,
+        tags: JSON.stringify(["ai-generated", topic]),
+      }));
+
+      const cardInputs = Array.from({ length: cardCount }, (_, i) => {
+        const difficulty = resolveFlashcardDifficultyForIndex(i, cardCount, difficultyProfile);
+        const generated = buildAiFlashcard(topic, i, style, difficulty);
+        return insertCardSchema.parse({
+          deckId: deck.id,
+          type: generated.type,
+          front: generated.front,
+          back: generated.back,
+        });
+      });
+
+      const createdCards = await Promise.all(cardInputs.map((cardInput) => storage.createCard(cardInput)));
+      const hydratedDeck = { ...deck, cards: createdCards };
+
+      return res.status(201).json({
+        deck,
+        deckWithCards: hydratedDeck,
+        createdCards: createdCards.length,
+        difficultyProfile,
+      });
+    } catch (error) {
+      console.error("AI flashcard generation error:", error);
+      return res.status(500).json({ error: "Failed to generate AI flashcards" });
     }
   });
 
@@ -1502,7 +1701,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = getUserId(req);
       const { questions, ...quizData } = req.body;
-      const quiz = await storage.createQuiz(insertQuizSchema.parse({ ...quizData, userId }));
+      const normalizedQuizData = {
+        ...quizData,
+        timeLimit: quizData.timeLimit === "" || quizData.timeLimit === null ? undefined : quizData.timeLimit,
+        passingScore: quizData.passingScore === "" || quizData.passingScore === null ? undefined : quizData.passingScore,
+      };
+      const quiz = await storage.createQuiz(insertQuizSchema.parse({ ...normalizedQuizData, userId }));
       
       if (questions && Array.isArray(questions)) {
         for (let i = 0; i < questions.length; i++) {
@@ -1515,9 +1719,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           if (options && Array.isArray(options)) {
             for (let j = 0; j < options.length; j++) {
+              const option = options[j] ?? {};
               await storage.createQuizOption({
-                ...options[j],
+                ...option,
                 questionId: question.id,
+                isCorrect: option.isCorrect === true ? 1 : 0,
                 order: j,
               });
             }
@@ -1531,6 +1737,74 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: error.errors });
       }
       res.status(500).json({ error: "Failed to create quiz" });
+    }
+  });
+
+  const aiQuizGenerateSchema = z.object({
+    topic: z.string().min(2).max(120),
+    title: z.string().min(2).max(140).optional(),
+    subject: z.string().max(120).optional(),
+    description: z.string().max(500).optional(),
+    mode: z.enum(["practice", "exam"]).default("practice"),
+    format: z.enum(["mixed", "mcq", "saq", "laq"]).default("mixed"),
+    difficultyProfile: z.enum(["balanced", "easy", "medium", "hard", "challenge"]).default("balanced"),
+    questionCount: z.number().int().min(1).max(60).default(10),
+    timeLimit: z.number().int().min(1).max(240).optional(),
+    passingScore: z.number().int().min(0).max(100).optional(),
+  });
+
+  app.post("/api/quizzes/ai-generate", authMiddleware, async (req: any, res) => {
+    try {
+      const userId = getUserId(req);
+      const parsed = aiQuizGenerateSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ error: "Invalid request", details: parsed.error.errors });
+      }
+
+      const { topic, title, subject, description, mode, format, difficultyProfile, questionCount, timeLimit, passingScore } = parsed.data;
+      const questionTypes = buildQuizQuestionTypes(questionCount, format);
+
+      const quiz = await storage.createQuiz(insertQuizSchema.parse({
+        userId,
+        title: title?.trim() || `${topic} AI Quiz`,
+        subject: subject?.trim() || topic,
+        description: description?.trim() || `AI-generated ${format.toUpperCase()} quiz for ${topic}`,
+        mode,
+        timeLimit: typeof timeLimit === "number" ? timeLimit : mode === "exam" ? Math.max(10, questionCount * 2) : null,
+        passingScore: typeof passingScore === "number" ? passingScore : 60,
+      }));
+
+      for (let i = 0; i < questionCount; i++) {
+        const difficulty = resolveDifficultyForIndex(i, questionCount, difficultyProfile);
+        const generated = buildAiQuizQuestion(topic, i, questionTypes[i], difficulty);
+        const question = await storage.createQuizQuestion(insertQuizQuestionSchema.parse({
+          quizId: quiz.id,
+          type: generated.type,
+          question: generated.question,
+          difficulty: generated.difficulty,
+          marks: generated.marks,
+          explanation: generated.explanation,
+          correctAnswer: generated.correctAnswer,
+          order: i,
+        }));
+
+        if (generated.type === "mcq") {
+          for (let j = 0; j < generated.options.length; j++) {
+            const option = generated.options[j];
+            await storage.createQuizOption(insertQuizOptionSchema.parse({
+              questionId: question.id,
+              text: option.text,
+              isCorrect: option.isCorrect ? 1 : 0,
+              order: j,
+            }));
+          }
+        }
+      }
+
+      return res.status(201).json({ quiz, createdQuestions: questionCount, format, difficultyProfile });
+    } catch (error) {
+      console.error("AI quiz generation error:", error);
+      return res.status(500).json({ error: "Failed to generate AI quiz" });
     }
   });
 

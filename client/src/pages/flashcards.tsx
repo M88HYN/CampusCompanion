@@ -256,6 +256,17 @@ export default function Flashcards() {
     showThinkingPrompt: true,
     sessionSize: "20",
   });
+  const [aiDeckConfig, setAiDeckConfig] = useState<{
+    topic: string;
+    cardCount: number;
+    style: "definition" | "qna" | "application" | "mixed";
+    difficultyProfile: "balanced" | "easy" | "medium" | "hard" | "challenge";
+  }>({
+    topic: "",
+    cardCount: 20,
+    style: "mixed",
+    difficultyProfile: "balanced",
+  });
 
   // Get smart queue data BEFORE useEffect hooks that reference it
   const { data: smartQueue, refetch: refetchSmartQueue } = useQuery<SmartQueueResponse>({
@@ -368,6 +379,59 @@ export default function Flashcards() {
     onError: (error) => {
       console.error("[FLASHCARDS] Create deck ERROR:", error);
       toast({ title: "Error", description: "Failed to create deck", variant: "destructive" });
+    },
+  });
+
+  const generateAiDeckMutation = useMutation({
+    mutationFn: async () => {
+      const payload = {
+        topic: aiDeckConfig.topic.trim(),
+        cardCount: aiDeckConfig.cardCount,
+        style: aiDeckConfig.style,
+        difficultyProfile: aiDeckConfig.difficultyProfile,
+        title: deckForm.title.trim() || undefined,
+        subject: deckForm.subject || undefined,
+        description: deckForm.description.trim() || undefined,
+      };
+
+      const res = await apiRequest("POST", "/api/decks/ai-generate", payload);
+      return res.json();
+    },
+    onSuccess: async (result: any) => {
+      const generatedDeckId = result?.deck?.id;
+      const deckWithCards = result?.deckWithCards as DeckWithCards | undefined;
+
+      if (generatedDeckId && deckWithCards) {
+        queryClient.setQueryData(["/api/decks", generatedDeckId], deckWithCards);
+      }
+
+      await queryClient.invalidateQueries({ queryKey: ["/api/decks"] });
+
+      if (generatedDeckId) {
+        setSelectedDeckId(generatedDeckId);
+        await queryClient.prefetchQuery({
+          queryKey: ["/api/decks", generatedDeckId],
+          queryFn: async () => {
+            const res = await apiRequest("GET", `/api/decks/${generatedDeckId}`);
+            return (await res.json()) as DeckWithCards;
+          },
+        });
+      }
+
+      setDeckForm({ title: "", subject: "", description: "", tags: "" });
+      setAiDeckConfig({ topic: "", cardCount: 20, style: "mixed", difficultyProfile: "balanced" });
+      setView("create-card");
+      toast({
+        title: "AI flashcards generated",
+        description: `${result?.createdCards ?? aiDeckConfig.cardCount} cards created successfully.`,
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Generation failed",
+        description: "Could not generate flashcards with AI.",
+        variant: "destructive",
+      });
     },
   });
 
@@ -2075,6 +2139,106 @@ const handleKeyDown = (e: KeyboardEvent) => {
                   data-testid="input-tags"
                 />
               </div>
+
+              <Card className="border border-emerald-200 dark:border-emerald-800 bg-emerald-50/40 dark:bg-emerald-950/30">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Sparkles className="h-4 w-4 text-emerald-600" />
+                    AI Flashcard Generator
+                  </CardTitle>
+                  <CardDescription>Auto-create cards by topic, count, and style for this deck.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div className="space-y-2 md:col-span-1">
+                      <Label htmlFor="ai-topic" className="font-semibold">Topic *</Label>
+                      <Input
+                        id="ai-topic"
+                        value={aiDeckConfig.topic}
+                        onChange={(e) => setAiDeckConfig((prev) => ({ ...prev, topic: e.target.value }))}
+                        placeholder="e.g., Organic Chemistry"
+                        className="border-2 border-emerald-200 dark:border-emerald-800"
+                        data-testid="input-ai-deck-topic"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="ai-card-count" className="font-semibold">Cards per Deck</Label>
+                      <Input
+                        id="ai-card-count"
+                        type="number"
+                        min={1}
+                        max={100}
+                        value={aiDeckConfig.cardCount}
+                        onChange={(e) => {
+                          const value = Number(e.target.value);
+                          setAiDeckConfig((prev) => ({
+                            ...prev,
+                            cardCount: Number.isFinite(value) ? Math.max(1, Math.min(100, value)) : 20,
+                          }));
+                        }}
+                        className="border-2 border-emerald-200 dark:border-emerald-800"
+                        data-testid="input-ai-card-count"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="font-semibold">Flashcard Style</Label>
+                      <Select
+                        value={aiDeckConfig.style}
+                        onValueChange={(value: "definition" | "qna" | "application" | "mixed") => setAiDeckConfig((prev) => ({ ...prev, style: value }))}
+                      >
+                        <SelectTrigger className="border-2 border-emerald-200 dark:border-emerald-800" data-testid="select-ai-card-style">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="mixed">Mixed Style</SelectItem>
+                          <SelectItem value="definition">Definition-Based</SelectItem>
+                          <SelectItem value="qna">Q&A Style</SelectItem>
+                          <SelectItem value="application">Application Scenarios</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="font-semibold">Difficulty Distribution</Label>
+                      <Select
+                        value={aiDeckConfig.difficultyProfile}
+                        onValueChange={(value: "balanced" | "easy" | "medium" | "hard" | "challenge") =>
+                          setAiDeckConfig((prev) => ({ ...prev, difficultyProfile: value }))
+                        }
+                      >
+                        <SelectTrigger className="border-2 border-emerald-200 dark:border-emerald-800" data-testid="select-ai-card-difficulty-profile">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="balanced">Balanced (1-5 mix)</SelectItem>
+                          <SelectItem value="easy">Easy-focused</SelectItem>
+                          <SelectItem value="medium">Medium-focused</SelectItem>
+                          <SelectItem value="hard">Hard-focused</SelectItem>
+                          <SelectItem value="challenge">Progressive Challenge</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <Button
+                    type="button"
+                    onClick={() => generateAiDeckMutation.mutate()}
+                    disabled={!aiDeckConfig.topic.trim() || generateAiDeckMutation.isPending}
+                    className="w-full md:w-auto bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white"
+                    data-testid="button-ai-generate-deck"
+                  >
+                    {generateAiDeckMutation.isPending ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Generating Cards...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="h-4 w-4 mr-2" />
+                        Generate Deck + Cards with AI
+                      </>
+                    )}
+                  </Button>
+                </CardContent>
+              </Card>
 
               <div className="flex gap-3 pt-4 flex-wrap">
                 <Button

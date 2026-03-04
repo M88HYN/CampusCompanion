@@ -41,6 +41,7 @@ import { queryClient, apiRequest, getQueryFn } from "@/lib/queryClient";
 import { useQuizAnalytics } from "@/hooks/use-quiz-analytics";
 import { safeNumberFallback } from "@/lib/analytics-utils";
 import { AnalyticsStatCard, InsightCard, ActivityCard } from "@/components/analytics-cards";
+import { useToast } from "@/hooks/use-toast";
 import {
   Form,
   FormControl,
@@ -204,9 +205,21 @@ export default function Quizzes() {
   const [adaptiveQuestionNumber, setAdaptiveQuestionNumber] = useState(1);
   const [adaptiveDifficulty, setAdaptiveDifficulty] = useState(3);
   const [adaptiveAnswers, setAdaptiveAnswers] = useState<Array<{correct: boolean, difficulty: number}>>([]);
+  const [aiQuizConfig, setAiQuizConfig] = useState<{
+    topic: string;
+    questionCount: number;
+    format: "mixed" | "mcq" | "saq" | "laq";
+    difficultyProfile: "balanced" | "easy" | "medium" | "hard" | "challenge";
+  }>({
+    topic: "",
+    questionCount: 10,
+    format: "mixed",
+    difficultyProfile: "balanced",
+  });
   
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const startTimeRef = useRef<number>(Date.now());
+  const { toast } = useToast();
 
   useEffect(() => {
     const tab = new URL(window.location.href).searchParams.get("tab");
@@ -463,9 +476,53 @@ export default function Quizzes() {
       setView("list");
       form.reset();
     },
-    onError: (error) => {
+    onError: (error: unknown) => {
       console.error("[QUIZZES] Create quiz ERROR:", error);
+      const message = error instanceof Error ? error.message : "Failed to create quiz";
+      toast({
+        title: "Could not create quiz",
+        description: message,
+        variant: "destructive",
+      });
     }
+  });
+
+  const generateAiQuizMutation = useMutation({
+    mutationFn: async () => {
+      const values = form.getValues();
+      const payload = {
+        topic: aiQuizConfig.topic.trim(),
+        questionCount: aiQuizConfig.questionCount,
+        format: aiQuizConfig.format,
+        difficultyProfile: aiQuizConfig.difficultyProfile,
+        title: values.title?.trim() || undefined,
+        subject: values.subject?.trim() || undefined,
+        description: values.description?.trim() || undefined,
+        mode: values.mode,
+        timeLimit: typeof values.timeLimit === "number" ? values.timeLimit : undefined,
+        passingScore: typeof values.passingScore === "number" ? values.passingScore : undefined,
+      };
+
+      const response = await apiRequest("POST", "/api/quizzes/ai-generate", payload);
+      return response.json();
+    },
+    onSuccess: (result: any) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/quizzes"] });
+      setView("list");
+      form.reset();
+      setAiQuizConfig({ topic: "", questionCount: 10, format: "mixed", difficultyProfile: "balanced" });
+      toast({
+        title: "AI quiz created",
+        description: `${result?.createdQuestions ?? aiQuizConfig.questionCount} questions generated successfully.`,
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Generation failed",
+        description: "Could not generate quiz with AI. Try again.",
+        variant: "destructive",
+      });
+    },
   });
 
   const deleteQuizMutation = useMutation({
@@ -1645,6 +1702,102 @@ const formatTime = (seconds: number) => {
               </Button>
             </div>
           </div>
+
+          <Card className="border-2 border-brand-primary/30 dark:border-brand-primary/40">
+            <CardHeader className="bg-gradient-to-r from-brand-primary/10 to-brand-accent/10 dark:from-brand-primary/20 dark:to-brand-accent/20">
+              <CardTitle className="flex items-center gap-2">
+                <Sparkles className="h-5 w-5" />
+                AI Quiz Generator
+              </CardTitle>
+              <CardDescription>Auto-generate questions with your preferred format (MCQ, SAQ, LAQ, or mixed).</CardDescription>
+            </CardHeader>
+            <CardContent className="pt-6 space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="space-y-2 md:col-span-1">
+                  <FormLabel>Topic *</FormLabel>
+                  <Input
+                    value={aiQuizConfig.topic}
+                    onChange={(e) => setAiQuizConfig((prev) => ({ ...prev, topic: e.target.value }))}
+                    placeholder="e.g., Calculus derivatives"
+                    data-testid="input-ai-quiz-topic"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <FormLabel>Question Count</FormLabel>
+                  <Input
+                    type="number"
+                    min={1}
+                    max={60}
+                    value={aiQuizConfig.questionCount}
+                    onChange={(e) => {
+                      const value = Number(e.target.value);
+                      setAiQuizConfig((prev) => ({
+                        ...prev,
+                        questionCount: Number.isFinite(value) ? Math.max(1, Math.min(60, value)) : 10,
+                      }));
+                    }}
+                    data-testid="input-ai-quiz-count"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <FormLabel>Question Format</FormLabel>
+                  <Select
+                    value={aiQuizConfig.format}
+                    onValueChange={(value: "mixed" | "mcq" | "saq" | "laq") => setAiQuizConfig((prev) => ({ ...prev, format: value }))}
+                  >
+                    <SelectTrigger data-testid="select-ai-quiz-format">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="mixed">Mixed (MCQ + SAQ + LAQ)</SelectItem>
+                      <SelectItem value="mcq">MCQ Only</SelectItem>
+                      <SelectItem value="saq">SAQ Only</SelectItem>
+                      <SelectItem value="laq">LAQ Only</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <FormLabel>Difficulty Distribution</FormLabel>
+                  <Select
+                    value={aiQuizConfig.difficultyProfile}
+                    onValueChange={(value: "balanced" | "easy" | "medium" | "hard" | "challenge") =>
+                      setAiQuizConfig((prev) => ({ ...prev, difficultyProfile: value }))
+                    }
+                  >
+                    <SelectTrigger data-testid="select-ai-quiz-difficulty-profile">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="balanced">Balanced (1-5 mix)</SelectItem>
+                      <SelectItem value="easy">Easy-focused</SelectItem>
+                      <SelectItem value="medium">Medium-focused</SelectItem>
+                      <SelectItem value="hard">Hard-focused</SelectItem>
+                      <SelectItem value="challenge">Progressive Challenge</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <Button
+                type="button"
+                onClick={() => generateAiQuizMutation.mutate()}
+                disabled={!aiQuizConfig.topic.trim() || generateAiQuizMutation.isPending}
+                className="w-full md:w-auto bg-gradient-to-r from-brand-primary to-brand-accent hover:from-[#1A3175] hover:to-[#0891B2] text-white"
+                data-testid="button-ai-generate-quiz"
+              >
+                {generateAiQuizMutation.isPending ? (
+                  <>
+                    <Loader className="h-4 w-4 mr-2 animate-spin" />
+                    Generating Quiz...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="h-4 w-4 mr-2" />
+                    Generate Quiz with AI
+                  </>
+                )}
+              </Button>
+            </CardContent>
+          </Card>
 
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
