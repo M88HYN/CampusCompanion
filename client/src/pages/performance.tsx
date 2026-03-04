@@ -25,9 +25,10 @@ allowing safe evolution of features without cross-module side effects.
 import { useMemo, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Switch } from "@/components/ui/switch";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { AnalyticsStatCard, ActivityCard } from "@/components/analytics-cards";
 import { useQuizAnalytics } from "@/hooks/use-quiz-analytics";
@@ -41,7 +42,6 @@ import {
   TrendingDown,
   Gauge,
   SlidersHorizontal,
-  ChevronDown,
   CircleHelp,
 } from "lucide-react";
 
@@ -92,11 +92,11 @@ A JSX tree representing the component view for the current state.
 ----------------------------------------------------------
 */
 export default function Performance() {
-  const [showInsightControls, setShowInsightControls] = useState(false);
   const [showWeeklyProgress, setShowWeeklyProgress] = useState(true);
   const [showAccuracyTrends, setShowAccuracyTrends] = useState(true);
   const [showDataQuality, setShowDataQuality] = useState(false);
-  const [showTopicInsights, setShowTopicInsights] = useState(true);
+  const [showStrengthAreas, setShowStrengthAreas] = useState(true);
+  const [showImprovementAreas, setShowImprovementAreas] = useState(true);
   const [showDifficultyBreakdown, setShowDifficultyBreakdown] = useState(true);
   const [showQuizRealism, setShowQuizRealism] = useState(false);
   const [showMetricGuide, setShowMetricGuide] = useState(false);
@@ -286,7 +286,84 @@ const getPacingBand = (avgTimeSeconds: number) => {
             Quiz results, accuracy trends, and actionable performance insights.
           </p>
         </div>
-        <Badge className="bg-teal-600 text-white hover:bg-teal-700">Analytics</Badge>
+        <div className="flex items-center gap-2">
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button type="button" variant="outline" size="sm" className="h-8 gap-1.5">
+                <SlidersHorizontal className="h-3.5 w-3.5" />
+                Customize Sections
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent align="end" className="w-80 space-y-2">
+              <p className="text-xs font-medium text-muted-foreground">Show or hide performance blocks</p>
+
+              <div className="flex items-center justify-between rounded-md border border-border p-2.5">
+                <div>
+                  <p className="text-sm font-medium text-foreground">Weekly progress</p>
+                  <p className="text-xs text-muted-foreground">Momentum block</p>
+                </div>
+                <Switch checked={showWeeklyProgress} onCheckedChange={setShowWeeklyProgress} data-testid="switch-weekly-progress-top" />
+              </div>
+
+              <div className="flex items-center justify-between rounded-md border border-border p-2.5">
+                <div>
+                  <p className="text-sm font-medium text-foreground">Accuracy trends</p>
+                  <p className="text-xs text-muted-foreground">Attempt trend chart</p>
+                </div>
+                <Switch checked={showAccuracyTrends} onCheckedChange={setShowAccuracyTrends} data-testid="switch-accuracy-trends-top" />
+              </div>
+
+              <div className="flex items-center justify-between rounded-md border border-border p-2.5">
+                <div>
+                  <p className="text-sm font-medium text-foreground">Strength areas</p>
+                  <p className="text-xs text-muted-foreground">Best-performing topics</p>
+                </div>
+                <Switch checked={showStrengthAreas} onCheckedChange={setShowStrengthAreas} data-testid="switch-strength-areas-top" />
+              </div>
+
+              <div className="flex items-center justify-between rounded-md border border-border p-2.5">
+                <div>
+                  <p className="text-sm font-medium text-foreground">Improvement areas</p>
+                  <p className="text-xs text-muted-foreground">Priority focus topics</p>
+                </div>
+                <Switch checked={showImprovementAreas} onCheckedChange={setShowImprovementAreas} data-testid="switch-improvement-areas-top" />
+              </div>
+
+              <div className="flex items-center justify-between rounded-md border border-border p-2.5">
+                <div>
+                  <p className="text-sm font-medium text-foreground">Data quality panel</p>
+                  <p className="text-xs text-muted-foreground">Signal confidence</p>
+                </div>
+                <Switch checked={showDataQuality} onCheckedChange={setShowDataQuality} data-testid="switch-data-quality-top" />
+              </div>
+
+              <div className="flex items-center justify-between rounded-md border border-border p-2.5">
+                <div>
+                  <p className="text-sm font-medium text-foreground">Difficulty breakdown</p>
+                  <p className="text-xs text-muted-foreground">Easy/medium/hard view</p>
+                </div>
+                <Switch checked={showDifficultyBreakdown} onCheckedChange={setShowDifficultyBreakdown} data-testid="switch-difficulty-breakdown-top" />
+              </div>
+
+              <div className="flex items-center justify-between rounded-md border border-border p-2.5">
+                <div>
+                  <p className="text-sm font-medium text-foreground">Quiz realism view</p>
+                  <p className="text-xs text-muted-foreground">Latest vs average</p>
+                </div>
+                <Switch checked={showQuizRealism} onCheckedChange={setShowQuizRealism} data-testid="switch-quiz-realism-top" />
+              </div>
+
+              <div className="flex items-center justify-between rounded-md border border-border p-2.5">
+                <div>
+                  <p className="text-sm font-medium text-foreground">Metric guide</p>
+                  <p className="text-xs text-muted-foreground">Definitions panel</p>
+                </div>
+                <Switch checked={showMetricGuide} onCheckedChange={setShowMetricGuide} data-testid="switch-metric-guide-top" />
+              </div>
+            </PopoverContent>
+          </Popover>
+          <Badge className="bg-teal-600 text-white hover:bg-teal-700">Analytics</Badge>
+        </div>
       </div>
 
       {hasPerformanceData ? (
@@ -372,117 +449,46 @@ const getPacingBand = (avgTimeSeconds: number) => {
             </Card>
           ) : null}
 
-          <Card className="border border-border">
-            <Collapsible open={showInsightControls} onOpenChange={setShowInsightControls}>
-              <CardHeader className="pb-3">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <CardTitle className="flex items-center gap-2">
-                      <SlidersHorizontal className="h-4 w-4 text-brand-primary" />
-                      Insight Controls
-                      <InfoHint text="Use these toggles to simplify or expand the dashboard based on whether you want a quick snapshot or a deeper analysis session." />
-                    </CardTitle>
-                    <CardDescription>
-                      Keep this panel collapsed for a focused view, or open it to show and hide analytics blocks.
-                    </CardDescription>
-                  </div>
-                  <CollapsibleTrigger asChild>
-                    <button
-                      type="button"
-                      className="inline-flex items-center gap-1 rounded-md border border-border px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-muted"
-                    >
-                      {showInsightControls ? "Hide controls" : "Customize view"}
-                      <ChevronDown
-                        className={`h-3.5 w-3.5 transition-transform ${showInsightControls ? "rotate-180" : "rotate-0"}`}
-                      />
-                    </button>
-                  </CollapsibleTrigger>
-                </div>
-              </CardHeader>
-
-              <CollapsibleContent>
-                <CardContent className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-                  <div className="flex items-center justify-between rounded-lg border border-border p-3">
-                    <div>
-                      <p className="font-medium text-foreground">Weekly progress</p>
-                      <p className="text-xs text-muted-foreground">Show recent vs prior week momentum block</p>
-                    </div>
-                    <Switch
-                      checked={showWeeklyProgress}
-                      onCheckedChange={setShowWeeklyProgress}
-                      data-testid="switch-weekly-progress"
-                    />
-                  </div>
-                  <div className="flex items-center justify-between rounded-lg border border-border p-3">
-                    <div>
-                      <p className="font-medium text-foreground">Accuracy trends</p>
-                      <p className="text-xs text-muted-foreground">Show attempt-by-attempt trend snapshot</p>
-                    </div>
-                    <Switch
-                      checked={showAccuracyTrends}
-                      onCheckedChange={setShowAccuracyTrends}
-                      data-testid="switch-accuracy-trends"
-                    />
-                  </div>
-                  <div className="flex items-center justify-between rounded-lg border border-border p-3">
-                    <div>
-                      <p className="font-medium text-foreground">Data quality panel</p>
-                      <p className="text-xs text-muted-foreground">Show confidence and sample representativeness panel</p>
-                    </div>
-                    <Switch
-                      checked={showDataQuality}
-                      onCheckedChange={setShowDataQuality}
-                      data-testid="switch-data-quality"
-                    />
-                  </div>
-                  <div className="flex items-center justify-between rounded-lg border border-border p-3">
-                    <div>
-                      <p className="font-medium text-foreground">Topic insights</p>
-                      <p className="text-xs text-muted-foreground">Show strengths and improvement areas by topic</p>
-                    </div>
-                    <Switch
-                      checked={showTopicInsights}
-                      onCheckedChange={setShowTopicInsights}
-                      data-testid="switch-topic-insights"
-                    />
-                  </div>
-                  <div className="flex items-center justify-between rounded-lg border border-border p-3">
-                    <div>
-                      <p className="font-medium text-foreground">Difficulty breakdown</p>
-                      <p className="text-xs text-muted-foreground">Show easy/medium/hard accuracy distribution</p>
-                    </div>
-                    <Switch
-                      checked={showDifficultyBreakdown}
-                      onCheckedChange={setShowDifficultyBreakdown}
-                      data-testid="switch-difficulty-breakdown"
-                    />
-                  </div>
-                  <div className="flex items-center justify-between rounded-lg border border-border p-3">
-                    <div>
-                      <p className="font-medium text-foreground">Quiz realism view</p>
-                      <p className="text-xs text-muted-foreground">Show latest-vs-average quiz-level comparison</p>
-                    </div>
-                    <Switch
-                      checked={showQuizRealism}
-                      onCheckedChange={setShowQuizRealism}
-                      data-testid="switch-quiz-realism"
-                    />
-                  </div>
-                  <div className="flex items-center justify-between rounded-lg border border-border p-3">
-                    <div>
-                      <p className="font-medium text-foreground">Metric guide</p>
-                      <p className="text-xs text-muted-foreground">Show plain-language explanations for key analytics terms</p>
-                    </div>
-                    <Switch
-                      checked={showMetricGuide}
-                      onCheckedChange={setShowMetricGuide}
-                      data-testid="switch-metric-guide"
-                    />
-                  </div>
-                </CardContent>
-              </CollapsibleContent>
-            </Collapsible>
-          </Card>
+          {!showAccuracyTrends || !showStrengthAreas || !showImprovementAreas ? (
+            <Card className="border border-border/70 bg-muted/20">
+              <CardContent className="flex flex-wrap items-center gap-2 py-3">
+                <p className="text-xs font-medium text-muted-foreground">Hidden sections:</p>
+                {!showAccuracyTrends ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-7"
+                    onClick={() => setShowAccuracyTrends(true)}
+                  >
+                    Show Accuracy Trends
+                  </Button>
+                ) : null}
+                {!showStrengthAreas ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-7"
+                    onClick={() => setShowStrengthAreas(true)}
+                  >
+                    Show Strength Areas
+                  </Button>
+                ) : null}
+                {!showImprovementAreas ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-7"
+                    onClick={() => setShowImprovementAreas(true)}
+                  >
+                    Show Improvement Areas
+                  </Button>
+                ) : null}
+              </CardContent>
+            </Card>
+          ) : null}
 
           {showMetricGuide ? (
             <Card className="border border-border">
@@ -654,15 +660,27 @@ const getPacingBand = (avgTimeSeconds: number) => {
             </Card>
           ) : null}
 
-          {showTopicInsights && (rankedStrengths.length > 0 || rankedImprovements.length > 0) ? (
+          {(showStrengthAreas && rankedStrengths.length > 0) || (showImprovementAreas && rankedImprovements.length > 0) ? (
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-              <Card className="border border-emerald-200 dark:border-emerald-800">
+              {showStrengthAreas && rankedStrengths.length > 0 ? (
+              <Card className="group border border-emerald-200 dark:border-emerald-800">
                 <CardHeader>
-                  <CardTitle className="text-emerald-700 dark:text-emerald-300 flex items-center gap-2">
-                    <TrendingUp className="h-5 w-5" />
-                    Strength Areas
-                    <InfoHint text="Topics are ranked by performance quality and sample strength, not just a single high score." />
-                  </CardTitle>
+                  <div className="flex items-start justify-between gap-2">
+                    <CardTitle className="text-emerald-700 dark:text-emerald-300 flex items-center gap-2">
+                      <TrendingUp className="h-5 w-5" />
+                      Strength Areas
+                      <InfoHint text="Topics are ranked by performance quality and sample strength, not just a single high score." />
+                    </CardTitle>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 px-2 text-xs opacity-0 transition-opacity group-hover:opacity-100"
+                      onClick={() => setShowStrengthAreas(false)}
+                    >
+                      Hide
+                    </Button>
+                  </div>
                   <CardDescription>Weighted by accuracy and sample size to avoid noisy one-off scores.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-3">
@@ -691,14 +709,27 @@ const getPacingBand = (avgTimeSeconds: number) => {
                   )}
                 </CardContent>
               </Card>
+              ) : null}
 
-              <Card className="border border-rose-200 dark:border-rose-800">
+              {showImprovementAreas && rankedImprovements.length > 0 ? (
+              <Card className="group border border-rose-200 dark:border-rose-800">
                 <CardHeader>
-                  <CardTitle className="text-rose-700 dark:text-rose-300 flex items-center gap-2">
-                    <Target className="h-5 w-5" />
-                    Improvement Areas
-                    <InfoHint text="Prioritized topics combine lower accuracy with sufficient data to avoid overreacting to outliers." />
-                  </CardTitle>
+                  <div className="flex items-start justify-between gap-2">
+                    <CardTitle className="text-rose-700 dark:text-rose-300 flex items-center gap-2">
+                      <Target className="h-5 w-5" />
+                      Improvement Areas
+                      <InfoHint text="Prioritized topics combine lower accuracy with sufficient data to avoid overreacting to outliers." />
+                    </CardTitle>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 px-2 text-xs opacity-0 transition-opacity group-hover:opacity-100"
+                      onClick={() => setShowImprovementAreas(false)}
+                    >
+                      Hide
+                    </Button>
+                  </div>
                   <CardDescription>Prioritized by consistently lower accuracy with enough attempts to be meaningful.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-3">
@@ -737,6 +768,7 @@ const getPacingBand = (avgTimeSeconds: number) => {
                   )}
                 </CardContent>
               </Card>
+              ) : null}
             </div>
           ) : null}
 
@@ -803,12 +835,23 @@ const getPacingBand = (avgTimeSeconds: number) => {
           ) : null}
 
           {showAccuracyTrends ? (
-            <Card className="border border-border">
+            <Card className="group border border-border">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  Accuracy Trends
-                  <InfoHint text="Shows recent attempt-by-attempt changes so you can identify short-term drift or recovery." />
-                </CardTitle>
+                <div className="flex items-start justify-between gap-2">
+                  <CardTitle className="flex items-center gap-2">
+                    Accuracy Trends
+                    <InfoHint text="Shows recent attempt-by-attempt changes so you can identify short-term drift or recovery." />
+                  </CardTitle>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 px-2 text-xs opacity-0 transition-opacity group-hover:opacity-100"
+                    onClick={() => setShowAccuracyTrends(false)}
+                  >
+                    Hide
+                  </Button>
+                </div>
                 <CardDescription>Recent attempt-level accuracy movement.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
