@@ -73,6 +73,15 @@ export default function Login() {
   const [signUpLastName, setSignUpLastName] = useState("");
   const [signUpEmail, setSignUpEmail] = useState("");
   const [signUpPassword, setSignUpPassword] = useState("");
+  const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
+  const [customSubject, setCustomSubject] = useState("");
+  const [wantsSampleDecks, setWantsSampleDecks] = useState(true);
+  const [wantsSampleQuizzes, setWantsSampleQuizzes] = useState(true);
+  const [wantsSampleFlashcards, setWantsSampleFlashcards] = useState(true);
+  const [starterDeckCount, setStarterDeckCount] = useState(1);
+  const [starterFlashcardsPerDeck, setStarterFlashcardsPerDeck] = useState(6);
+  const [starterQuizCount, setStarterQuizCount] = useState(1);
+  const [starterQuestionsPerQuiz, setStarterQuestionsPerQuiz] = useState(4);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [isNavigating, setIsNavigating] = useState(false);
@@ -150,6 +159,177 @@ export default function Login() {
     { icon: BookOpen, label: "Study Materials", desc: "Auto-generated notes" },
   ];
 
+  const subjectSuggestions = [
+    "Computer Science",
+    "Mathematics",
+    "Biology",
+    "Chemistry",
+    "Physics",
+    "Economics",
+    "Business",
+    "Psychology",
+  ];
+
+  const toggleSubject = (subject: string) => {
+    setSelectedSubjects((current) =>
+      current.includes(subject)
+        ? current.filter((value) => value !== subject)
+        : [...current, subject],
+    );
+  };
+
+  const addCustomSubject = () => {
+    const normalized = customSubject.trim();
+    if (!normalized) return;
+    if (!selectedSubjects.includes(normalized)) {
+      setSelectedSubjects((current) => [...current, normalized]);
+    }
+    setCustomSubject("");
+  };
+
+  const getStarterCardsForSubject = (subject: string) => [
+    {
+      front: `${subject}: Core concept`,
+      back: `Define one foundational concept from ${subject} and explain why it matters.`,
+    },
+    {
+      front: `${subject}: Key terminology`,
+      back: `List three high-value terms in ${subject} with a one-line explanation for each.`,
+    },
+    {
+      front: `${subject}: Common mistake`,
+      back: `Identify a frequent mistake students make in ${subject} and how to avoid it.`,
+    },
+  ];
+
+  const buildStarterCardsForSubject = (subject: string, count: number) => {
+    const templates = getStarterCardsForSubject(subject);
+    const safeCount = Math.max(1, Math.min(50, count));
+
+    return Array.from({ length: safeCount }, (_, index) => {
+      const template = templates[index % templates.length];
+      return {
+        front: `${template.front} ${safeCount > templates.length ? `(${index + 1})` : ""}`.trim(),
+        back: template.back,
+      };
+    });
+  };
+
+  const getStarterQuizQuestionsForSubject = (subject: string) => [
+    {
+      type: "mcq",
+      difficulty: 2,
+      marks: 1,
+      question: `Which statement best describes the focus of ${subject}?`,
+      explanation: `A strong answer identifies the core purpose and problem-space of ${subject}.`,
+      options: [
+        { text: `It studies principles, methods, and applications within ${subject}.`, isCorrect: true },
+        { text: "It is only about memorizing isolated facts.", isCorrect: false },
+        { text: "It has no real-world relevance.", isCorrect: false },
+        { text: "It cannot be practiced with problem-solving.", isCorrect: false },
+      ],
+    },
+    {
+      type: "mcq",
+      difficulty: 3,
+      marks: 1,
+      question: `What is the best study strategy when starting ${subject}?`,
+      explanation: "Concept understanding + active recall + spaced review is generally most effective.",
+      options: [
+        { text: "Read once and move on.", isCorrect: false },
+        { text: "Combine concept understanding with practice and review.", isCorrect: true },
+        { text: "Only watch videos without solving problems.", isCorrect: false },
+        { text: "Skip weak topics and focus only on easy ones.", isCorrect: false },
+      ],
+    },
+  ];
+
+  const buildStarterQuizQuestionsForSubject = (subject: string, count: number) => {
+    const templates = getStarterQuizQuestionsForSubject(subject);
+    const safeCount = Math.max(1, Math.min(30, count));
+
+    return Array.from({ length: safeCount }, (_, index) => {
+      const template = templates[index % templates.length];
+      return {
+        ...template,
+        question: `${template.question} ${safeCount > templates.length ? `(${index + 1})` : ""}`.trim(),
+      };
+    });
+  };
+
+  const runOnboardingSetup = async (token: string) => {
+    if (!wantsSampleDecks && !wantsSampleQuizzes && !wantsSampleFlashcards) {
+      return;
+    }
+
+    const subjects = selectedSubjects.length > 0 ? selectedSubjects : ["General Studies"];
+    const safeDeckCount = Math.max(1, Math.min(10, starterDeckCount));
+    const safeQuizCount = Math.max(1, Math.min(10, starterQuizCount));
+    const safeFlashcardsPerDeck = Math.max(1, Math.min(100, starterFlashcardsPerDeck));
+    const safeQuestionsPerQuiz = Math.max(1, Math.min(30, starterQuestionsPerQuiz));
+
+    const authedPost = async (url: string, body: unknown) => {
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(body),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed request: ${url}`);
+      }
+
+      return response.json();
+    };
+
+    for (const subject of subjects) {
+      const createdDeckIds: string[] = [];
+
+      if (wantsSampleDecks || wantsSampleFlashcards) {
+        for (let deckIndex = 0; deckIndex < safeDeckCount; deckIndex++) {
+          const deck = await authedPost("/api/decks", {
+            title: `${subject} Starter Deck ${deckIndex + 1}`,
+            subject,
+            description: `Starter revision deck ${deckIndex + 1} generated for ${subject}.`,
+            difficulty: "easy",
+          });
+
+          if (deck?.id) {
+            createdDeckIds.push(deck.id);
+          }
+        }
+      }
+
+      if (wantsSampleFlashcards && createdDeckIds.length > 0) {
+        for (const targetDeckId of createdDeckIds) {
+          const starterCards = buildStarterCardsForSubject(subject, safeFlashcardsPerDeck);
+          for (const card of starterCards) {
+            await authedPost(`/api/decks/${targetDeckId}/cards`, {
+              type: "basic",
+              front: card.front,
+              back: card.back,
+            });
+          }
+        }
+      }
+
+      if (wantsSampleQuizzes) {
+        for (let quizIndex = 0; quizIndex < safeQuizCount; quizIndex++) {
+          await authedPost("/api/quizzes", {
+            title: `${subject} Starter Quiz ${quizIndex + 1}`,
+            subject,
+            description: `Baseline quiz ${quizIndex + 1} to warm up your ${subject} fundamentals.`,
+            mode: "practice",
+            questions: buildStarterQuizQuestionsForSubject(subject, safeQuestionsPerQuiz),
+          });
+        }
+      }
+    }
+  };
+
     /*
   ----------------------------------------------------------
   Function: handleSubmit
@@ -208,6 +388,27 @@ const handleSubmit = async (e: React.FormEvent) => {
       
       // Store token
       localStorage.setItem("token", data.token);
+
+      if (!isLogin) {
+        try {
+          await runOnboardingSetup(data.token);
+          localStorage.setItem(
+            "studymate-onboarding",
+            JSON.stringify({
+              subjects: selectedSubjects,
+              sampleDecks: wantsSampleDecks,
+              sampleQuizzes: wantsSampleQuizzes,
+              sampleFlashcards: wantsSampleFlashcards,
+              starterDeckCount,
+              starterFlashcardsPerDeck,
+              starterQuizCount,
+              starterQuestionsPerQuiz,
+            }),
+          );
+        } catch (setupError) {
+          console.warn("[onboarding] starter content setup failed", setupError);
+        }
+      }
       
       // Trigger auth update event
       window.dispatchEvent(new CustomEvent("auth-update"));
@@ -410,6 +611,125 @@ const handleGithubLogin = () => {
                       required
                       className="h-11"
                     />
+
+                    <div className="rounded-xl border border-border bg-muted/30 p-3 space-y-3">
+                      <div>
+                        <p className="text-sm font-semibold text-foreground">Study Profile Assessment</p>
+                        <p className="text-xs text-muted-foreground">Choose what you study so StudyMate can tailor your starting experience.</p>
+                      </div>
+
+                      <div className="flex flex-wrap gap-2">
+                        {subjectSuggestions.map((subject) => {
+                          const selected = selectedSubjects.includes(subject);
+                          return (
+                            <button
+                              key={subject}
+                              type="button"
+                              onClick={() => toggleSubject(subject)}
+                              className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+                                selected
+                                  ? "border-brand-primary bg-brand-primary/10 text-brand-primary"
+                                  : "border-border bg-background text-muted-foreground hover:bg-muted"
+                              }`}
+                            >
+                              {subject}
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      <div className="flex gap-2">
+                        <Input
+                          type="text"
+                          placeholder="Add another subject"
+                          value={customSubject}
+                          onChange={(e) => setCustomSubject(e.target.value)}
+                          className="h-10"
+                        />
+                        <Button type="button" variant="outline" onClick={addCustomSubject} className="h-10">
+                          Add
+                        </Button>
+                      </div>
+
+                      <div className="space-y-2 rounded-lg border border-border bg-background p-3">
+                        <p className="text-xs font-medium text-foreground">Generate starter content</p>
+                        <label className="flex items-center justify-between text-sm text-foreground">
+                          <span>Sample decks</span>
+                          <input
+                            type="checkbox"
+                            checked={wantsSampleDecks}
+                            onChange={(e) => setWantsSampleDecks(e.target.checked)}
+                            className="h-4 w-4"
+                          />
+                        </label>
+                        <div className="flex items-center justify-between gap-3 text-sm text-foreground">
+                          <span>How many flashcard decks?</span>
+                          <Input
+                            type="number"
+                            min={1}
+                            max={10}
+                            value={starterDeckCount}
+                            onChange={(e) => setStarterDeckCount(Number(e.target.value) || 1)}
+                            className="h-8 w-24"
+                            disabled={!wantsSampleDecks && !wantsSampleFlashcards}
+                          />
+                        </div>
+                        <div className="flex items-center justify-between gap-3 text-sm text-foreground">
+                          <span>How many flashcards per deck?</span>
+                          <Input
+                            type="number"
+                            min={1}
+                            max={100}
+                            value={starterFlashcardsPerDeck}
+                            onChange={(e) => setStarterFlashcardsPerDeck(Number(e.target.value) || 1)}
+                            className="h-8 w-24"
+                            disabled={!wantsSampleFlashcards}
+                          />
+                        </div>
+                        <label className="flex items-center justify-between text-sm text-foreground">
+                          <span>Sample quizzes</span>
+                          <input
+                            type="checkbox"
+                            checked={wantsSampleQuizzes}
+                            onChange={(e) => setWantsSampleQuizzes(e.target.checked)}
+                            className="h-4 w-4"
+                          />
+                        </label>
+                        <div className="flex items-center justify-between gap-3 text-sm text-foreground">
+                          <span>How many quizzes?</span>
+                          <Input
+                            type="number"
+                            min={1}
+                            max={10}
+                            value={starterQuizCount}
+                            onChange={(e) => setStarterQuizCount(Number(e.target.value) || 1)}
+                            className="h-8 w-24"
+                            disabled={!wantsSampleQuizzes}
+                          />
+                        </div>
+                        <div className="flex items-center justify-between gap-3 text-sm text-foreground">
+                          <span>How many questions per quiz?</span>
+                          <Input
+                            type="number"
+                            min={1}
+                            max={30}
+                            value={starterQuestionsPerQuiz}
+                            onChange={(e) => setStarterQuestionsPerQuiz(Number(e.target.value) || 1)}
+                            className="h-8 w-24"
+                            disabled={!wantsSampleQuizzes}
+                          />
+                        </div>
+                        <label className="flex items-center justify-between text-sm text-foreground">
+                          <span>Sample flashcards</span>
+                          <input
+                            type="checkbox"
+                            checked={wantsSampleFlashcards}
+                            onChange={(e) => setWantsSampleFlashcards(e.target.checked)}
+                            className="h-4 w-4"
+                          />
+                        </label>
+                      </div>
+                    </div>
                   </>
                 )}
                 <Button type="submit" disabled={loading || isModeTransitioning} className="button-priority-transition w-full h-11 bg-gradient-to-r from-brand-primary to-brand-accent hover:from-[#1A3175] hover:to-[#0891B2] text-white font-semibold">
