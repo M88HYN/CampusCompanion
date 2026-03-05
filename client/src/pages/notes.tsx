@@ -1883,7 +1883,7 @@ const handleDuplicateNote = () => {
   }
 
   return (
-    <div className="flex h-full bg-gradient-to-br from-blue-50 via-indigo-50 to-cyan-50 dark:from-slate-950 dark:via-indigo-950/40 dark:to-slate-900">
+    <div className="flex h-full min-w-0 overflow-hidden bg-gradient-to-br from-blue-50 via-indigo-50 to-cyan-50 dark:from-slate-950 dark:via-indigo-950/40 dark:to-slate-900">
       {/* Mobile Sidebar Toggle */}
       {isMobile && !showMobileSidebar && (
         <button
@@ -2059,11 +2059,11 @@ const handleDuplicateNote = () => {
       </div>
 
       {/* Main Content Area */}
-      <div className={`flex-1 flex flex-col bg-card ${isMobile && showMobileSidebar ? 'hidden' : ''}`}>
+      <div className={`flex min-w-0 flex-1 flex-col bg-card ${isMobile && showMobileSidebar ? 'hidden' : ''}`}>
         {selectedNoteId ? (
           <>
             {/* Header */}
-            <div className="border-b border-brand-primary/30 dark:border-blue-900 px-3 sm:px-6 py-3 sm:py-4 flex items-center justify-between gap-2 sm:gap-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-slate-900 dark:to-slate-800">
+            <div className="border-b border-brand-primary/30 dark:border-blue-900 px-3 sm:px-6 py-3 sm:py-4 flex flex-wrap items-center justify-between gap-2 sm:gap-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-slate-900 dark:to-slate-800">
               <div className="flex-1 min-w-0">
                 <Input
                   value={noteTitle}
@@ -2087,21 +2087,21 @@ const handleDuplicateNote = () => {
                 />
               </div>
 
-              <div className="flex items-center gap-3 ml-4">
+              <div className="ml-0 flex w-full items-center justify-end gap-2 sm:ml-4 sm:w-auto sm:gap-3">
                 {updateNoteMutation.isPending ? (
                   <Badge className="bg-blue-100 dark:bg-brand-primary/20 text-brand-primary dark:text-blue-300 gap-1 border-0">
                     <Loader2 className="h-3 w-3 animate-spin" />
-                    Saving...
+                    <span className="hidden sm:inline">Saving...</span>
                   </Badge>
                 ) : isSaved ? (
                   <Badge variant="secondary" className="bg-green-100 dark:bg-success/20 text-success dark:text-green-300 gap-1 border-0">
                     <CheckCircle2 className="h-3 w-3" />
-                    Saved
+                    <span className="hidden sm:inline">Saved</span>
                   </Badge>
                 ) : (
                   <Badge className="bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300 gap-1 border-0 animate-pulse">
                     <Zap className="h-3 w-3" />
-                    Unsaved
+                    <span className="hidden sm:inline">Unsaved</span>
                   </Badge>
                 )}
 
@@ -2113,7 +2113,7 @@ const handleDuplicateNote = () => {
                   data-testid="button-save-note"
                 >
                   <Save className="h-4 w-4 mr-2" />
-                  Save
+                  <span className="hidden sm:inline">Save</span>
                 </Button>
 
                 <DropdownMenu>
@@ -2340,7 +2340,7 @@ const handleDuplicateNote = () => {
               <div className="flex items-center gap-2">
                 <span className="text-xs font-medium text-muted-foreground">Type:</span>
                 <Select value={selectedNoteType} onValueChange={setSelectedNoteType}>
-                  <SelectTrigger className="h-7 w-32 text-xs" data-testid="select-note-type">
+                  <SelectTrigger className="h-7 w-28 sm:w-32 text-xs" data-testid="select-note-type">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -2391,7 +2391,8 @@ const handleDuplicateNote = () => {
                     data-testid="button-add-exam-prompt"
                   >
                     <ClipboardList className="h-3.5 w-3.5" />
-                    Exam Prompt
+                    <span className="hidden sm:inline">Exam Prompt</span>
+                    <span className="sm:hidden">Prompt</span>
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>Add exam question annotation</TooltipContent>
@@ -2451,7 +2452,7 @@ const handleDuplicateNote = () => {
                     value={keyTermsInput}
                     onChange={(e) => setKeyTermsInput(e.target.value)}
                     placeholder="Key terms (comma-separated)..."
-                    className="h-7 w-48 text-xs"
+                    className="h-7 w-36 sm:w-48 text-xs"
                     data-testid="input-key-terms"
                   />
                   <Tooltip>
@@ -2487,7 +2488,8 @@ const handleDuplicateNote = () => {
                     data-testid="button-auto-generate-quiz"
                   >
                     <ListChecks className="h-3.5 w-3.5" />
-                    Generate Quiz
+                    <span className="hidden sm:inline">Generate Quiz</span>
+                    <span className="sm:hidden">Quiz</span>
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>Auto-generate quiz from this note</TooltipContent>
@@ -2507,7 +2509,8 @@ const handleDuplicateNote = () => {
                     data-testid="button-auto-generate-flashcards"
                   >
                     <Zap className="h-3.5 w-3.5" />
-                    Generate Cards
+                    <span className="hidden sm:inline">Generate Cards</span>
+                    <span className="sm:hidden">Cards</span>
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>Auto-generate flashcards from this note</TooltipContent>
@@ -2515,9 +2518,9 @@ const handleDuplicateNote = () => {
             </div>
 
             {/* Editor Area with AI Panel */}
-            <div className="flex-1 flex overflow-hidden">
+            <div className="flex min-h-0 flex-1 overflow-hidden">
               {/* Main Editor */}
-              <div className={`flex-1 p-8 overflow-auto ${showAiPanel ? 'border-r border-blue-100 dark:border-blue-900' : ''}`}>
+              <div className={`min-w-0 flex-1 overflow-auto p-3 sm:p-8 ${showAiPanel && !isMobile ? 'border-r border-blue-100 dark:border-blue-900' : ''}`}>
                 <div className="max-w-4xl mx-auto">
                   {recallMode && keyTermsInput ? (
                     <div className="space-y-4">
@@ -2564,7 +2567,7 @@ const handleDuplicateNote = () => {
 
               {/* AI Ask Panel (Side Panel) */}
               {showAiPanel && (
-                <div className="w-96 flex flex-col bg-gradient-to-b from-amber-50/50 to-white dark:from-amber-950/20 dark:to-slate-900">
+                <div className={`${isMobile ? "absolute inset-0 z-30 w-full" : "w-96"} flex flex-col bg-gradient-to-b from-amber-50/50 to-white dark:from-amber-950/20 dark:to-slate-900 ${isMobile ? "border-l border-amber-200 dark:border-amber-800 shadow-lg" : ""}`}>
                   <div className="px-4 py-3 border-b border-amber-200 dark:border-amber-800 flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <Sparkles className="h-4 w-4 text-amber-600" />

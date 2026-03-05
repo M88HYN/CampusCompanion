@@ -622,6 +622,7 @@ A JSX tree representing the component view for the current state.
 ----------------------------------------------------------
 */
 export default function Research() {
+  const isMobile = useIsMobile();
   const [input, setInput] = useState("");
   const [studyIntent, setStudyIntent] = useState<StudyIntent>("deep_understanding");
   const [searchDepth, setSearchDepth] = useState<SearchDepth>("balanced");
@@ -641,6 +642,7 @@ export default function Research() {
   const [quizQuestion, setQuizQuestion] = useState("");
   const [quizAnswer, setQuizAnswer] = useState("");
   const [selectedQuizId, setSelectedQuizId] = useState("");
+  const [mobilePanel, setMobilePanel] = useState<"controls" | "canvas">("controls");
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -667,6 +669,12 @@ export default function Research() {
     enabled: Boolean(currentConversationId),
     staleTime: 10000,
   });
+
+  useEffect(() => {
+    if (!isMobile) {
+      setMobilePanel("controls");
+    }
+  }, [isMobile]);
 
   // ── Mutations ────────────────────────────────────────────────────────
 
@@ -1042,6 +1050,9 @@ const handleSend = async () => {
     }
 
     setInput("");
+    if (isMobile) {
+      setMobilePanel("canvas");
+    }
     setStreamingContent("");
     setStreamingQuery(query);
     setIsStreaming(true);
@@ -1164,7 +1175,7 @@ const handleSend = async () => {
   // ── Render ───────────────────────────────────────────────────────────
 
   return (
-    <div className="flex-1 flex flex-col md:flex-row h-full overflow-hidden bg-gradient-to-br from-sky-50 via-cyan-50 to-indigo-50 dark:from-slate-950 dark:via-sky-950/30 dark:to-indigo-950/30 relative">
+    <div className="relative flex h-full min-w-0 flex-1 flex-col overflow-hidden bg-gradient-to-br from-sky-50 via-cyan-50 to-indigo-50 dark:from-slate-950 dark:via-sky-950/30 dark:to-indigo-950/30 md:flex-row">
       {/* Subtle paper grid texture */}
       <div className="absolute inset-0 pointer-events-none opacity-[0.035] dark:opacity-[0.02]" style={{
         backgroundImage: `repeating-linear-gradient(0deg, transparent, transparent 23px, rgba(180,160,120,0.3) 24px),
@@ -1172,8 +1183,33 @@ const handleSend = async () => {
         backgroundSize: "24px 24px",
       }} />
 
+      {isMobile ? (
+        <div className="relative z-10 border-b border-slate-200/80 bg-white/75 px-3 py-2 backdrop-blur-sm dark:border-slate-700/60 dark:bg-slate-900/75">
+          <div className="grid grid-cols-2 gap-2">
+            <Button
+              type="button"
+              size="sm"
+              variant={mobilePanel === "controls" ? "default" : "outline"}
+              onClick={() => setMobilePanel("controls")}
+              className="w-full"
+            >
+              Controls
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant={mobilePanel === "canvas" ? "default" : "outline"}
+              onClick={() => setMobilePanel("canvas")}
+              className="w-full"
+            >
+              Canvas
+            </Button>
+          </div>
+        </div>
+      ) : null}
+
       {/* ─── LEFT PANEL: Question & Controls ─── */}
-      <div className="w-full md:w-[380px] md:min-w-[340px] md:max-w-[420px] border-b md:border-b-0 md:border-r border-slate-200/80 dark:border-slate-700/60 bg-white/90 dark:bg-slate-900/95 backdrop-blur-sm flex flex-col relative z-10 max-h-[50vh] md:max-h-none">
+      <div className={`${isMobile ? (mobilePanel === "controls" ? "flex" : "hidden") : "flex"} w-full md:w-[380px] md:min-w-[340px] md:max-w-[420px] border-b md:border-b-0 md:border-r border-slate-200/80 dark:border-slate-700/60 bg-white/90 dark:bg-slate-900/95 backdrop-blur-sm flex-col relative z-10 ${isMobile ? "max-h-none" : "max-h-[50vh] md:max-h-none"}`}>
 
         {/* Header */}
         <div className="px-5 pt-5 pb-4 border-b border-slate-100 dark:border-slate-800">
@@ -1401,7 +1437,7 @@ const handleSend = async () => {
       </div>
 
       {/* ─── RIGHT PANEL: Insight Canvas ─── */}
-      <div className="flex-1 flex flex-col relative z-10 min-h-0">
+      <div className={`${isMobile ? (mobilePanel === "canvas" ? "flex" : "hidden") : "flex"} min-h-0 min-w-0 flex-1 flex-col relative z-10`}>
         {/* Canvas Header */}
         <div className="px-3 sm:px-6 py-3 sm:py-3.5 border-b border-slate-200/60 dark:border-slate-700/40 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm">
           <div className="flex items-center justify-between">

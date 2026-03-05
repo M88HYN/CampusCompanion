@@ -134,11 +134,11 @@ function MainLayout({
 
   return (
     <SidebarProvider style={style as React.CSSProperties}>
-      <div className="flex h-screen w-full bg-app-gradient">
+      <div className="flex min-h-svh w-full overflow-hidden bg-app-gradient">
         <AppNavigation user={user} onLogout={onLogout} />
-        <div className="flex flex-col flex-1 overflow-hidden bg-gradient-to-b from-background/80 via-background/70 to-secondary/10 backdrop-blur-[1px]">
+        <div className="flex min-w-0 flex-1 flex-col overflow-hidden bg-gradient-to-b from-background/80 via-background/70 to-secondary/10 backdrop-blur-[1px]">
           <AppTopbar user={user} onLogout={onLogout} />
-          <main id="app-main-scroll" className="flex-1 overflow-y-auto overflow-x-hidden bg-gradient-to-b from-transparent via-background/10 to-secondary/10">
+          <main id="app-main-scroll" className="min-w-0 flex-1 overflow-y-auto overflow-x-hidden bg-gradient-to-b from-transparent via-background/10 to-secondary/10">
             <div key={location} className="route-transition">
               <AppRouter />
             </div>

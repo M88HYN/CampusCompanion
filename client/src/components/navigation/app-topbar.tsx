@@ -378,14 +378,14 @@ const handleSearchSubmit = (event: React.FormEvent) => {
 
   return (
     <header
-      className={`sticky top-0 z-30 px-4 py-3 md:px-6 transition-all duration-200 ease-in-out ${
+      className={`sticky top-0 z-30 px-2.5 py-3 sm:px-4 md:px-6 transition-all duration-200 ease-in-out ${
         isScrolled
           ? "border-b border-primary/70 bg-gradient-to-r from-primary via-brand-primary to-secondary text-primary-foreground backdrop-blur-xl shadow-md"
           : "border-b border-primary/60 bg-gradient-to-r from-primary via-brand-primary to-secondary text-primary-foreground backdrop-blur"
       }`}
     >
       <div className="flex items-center gap-2 md:gap-4">
-        <div className="flex items-center gap-2 md:gap-3 md:min-w-[220px]">
+        <div className="flex min-w-0 items-center gap-2 md:gap-3 md:min-w-[220px]">
           <SidebarTrigger
             className="button-priority-transition"
             aria-label="Open navigation menu"
@@ -443,7 +443,7 @@ const handleSearchSubmit = (event: React.FormEvent) => {
           </form>
         </div>
 
-        <div className="ml-auto flex items-center gap-1.5 md:gap-3">
+        <div className="ml-auto flex items-center gap-1 sm:gap-2 md:gap-3">
           <Button
             variant="ghost"
             size="icon"

@@ -93,8 +93,14 @@ A JSX tree representing the component view for the current state.
 export function AppNavigation({ user, onLogout }: AppNavigationProps) {
   const { t } = useAppLanguage();
   const [location, setLocation] = useLocation();
-  const { state, isMobile } = useSidebar();
+  const { state, isMobile, setOpenMobile } = useSidebar();
   const isCollapsed = state === "collapsed" && !isMobile;
+
+  const handleNavigate = () => {
+    if (isMobile) {
+      setOpenMobile(false);
+    }
+  };
 
   const { data: notes = [] } = useQuery<{ id: string }[]>({
     queryKey: ["/api/notes"],
@@ -239,6 +245,7 @@ export function AppNavigation({ user, onLogout }: AppNavigationProps) {
                     href={item.href}
                     label={item.label}
                     icon={item.icon}
+                    onNavigate={handleNavigate}
                     isActive={location === item.href || location.startsWith(`${item.href}?`) || location.startsWith(`${item.href}/`)}
                     badgeCount={navBadges[item.href]}
                     shortcutHint={shortcuts[item.href]}
