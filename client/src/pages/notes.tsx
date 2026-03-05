@@ -310,7 +310,7 @@ export default function Notes() {
   const [newFolderName, setNewFolderName] = useState("");
   const [contextNoteId, setContextNoteId] = useState<string | null>(null);
   const [showMobileSidebar, setShowMobileSidebar] = useState(true);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const editorRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
   
   // AI Ask panel state
@@ -356,7 +356,8 @@ export default function Notes() {
       setNoteSubject(selectedNote.subject || "");
       setNoteTags(normalizeTags(selectedNote.tags));
       const content = selectedNote.blocks?.map(b => b.content).join("\n\n") || "";
-      setNoteContent(content);
+      const looksLikeHtml = /<\/?[a-z][\s\S]*>/i.test(content);
+      setNoteContent(looksLikeHtml ? content : (marked(content, { breaks: true, gfm: true }) as string));
       setIsSaved(true);
     }
   }, [selectedNote]);
@@ -654,7 +655,7 @@ const handleAutoGenerate = () => {
   ----------------------------------------------------------
   */
 const insertExamPrompt = () => {
-    const annotation = `\n\n> **${examPromptType}** (${examMarks} marks)\n`;
+  const annotation = `<blockquote><strong>${examPromptType}</strong> (${examMarks} marks)</blockquote><p><br/></p>`;
     setNoteContent(noteContent + annotation);
     setIsSaved(false);
     setShowExamPrompt(false);
@@ -688,7 +689,7 @@ const getRecallContent = (content: string): string => {
     if (!recallMode || !keyTermsInput) return content;
     
     const terms = keyTermsInput.split(',').map(t => t.trim()).filter(Boolean);
-    let maskedContent = content;
+  let maskedContent = content.replace(/<[^>]+>/g, " ");
     
     for (const term of terms) {
       const regex = new RegExp(`\\b${term}\\b`, 'gi');
@@ -696,6 +697,21 @@ const getRecallContent = (content: string): string => {
     }
     
     return maskedContent;
+  };
+
+const syncEditorContent = () => {
+    const editor = editorRef.current;
+    if (!editor) return;
+    setNoteContent(editor.innerHTML);
+    setIsSaved(false);
+  };
+
+const execEditorCommand = (command: string, value?: string) => {
+    const editor = editorRef.current;
+    if (!editor) return;
+    editor.focus();
+    document.execCommand(command, false, value);
+    syncEditorContent();
   };
 
   const handleSave = useCallback(() => {
@@ -744,22 +760,28 @@ const getRecallContent = (content: string): string => {
   A value/promise representing the outcome of the executed logic path.
   ----------------------------------------------------------
   */
-const insertFormat = (before: string, after: string = "") => {
-    const textarea = textareaRef.current;
-    if (!textarea) return;
-    
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-    const selected = noteContent.substring(start, end);
-    const newText = noteContent.substring(0, start) + before + selected + after + noteContent.substring(end);
-    
-    setNoteContent(newText);
-    setIsSaved(false);
-    
-    setTimeout(() => {
-      textarea.focus();
-      textarea.setSelectionRange(start + before.length, end + before.length);
-    }, 0);
+const insertFormat = (before: string, _after: string = "") => {
+    if (before === "**") {
+      execEditorCommand("bold");
+      return;
+    }
+    if (before === "*") {
+      execEditorCommand("italic");
+      return;
+    }
+    if (before === "<u>") {
+      execEditorCommand("underline");
+      return;
+    }
+    if (before === "[") {
+      const url = window.prompt("Enter URL", "https://");
+      if (url) execEditorCommand("createLink", url);
+      return;
+    }
+    if (before.includes("```")) {
+      execEditorCommand("formatBlock", "pre");
+      return;
+    }
   };
 
     /*
@@ -786,20 +808,26 @@ const insertFormat = (before: string, after: string = "") => {
   ----------------------------------------------------------
   */
 const insertAtLineStart = (prefix: string) => {
-    const textarea = textareaRef.current;
-    if (!textarea) return;
-    
-    const start = textarea.selectionStart;
-    const lineStart = noteContent.lastIndexOf('\n', start - 1) + 1;
-    const newText = noteContent.substring(0, lineStart) + prefix + noteContent.substring(lineStart);
-    
-    setNoteContent(newText);
-    setIsSaved(false);
-    
-    setTimeout(() => {
-      textarea.focus();
-      textarea.setSelectionRange(start + prefix.length, start + prefix.length);
-    }, 0);
+    if (prefix === "# ") {
+      execEditorCommand("formatBlock", "h1");
+      return;
+    }
+    if (prefix === "## ") {
+      execEditorCommand("formatBlock", "h2");
+      return;
+    }
+    if (prefix === "- ") {
+      execEditorCommand("insertUnorderedList");
+      return;
+    }
+    if (prefix === "1. ") {
+      execEditorCommand("insertOrderedList");
+      return;
+    }
+    if (prefix === "> ") {
+      execEditorCommand("formatBlock", "blockquote");
+      return;
+    }
   };
 
     /*
@@ -828,17 +856,60 @@ const insertAtLineStart = (prefix: string) => {
 const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.ctrlKey || e.metaKey) {
       switch (e.key.toLowerCase()) {
+        case 'z':
+          e.preventDefault();
+          if (e.shiftKey) {
+            execEditorCommand("redo");
+          } else {
+            execEditorCommand("undo");
+          }
+          break;
+        case 'y':
+          e.preventDefault();
+          execEditorCommand("redo");
+          break;
         case 'b':
           e.preventDefault();
-          insertFormat('**', '**');
+          execEditorCommand("bold");
           break;
         case 'i':
           e.preventDefault();
-          insertFormat('*', '*');
+          execEditorCommand("italic");
           break;
         case 'u':
           e.preventDefault();
-          insertFormat('<u>', '</u>');
+          execEditorCommand("underline");
+          break;
+        case 'k':
+          e.preventDefault();
+          {
+            const url = window.prompt("Enter URL", "https://");
+            if (url) execEditorCommand("createLink", url);
+          }
+          break;
+        case '1':
+          e.preventDefault();
+          execEditorCommand("formatBlock", "h1");
+          break;
+        case '2':
+          e.preventDefault();
+          execEditorCommand("formatBlock", "h2");
+          break;
+        case '7':
+          if (e.shiftKey) {
+            e.preventDefault();
+            execEditorCommand("insertOrderedList");
+          }
+          break;
+        case '8':
+          if (e.shiftKey) {
+            e.preventDefault();
+            execEditorCommand("insertUnorderedList");
+          }
+          break;
+        case '`':
+          e.preventDefault();
+          execEditorCommand("formatBlock", "pre");
           break;
         case 's':
           e.preventDefault();
@@ -872,9 +943,8 @@ const handleKeyDown = (e: React.KeyboardEvent) => {
   ----------------------------------------------------------
   */
 const getSelectedText = () => {
-    const textarea = textareaRef.current;
-    if (!textarea) return "";
-    return noteContent.substring(textarea.selectionStart, textarea.selectionEnd);
+  const selection = window.getSelection();
+  return selection?.toString().trim() || "";
   };
 
     /*
@@ -1186,11 +1256,19 @@ const autoExtractKeyTerms = () => {
     // Extract potential key terms from content
     const terms: string[] = [];
     
-    // Extract bold text (**term**)
+    // Extract bold text (**term**) or rich text bold tags
     const boldMatches = noteContent.match(/\*\*(.*?)\*\*/g);
     if (boldMatches) {
       boldMatches.forEach(m => terms.push(m.replace(/\*\*/g, "")));
     }
+
+    const htmlBoldMatches = [...noteContent.matchAll(/<(strong|b)[^>]*>(.*?)<\/\1>/gi)];
+    htmlBoldMatches.forEach((m) => {
+      const term = (m[2] || "").replace(/<[^>]+>/g, "").trim();
+      if (term.length >= 3 && term.length <= 50) terms.push(term);
+    });
+
+    const plainTextContent = noteContent.replace(/<[^>]+>/g, " ");
     
     // Extract text after "is a", "refers to", "defined as" patterns  
     const definitionPatterns = [
@@ -1200,7 +1278,7 @@ const autoExtractKeyTerms = () => {
     
     for (const pattern of definitionPatterns) {
       let match;
-      while ((match = pattern.exec(noteContent)) !== null) {
+      while ((match = pattern.exec(plainTextContent)) !== null) {
         const term = match[1].trim();
         if (term.length >= 3 && term.length <= 40) {
           terms.push(term);
@@ -1218,6 +1296,12 @@ const autoExtractKeyTerms = () => {
         }
       });
     }
+
+    const htmlHeadingMatches = [...noteContent.matchAll(/<h[1-6][^>]*>(.*?)<\/h[1-6]>/gi)];
+    htmlHeadingMatches.forEach((m) => {
+      const term = (m[1] || "").replace(/<[^>]+>/g, "").trim();
+      if (term.length >= 3 && term.length <= 50) terms.push(term);
+    });
     
     // Deduplicate
     const unique = [...new Set(terms.map(t => t.toLowerCase()))].map(t =>
@@ -1229,7 +1313,7 @@ const autoExtractKeyTerms = () => {
       setRecallMode(true);
       toast({ title: "Key terms extracted", description: `Found ${unique.length} key terms from your notes.` });
     } else {
-      toast({ title: "No terms found", description: "Try adding **bold** terms or headings to your notes.", variant: "destructive" });
+      toast({ title: "No terms found", description: "Try highlighting important terms with bold text or headings.", variant: "destructive" });
     }
   };
 
@@ -2463,30 +2547,15 @@ const handleDuplicateNote = () => {
                       <MarkdownPreview content={noteContent} />
                     </div>
                   ) : (
-                    <Textarea
-                      ref={textareaRef}
-                      value={noteContent}
-                      onChange={(e) => {
-                        setNoteContent(e.target.value);
-                        setIsSaved(false);
-                      }}
+                    <div
+                      ref={editorRef}
+                      contentEditable
+                      suppressContentEditableWarning
+                      dangerouslySetInnerHTML={{ __html: noteContent || "<p><br/></p>" }}
+                      onInput={syncEditorContent}
                       onKeyDown={handleKeyDown}
-                      className="min-h-[500px] resize-none border-0 focus-visible:ring-0 font-mono text-base leading-relaxed bg-transparent focus-visible:outline-none"
-                      placeholder={`Start typing your notes...
-
-Use the formatting toolbar above or keyboard shortcuts:
-• Ctrl+B for **bold**
-• Ctrl+I for *italic*
-• Ctrl+U for underline
-• Ctrl+S to save
-
-Markdown formatting is supported:
-# Heading 1
-## Heading 2
-- Bullet list
-1. Numbered list
-> Blockquote
-\`\`\`code block\`\`\``}
+                      className="min-h-[500px] border-0 text-base leading-relaxed bg-transparent focus:outline-none prose dark:prose-invert max-w-none"
+                      data-placeholder="Start typing your notes..."
                       data-testid="textarea-note-content"
                     />
                   )}
