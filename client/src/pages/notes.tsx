@@ -2065,6 +2065,17 @@ const handleDuplicateNote = () => {
             {/* Header */}
             <div className="border-b border-brand-primary/30 dark:border-blue-900 px-3 sm:px-6 py-3 sm:py-4 flex flex-wrap items-center justify-between gap-2 sm:gap-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-slate-900 dark:to-slate-800">
               <div className="flex-1 min-w-0">
+                {isMobile ? (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="mb-1 h-7 px-2 text-xs"
+                    onClick={() => setShowMobileSidebar(true)}
+                  >
+                    <FileText className="mr-1.5 h-3.5 w-3.5" />
+                    Notes List
+                  </Button>
+                ) : null}
                 <Input
                   value={noteTitle}
                   onChange={(e) => {
@@ -2221,37 +2232,37 @@ const handleDuplicateNote = () => {
             </div>
 
             {/* Formatting Toolbar */}
-            <div className="px-3 sm:px-6 py-2 border-b border-blue-100 dark:border-blue-900 flex items-center gap-1 flex-wrap bg-slate-50 dark:bg-slate-800/50">
-              <div className="flex items-center gap-1">
+            <div className="px-3 sm:px-6 py-2 border-b border-blue-100 dark:border-blue-900 flex items-center gap-1 overflow-x-auto bg-slate-50 dark:bg-slate-800/50">
+              <div className="flex shrink-0 items-center gap-1">
                 <FormatButton icon={Bold} label="Bold" shortcut="Ctrl+B" onClick={() => insertFormat('**', '**')} disabled={previewMode} />
                 <FormatButton icon={Italic} label="Italic" shortcut="Ctrl+I" onClick={() => insertFormat('*', '*')} disabled={previewMode} />
                 <FormatButton icon={Underline} label="Underline" shortcut="Ctrl+U" onClick={() => insertFormat('<u>', '</u>')} disabled={previewMode} />
               </div>
-              <Separator orientation="vertical" className="h-6 mx-1" />
-              <div className="flex items-center gap-1">
+              <Separator orientation="vertical" className="mx-1 hidden h-6 sm:block" />
+              <div className="flex shrink-0 items-center gap-1">
                 <FormatButton icon={Heading1} label="Heading 1" onClick={() => insertAtLineStart('# ')} disabled={previewMode} />
                 <FormatButton icon={Heading2} label="Heading 2" onClick={() => insertAtLineStart('## ')} disabled={previewMode} />
               </div>
-              <Separator orientation="vertical" className="h-6 mx-1" />
-              <div className="flex items-center gap-1">
+              <Separator orientation="vertical" className="mx-1 hidden h-6 sm:block" />
+              <div className="flex shrink-0 items-center gap-1">
                 <FormatButton icon={List} label="Bullet List" onClick={() => insertAtLineStart('- ')} disabled={previewMode} />
                 <FormatButton icon={ListOrdered} label="Numbered List" onClick={() => insertAtLineStart('1. ')} disabled={previewMode} />
                 <FormatButton icon={Quote} label="Quote" onClick={() => insertAtLineStart('> ')} disabled={previewMode} />
               </div>
-              <Separator orientation="vertical" className="h-6 mx-1" />
-              <div className="flex items-center gap-1">
+              <Separator orientation="vertical" className="mx-1 hidden h-6 sm:block" />
+              <div className="flex shrink-0 items-center gap-1">
                 <FormatButton icon={Code} label="Code Block" onClick={() => insertFormat('```\n', '\n```')} disabled={previewMode} />
                 <FormatButton icon={Link} label="Link" onClick={() => insertFormat('[', '](url)')} disabled={previewMode} />
               </div>
               
-              <Separator orientation="vertical" className="h-6 mx-1" />
+              <Separator orientation="vertical" className="mx-1 hidden h-6 sm:block" />
               
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
                     variant={previewMode ? "default" : "outline"}
                     size="sm"
-                    className={previewMode ? "bg-purple-500 text-white" : ""}
+                    className={`${previewMode ? "bg-purple-500 text-white" : ""} shrink-0`}
                     onClick={() => setPreviewMode(!previewMode)}
                     data-testid="button-toggle-preview"
                   >
@@ -2262,9 +2273,9 @@ const handleDuplicateNote = () => {
                 <TooltipContent>Toggle between edit and preview mode</TooltipContent>
               </Tooltip>
               
-              <div className="flex-1" />
+              <div className="hidden flex-1 sm:block" />
               
-              <div className="flex items-center gap-1">
+              <div className="flex shrink-0 items-center gap-1">
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
@@ -2336,8 +2347,8 @@ const handleDuplicateNote = () => {
             </div>
 
             {/* Smart Note Types & Learning Tools Bar */}
-            <div className="px-3 sm:px-6 py-2 border-b border-blue-100 dark:border-blue-900 flex items-center gap-2 sm:gap-3 flex-wrap bg-gradient-to-r from-teal-50/50 to-cyan-50/50 dark:from-teal-950/30 dark:to-cyan-950/30">
-              <div className="flex items-center gap-2">
+            <div className="px-3 sm:px-6 py-2 border-b border-blue-100 dark:border-blue-900 flex items-center gap-2 sm:gap-3 overflow-x-auto bg-gradient-to-r from-teal-50/50 to-cyan-50/50 dark:from-teal-950/30 dark:to-cyan-950/30">
+              <div className="flex shrink-0 items-center gap-2">
                 <span className="text-xs font-medium text-muted-foreground">Type:</span>
                 <Select value={selectedNoteType} onValueChange={setSelectedNoteType}>
                   <SelectTrigger className="h-7 w-28 sm:w-32 text-xs" data-testid="select-note-type">
@@ -2378,7 +2389,7 @@ const handleDuplicateNote = () => {
                 </Select>
               </div>
 
-              <Separator orientation="vertical" className="h-6" />
+              <Separator orientation="vertical" className="hidden h-6 sm:block" />
 
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -2399,7 +2410,7 @@ const handleDuplicateNote = () => {
               </Tooltip>
 
               {showExamPrompt && (
-                <div className="flex items-center gap-2 bg-card border rounded-lg px-2 py-1">
+                <div className="flex shrink-0 items-center gap-2 bg-card border rounded-lg px-2 py-1">
                   <Select value={examPromptType} onValueChange={setExamPromptType}>
                     <SelectTrigger className="h-6 w-20 text-xs">
                       <SelectValue />
@@ -2427,9 +2438,9 @@ const handleDuplicateNote = () => {
                 </div>
               )}
 
-              <div className="flex-1" />
+              <div className="hidden flex-1 sm:block" />
 
-              <div className="flex items-center gap-2">
+              <div className="flex shrink-0 items-center gap-2">
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <div className="flex items-center gap-2">
@@ -2447,7 +2458,7 @@ const handleDuplicateNote = () => {
               </div>
 
               {recallMode && (
-                <div className="flex items-center gap-1">
+                <div className="flex shrink-0 items-center gap-1">
                   <Input
                     value={keyTermsInput}
                     onChange={(e) => setKeyTermsInput(e.target.value)}
@@ -2472,7 +2483,7 @@ const handleDuplicateNote = () => {
                 </div>
               )}
 
-              <Separator orientation="vertical" className="h-6" />
+              <Separator orientation="vertical" className="hidden h-6 sm:block" />
 
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -2676,7 +2687,7 @@ const handleDuplicateNote = () => {
 
       {/* New Note Dialog */}
       <Dialog open={showNewNoteDialog} onOpenChange={setShowNewNoteDialog}>
-        <DialogContent>
+        <DialogContent className="w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] max-h-[88vh] overflow-y-auto sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>Create New Note</DialogTitle>
           </DialogHeader>
@@ -2700,7 +2711,7 @@ const handleDuplicateNote = () => {
               />
             </div>
           </div>
-          <DialogFooter>
+          <DialogFooter className="flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <Button variant="outline" onClick={() => setShowNewNoteDialog(false)}>
               Cancel
             </Button>
@@ -2725,7 +2736,7 @@ const handleDuplicateNote = () => {
 
       {/* Rename Note Dialog */}
       <Dialog open={showRenameDialog} onOpenChange={setShowRenameDialog}>
-        <DialogContent>
+        <DialogContent className="w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] max-h-[88vh] overflow-y-auto sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>Rename Note</DialogTitle>
           </DialogHeader>
@@ -2740,7 +2751,7 @@ const handleDuplicateNote = () => {
               />
             </div>
           </div>
-          <DialogFooter>
+          <DialogFooter className="flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <Button variant="outline" onClick={() => setShowRenameDialog(false)}>
               Cancel
             </Button>
@@ -2762,7 +2773,7 @@ const handleDuplicateNote = () => {
 
       {/* Delete Note Confirmation Dialog */}
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <AlertDialogContent>
+        <AlertDialogContent className="w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] sm:max-w-lg">
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
               <AlertCircle className="h-5 w-5 text-destructive" />
@@ -2776,11 +2787,11 @@ const handleDuplicateNote = () => {
             <AlertCircle className="h-4 w-4 text-destructive mt-0.5 flex-shrink-0" />
             <p className="text-sm text-destructive">All associated data will be lost.</p>
           </div>
-          <AlertDialogCancel className="mt-4">Cancel</AlertDialogCancel>
+          <AlertDialogCancel className="mt-4 w-full sm:w-auto">Cancel</AlertDialogCancel>
           <AlertDialogAction
             onClick={confirmDeleteNote}
             disabled={deleteNoteMutation.isPending}
-            className="bg-destructive hover:bg-destructive/90"
+            className="w-full bg-destructive hover:bg-destructive/90 sm:w-auto"
           >
             {deleteNoteMutation.isPending ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -2794,7 +2805,7 @@ const handleDuplicateNote = () => {
 
       {/* Move to Folder Dialog */}
       <Dialog open={showMoveDialog} onOpenChange={setShowMoveDialog}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] max-h-[88vh] overflow-y-auto sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <FolderInput className="h-5 w-5 text-brand-primary" />
@@ -2842,7 +2853,7 @@ const handleDuplicateNote = () => {
               </div>
             )}
           </div>
-          <DialogFooter>
+          <DialogFooter className="flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <Button variant="outline" onClick={() => setShowMoveDialog(false)}>
               Cancel
             </Button>
@@ -2869,7 +2880,7 @@ const handleDuplicateNote = () => {
 
       {/* Flashcard Dialog */}
       <Dialog open={showFlashcardDialog} onOpenChange={setShowFlashcardDialog}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] max-h-[88vh] overflow-y-auto sm:max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <BookOpen className="h-5 w-5 text-emerald-600" />
@@ -2917,7 +2928,7 @@ const handleDuplicateNote = () => {
               />
             </div>
           </div>
-          <DialogFooter>
+          <DialogFooter className="flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <Button variant="outline" onClick={() => setShowFlashcardDialog(false)}>
               Cancel
             </Button>
@@ -2944,7 +2955,7 @@ const handleDuplicateNote = () => {
 
       {/* Quiz Dialog */}
       <Dialog open={showQuizDialog} onOpenChange={setShowQuizDialog}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] max-h-[88vh] overflow-y-auto sm:max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <HelpCircle className="h-5 w-5 text-fuchsia-600" />
@@ -3016,7 +3027,7 @@ const handleDuplicateNote = () => {
               />
             </div>
           </div>
-          <DialogFooter>
+          <DialogFooter className="flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <Button variant="outline" onClick={() => setShowQuizDialog(false)}>
               Cancel
             </Button>
@@ -3058,7 +3069,7 @@ const handleDuplicateNote = () => {
 
       {/* Auto-Generate Dialog */}
       <Dialog open={showAutoGenerateDialog} onOpenChange={setShowAutoGenerateDialog}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] max-h-[88vh] overflow-y-auto sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               {autoGenerateType === "quiz" ? (
@@ -3117,7 +3128,7 @@ const handleDuplicateNote = () => {
               </ul>
             </div>
           </div>
-          <DialogFooter>
+          <DialogFooter className="flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <Button variant="outline" onClick={() => setShowAutoGenerateDialog(false)}>
               Cancel
             </Button>
@@ -3144,7 +3155,7 @@ const handleDuplicateNote = () => {
 
       {/* Exam Maker Dialog */}
       <Dialog open={showExamMakerDialog} onOpenChange={setShowExamMakerDialog}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
+        <DialogContent className="flex max-h-[88vh] w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] flex-col overflow-hidden sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <FileQuestion className="h-5 w-5 text-violet-600" />
@@ -3191,7 +3202,7 @@ const handleDuplicateNote = () => {
               ))
             )}
           </div>
-          <DialogFooter className="gap-2">
+          <DialogFooter className="flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <Button
               variant="outline"
               size="sm"

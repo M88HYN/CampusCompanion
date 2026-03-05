@@ -33,7 +33,7 @@ const Card = React.forwardRef<
   <div
     ref={ref}
     className={cn(
-      "shadcn-card rounded-xl border bg-gradient-to-b from-[hsl(var(--surface-gradient-start))] to-[hsl(var(--surface-gradient-end))] border-card-border text-card-foreground shadow-md transition-all duration-200 ease-in-out",
+      "playful-card shadcn-card rounded-xl border bg-gradient-to-b from-[hsl(var(--surface-gradient-start))] to-[hsl(var(--surface-gradient-end))] border-card-border text-card-foreground shadow-md transition-all duration-200 ease-in-out",
       className
     )}
     {...props}

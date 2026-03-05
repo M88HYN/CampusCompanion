@@ -139,7 +139,7 @@ function MainLayout({
         <div className="flex min-w-0 flex-1 flex-col overflow-hidden bg-gradient-to-b from-background/80 via-background/70 to-secondary/10 backdrop-blur-[1px]">
           <AppTopbar user={user} onLogout={onLogout} />
           <main id="app-main-scroll" className="min-w-0 flex-1 overflow-y-auto overflow-x-hidden bg-gradient-to-b from-transparent via-background/10 to-secondary/10">
-            <div key={location} className="route-transition">
+            <div key={location} className="route-transition playful-route-shell page-stagger">
               <AppRouter />
             </div>
           </main>
