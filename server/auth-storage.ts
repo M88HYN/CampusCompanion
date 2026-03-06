@@ -143,7 +143,32 @@ async updateUser(user: AuthUser): Promise<void> {
   ----------------------------------------------------------
   */
 async findUserById(userId: string): Promise<AuthUser | null> {
-    return userCache.get(userId) || null;
+    const cached = userCache.get(userId);
+    if (cached) {
+      return cached;
+    }
+
+    // Fallback: hydrate from database so auth remains valid after server restarts.
+    try {
+      const rows = await db.select().from(users).where(eq(users.id, userId));
+      if (rows.length > 0) {
+        const row = rows[0];
+        const authUser: AuthUser = {
+          id: row.id,
+          email: row.email,
+          username: row.username || undefined,
+          password: row.passwordHash || undefined,
+          firstName: row.firstName || undefined,
+          lastName: row.lastName || undefined,
+        };
+        userCache.set(authUser.id, authUser);
+        return authUser;
+      }
+    } catch (e) {
+      // Ignore read errors and fall through to null.
+    }
+
+    return null;
   },
 
     /*

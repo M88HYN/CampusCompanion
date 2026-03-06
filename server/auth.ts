@@ -24,6 +24,7 @@ allowing safe evolution of features without cross-module side effects.
 
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import { randomUUID } from "crypto";
 import { storage } from "./auth-storage";
 
 const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key-change-this-in-production-use-strong-random-string";
@@ -205,7 +206,7 @@ A value/promise representing the outcome of the executed logic path.
 */
 export async function createUser(email: string, password: string, firstName?: string, lastName?: string, username?: string): Promise<AuthUser> {
   const hashedPassword = await hashPassword(password);
-  const userId = Date.now().toString();
+  const userId = randomUUID();
   
   const user: AuthUser = {
     id: userId,
