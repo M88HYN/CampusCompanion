@@ -33,8 +33,12 @@ import {
   Target,
   GraduationCap,
   ArrowLeft,
+  Mail,
+  Lock,
+  User,
 } from "lucide-react";
 import { useLocation } from "wouter";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 
 /*
 ----------------------------------------------------------
@@ -479,310 +483,635 @@ const handleGithubLogin = () => {
     window.location.href = "/api/auth/github";
   };
 
+  const reducedMotion = useReducedMotion();
+
   return (
-    <div className={`min-h-screen flex public-page-transition ${isNavigating ? "exiting" : ""}`}>
-      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-teal-500 via-cyan-500 to-teal-600 relative overflow-hidden slide-in-left">
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmZmZmYiIGZpbGwtb3BhY2l0eT0iMC4xIj48cGF0aCBkPSJNMzYgMzRjMC0yLjIwOS0xLjc5MS00LTQtNHMtNCAxLjc5MS00IDQgMS43OTEgNCA0IDQgNC0xLjc5MSA0LTR6bS0yIDBjMCAxLjEwNS0uODk1IDItMiAycy0yLS44OTUtMi0yIC44OTUtMiAyLTIgMiAuODk1IDIgMzoiLz48L2c+PC9nPjwvc3ZnPg==')] opacity-30" />
+    <div className={`min-h-screen flex flex-col lg:flex-row public-page-transition overflow-hidden ${isNavigating ? "exiting" : ""}`}>
+      {/* Left Panel - Hero */}
+      <motion.div 
+        className="hidden lg:flex lg:w-1/2 relative overflow-hidden"
+        initial={false}
+      >
+        {/* Gradient background */}
+        <div className="absolute inset-0 bg-gradient-to-br from-teal-400 via-cyan-500 to-blue-600" />
         
+        {/* Floating gradient orbs */}
+        <motion.div
+          className="absolute -top-20 -left-20 w-72 h-72 bg-cyan-400 rounded-full blur-3xl opacity-20"
+          animate={reducedMotion ? {} : { y: [0, 30, 0] }}
+          transition={reducedMotion ? {} : { duration: 8, repeat: Infinity, ease: "easeInOut" }}
+          style={{ willChange: "transform" }}
+        />
+        <motion.div
+          className="absolute bottom-0 right-0 w-96 h-96 bg-blue-400 rounded-full blur-3xl opacity-15"
+          animate={reducedMotion ? {} : { y: [0, -40, 0] }}
+          transition={reducedMotion ? {} : { duration: 10, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+          style={{ willChange: "transform" }}
+        />
+
+        {/* Grid pattern */}
+        <div className="absolute inset-0 opacity-10" style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60'%3E%3Ccircle cx='30' cy='30' r='1' fill='%23fff'/%3E%3C/svg%3E")`,
+          backgroundSize: "60px 60px",
+        }} />
+        
+        {/* Content */}
         <div className="relative z-10 flex flex-col justify-center p-12 text-white">
-          <div className="mb-8">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
-                <GraduationCap className="w-7 h-7 text-white" />
-              </div>
-              <span className="text-3xl font-bold">StudyMate</span>
-            </div>
-            <h1 className="text-4xl font-bold mb-4">Your intelligent study companion</h1>
-            <p className="text-lg text-white/80 max-w-md">Join thousands of students achieving their academic goals with personalized learning powered by AI.</p>
-          </div>
-
-          <div className="space-y-4">
-            {features.map((feature, index) => (
-              <div key={index} className="interactive-surface flex items-center gap-4 p-4 bg-white/10 backdrop-blur-sm rounded-xl hover:bg-white/15 transition-colors">
-                <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
-                  <feature.icon className="w-5 h-5 text-white" />
-                </div>
-                <div>
-                  <h3 className="font-semibold">{feature.label}</h3>
-                  <p className="text-sm text-white/70">{feature.desc}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      <div className="flex-1 flex items-center justify-center p-4 sm:p-6 bg-gradient-to-br from-slate-50 to-teal-50/30 dark:from-slate-900 dark:to-teal-950/30 slide-in-right">
-        <Card className="w-full max-w-md border-0 shadow-xl bg-card backdrop-blur-sm">
-          <CardHeader className="text-center pb-6">
-            <div className="mb-3 flex justify-start">
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={navigateHome}
-                className="button-priority-transition text-muted-foreground"
-              >
-                <ArrowLeft className="mr-1 h-4 w-4" />
-                Back to Home
-              </Button>
-            </div>
-            <div className="lg:hidden flex items-center justify-center gap-2 mb-6">
-              <div className="w-12 h-12 bg-gradient-to-br from-brand-primary to-brand-accent rounded-xl flex items-center justify-center">
-                <GraduationCap className="w-7 h-7 text-white" />
-              </div>
-              <span className="text-2xl font-bold bg-gradient-to-r from-teal-600 to-cyan-600 bg-clip-text text-transparent">StudyMate</span>
-            </div>
-            <CardTitle className="text-2xl font-bold text-slate-800 dark:text-white">{isLogin ? "Welcome Back" : "Create Account"}</CardTitle>
-            <CardDescription className="text-muted-foreground text-base">{isLogin ? "Sign in to your account" : "Sign up to get started"}</CardDescription>
-          </CardHeader>
-
-          <CardContent className="space-y-6">
-            {error && (
-              <div className="p-3 bg-red-100 border border-red-300 rounded text-destructive text-sm">{error}</div>
-            )}
-
-            <div
-              className={`transition-all duration-200 ease-out ${
-                isModeTransitioning ? "opacity-0 translate-y-1" : "opacity-100 translate-y-0"
-              }`}
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{
+              duration: reducedMotion ? 0 : 0.6,
+              ease: [0, 0, 0.2, 1],
+            }}
+            className="mb-12"
+          >
+            <motion.div 
+              className="flex items-center gap-4 mb-8"
+              whileHover={reducedMotion ? {} : { scale: 1.05 }}
+              transition={{ duration: 0.3 }}
             >
-              <form onSubmit={handleSubmit} className="space-y-4">
+              <motion.div 
+                className="w-14 h-14 bg-white/15 backdrop-blur-xl rounded-2xl flex items-center justify-center border border-white/20 shadow-2xl"
+                whileHover={reducedMotion ? {} : { boxShadow: "0 0 30px rgba(255,255,255,0.3)" }}
+              >
+                <GraduationCap className="w-8 h-8 text-white" />
+              </motion.div>
+              <motion.span className="text-4xl font-bold bg-gradient-to-r from-white via-blue-100 to-cyan-100 bg-clip-text text-transparent">
+                StudyMate
+              </motion.span>
+            </motion.div>
+
+            <motion.h1 
+              className="text-5xl font-bold mb-6 leading-tight"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{
+                duration: reducedMotion ? 0 : 0.6,
+                ease: [0, 0, 0.2, 1],
+                delay: reducedMotion ? 0 : 0.1,
+              }}
+            >
+              Your intelligent study companion
+            </motion.h1>
+
+            <motion.p 
+              className="text-xl text-white/80 max-w-lg leading-relaxed"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{
+                duration: reducedMotion ? 0 : 0.6,
+                ease: [0, 0, 0.2, 1],
+                delay: reducedMotion ? 0 : 0.2,
+              }}
+            >
+              Join thousands of students achieving their academic goals with personalized learning powered by AI.
+            </motion.p>
+          </motion.div>
+
+          {/* Feature cards */}
+          <motion.div 
+            className="space-y-4"
+            initial="hidden"
+            animate="show"
+            variants={{
+              hidden: { opacity: 0 },
+              show: {
+                opacity: 1,
+                transition: {
+                  staggerChildren: 0.08,
+                  delayChildren: reducedMotion ? 0 : 0.3,
+                },
+              },
+            }}
+          >
+            {features.map((feature, index) => (
+              <motion.div
+                key={index}
+                variants={{
+                  hidden: { opacity: 0, x: -20 },
+                  show: {
+                    opacity: 1,
+                    x: 0,
+                    transition: {
+                      duration: reducedMotion ? 0 : 0.5,
+                      ease: [0, 0, 0.2, 1],
+                    },
+                  },
+                }}
+                whileHover={reducedMotion ? {} : { x: 8, boxShadow: "0 20px 40px rgba(0,0,0,0.3)" }}
+                transition={{ duration: 0.3 }}
+                className="group flex items-start gap-4 p-4 rounded-2xl bg-white/10 backdrop-blur-xl border border-white/20 hover:bg-white/15 transition-all duration-300 cursor-pointer shadow-lg"
+              >
+                <motion.div 
+                  className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0"
+                  whileHover={reducedMotion ? {} : { scale: 1.15, rotate: 5 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <feature.icon className="w-6 h-6 text-white" />
+                </motion.div>
+                <div className="flex-1">
+                  <h3 className="font-bold text-white text-lg">{feature.label}</h3>
+                  <p className="text-sm text-white/70 group-hover:text-white/90 transition-colors">{feature.desc}</p>
+                </div>
+              </motion.div>
+            ))}
+          </motion.div>
+        </div>
+      </motion.div>
+
+      {/* Right Panel - Auth Form */}
+      <motion.div 
+        className="flex-1 flex items-center justify-center p-4 sm:p-8 bg-gradient-to-br from-slate-50 via-white to-blue-50/30 dark:from-slate-900 dark:via-slate-950 dark:to-blue-950/20 relative overflow-hidden"
+        initial={false}
+      >
+        {/* Decorative blur elements */}
+        <motion.div
+          className="absolute -top-40 -right-40 w-80 h-80 bg-blue-200 rounded-full blur-3xl opacity-10 pointer-events-none"
+          animate={reducedMotion ? {} : { y: [0, 40, 0] }}
+          transition={reducedMotion ? {} : { duration: 12, repeat: Infinity, ease: "easeInOut" }}
+        />
+        <motion.div
+          className="absolute bottom-0 -left-32 w-64 h-64 bg-cyan-200 rounded-full blur-3xl opacity-10 pointer-events-none"
+          animate={reducedMotion ? {} : { x: [0, 50, 0] }}
+          transition={reducedMotion ? {} : { duration: 14, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+        />
+
+        {/* Form card */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95, y: 20 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          transition={{
+            duration: reducedMotion ? 0 : 0.5,
+            ease: [0, 0, 0.2, 1],
+            delay: reducedMotion ? 0 : 0.1,
+          }}
+          className="w-full max-w-md relative z-10"
+        >
+          <Card className="border-0 shadow-2xl bg-white/80 backdrop-blur-2xl dark:bg-slate-900/80 overflow-hidden">
+            {/* Gradient top border */}
+            <div className="h-1 bg-gradient-to-r from-teal-400 via-cyan-500 to-blue-600" />
+
+            <CardHeader className="space-y-3 pb-4">
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: reducedMotion ? 0 : 0.2, duration: 0.4 }}
+              >
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={navigateHome}
+                  className="text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  Back to Home
+                </Button>
+              </motion.div>
+
+              <motion.div
+                className="lg:hidden flex items-center justify-center gap-3 mb-2"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: reducedMotion ? 0 : 0.25, duration: 0.4 }}
+              >
+                <div className="w-12 h-12 bg-gradient-to-br from-teal-500 to-cyan-600 rounded-xl flex items-center justify-center shadow-lg">
+                  <GraduationCap className="w-7 h-7 text-white" />
+                </div>
+                <span className="text-2xl font-bold bg-gradient-to-r from-teal-600 to-cyan-600 bg-clip-text text-transparent">
+                  StudyMate
+                </span>
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: reducedMotion ? 0 : 0.15, duration: 0.4 }}
+              >
+                <CardTitle className="text-3xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 dark:from-white dark:to-slate-200 bg-clip-text text-transparent">
+                  {isLogin ? "Welcome Back" : "Create Account"}
+                </CardTitle>
+                <CardDescription className="text-base mt-2">
+                  {isLogin ? "Sign in to your account" : "Sign up to get started"}
+                </CardDescription>
+              </motion.div>
+            </CardHeader>
+
+            <CardContent className="space-y-6 pb-6">
+              <AnimatePresence mode="wait">
+                {error && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    className="p-4 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg text-red-700 dark:text-red-400 text-sm font-medium flex items-start gap-3"
+                  >
+                    <div className="mt-0.5 w-2 h-2 bg-red-500 rounded-full flex-shrink-0" />
+                    <span>{error}</span>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{
+                  duration: reducedMotion ? 0 : 0.4,
+                  delay: reducedMotion ? 0 : 0.1,
+                }}
+              >
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  {isLogin ? (
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.3 }}
+                      className="space-y-4"
+                    >
+                      <div className="relative">
+                        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400 pointer-events-none" />
+                        <Input
+                          type="text"
+                          placeholder="Email or Username"
+                          value={signInEmailOrUsername}
+                          onChange={(e) => setSignInEmailOrUsername(e.target.value)}
+                          required
+                          className="h-12 pl-10 rounded-lg border-slate-200 dark:border-slate-700 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 transition-all"
+                        />
+                      </div>
+                      <div className="relative">
+                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400 pointer-events-none" />
+                        <Input
+                          type="password"
+                          placeholder="Password"
+                          value={signInPassword}
+                          onChange={(e) => setSignInPassword(e.target.value)}
+                          required
+                          className="h-12 pl-10 rounded-lg border-slate-200 dark:border-slate-700 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 transition-all"
+                        />
+                      </div>
+                    </motion.div>
+                  ) : (
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.3 }}
+                      className="space-y-4"
+                    >
+                      <div className="relative">
+                        <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400 pointer-events-none" />
+                        <Input
+                          type="text"
+                          placeholder="Username"
+                          value={signUpUsername}
+                          onChange={(e) => setSignUpUsername(e.target.value)}
+                          className="h-12 pl-10 rounded-lg border-slate-200 dark:border-slate-700 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 transition-all"
+                          required
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <Input
+                          type="text"
+                          placeholder="First Name"
+                          value={signUpFirstName}
+                          onChange={(e) => setSignUpFirstName(e.target.value)}
+                          className="h-12 rounded-lg border-slate-200 dark:border-slate-700 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 transition-all"
+                          required
+                        />
+                        <Input
+                          type="text"
+                          placeholder="Last Name"
+                          value={signUpLastName}
+                          onChange={(e) => setSignUpLastName(e.target.value)}
+                          className="h-12 rounded-lg border-slate-200 dark:border-slate-700 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 transition-all"
+                          required
+                        />
+                      </div>
+                      <div className="relative">
+                        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400 pointer-events-none" />
+                        <Input
+                          type="email"
+                          placeholder="Email address"
+                          value={signUpEmail}
+                          onChange={(e) => setSignUpEmail(e.target.value)}
+                          required
+                          className="h-12 pl-10 rounded-lg border-slate-200 dark:border-slate-700 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 transition-all"
+                        />
+                      </div>
+                      <div className="relative">
+                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400 pointer-events-none" />
+                        <Input
+                          type="password"
+                          placeholder="Create password"
+                          value={signUpPassword}
+                          onChange={(e) => setSignUpPassword(e.target.value)}
+                          required
+                          className="h-12 pl-10 rounded-lg border-slate-200 dark:border-slate-700 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 transition-all"
+                        />
+                      </div>
+
+                      {/* Study Profile Card */}
+                      <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.1 }}
+                        className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-gradient-to-br from-blue-50/40 to-cyan-50/40 dark:from-blue-950/20 dark:to-cyan-950/20 backdrop-blur-sm p-4 space-y-4"
+                      >
+                        <div>
+                          <p className="text-sm font-bold bg-gradient-to-r from-teal-600 to-cyan-600 bg-clip-text text-transparent">Study Profile Assessment</p>
+                          <p className="text-xs text-muted-foreground mt-1">Choose what you study so StudyMate can tailor your starting experience.</p>
+                        </div>
+
+                        <div className="flex flex-wrap gap-2">
+                          {subjectSuggestions.map((subject, idx) => {
+                            const selected = selectedSubjects.includes(subject);
+                            return (
+                              <motion.button
+                                key={subject}
+                                type="button"
+                                onClick={() => toggleSubject(subject)}
+                                whileHover={reducedMotion ? {} : { scale: 1.05 }}
+                                whileTap={reducedMotion ? {} : { scale: 0.95 }}
+                                initial={{ opacity: 0, scale: 0.8 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                transition={{
+                                  delay: reducedMotion ? 0 : idx * 0.04,
+                                  duration: 0.3,
+                                }}
+                                className={`rounded-full border px-3 py-2 text-xs font-semibold transition-all duration-200 ${
+                                  selected
+                                    ? "border-teal-500 bg-gradient-to-r from-teal-500/20 to-cyan-500/20 text-teal-700 dark:text-teal-300 shadow-lg shadow-teal-500/20"
+                                    : "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:border-slate-300 dark:hover:border-slate-600"
+                                }`}
+                              >
+                                {subject}
+                              </motion.button>
+                            );
+                          })}
+                        </div>
+
+                        <div className="flex gap-2">
+                          <Input
+                            type="text"
+                            placeholder="Add another subject"
+                            value={customSubject}
+                            onChange={(e) => setCustomSubject(e.target.value)}
+                            className="h-10 rounded-lg border-slate-200 dark:border-slate-700 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 text-sm"
+                          />
+                          <motion.div
+                            whileHover={reducedMotion ? {} : { scale: 1.05 }}
+                            whileTap={reducedMotion ? {} : { scale: 0.95 }}
+                          >
+                            <Button 
+                              type="button" 
+                              onClick={addCustomSubject} 
+                              className="h-10 rounded-lg bg-gradient-to-r from-teal-500 to-cyan-500 text-white hover:shadow-lg hover:shadow-teal-500/20 transition-all"
+                            >
+                              Add
+                            </Button>
+                          </motion.div>
+                        </div>
+
+                        {/* Starter content section */}
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: "auto" }}
+                          className="space-y-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white/50 dark:bg-slate-800/30 p-3 text-sm"
+                        >
+                          <p className="font-bold text-slate-800 dark:text-white">Generate starter content</p>
+                          
+                          <label className="flex items-center justify-between cursor-pointer hover:opacity-80 transition-opacity">
+                            <span className="text-slate-700 dark:text-slate-300">Sample decks</span>
+                            <motion.input
+                              type="checkbox"
+                              checked={wantsSampleDecks}
+                              onChange={(e) => setWantsSampleDecks(e.target.checked)}
+                              whileHover={reducedMotion ? {} : { scale: 1.1 }}
+                              className="h-5 w-5 rounded accent-teal-500 cursor-pointer"
+                            />
+                          </label>
+
+                          {wantsSampleDecks && (
+                            <motion.div
+                              initial={{ opacity: 0, y: -5 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              className="pl-3 border-l-2 border-teal-500 space-y-2"
+                            >
+                              <div className="flex items-center justify-between text-xs">
+                                <span className="text-slate-700 dark:text-slate-300">How many flashcard decks?</span>
+                                <Input
+                                  type="number"
+                                  min={1}
+                                  max={10}
+                                  value={starterDeckCount}
+                                  onChange={(e) => setStarterDeckCount(Number(e.target.value) || 1)}
+                                  className="h-8 w-20 rounded text-xs text-center"
+                                />
+                              </div>
+                              <div className="flex items-center justify-between text-xs">
+                                <span className="text-slate-700 dark:text-slate-300">How many flashcards per deck?</span>
+                                <Input
+                                  type="number"
+                                  min={1}
+                                  max={100}
+                                  value={starterFlashcardsPerDeck}
+                                  onChange={(e) => setStarterFlashcardsPerDeck(Number(e.target.value) || 1)}
+                                  className="h-8 w-20 rounded text-xs text-center"
+                                />
+                              </div>
+                            </motion.div>
+                          )}
+
+                          <label className="flex items-center justify-between cursor-pointer hover:opacity-80 transition-opacity">
+                            <span className="text-slate-700 dark:text-slate-300">Sample quizzes</span>
+                            <motion.input
+                              type="checkbox"
+                              checked={wantsSampleQuizzes}
+                              onChange={(e) => setWantsSampleQuizzes(e.target.checked)}
+                              whileHover={reducedMotion ? {} : { scale: 1.1 }}
+                              className="h-5 w-5 rounded accent-teal-500 cursor-pointer"
+                            />
+                          </label>
+
+                          {wantsSampleQuizzes && (
+                            <motion.div
+                              initial={{ opacity: 0, y: -5 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              className="pl-3 border-l-2 border-teal-500 space-y-2"
+                            >
+                              <div className="flex items-center justify-between text-xs">
+                                <span className="text-slate-700 dark:text-slate-300">How many quizzes?</span>
+                                <Input
+                                  type="number"
+                                  min={1}
+                                  max={10}
+                                  value={starterQuizCount}
+                                  onChange={(e) => setStarterQuizCount(Number(e.target.value) || 1)}
+                                  className="h-8 w-20 rounded text-xs text-center"
+                                />
+                              </div>
+                              <div className="flex items-center justify-between text-xs">
+                                <span className="text-slate-700 dark:text-slate-300">How many questions per quiz?</span>
+                                <Input
+                                  type="number"
+                                  min={1}
+                                  max={30}
+                                  value={starterQuestionsPerQuiz}
+                                  onChange={(e) => setStarterQuestionsPerQuiz(Number(e.target.value) || 1)}
+                                  className="h-8 w-20 rounded text-xs text-center"
+                                />
+                              </div>
+                            </motion.div>
+                          )}
+
+                          <label className="flex items-center justify-between cursor-pointer hover:opacity-80 transition-opacity">
+                            <span className="text-slate-700 dark:text-slate-300">Sample flashcards</span>
+                            <motion.input
+                              type="checkbox"
+                              checked={wantsSampleFlashcards}
+                              onChange={(e) => setWantsSampleFlashcards(e.target.checked)}
+                              whileHover={reducedMotion ? {} : { scale: 1.1 }}
+                              className="h-5 w-5 rounded accent-teal-500 cursor-pointer"
+                            />
+                          </label>
+                        </motion.div>
+                      </motion.div>
+                    </motion.div>
+                  )}
+
+                  <motion.div
+                    whileHover={reducedMotion ? {} : { scale: 1.02 }}
+                    whileTap={reducedMotion ? {} : { scale: 0.98 }}
+                  >
+                    <Button 
+                      type="submit" 
+                      disabled={loading || isModeTransitioning} 
+                      className="w-full h-12 rounded-lg bg-gradient-to-r from-teal-500 via-cyan-500 to-blue-600 text-white font-bold text-base hover:shadow-2xl hover:shadow-teal-500/30 transition-all disabled:opacity-50 disabled:hover:shadow-none"
+                    >
+                      {loading ? "Loading..." : (isLogin ? "Sign In" : "Sign Up")}
+                    </Button>
+                  </motion.div>
+                </form>
+              </motion.div>
+
+              {/* Divider */}
+              <motion.div
+                initial={{ opacity: 0, scaleX: 0 }}
+                animate={{ opacity: 1, scaleX: 1 }}
+                transition={{ delay: reducedMotion ? 0 : 0.2, duration: 0.4 }}
+                className="relative"
+              >
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-slate-200 dark:border-slate-700" />
+                </div>
+                <div className="relative flex justify-center text-xs">
+                  <span className="px-3 bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-400 font-medium">Or continue with</span>
+                </div>
+              </motion.div>
+
+              {/* OAuth buttons */}
+              <motion.div
+                initial="hidden"
+                animate="show"
+                variants={{
+                  hidden: { opacity: 0 },
+                  show: {
+                    opacity: 1,
+                    transition: {
+                      staggerChildren: 0.1,
+                    },
+                  },
+                }}
+                className="space-y-3"
+              >
+                <motion.div
+                  variants={{
+                    hidden: { opacity: 0, y: 10 },
+                    show: { opacity: 1, y: 0 },
+                  }}
+                  whileHover={reducedMotion ? {} : { scale: 1.02, boxShadow: "0 10px 25px rgba(0,0,0,0.08)" }}
+                  whileTap={reducedMotion ? {} : { scale: 0.98 }}
+                >
+                  <Button 
+                    type="button" 
+                    onClick={handleGoogleLogin}
+                    disabled={loading}
+                    className="w-full h-12 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-semibold transition-all"
+                  >
+                    <svg className="w-5 h-5 mr-3" viewBox="0 0 24 24">
+                      <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                      <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                      <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                      <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                    </svg>
+                    Google
+                  </Button>
+                </motion.div>
+
+                <motion.div
+                  variants={{
+                    hidden: { opacity: 0, y: 10 },
+                    show: { opacity: 1, y: 0 },
+                  }}
+                  whileHover={reducedMotion ? {} : { scale: 1.02, boxShadow: "0 10px 25px rgba(0,0,0,0.08)" }}
+                  whileTap={reducedMotion ? {} : { scale: 0.98 }}
+                >
+                  <Button 
+                    type="button" 
+                    onClick={handleGithubLogin}
+                    disabled={loading}
+                    className="w-full h-12 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-semibold transition-all"
+                  >
+                    <svg className="w-5 h-5 mr-3" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v 3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                    </svg>
+                    GitHub
+                  </Button>
+                </motion.div>
+              </motion.div>
+
+              {/* Toggle mode */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: reducedMotion ? 0 : 0.3 }}
+                className="text-center text-sm text-slate-600 dark:text-slate-400"
+              >
                 {isLogin ? (
                   <>
-                    <Input
-                      type="text"
-                      placeholder="Email or Username"
-                      value={signInEmailOrUsername}
-                      onChange={(e) => setSignInEmailOrUsername(e.target.value)}
-                      required
-                      className="h-11"
-                    />
-                    <Input
-                      type="password"
-                      placeholder="Password"
-                      value={signInPassword}
-                      onChange={(e) => setSignInPassword(e.target.value)}
-                      required
-                      className="h-11"
-                    />
+                    Don't have an account?{" "}
+                    <motion.button
+                      type="button"
+                      onClick={() => handleModeChange(false)}
+                      whileHover={reducedMotion ? {} : { scale: 1.05 }}
+                      whileTap={reducedMotion ? {} : { scale: 0.95 }}
+                      className="font-bold bg-gradient-to-r from-teal-600 to-cyan-600 bg-clip-text text-transparent hover:opacity-80 transition-opacity"
+                    >
+                      Sign up
+                    </motion.button>
                   </>
                 ) : (
                   <>
-                    <Input
-                      type="text"
-                      placeholder="Username"
-                      value={signUpUsername}
-                      onChange={(e) => setSignUpUsername(e.target.value)}
-                      className="h-11"
-                      required
-                    />
-                    <div className="grid grid-cols-2 gap-2">
-                      <Input
-                        type="text"
-                        placeholder="First Name"
-                        value={signUpFirstName}
-                        onChange={(e) => setSignUpFirstName(e.target.value)}
-                        className="h-11"
-                        required
-                      />
-                      <Input
-                        type="text"
-                        placeholder="Last Name"
-                        value={signUpLastName}
-                        onChange={(e) => setSignUpLastName(e.target.value)}
-                        className="h-11"
-                        required
-                      />
-                    </div>
-                    <Input
-                      type="email"
-                      placeholder="Email address"
-                      value={signUpEmail}
-                      onChange={(e) => setSignUpEmail(e.target.value)}
-                      required
-                      className="h-11"
-                    />
-                    <Input
-                      type="password"
-                      placeholder="Create password"
-                      value={signUpPassword}
-                      onChange={(e) => setSignUpPassword(e.target.value)}
-                      required
-                      className="h-11"
-                    />
-
-                    <div className="rounded-xl border border-border bg-muted/30 p-3 space-y-3">
-                      <div>
-                        <p className="text-sm font-semibold text-foreground">Study Profile Assessment</p>
-                        <p className="text-xs text-muted-foreground">Choose what you study so StudyMate can tailor your starting experience.</p>
-                      </div>
-
-                      <div className="flex flex-wrap gap-2">
-                        {subjectSuggestions.map((subject) => {
-                          const selected = selectedSubjects.includes(subject);
-                          return (
-                            <button
-                              key={subject}
-                              type="button"
-                              onClick={() => toggleSubject(subject)}
-                              className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
-                                selected
-                                  ? "border-brand-primary bg-brand-primary/10 text-brand-primary"
-                                  : "border-border bg-background text-muted-foreground hover:bg-muted"
-                              }`}
-                            >
-                              {subject}
-                            </button>
-                          );
-                        })}
-                      </div>
-
-                      <div className="flex gap-2">
-                        <Input
-                          type="text"
-                          placeholder="Add another subject"
-                          value={customSubject}
-                          onChange={(e) => setCustomSubject(e.target.value)}
-                          className="h-10"
-                        />
-                        <Button type="button" variant="outline" onClick={addCustomSubject} className="h-10">
-                          Add
-                        </Button>
-                      </div>
-
-                      <div className="space-y-2 rounded-lg border border-border bg-background p-3">
-                        <p className="text-xs font-medium text-foreground">Generate starter content</p>
-                        <label className="flex items-center justify-between text-sm text-foreground">
-                          <span>Sample decks</span>
-                          <input
-                            type="checkbox"
-                            checked={wantsSampleDecks}
-                            onChange={(e) => setWantsSampleDecks(e.target.checked)}
-                            className="h-4 w-4"
-                          />
-                        </label>
-                        <div className="flex items-center justify-between gap-3 text-sm text-foreground">
-                          <span>How many flashcard decks?</span>
-                          <Input
-                            type="number"
-                            min={1}
-                            max={10}
-                            value={starterDeckCount}
-                            onChange={(e) => setStarterDeckCount(Number(e.target.value) || 1)}
-                            className="h-8 w-24"
-                            disabled={!wantsSampleDecks && !wantsSampleFlashcards}
-                          />
-                        </div>
-                        <div className="flex items-center justify-between gap-3 text-sm text-foreground">
-                          <span>How many flashcards per deck?</span>
-                          <Input
-                            type="number"
-                            min={1}
-                            max={100}
-                            value={starterFlashcardsPerDeck}
-                            onChange={(e) => setStarterFlashcardsPerDeck(Number(e.target.value) || 1)}
-                            className="h-8 w-24"
-                            disabled={!wantsSampleFlashcards}
-                          />
-                        </div>
-                        <label className="flex items-center justify-between text-sm text-foreground">
-                          <span>Sample quizzes</span>
-                          <input
-                            type="checkbox"
-                            checked={wantsSampleQuizzes}
-                            onChange={(e) => setWantsSampleQuizzes(e.target.checked)}
-                            className="h-4 w-4"
-                          />
-                        </label>
-                        <div className="flex items-center justify-between gap-3 text-sm text-foreground">
-                          <span>How many quizzes?</span>
-                          <Input
-                            type="number"
-                            min={1}
-                            max={10}
-                            value={starterQuizCount}
-                            onChange={(e) => setStarterQuizCount(Number(e.target.value) || 1)}
-                            className="h-8 w-24"
-                            disabled={!wantsSampleQuizzes}
-                          />
-                        </div>
-                        <div className="flex items-center justify-between gap-3 text-sm text-foreground">
-                          <span>How many questions per quiz?</span>
-                          <Input
-                            type="number"
-                            min={1}
-                            max={30}
-                            value={starterQuestionsPerQuiz}
-                            onChange={(e) => setStarterQuestionsPerQuiz(Number(e.target.value) || 1)}
-                            className="h-8 w-24"
-                            disabled={!wantsSampleQuizzes}
-                          />
-                        </div>
-                        <label className="flex items-center justify-between text-sm text-foreground">
-                          <span>Sample flashcards</span>
-                          <input
-                            type="checkbox"
-                            checked={wantsSampleFlashcards}
-                            onChange={(e) => setWantsSampleFlashcards(e.target.checked)}
-                            className="h-4 w-4"
-                          />
-                        </label>
-                      </div>
-                    </div>
+                    Already have an account?{" "}
+                    <motion.button
+                      type="button"
+                      onClick={() => handleModeChange(true)}
+                      whileHover={reducedMotion ? {} : { scale: 1.05 }}
+                      whileTap={reducedMotion ? {} : { scale: 0.95 }}
+                      className="font-bold bg-gradient-to-r from-teal-600 to-cyan-600 bg-clip-text text-transparent hover:opacity-80 transition-opacity"
+                    >
+                      Sign in
+                    </motion.button>
                   </>
                 )}
-                <Button type="submit" disabled={loading || isModeTransitioning} className="button-priority-transition w-full h-11 bg-gradient-to-r from-brand-primary to-brand-accent hover:from-[#1A3175] hover:to-[#0891B2] text-white font-semibold">
-                  {loading ? "Loading..." : (isLogin ? "Sign In" : "Sign Up")}
-                </Button>
-              </form>
-            </div>
-
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-border" /></div>
-              <div className="relative flex justify-center text-sm"><span className="px-2 bg-card/80 text-slate-500">Or continue with</span></div>
-            </div>
-
-            <div className="space-y-3">
-              <Button 
-                type="button" 
-                onClick={handleGoogleLogin}
-                disabled={loading}
-                variant="outline" 
-                className="button-priority-transition w-full h-11"
-              >
-                <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
-                  <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                  <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                  <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                  <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-                </svg>
-                {loading ? "Loading..." : "Google"}
-              </Button>
-              <Button 
-                type="button" 
-                onClick={handleGithubLogin}
-                disabled={loading}
-                variant="outline" 
-                className="button-priority-transition w-full h-11"
-              >
-                <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v 3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
-                </svg>
-                {loading ? "Loading..." : "GitHub"}
-              </Button>
-            </div>
-
-            <div className="text-center text-sm text-muted-foreground">
-              {isLogin ? (
-                <>Don't have an account? <button type="button" onClick={() => handleModeChange(false)} className="text-teal-600 hover:text-teal-700 font-semibold">Sign up</button></>
-              ) : (
-                <>Already have an account? <button type="button" onClick={() => handleModeChange(true)} className="text-teal-600 hover:text-teal-700 font-semibold">Sign in</button></>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+              </motion.div>
+            </CardContent>
+          </Card>
+        </motion.div>
+      </motion.div>
     </div>
   );
 }
