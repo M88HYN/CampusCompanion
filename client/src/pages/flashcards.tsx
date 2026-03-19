@@ -47,12 +47,14 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { motion, useReducedMotion } from "framer-motion";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
 import { useSoundEffect, useConfetti, useKeyboardShortcuts } from "@/hooks/use-ui-effects";
 import { DifficultyBadge } from "@/components/ui/difficulty-badge";
 import { ProgressRing } from "@/components/ui/progress-ring";
+import { getStaggerContainerVariants, getStaggerItemVariants } from "@/lib/animations";
 import type { Deck, Card as FlashCard } from "@shared/schema";
 
 /**
@@ -216,6 +218,7 @@ A JSX tree representing the component view for the current state.
 ----------------------------------------------------------
 */
 export default function Flashcards() {
+  const reducedMotion = useReducedMotion();
   const [view, setView] = useState<ViewState>("decks");
     const [location] = useLocation();
   const [flipped, setFlipped] = useState(false);
@@ -1288,27 +1291,15 @@ const handleKeyDown = (e: KeyboardEvent) => {
             {!showThinkingPrompt && (
               <>
                 <div
-                  className="relative min-h-[300px] cursor-pointer perspective"
+                  className="flashcard-flip-scene relative min-h-[300px] cursor-pointer"
                   onClick={() => setFlipped(!flipped)}
                   data-testid="flashcard-container"
-                  style={{
-                    perspective: "1000px",
-                  }}
                 >
                   <div
-                    className="absolute inset-0 transition-transform duration-500 flex items-center justify-center"
-                    style={{
-                      transformStyle: "preserve-3d" as const,
-                      transform: flipped ? "rotateY(180deg)" : "rotateY(0deg)",
-                    }}
+                    className={`flashcard-flip-inner flex items-center justify-center ${flipped ? "is-flipped" : ""}`}
                   >
                     {/* Front of card */}
-                    <div
-                      className="absolute inset-0 w-full"
-                      style={{
-                        backfaceVisibility: "hidden" as const,
-                      }}
-                    >
+                    <div className="flashcard-face">
                       <Card className="h-full flex items-center justify-center glassmorphic hover-lift bg-gradient-to-br from-white/80 to-emerald-50/80 dark:from-slate-800/80 dark:to-emerald-950/80 border border-white/20 dark:border-white/10 shadow-2xl">
                         <CardContent className="p-8 text-center w-full">
                           <div className="text-sm font-semibold mb-4 text-emerald-600 dark:text-emerald-400">
@@ -1326,13 +1317,7 @@ const handleKeyDown = (e: KeyboardEvent) => {
                     </div>
 
                     {/* Back of card */}
-                    <div
-                      className="absolute inset-0 w-full"
-                      style={{
-                        backfaceVisibility: "hidden" as const,
-                        transform: "rotateY(180deg)",
-                      }}
-                    >
+                    <div className="flashcard-face flashcard-face-back">
                       <Card className="h-full flex items-center justify-center glassmorphic hover-lift bg-gradient-to-br from-white/80 to-teal-50/80 dark:from-slate-800/80 dark:to-teal-950/80 border border-white/20 dark:border-white/10 shadow-2xl">
                         <CardContent className="p-8 text-center w-full">
                           <div className="text-sm font-semibold mb-4 text-teal-600 dark:text-teal-400">
@@ -1775,18 +1760,23 @@ const handleKeyDown = (e: KeyboardEvent) => {
                 </div>
               </Card>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <motion.div
+                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+                variants={getStaggerContainerVariants(!!reducedMotion)}
+                initial="hidden"
+                animate="show"
+              >
                 {/* DEFENSIVE: Ensure unique keys and prevent duplicate rendering */}
                 {filteredDecks
                   .filter((deck, index, self) => 
                     index === self.findIndex((d) => d.id === deck.id)
                   )
-                  .map((deck) => {
+                  .map((deck, index) => {
                   const progressPct = deck.cards > 0 ? (deck.mastered / deck.cards) * 100 : 0;
                   return (
+                    <motion.div key={deck.id} custom={index} variants={getStaggerItemVariants(!!reducedMotion)}>
                     <Card
-                      key={deck.id}
-                      className={`border-2 cursor-pointer hover:shadow-lg transition-shadow bg-gradient-to-r ${getSubjectColor(deck.subject)}`}
+                      className={`border-2 cursor-pointer bg-gradient-to-r ${getSubjectColor(deck.subject)}`}
                       data-testid={`card-deck-${deck.id}`}
                     >
                       <CardHeader className="pb-3">
@@ -1908,9 +1898,10 @@ const handleKeyDown = (e: KeyboardEvent) => {
                         )}
                       </CardContent>
                     </Card>
+                    </motion.div>
                   );
                 })}
-              </div>
+              </motion.div>
             )}
             </div>
             </TabsContent>

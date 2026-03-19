@@ -24,9 +24,11 @@ allowing safe evolution of features without cross-module side effects.
 
 import { Switch, Route, useLocation, Redirect } from "wouter";
 import React from "react";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
+import { ScrollToTop } from "@/components/scroll-to-top";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { ThemeProvider } from "@/components/theme-provider";
@@ -46,6 +48,7 @@ import Profile from "@/pages/profile";
 import Settings from "@/pages/settings";
 import Login from "@/pages/login";
 import Landing from "@/pages/landing";
+import { getPageVariants } from "@/lib/animations";
 
 console.log("[App.tsx] Module loading");
 
@@ -73,24 +76,38 @@ A JSX tree representing the component view for the current state.
 ----------------------------------------------------------
 */
 function AppRouter() {
+  const [location] = useLocation();
+  const reducedMotion = useReducedMotion();
+
   return (
-    <Switch>
-      <Route path="/" component={() => <Redirect to="/dashboard" />} />
-      <Route path="/dashboard" component={() => <Dashboard />} />
-      <Route path="/notes" component={() => <Notes />} />
-      <Route path="/quizzes" component={() => <Quizzes />} />
-      <Route path="/flashcards" component={() => <Flashcards />} />
-      <Route path="/research" component={() => <Research />} />
-      <Route path="/revision" component={() => <Revision />} />
-      <Route path="/insights" component={() => <Insights />} />
-      <Route path="/performance" component={() => <Performance />} />
-      <Route path="/profile" component={() => <Profile />} />
-      <Route path="/settings" component={() => <Settings />} />
-      {/* Catch-all: redirect unknown routes to dashboard */}
-      <Route>
-        {() => <Redirect to="/dashboard" />}
-      </Route>
-    </Switch>
+    <AnimatePresence mode="wait" initial={false}>
+      <motion.div
+        key={location}
+        variants={getPageVariants(!!reducedMotion)}
+        initial="initial"
+        animate="animate"
+        exit="exit"
+        className="playful-route-shell page-stagger"
+      >
+        <Switch location={location}>
+          <Route path="/" component={() => <Redirect to="/dashboard" />} />
+          <Route path="/dashboard" component={() => <Dashboard />} />
+          <Route path="/notes" component={() => <Notes />} />
+          <Route path="/quizzes" component={() => <Quizzes />} />
+          <Route path="/flashcards" component={() => <Flashcards />} />
+          <Route path="/research" component={() => <Research />} />
+          <Route path="/revision" component={() => <Revision />} />
+          <Route path="/insights" component={() => <Insights />} />
+          <Route path="/performance" component={() => <Performance />} />
+          <Route path="/profile" component={() => <Profile />} />
+          <Route path="/settings" component={() => <Settings />} />
+          {/* Catch-all: redirect unknown routes to dashboard */}
+          <Route>
+            {() => <Redirect to="/dashboard" />}
+          </Route>
+        </Switch>
+      </motion.div>
+    </AnimatePresence>
   );
 }
 
@@ -125,8 +142,6 @@ function MainLayout({
   user: ReturnType<typeof useAuth>["user"];
   onLogout: () => void;
 }) {
-  const [location] = useLocation();
-
   const style = {
     "--sidebar-width": "16rem",
     "--sidebar-width-icon": "3rem",
@@ -139,9 +154,7 @@ function MainLayout({
         <div className="flex min-w-0 flex-1 flex-col overflow-hidden bg-gradient-to-b from-background/80 via-background/70 to-secondary/10 backdrop-blur-[1px]">
           <AppTopbar user={user} onLogout={onLogout} />
           <main id="app-main-scroll" className="min-w-0 flex-1 overflow-y-auto overflow-x-hidden bg-gradient-to-b from-transparent via-background/10 to-secondary/10">
-            <div key={location} className="route-transition playful-route-shell page-stagger">
-              <AppRouter />
-            </div>
+            <AppRouter />
           </main>
         </div>
       </div>
@@ -252,6 +265,7 @@ export default function App() {
         <TooltipProvider>
           <AppLanguageProvider>
             <ThemeProvider defaultTheme="light">
+              <ScrollToTop />
               <AuthenticatedApp />
               <Toaster />
             </ThemeProvider>

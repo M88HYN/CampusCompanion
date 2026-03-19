@@ -24,6 +24,7 @@ allowing safe evolution of features without cross-module side effects.
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { marked } from "marked";
+import { motion, useReducedMotion } from "framer-motion";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { 
   ChevronRight, 
@@ -126,6 +127,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
 import { normalizeTags } from "@/lib/tag-utils";
+import { getStaggerContainerVariants, getStaggerItemVariants } from "@/lib/animations";
 import type { Note, Deck } from "@shared/schema";
 
 interface NoteWithBlocks extends Note {
@@ -313,6 +315,7 @@ export default function Notes() {
   const [showMobileSidebar, setShowMobileSidebar] = useState(true);
   const editorRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
+  const reducedMotion = useReducedMotion();
   
   // AI Ask panel state
   const [showAiPanel, setShowAiPanel] = useState(false);
@@ -2007,15 +2010,25 @@ const handleDuplicateNote = () => {
                     <span className="text-xs text-muted-foreground">{subjectNotes.length}</span>
                   </Button>
                   {isExpanded && (
-                    <div className="ml-4 border-l-2 border-brand-primary/30 dark:border-brand-primary/40 pl-2 space-y-1">
-                      {subjectNotes.map((note) => {
+                    <motion.div
+                      className="ml-4 border-l-2 border-brand-primary/30 dark:border-brand-primary/40 pl-2 space-y-1"
+                      variants={getStaggerContainerVariants(!!reducedMotion)}
+                      initial="hidden"
+                      animate="show"
+                    >
+                      {subjectNotes.map((note, index) => {
                         const isSelected = selectedNoteId === note.id;
                         return (
-                          <div key={note.id} className={`flex items-center group/note border-l-4 transition-colors ${note.isPinned ? "border-l-blue-500" : "border-l-transparent"}`}>
+                          <motion.div
+                            key={note.id}
+                            custom={index}
+                            variants={getStaggerItemVariants(!!reducedMotion)}
+                            className={`flex items-center gap-1 group/note border-l-4 transition-colors ${note.isPinned ? "border-l-blue-500" : "border-l-transparent"}`}
+                          >
                             <Button
                               variant={isSelected ? "secondary" : "ghost"}
                               size="sm"
-                              className={`flex-1 justify-start gap-2 ${
+                              className={`flex-1 min-w-0 justify-start gap-2 ${
                                 isSelected
                                   ? "bg-blue-100 dark:bg-brand-primary/20 text-blue-900 dark:text-blue-100"
                                   : note.isPinned ? "bg-blue-50 dark:bg-blue-950/30" : ""
@@ -2113,10 +2126,10 @@ const handleDuplicateNote = () => {
                                 </DropdownMenuItem>
                               </DropdownMenuContent>
                             </DropdownMenu>
-                          </div>
+                          </motion.div>
                         );
                       })}
-                    </div>
+                    </motion.div>
                   )}
                 </div>
               );

@@ -23,6 +23,7 @@ allowing safe evolution of features without cross-module side effects.
 */
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import { motion, useReducedMotion } from "framer-motion";
 import { Plus, Play, Clock, CheckCircle2, AlertCircle, Star, BookMarked, Zap, Trophy, Target, RotateCw, Loader, Trash2, X, Brain, TrendingUp, TrendingDown, BarChart3, RefreshCw, ChevronRight, Lightbulb, FileText, Layers, GraduationCap, Flame, CalendarCheck, Rocket, Medal, Crown, Sparkles } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useQueryClient } from "@tanstack/react-query";
@@ -57,6 +58,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { getStaggerContainerVariants, getStaggerItemVariants } from "@/lib/animations";
 
 type QuizMode = "practice" | "exam" | "adaptive";
 type ViewType = "list" | "taking" | "results" | "create" | "analytics" | "adaptive" | "review";
@@ -180,6 +182,7 @@ A JSX tree representing the component view for the current state.
 ----------------------------------------------------------
 */
 export default function Quizzes() {
+  const reducedMotion = useReducedMotion();
   const [location] = useLocation();
   const [view, setView] = useState<ViewType>("list");
   const [currentQuestion, setCurrentQuestion] = useState(0);
@@ -2622,15 +2625,27 @@ const formatTime = (seconds: number) => {
                       <CardDescription>Recent quiz wins and movement over your latest attempts.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-3">
+                      <motion.div
+                        className="space-y-3"
+                        variants={getStaggerContainerVariants(!!reducedMotion)}
+                        initial="hidden"
+                        animate="show"
+                      >
                       {recentActivity.slice(-4).reverse().map((attempt, idx) => (
-                        <div key={`${attempt.quizTitle}-${idx}`} className="rounded-lg border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/40 p-3">
+                        <motion.div
+                          key={`${attempt.quizTitle}-${idx}`}
+                          custom={idx}
+                          variants={getStaggerItemVariants(!!reducedMotion)}
+                          className="rounded-lg border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/40 p-3"
+                        >
                           <div className="flex items-center justify-between gap-2">
                             <p className="font-medium text-foreground truncate">{attempt.quizTitle}</p>
                             <Badge className="bg-emerald-600 text-white">{attempt.accuracy}%</Badge>
                           </div>
                           <p className="text-xs text-muted-foreground mt-1">{attempt.topic} • Score {attempt.score}/{attempt.maxScore}</p>
-                        </div>
+                        </motion.div>
                       ))}
+                      </motion.div>
                       {recentActivity.length === 0 ? (
                         <p className="text-sm text-muted-foreground">Complete more quizzes to populate your momentum feed.</p>
                       ) : null}
