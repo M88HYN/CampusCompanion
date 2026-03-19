@@ -76,6 +76,7 @@ import {
   FolderInput,
   FileDown,
   ArrowRightLeft,
+  Pin,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -324,6 +325,8 @@ export default function Notes() {
   const [showExamMakerDialog, setShowExamMakerDialog] = useState(false);
   const [examQuestions, setExamQuestions] = useState<{type: string; question: string; answer: string; marks: number}[]>([]);
   const [isGeneratingExam, setIsGeneratingExam] = useState(false);
+  const [wordCount, setWordCount] = useState(0);
+  const [readingTime, setReadingTime] = useState(0);
   
   const [location, setLocation] = useLocation();
   const queryClient = useQueryClient();
@@ -455,6 +458,28 @@ export default function Notes() {
     onError: (error: Error) => {
       console.error("[NOTES] Delete note ERROR:", error);
       toast({ title: "Error", description: error.message || "Failed to delete note", variant: "destructive" });
+    },
+  });
+
+  const pinNoteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      console.log("[NOTES API] Sending PATCH /api/notes/:id/pin", id);
+      const res = await apiRequest("PATCH", `/api/notes/${id}/pin`);
+      console.log("[NOTES API] Response status:", res.status);
+      return (await res.json()) as Note;
+    },
+    onSuccess: (updatedNote) => {
+      console.log("[NOTES] Pin note SUCCESS:", updatedNote.id);
+      queryClient.setQueryData(["/api/notes"], (oldNotes: Note[] | undefined) => {
+        if (!oldNotes) return [updatedNote];
+        return oldNotes.map(n => n.id === updatedNote.id ? updatedNote : n);
+      });
+      const action = updatedNote.isPinned ? "pinned" : "unpinned";
+      toast({ title: `Note ${action}`, description: `Note has been ${action} successfully.` });
+    },
+    onError: (error: Error) => {
+      console.error("[NOTES] Pin note ERROR:", error);
+      toast({ title: "Error", description: error.message || "Failed to pin note — please try again.", variant: "destructive" });
     },
   });
 
@@ -704,6 +729,12 @@ const syncEditorContent = () => {
     if (!editor) return;
     setNoteContent(editor.innerHTML);
     setIsSaved(false);
+    
+    // Calculate word count and reading time
+    const text = editor.innerText || "";
+    const words = text.trim().split(/\s+/).filter(w => w.length > 0).length;
+    setWordCount(words);
+    setReadingTime(Math.ceil(words / 200)); // ~200 words per minute
   };
 
 const execEditorCommand = (command: string, value?: string) => {
@@ -1863,7 +1894,12 @@ const handleDuplicateNote = () => {
       normalizeTags(note.tags).some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
     );
     if (filtered.length > 0) {
-      acc[subject] = filtered;
+      // Sort filtered notes: pinned first, then by creation date (newest first)
+      acc[subject] = filtered.sort((a, b) => {
+        if (a.isPinned && !b.isPinned) return -1;
+        if (!a.isPinned && b.isPinned) return 1;
+        return b.createdAt - a.createdAt;
+      });
     }
     return acc;
   }, {} as Record<string, Note[]>);
@@ -1975,14 +2011,14 @@ const handleDuplicateNote = () => {
                       {subjectNotes.map((note) => {
                         const isSelected = selectedNoteId === note.id;
                         return (
-                          <div key={note.id} className="flex items-center group/note">
+                          <div key={note.id} className={`flex items-center group/note border-l-4 transition-colors ${note.isPinned ? "border-l-blue-500" : "border-l-transparent"}`}>
                             <Button
                               variant={isSelected ? "secondary" : "ghost"}
                               size="sm"
                               className={`flex-1 justify-start gap-2 ${
                                 isSelected
                                   ? "bg-blue-100 dark:bg-brand-primary/20 text-blue-900 dark:text-blue-100"
-                                  : ""
+                                  : note.isPinned ? "bg-blue-50 dark:bg-blue-950/30" : ""
                               }`}
                               onClick={() => {
                                 setSelectedNoteId(note.id);
@@ -1994,6 +2030,26 @@ const handleDuplicateNote = () => {
                               <span className="flex-1 text-left truncate text-sm">{note.title}</span>
                               {isSelected && <CheckCircle2 className="h-4 w-4 text-brand-primary flex-shrink-0" />}
                             </Button>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className={`h-7 w-7 flex-shrink-0 opacity-0 group-hover/note:opacity-100 transition-opacity ${note.isPinned ? "text-blue-500" : ""}`}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    pinNoteMutation.mutate(note.id);
+                                  }}
+                                  disabled={pinNoteMutation.isPending}
+                                  data-testid={`button-pin-note-${note.id}`}
+                                >
+                                  <Pin className={`h-4 w-4 ${note.isPinned ? "fill-current" : ""}`} />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent side="right" className="text-xs">
+                                {note.isPinned ? "Unpin note" : "Pin note"}
+                              </TooltipContent>
+                            </Tooltip>
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
                                 <Button
@@ -2035,6 +2091,17 @@ const handleDuplicateNote = () => {
                                 >
                                   <Download className="h-3.5 w-3.5" />
                                   Export
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  className="gap-2 text-sm"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    pinNoteMutation.mutate(note.id);
+                                  }}
+                                  disabled={pinNoteMutation.isPending}
+                                >
+                                  <Pin className={`h-3.5 w-3.5 ${note.isPinned ? "fill-current" : ""}`} />
+                                  {note.isPinned ? "Unpin" : "Pin"}
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem
@@ -2572,6 +2639,20 @@ const handleDuplicateNote = () => {
                       data-placeholder="Start typing your notes..."
                       data-testid="textarea-note-content"
                     />
+                  )}
+                  
+                  {/* Word Count & Reading Time Display */}
+                  {selectedNoteId && !recallMode && !previewMode && (
+                    <div className="text-xs text-muted-foreground flex items-center justify-end gap-4 pt-2 border-t border-slate-200 dark:border-slate-700">
+                      <div className="flex items-center gap-1">
+                        <span className="font-medium">{wordCount}</span>
+                        <span>word{wordCount !== 1 ? "s" : ""}</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <span className="font-medium">{readingTime}</span>
+                        <span>min read</span>
+                      </div>
+                    </div>
                   )}
                 </div>
               </div>

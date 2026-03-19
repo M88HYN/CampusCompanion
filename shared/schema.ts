@@ -53,6 +53,7 @@ export const notes = sqliteTable("notes", {
   title: text("title").notNull(),
   subject: text("subject"),
   tags: text("tags"), // JSON string if needed
+  isPinned: integer("is_pinned", { mode: "boolean" }).default(false).notNull(),
   createdAt: integer("created_at").notNull(),
   updatedAt: integer("updated_at").notNull(),
 }, (table) => ({

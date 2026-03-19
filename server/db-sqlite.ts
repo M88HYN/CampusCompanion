@@ -470,6 +470,18 @@ sqlite.exec(`
     )
   `);
 
+  // Add isPinned column to notes table if it doesn't exist
+  try {
+    sqlite.exec(`
+      ALTER TABLE notes ADD COLUMN is_pinned BOOLEAN DEFAULT 0
+    `);
+  } catch (error: any) {
+    // Column already exists, ignore error
+    if (!error.message.includes("duplicate column")) {
+      console.warn("Warning adding is_pinned column:", error.message);
+    }
+  }
+
   console.log("Database tables created successfully");
 }
 

@@ -55,28 +55,10 @@ interface SearchTarget {
   path: string;
   description: string;
   keywords: string[];
-  group?: "Navigation" | "Notes" | "Decks";
+  group: "Decks" | "Cards" | "Notes" | "Quiz History";
 }
 
-const SEARCH_TARGETS: SearchTarget[] = [
-  { label: "Dashboard", path: "/dashboard", description: "Overview and quick actions", keywords: ["home", "overview", "dashboard"], group: "Navigation" },
-  { label: "Notes", path: "/notes", description: "Study notes and blocks", keywords: ["note", "notes", "writing"], group: "Navigation" },
-  { label: "Flashcards", path: "/flashcards", description: "Spaced repetition cards", keywords: ["flashcards", "cards", "revision cards"], group: "Navigation" },
-  { label: "Quizzes", path: "/quizzes", description: "Quiz list and attempts", keywords: ["quiz", "quizzes", "test"], group: "Navigation" },
-  { label: "Quiz Analytics", path: "/quizzes?tab=analytics", description: "Quiz analytics section", keywords: ["quiz analytics", "accuracy", "scores"], group: "Navigation" },
-  { label: "Quiz Review", path: "/quizzes?tab=review", description: "Spaced quiz review", keywords: ["review", "quiz review"], group: "Navigation" },
-  { label: "Revision Aids", path: "/revision", description: "Revision helper", keywords: ["revision", "recap", "revision aids"], group: "Navigation" },
-  { label: "Insight Scout", path: "/research", description: "AI-powered study assistant", keywords: ["research", "insight scout", "ai"], group: "Navigation" },
-  { label: "Insights", path: "/insights", description: "Learning insights dashboard", keywords: ["insights", "learning data"], group: "Navigation" },
-  { label: "Performance", path: "/performance", description: "Performance analytics", keywords: ["performance", "analytics", "metrics"], group: "Navigation" },
-  { label: "Profile", path: "/profile", description: "User profile page", keywords: ["profile", "account"], group: "Navigation" },
-  { label: "Settings", path: "/settings", description: "All preferences", keywords: ["settings", "preferences", "config"], group: "Navigation" },
-  { label: "Settings: Account", path: "/settings?tab=account", description: "Account settings tab", keywords: ["account settings", "account"], group: "Navigation" },
-  { label: "Settings: Notifications", path: "/settings?tab=notifications", description: "Notification preferences tab", keywords: ["notifications", "reminders"], group: "Navigation" },
-  { label: "Settings: Privacy", path: "/settings?tab=privacy", description: "Privacy settings tab", keywords: ["privacy"], group: "Navigation" },
-  { label: "Settings: Security", path: "/settings?tab=security", description: "Security settings tab", keywords: ["security", "password"], group: "Navigation" },
-  { label: "Settings: Insight Scout", path: "/settings?tab=insight-scout", description: "AI settings tab", keywords: ["insight scout", "ai settings"], group: "Navigation" },
-];
+const SEARCH_GROUP_ORDER: SearchTarget["group"][] = ["Decks", "Cards", "Notes", "Quiz History"];
 
 interface SearchNote {
   id: string;
@@ -91,6 +73,26 @@ interface SearchDeck {
   subject?: string | null;
   description?: string | null;
   tags?: string | null;
+}
+
+interface SearchCard {
+  id: string;
+  deckId: string;
+  front: string;
+  back: string;
+  tags?: string | null;
+}
+
+interface QuizHistoryEntry {
+  quizTitle?: string;
+  topic?: string;
+  score?: number;
+  maxScore?: number;
+  accuracy?: number;
+}
+
+interface SearchAnalyticsResponse {
+  recentActivity?: QuizHistoryEntry[];
 }
 
 interface DueCard {
@@ -162,6 +164,25 @@ export function AppTopbar({ user, onLogout }: AppTopbarProps) {
     queryFn: async () => {
       const response = await apiRequest("GET", "/api/decks");
       return (await response.json()) as SearchDeck[];
+    },
+    staleTime: 30000,
+  });
+
+  const { data: cards = [] } = useQuery<SearchCard[]>({
+    queryKey: ["/api/flashcards", "all", 500],
+    queryFn: async () => {
+      const response = await apiRequest("GET", "/api/flashcards?filter=all&limit=500");
+      return (await response.json()) as SearchCard[];
+    },
+    staleTime: 30000,
+  });
+
+  const { data: quizHistory = [] } = useQuery<QuizHistoryEntry[]>({
+    queryKey: ["/api/user/analytics", "recentActivity"],
+    queryFn: async () => {
+      const response = await apiRequest("GET", "/api/user/analytics");
+      const analytics = (await response.json()) as SearchAnalyticsResponse;
+      return analytics.recentActivity ?? [];
     },
     staleTime: 30000,
   });
@@ -280,15 +301,54 @@ const handleNotificationsToggle = (enabled: boolean) => {
     group: "Decks",
   }));
 
-  const allSearchTargets = [...SEARCH_TARGETS, ...noteTargets, ...deckTargets];
+  const deckTitleById = new Map(decks.map((deck) => [deck.id, deck.title]));
+  const cardTargets: SearchTarget[] = cards.map((card) => {
+    const frontPreview = card.front.trim().slice(0, 70);
+    const backPreview = card.back.trim().slice(0, 70);
+    const deckTitle = deckTitleById.get(card.deckId);
+
+    return {
+      label: frontPreview || "Untitled card",
+      path: `/flashcards?deckId=${encodeURIComponent(card.deckId)}&cardId=${encodeURIComponent(card.id)}`,
+      description: `Card${deckTitle ? ` • ${deckTitle}` : ""}${backPreview ? ` • ${backPreview}` : ""}`,
+      keywords: ["card", "flashcard", card.front, card.back, card.tags || "", deckTitle || ""],
+      group: "Cards",
+    };
+  });
+
+  const quizHistoryTargets: SearchTarget[] = quizHistory.map((activity, index) => {
+    const scoreText =
+      typeof activity.score === "number" && typeof activity.maxScore === "number"
+        ? `${activity.score}/${activity.maxScore}`
+        : typeof activity.accuracy === "number"
+          ? `${activity.accuracy}%`
+          : "Recent attempt";
+
+    return {
+      label: activity.quizTitle || "Untitled quiz",
+      path: "/quizzes?tab=analytics",
+      description: `Quiz attempt${activity.topic ? ` • ${activity.topic}` : ""} • ${scoreText}`,
+      keywords: ["quiz", "history", "attempt", activity.quizTitle || "", activity.topic || "", scoreText, String(index)],
+      group: "Quiz History",
+    };
+  });
+
+  const allSearchTargets = [...deckTargets, ...cardTargets, ...noteTargets, ...quizHistoryTargets];
 
   const normalizedQuery = searchQuery.trim().toLowerCase();
   const filteredTargets = normalizedQuery
     ? allSearchTargets.filter((target) => {
         const haystack = `${target.label} ${target.description} ${target.keywords.join(" ")}`.toLowerCase();
         return haystack.includes(normalizedQuery);
-      }).slice(0, 6)
-    : allSearchTargets.slice(0, 6);
+      }).slice(0, 12)
+    : allSearchTargets.slice(0, 12);
+
+  const groupedFilteredTargets = SEARCH_GROUP_ORDER
+    .map((group) => ({
+      group,
+      items: filteredTargets.filter((target) => target.group === group),
+    }))
+    .filter((group) => group.items.length > 0);
 
     /*
   ----------------------------------------------------------
@@ -404,7 +464,7 @@ const handleSearchSubmit = (event: React.FormEvent) => {
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-foreground/70" />
             <Input
               aria-label="Search and navigate"
-              placeholder={t("topbar.searchPlaceholder", "Search pages, tabs, sections...")}
+              placeholder={t("topbar.searchPlaceholder", "Search decks, cards, notes, quiz history...")}
               className="h-10 pl-9"
               value={searchQuery}
               onChange={(event) => {
@@ -417,26 +477,30 @@ const handleSearchSubmit = (event: React.FormEvent) => {
               }}
             />
 
-            {isSearchOpen && filteredTargets.length > 0 ? (
+            {isSearchOpen && groupedFilteredTargets.length > 0 ? (
               <div
                 className="search-dropdown-transition absolute z-40 mt-2 w-full rounded-xl border border-border bg-card shadow-md"
                 role="listbox"
                 aria-label="Search results"
               >
-                {filteredTargets.map((target) => (
-                  <button
-                    key={target.path}
-                    type="button"
-                    className="w-full px-3 py-2 text-left hover:bg-accent/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                    onMouseDown={() => handleSearchNavigate(target)}
-                    aria-label={`Go to ${target.label}`}
-                  >
-                    <p className="text-sm font-medium text-foreground">{target.label}</p>
-                    <p className="text-xs text-muted-foreground">{target.description}</p>
-                    {target.group ? (
-                      <p className="text-[10px] uppercase tracking-wide text-secondary mt-0.5">{target.group}</p>
-                    ) : null}
-                  </button>
+                {groupedFilteredTargets.map(({ group, items }) => (
+                  <div key={group} className="py-1">
+                    <p className="px-3 py-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                      {group}
+                    </p>
+                    {items.map((target) => (
+                      <button
+                        key={`${target.group}-${target.path}-${target.label}`}
+                        type="button"
+                        className="w-full px-3 py-2 text-left hover:bg-accent/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        onMouseDown={() => handleSearchNavigate(target)}
+                        aria-label={`Go to ${target.label}`}
+                      >
+                        <p className="text-sm font-medium text-foreground">{target.label}</p>
+                        <p className="text-xs text-muted-foreground">{target.description}</p>
+                      </button>
+                    ))}
+                  </div>
                 ))}
               </div>
             ) : null}
@@ -569,7 +633,7 @@ const handleSearchSubmit = (event: React.FormEvent) => {
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-foreground/70" />
             <Input
               aria-label="Mobile search and navigate"
-              placeholder={t("topbar.searchPlaceholder", "Search pages, tabs, sections...")}
+              placeholder={t("topbar.searchPlaceholder", "Search decks, cards, notes, quiz history...")}
               className="h-10 pl-9"
               value={searchQuery}
               onChange={(event) => {
@@ -579,23 +643,30 @@ const handleSearchSubmit = (event: React.FormEvent) => {
               onFocus={() => setIsSearchOpen(true)}
             />
 
-            {isSearchOpen && filteredTargets.length > 0 ? (
+            {isSearchOpen && groupedFilteredTargets.length > 0 ? (
               <div
                 className="search-dropdown-transition absolute z-40 mt-2 w-full rounded-xl border border-border bg-card shadow-md max-h-[50vh] overflow-auto"
                 role="listbox"
                 aria-label="Mobile search results"
               >
-                {filteredTargets.map((target) => (
-                  <button
-                    key={`mobile-${target.path}`}
-                    type="button"
-                    className="w-full px-3 py-2 text-left hover:bg-accent/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                    onMouseDown={() => handleSearchNavigate(target)}
-                    aria-label={`Go to ${target.label}`}
-                  >
-                    <p className="text-sm font-medium text-foreground truncate">{target.label}</p>
-                    <p className="text-xs text-muted-foreground truncate">{target.description}</p>
-                  </button>
+                {groupedFilteredTargets.map(({ group, items }) => (
+                  <div key={`mobile-${group}`} className="py-1">
+                    <p className="px-3 py-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                      {group}
+                    </p>
+                    {items.map((target) => (
+                      <button
+                        key={`mobile-${target.group}-${target.path}-${target.label}`}
+                        type="button"
+                        className="w-full px-3 py-2 text-left hover:bg-accent/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        onMouseDown={() => handleSearchNavigate(target)}
+                        aria-label={`Go to ${target.label}`}
+                      >
+                        <p className="text-sm font-medium text-foreground truncate">{target.label}</p>
+                        <p className="text-xs text-muted-foreground truncate">{target.description}</p>
+                      </button>
+                    ))}
+                  </div>
                 ))}
               </div>
             ) : null}

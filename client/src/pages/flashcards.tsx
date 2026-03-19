@@ -221,6 +221,7 @@ export default function Flashcards() {
   const [flipped, setFlipped] = useState(false);
   const [currentCard, setCurrentCard] = useState(0);
   const [selectedDeckId, setSelectedDeckId] = useState<string>("");
+  const [focusedCardId, setFocusedCardId] = useState<string | null>(null);
   const [showStudySettings, setShowStudySettings] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [bulkImportText, setBulkImportText] = useState("");
@@ -327,13 +328,26 @@ export default function Flashcards() {
   useEffect(() => {
     if (!decks.length) return;
 
-    const deckIdFromUrl = new URL(window.location.href).searchParams.get("deckId");
+    const searchParams = new URL(window.location.href).searchParams;
+    const deckIdFromUrl = searchParams.get("deckId");
+    const cardIdFromUrl = searchParams.get("cardId");
+
+    if (cardIdFromUrl) {
+      setFocusedCardId(cardIdFromUrl);
+    } else {
+      setFocusedCardId(null);
+    }
+
     if (deckIdFromUrl) {
       const matched = decks.find((deck) => deck.id === deckIdFromUrl);
       if (matched && selectedDeckId !== matched.id) {
         setSelectedDeckId(matched.id);
-        setView("decks");
-        setFlashcardTabActive("decks");
+        if (cardIdFromUrl) {
+          setView("create-card");
+        } else {
+          setView("decks");
+          setFlashcardTabActive("decks");
+        }
       }
     }
   }, [decks, selectedDeckId, location]);
@@ -347,6 +361,15 @@ export default function Flashcards() {
     enabled: !!selectedDeckId && (view === "studying" || view === "create-card" || view === "bulk-import"),
     retry: 1,
   });
+
+  useEffect(() => {
+    if (!focusedCardId || view !== "create-card") return;
+
+    const cardElement = document.getElementById(`flashcard-${focusedCardId}`);
+    if (!cardElement) return;
+
+    cardElement.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [focusedCardId, selectedDeck, view]);
 
   // Real stats from backend
   const { data: flashcardStats } = useQuery({
@@ -2367,7 +2390,11 @@ const handleKeyDown = (e: KeyboardEvent) => {
               </CardHeader>
               <CardContent className="space-y-2 max-h-64 overflow-auto">
                 {selectedDeck.cards.map((card, idx) => (
-                  <div key={card.id} className="p-3 bg-slate-50 dark:bg-slate-900 rounded border">
+                  <div
+                    id={`flashcard-${card.id}`}
+                    key={card.id}
+                    className={`p-3 rounded border ${focusedCardId === card.id ? "border-emerald-500 bg-emerald-50/70 dark:border-emerald-400 dark:bg-emerald-900/30" : "bg-slate-50 dark:bg-slate-900"}`}
+                  >
                     <p className="text-xs text-muted-foreground">Card {idx + 1}</p>
                     <p className="font-medium text-sm">{card.front}</p>
                     <p className="text-sm text-muted-foreground">{card.back}</p>

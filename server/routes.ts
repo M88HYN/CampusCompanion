@@ -516,6 +516,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.patch("/api/notes/:id/pin", authMiddleware, async (req: any, res) => {
+    try {
+      const userId = getUserId(req);
+      const note = await storage.getNote(req.params.id);
+      
+      if (!note) {
+        return res.status(404).json({ error: "Note not found" });
+      }
+      
+      if (note.userId !== userId) {
+        return res.status(403).json({ error: "You do not have permission to modify this note" });
+      }
+      
+      const updatedNote = await storage.updateNote(req.params.id, {
+        isPinned: !note.isPinned,
+      });
+      
+      res.json(updatedNote);
+    } catch (error) {
+      console.error("Pin note error:", error);
+      res.status(500).json({ error: "Failed to toggle pin status" });
+    }
+  });
+
   // ==================== NOTES AUTO-GENERATION ====================
   
   // Auto-generate quiz from note
