@@ -64,6 +64,7 @@ async createUser(user: AuthUser): Promise<void> {
         username: user.username || null,
         email: user.email,
         passwordHash: user.password || null,
+        isVerified: user.isVerified ?? false,
         firstName: user.firstName || null,
         lastName: user.lastName || null,
         profileImageUrl: null,
@@ -109,6 +110,7 @@ async updateUser(user: AuthUser): Promise<void> {
           username: user.username || null,
           email: user.email,
           passwordHash: user.password || null,
+          isVerified: user.isVerified ?? false,
           firstName: user.firstName || null,
           lastName: user.lastName || null,
           updatedAt: Date.now(),
@@ -158,6 +160,7 @@ async findUserById(userId: string): Promise<AuthUser | null> {
           email: row.email,
           username: row.username || undefined,
           password: row.passwordHash || undefined,
+          isVerified: row.isVerified,
           firstName: row.firstName || undefined,
           lastName: row.lastName || undefined,
         };
@@ -210,6 +213,7 @@ async findUserByEmail(email: string): Promise<AuthUser | null> {
           email: row.email,
           username: row.username || undefined,
           password: row.passwordHash || undefined,
+          isVerified: row.isVerified,
           firstName: row.firstName || undefined,
           lastName: row.lastName || undefined,
         };
@@ -259,6 +263,7 @@ async findUserByUsername(username: string): Promise<AuthUser | null> {
           email: row.email,
           username: row.username || undefined,
           password: row.passwordHash || undefined,
+          isVerified: row.isVerified,
           firstName: row.firstName || undefined,
           lastName: row.lastName || undefined,
         };

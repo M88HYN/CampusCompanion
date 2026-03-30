@@ -35,6 +35,7 @@ import {
   verifyToken,
   generateVerificationCode,
   verifyEmailCode,
+  verifyEmailCodeByEmail,
   resendVerificationCode,
   type AuthUser,
 } from "./auth";
@@ -64,6 +65,8 @@ const registerSchema = z.object({
 const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
 const SUPABASE_URL = (process.env.SUPABASE_URL || "").replace(/\/$/, "");
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || "";
+const RESEND_COOLDOWN_MS = 60 * 1000;
+const resendTracker = new Map<string, number>();
 
 function splitName(fullName: string): { firstName?: string; lastName?: string } {
   const normalized = fullName.trim();
@@ -287,7 +290,7 @@ export function registerAuthRoutes(app: Express) {
       const emailSent = await sendVerificationEmail({
         email: data.email,
         code: verificationCode,
-        expiresInMinutes: 15,
+        expiresInMinutes: 10,
       });
 
       if (!emailSent) {
@@ -330,6 +333,15 @@ export function registerAuthRoutes(app: Express) {
       const valid = await comparePasswords(data.password, user.password);
       if (!valid) {
         return res.status(401).json({ message: "Invalid credentials" });
+      }
+
+      if (!user.isVerified) {
+        return res.status(403).json({
+          message: "Please verify your email before logging in",
+          requiresVerification: true,
+          userId: user.id,
+          email: user.email,
+        });
       }
 
       const isDemoUser = user.username === "demo-user" || user.email === "demo@studymate.local";
@@ -414,6 +426,39 @@ export function registerAuthRoutes(app: Express) {
     }
   });
 
+  // Verify email code (email + code compatibility endpoint)
+  app.post("/api/auth/verify", async (req: any, res: Response) => {
+    try {
+      const { email, code } = req.body;
+
+      if (!email || !code) {
+        return res.status(400).json({ message: "Missing email or code" });
+      }
+
+      const verified = await verifyEmailCodeByEmail(email, code);
+      if (!verified) {
+        return res.status(400).json({ message: "Invalid or expired verification code" });
+      }
+
+      const token = generateToken(verified);
+      res.json({
+        success: true,
+        message: "Email verified successfully",
+        token,
+        user: {
+          id: verified.id,
+          username: verified.username,
+          email: verified.email,
+          firstName: verified.firstName,
+          lastName: verified.lastName,
+        },
+      });
+    } catch (error: any) {
+      console.error("Email verification error:", error);
+      res.status(500).json({ message: "Verification failed" });
+    }
+  });
+
   // Resend verification code
   app.post("/api/auth/resend-code", async (req: any, res: Response) => {
     try {
@@ -423,12 +468,30 @@ export function registerAuthRoutes(app: Express) {
         return res.status(400).json({ message: "Missing userId or email" });
       }
 
+      const normalizedEmail = String(email).trim().toLowerCase();
+      const now = Date.now();
+      const previousSentAt = resendTracker.get(normalizedEmail) ?? 0;
+      const retryInMs = RESEND_COOLDOWN_MS - (now - previousSentAt);
+
+      if (retryInMs > 0) {
+        return res.status(429).json({
+          message: "Please wait before requesting another verification code",
+          retryAfterSeconds: Math.ceil(retryInMs / 1000),
+        });
+      }
+
+      const user = await findUserById(userId);
+      if (!user || user.email?.toLowerCase() !== normalizedEmail) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
       const code = await resendVerificationCode(userId);
       await sendVerificationEmail({
         email,
         code,
-        expiresInMinutes: 15,
+        expiresInMinutes: 10,
       });
+      resendTracker.set(normalizedEmail, now);
 
       res.json({
         success: true,

@@ -531,6 +531,22 @@ export default function Dashboard(_props: DashboardProps) {
     return wins.slice(0, 4);
   };
 
+  const handleStartQuiz = () => {
+    if (quizzes.length === 0) {
+      setLocation("/quizzes");
+      return;
+    }
+    setLocation("/quizzes?launch=random");
+  };
+
+  const handleReviewFlashcards = () => {
+    const hasReviewableDeck = decks.some((deck) => (deck.cards ?? 0) > 0);
+    if (!hasReviewableDeck) {
+      setLocation("/flashcards");
+      return;
+    }
+    setLocation("/flashcards?launch=random");
+  };
   const studyActions = generateStudyNowActions();
   const quickWins = generateQuickWins();
 
@@ -674,7 +690,7 @@ export default function Dashboard(_props: DashboardProps) {
             </Button>
             <Button
               variant="outline"
-              onClick={() => setLocation("/quizzes")}
+              onClick={handleStartQuiz}
               className="gap-2 rounded-xl border-violet-200 dark:border-violet-800 text-violet-700 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-950/40 hover:border-violet-300 dark:hover:border-violet-700 hover:shadow-sm transition-all"
             >
               <PlayCircle className="h-4 w-4" />
@@ -682,7 +698,7 @@ export default function Dashboard(_props: DashboardProps) {
             </Button>
             <Button
               variant="outline"
-              onClick={() => setLocation("/flashcards")}
+              onClick={handleReviewFlashcards}
               className="gap-2 rounded-xl border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 hover:border-emerald-300 dark:hover:border-emerald-700 hover:shadow-sm transition-all"
             >
               <CreditCard className="h-4 w-4" />

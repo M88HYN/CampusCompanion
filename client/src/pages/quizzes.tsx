@@ -222,6 +222,7 @@ export default function Quizzes() {
   
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const startTimeRef = useRef<number>(Date.now());
+  const randomLaunchHandledRef = useRef(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -693,6 +694,25 @@ const startQuiz = async (quizId: string, mode: QuizMode = "practice") => {
     
     setView("taking");
   };
+
+  useEffect(() => {
+    const params = new URL(window.location.href).searchParams;
+    const launchMode = params.get("launch");
+
+    if (launchMode !== "random" || randomLaunchHandledRef.current || isLoadingQuizzes) {
+      return;
+    }
+
+    if (allQuizzes.length === 0) {
+      randomLaunchHandledRef.current = true;
+      return;
+    }
+
+    randomLaunchHandledRef.current = true;
+    const randomQuiz = allQuizzes[Math.floor(Math.random() * allQuizzes.length)];
+    void startQuiz(randomQuiz.id, "practice");
+    window.history.replaceState({}, "", "/quizzes");
+  }, [location, isLoadingQuizzes, allQuizzes]);
 
     /*
   ----------------------------------------------------------

@@ -229,6 +229,7 @@ export default function Flashcards() {
   const [showPreview, setShowPreview] = useState(false);
   const [bulkImportText, setBulkImportText] = useState("");
   const transitionTimeoutRef = useRef<number | null>(null);
+  const randomLaunchHandledRef = useRef(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [studyMode, setStudyMode] = useState<StudyMode>("smart");
   const [smartQueueDeckId, setSmartQueueDeckId] = useState<string>("");
@@ -664,6 +665,29 @@ const startSmartStudy = (mode: StudyMode, deckId?: string) => {
     console.log("[FLASHCARDS] Refetching smart queue");
     refetchSmartQueue();
   };
+
+  useEffect(() => {
+    const params = new URL(window.location.href).searchParams;
+    const launchMode = params.get("launch");
+
+    if (launchMode !== "random" || randomLaunchHandledRef.current || decks.length === 0) {
+      return;
+    }
+
+    const reviewableDecks = decks.filter((deck) => (deck.cards ?? 0) > 0);
+    if (reviewableDecks.length === 0) {
+      randomLaunchHandledRef.current = true;
+      return;
+    }
+
+    const dueDecks = reviewableDecks.filter((deck) => (deck.dueToday ?? 0) > 0);
+    const candidateDecks = dueDecks.length > 0 ? dueDecks : reviewableDecks;
+    const randomDeck = candidateDecks[Math.floor(Math.random() * candidateDecks.length)];
+
+    randomLaunchHandledRef.current = true;
+    startSmartStudy("deck", randomDeck.id);
+    window.history.replaceState({}, "", "/flashcards");
+  }, [location, decks]);
 
   const handleReview = useCallback((quality: number) => {
     const { playSound } = useSoundEffect();

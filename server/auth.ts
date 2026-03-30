@@ -24,7 +24,7 @@ allowing safe evolution of features without cross-module side effects.
 
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import { randomUUID, randomBytes } from "crypto";
+import { randomUUID, randomInt } from "crypto";
 import { storage } from "./auth-storage";
 import { db } from "./db";
 import { verificationCodes, users } from "@shared/schema";
@@ -38,6 +38,7 @@ export interface AuthUser {
   username?: string;
   email: string;
   password?: string;
+  isVerified?: boolean;
   firstName?: string;
   lastName?: string;
   provider?: string;
@@ -207,7 +208,14 @@ Returns:
 A value/promise representing the outcome of the executed logic path.
 ----------------------------------------------------------
 */
-export async function createUser(email: string, password: string, firstName?: string, lastName?: string, username?: string): Promise<AuthUser> {
+export async function createUser(
+  email: string,
+  password: string,
+  firstName?: string,
+  lastName?: string,
+  username?: string,
+  isVerified: boolean = false,
+): Promise<AuthUser> {
   const hashedPassword = await hashPassword(password);
   const userId = randomUUID();
   
@@ -216,6 +224,7 @@ export async function createUser(email: string, password: string, firstName?: st
     username,
     email,
     password: hashedPassword,
+    isVerified,
     firstName,
     lastName,
     provider: "local",
@@ -387,11 +396,11 @@ A 6-digit code as a string.
 ----------------------------------------------------------
 */
 export async function generateVerificationCode(userId: string): Promise<string> {
-  // Generate a 6-digit code
-  const code = Math.floor(100000 + Math.random() * 900000).toString();
+  // Generate a cryptographically secure 6-digit code
+  const code = randomInt(100000, 1000000).toString();
   
-  // Code expires in 15 minutes
-  const expiresAt = Date.now() + 15 * 60 * 1000;
+  // Code expires in 10 minutes
+  const expiresAt = Date.now() + 10 * 60 * 1000;
   
   try {
     await db.insert(verificationCodes).values({
@@ -487,4 +496,30 @@ export async function resendVerificationCode(userId: string): Promise<string> {
 
   // Generate new code
   return generateVerificationCode(userId);
+}
+
+/*
+----------------------------------------------------------
+Function: verifyEmailCodeByEmail
+
+Purpose:
+Verify email using email + code payload while preserving existing
+userId + code verification flow.
+
+Returns:
+The verified user when successful, otherwise null.
+----------------------------------------------------------
+*/
+export async function verifyEmailCodeByEmail(email: string, code: string): Promise<AuthUser | null> {
+  const user = await findUserByEmail(email);
+  if (!user) {
+    return null;
+  }
+
+  const verified = await verifyEmailCode(user.id, code);
+  if (!verified) {
+    return null;
+  }
+
+  return findUserById(user.id);
 }
