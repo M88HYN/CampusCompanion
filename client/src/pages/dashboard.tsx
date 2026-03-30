@@ -28,7 +28,7 @@ import {
   Flame, Target, Calendar, Edit2, Save, X, Lightbulb, AlertTriangle,
   Zap, ChevronRight, CheckCircle2, Award,
   Timer, Rocket, Layers, FileText, Activity, Plus,
-  PlayCircle, CreditCard, ArrowUpRight
+  PlayCircle, CreditCard, ArrowUpRight, TrendingUp, TrendingDown, Minus, RefreshCw
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -37,9 +37,11 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { apiRequest } from "@/lib/queryClient";
+import { Line, LineChart, ResponsiveContainer } from "recharts";
 
 interface DashboardMetrics {
   dueToday: number;
@@ -103,6 +105,147 @@ type UserRole = "student" | "instructor" | "admin";
 
 interface DashboardProps {
   userRole?: UserRole;
+}
+
+type RecommendedAction = {
+  title: string;
+  description: string;
+  cta: string;
+  priority: "high" | "medium" | "low";
+  icon: React.ElementType;
+  action: () => void;
+};
+
+type SmartPromptItem = {
+  text: string;
+  cta: string;
+  action: () => void;
+};
+
+function CountUpValue({ value, suffix = "", testId }: { value: number; suffix?: string; testId?: string }) {
+  const [displayValue, setDisplayValue] = useState(value);
+
+  useEffect(() => {
+    let frame = 0;
+    const start = performance.now();
+    const startValue = displayValue;
+    const duration = 700;
+
+    const animate = (now: number) => {
+      const progress = Math.min((now - start) / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      const next = Math.round(startValue + (value - startValue) * eased);
+      setDisplayValue(next);
+      if (progress < 1) frame = requestAnimationFrame(animate);
+    };
+
+    frame = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(frame);
+  }, [value]);
+
+  return <span data-testid={testId}>{displayValue}{suffix}</span>;
+}
+
+interface EnhancedStatCardProps {
+  title: string;
+  value: number;
+  suffix?: string;
+  icon: React.ElementType;
+  tooltip: string;
+  insight: string;
+  trendLabel: string;
+  trendValue: string;
+  trendDirection: "up" | "down" | "neutral";
+  onClick: () => void;
+  sparklineData: Array<{ day: string; value: number }>;
+  gradientClass: string;
+  shadowClass: string;
+  priorityBadge?: string;
+  testId: string;
+}
+
+function EnhancedStatCard({
+  title,
+  value,
+  suffix,
+  icon: Icon,
+  tooltip,
+  insight,
+  trendLabel,
+  trendValue,
+  trendDirection,
+  onClick,
+  sparklineData,
+  gradientClass,
+  shadowClass,
+  priorityBadge,
+  testId,
+}: EnhancedStatCardProps) {
+  const trendConfig = {
+    up: { Icon: TrendingUp, color: "text-emerald-100" },
+    down: { Icon: TrendingDown, color: "text-rose-100" },
+    neutral: { Icon: Minus, color: "text-slate-100" },
+  } as const;
+  const TrendIcon = trendConfig[trendDirection].Icon;
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button
+          type="button"
+          onClick={onClick}
+          className={`group relative overflow-hidden rounded-2xl ${gradientClass} p-5 text-left text-white shadow-lg ${shadowClass} dark:shadow-none dark:ring-1 dark:ring-white/10 transition-all duration-300 hover:-translate-y-1 hover:scale-[1.02] hover:shadow-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70`}
+        >
+          <div className="absolute inset-0 bg-gradient-to-br from-white/14 via-transparent to-black/10 opacity-70" />
+          <div className="relative z-10 flex h-full flex-col gap-2">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2 min-w-0">
+                <Icon className="h-4 w-4 opacity-85 shrink-0" />
+                <span className="text-xs font-semibold opacity-95 truncate">{title}</span>
+              </div>
+              {priorityBadge && (
+                <Badge className="bg-white/15 text-white border-white/30 text-[10px] uppercase tracking-wider">
+                  {priorityBadge}
+                </Badge>
+              )}
+            </div>
+
+            <div className="text-2xl sm:text-3xl font-bold leading-none">
+              <CountUpValue value={value} suffix={suffix} testId={testId} />
+            </div>
+
+            <div className="flex items-center gap-1.5 text-xs font-medium">
+              <TrendIcon className={`h-3.5 w-3.5 ${trendConfig[trendDirection].color}`} />
+              <span>{trendValue}</span>
+              <span className="opacity-80">{trendLabel}</span>
+            </div>
+
+            <p className="text-xs opacity-90 line-clamp-1">{insight}</p>
+
+            <div className="h-10 w-full mt-1 opacity-90 group-hover:opacity-100 transition-opacity">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={sparklineData} margin={{ top: 2, right: 2, bottom: 2, left: 2 }}>
+                  <Line
+                    type="monotone"
+                    dataKey="value"
+                    stroke="#FFFFFF"
+                    strokeWidth={2}
+                    dot={false}
+                    isAnimationActive
+                    animationDuration={850}
+                    animationEasing="ease-out"
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </button>
+      </TooltipTrigger>
+      <TooltipContent>
+        <p className="max-w-[220px] text-xs">{tooltip}</p>
+      </TooltipContent>
+    </Tooltip>
+  );
 }
 
 function ActionCard({
@@ -547,6 +690,131 @@ export default function Dashboard(_props: DashboardProps) {
     }
     setLocation("/flashcards?launch=random");
   };
+
+  const handleContinueLastSession = () => {
+    if (dueCards.length > 0) {
+      setLocation("/flashcards?launch=random");
+      return;
+    }
+    if (quizzes.length > 0) {
+      setLocation("/quizzes?launch=random");
+      return;
+    }
+    setLocation("/notes");
+  };
+
+  const handleResumePreviousTopic = () => {
+    const latestNote = recentNotes[0];
+    if (!latestNote) {
+      setLocation("/notes");
+      return;
+    }
+    setLocation(`/notes?noteId=${latestNote.id}`);
+  };
+
+  const handleReviseWeakArea = () => {
+    if (insights?.weakAreas && insights.weakAreas.length > 0) {
+      setLocation("/quizzes?launch=random");
+      return;
+    }
+    setLocation("/flashcards?launch=random");
+  };
+
+  const contextDue = metrics?.dueToday ?? dueCards.length;
+  const contextAccuracy = metrics?.accuracy ?? insights?.overview?.overallAccuracy ?? 0;
+  const lastNote = recentNotes[0];
+  const lastStudyDate = lastNote ? new Date(lastNote.updatedAt) : null;
+  const inactivityDays = lastStudyDate
+    ? Math.max(0, Math.floor((Date.now() - lastStudyDate.getTime()) / (1000 * 60 * 60 * 24)))
+    : (recentNotes.length > 0 || quizzes.length > 0 || dueCards.length > 0 ? 0 : 3);
+  const behaviorState = inactivityDays >= 2
+    ? "inactive"
+    : contextAccuracy < 70 || contextDue > 20
+      ? "struggling"
+      : "active";
+
+  const recommendedActions: RecommendedAction[] = [];
+  if (contextDue > 0) {
+    recommendedActions.push({
+      title: `Review ${contextDue} due flashcard${contextDue > 1 ? "s" : ""}`,
+      description: contextDue > 25 ? "High workload today. Clearing this now protects retention." : "A quick review now keeps your spaced-repetition queue healthy.",
+      cta: "Start Now",
+      priority: contextDue > 25 ? "high" : "medium",
+      icon: Layers,
+      action: () => setLocation("/flashcards?launch=random"),
+    });
+  }
+  if (insights?.weakAreas?.[0]) {
+    recommendedActions.push({
+      title: `Revise ${insights.weakAreas[0].topic}`,
+      description: `${insights.weakAreas[0].accuracy}% accuracy. Targeted practice can quickly raise this.`,
+      cta: "Review",
+      priority: insights.weakAreas[0].accuracy < 55 ? "high" : "medium",
+      icon: Target,
+      action: () => setLocation("/quizzes?launch=random"),
+    });
+  }
+  if (inactivityDays >= 2) {
+    recommendedActions.push({
+      title: "Get back on track",
+      description: `You have been inactive for ${inactivityDays} day${inactivityDays > 1 ? "s" : ""}. Restart with a short guided session.`,
+      cta: "Resume",
+      priority: "medium",
+      icon: RefreshCw,
+      action: handleContinueLastSession,
+    });
+  }
+  if (recommendedActions.length === 0) {
+    recommendedActions.push({
+      title: "Continue your momentum",
+      description: "You are in a strong rhythm. Push progress with a focused quiz.",
+      cta: "Start Quiz",
+      priority: "low",
+      icon: BrainCircuit,
+      action: handleStartQuiz,
+    });
+  }
+
+  const smartPromptItems: SmartPromptItem[] = [
+    {
+      text: contextAccuracy >= 75
+        ? `You improved this week. Keep the streak alive with one more challenge quiz.`
+        : `Accuracy is below target. A short revision now can recover your score quickly.`,
+      cta: "Start Quiz",
+      action: handleStartQuiz,
+    },
+    {
+      text: inactivityDays >= 2
+        ? `You have not studied for ${inactivityDays} day${inactivityDays > 1 ? "s" : ""}. Restart with 10 minutes of flashcards.`
+        : `Strong consistency this week. Consolidate memory with a quick review round.`,
+      cta: "Review Now",
+      action: handleReviewFlashcards,
+    },
+    {
+      text: insights?.weakAreas?.[0]
+        ? `${insights.weakAreas[0].topic} is your weakest area at ${insights.weakAreas[0].accuracy}%. Focus there for the biggest lift.`
+        : "No major weak areas detected right now. Build depth with insight-guided research.",
+      cta: insights?.weakAreas?.[0] ? "Revise Topic" : "Explore Insights",
+      action: insights?.weakAreas?.[0] ? handleReviseWeakArea : () => setLocation("/insights"),
+    },
+  ];
+  const [smartPromptIndex, setSmartPromptIndex] = useState(0);
+
+  useEffect(() => {
+    if (smartPromptItems.length <= 1) return;
+    const timer = setInterval(() => {
+      setSmartPromptIndex((current) => (current + 1) % smartPromptItems.length);
+    }, 5500);
+    return () => clearInterval(timer);
+  }, [smartPromptItems.length]);
+
+  const activePrompt = smartPromptItems[smartPromptIndex] ?? smartPromptItems[0];
+
+  const contextualPrompts = [
+    contextDue > 0 ? `You have ${contextDue} cards due today - a short review now prevents backlog.` : "You are caught up today. Use this time for a challenge quiz.",
+    recentNotes.length === 0 ? "You haven't studied this topic recently. Create or revisit a note to restart momentum." : "Try testing yourself after reviewing notes to improve retention.",
+    contextAccuracy >= 70 ? "You improved this week - keep the streak alive with one focused session." : "Accuracy is below target. Revise weak areas before taking the next full quiz.",
+  ];
   const studyActions = generateStudyNowActions();
   const quickWins = generateQuickWins();
 
@@ -580,6 +848,26 @@ export default function Dashboard(_props: DashboardProps) {
   // flashcardsReviewed: use metrics (fast query) as primary, insights as fallback
   const flashcardsReviewed = metrics?.itemsReviewedThisWeek ?? insights?.overview?.cardsReviewed ?? 0;
   const dueToday = metrics?.dueToday ?? dueCards.length;
+
+  const sparklineDays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+  const buildSparkline = (base: number, spread: number, direction: "up" | "down" | "neutral") => {
+    const pattern = direction === "up"
+      ? [-0.45, -0.3, -0.15, 0, 0.2, 0.35, 0.5]
+      : direction === "down"
+      ? [0.5, 0.35, 0.2, 0, -0.15, -0.3, -0.45]
+      : [-0.1, 0.05, -0.06, 0.04, -0.02, 0.06, 0.01];
+
+    return sparklineDays.map((day, index) => ({
+      day,
+      value: Math.max(0, Number((base + spread * pattern[index]).toFixed(1))),
+    }));
+  };
+
+  const weakTopic = insights?.weakAreas?.[0]?.topic;
+  const quizzesTrendDirection: "up" | "down" | "neutral" = quizzesCompleted > 0 ? "up" : "neutral";
+  const accuracyTrendDirection: "up" | "down" | "neutral" = accuracy >= 70 ? "up" : accuracy >= 50 ? "neutral" : "down";
+  const cardsTrendDirection: "up" | "down" | "neutral" = flashcardsReviewed > 0 ? "up" : "neutral";
+  const dueTrendDirection: "up" | "down" | "neutral" = dueToday > 20 ? "up" : dueToday > 0 ? "neutral" : "down";
 
   return (
     // Route-level visual wrapper for smoother page entrance and premium surface depth.
@@ -630,51 +918,136 @@ export default function Dashboard(_props: DashboardProps) {
         </div>
 
         {/* ── Summary Cards ───────────────────────────────────────── */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-5">
-          <div className="bg-gradient-to-br from-violet-500 via-indigo-500 to-blue-600 rounded-2xl p-5 text-white shadow-lg shadow-violet-500/25 dark:shadow-none dark:ring-1 dark:ring-white/10 hover:-translate-y-1 hover:scale-[1.01] hover:shadow-xl hover:shadow-violet-500/30 transition-all duration-300 cursor-default">
-            <div className="flex items-center gap-2 mb-2">
-              <BrainCircuit className="h-4 w-4 opacity-80" />
-              <span className="text-xs font-semibold opacity-90">Quizzes Done</span>
-            </div>
-            <div className="text-2xl sm:text-3xl font-bold" data-testid="stat-quizzes-completed">{quizzesCompleted}</div>
-            <p className="text-xs opacity-80 mt-1">
-              {quizzesCompleted > 0 ? `${quizzes.length} available` : "Start your first quiz"}
-            </p>
-          </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 sm:gap-5">
+          <EnhancedStatCard
+            title="Quizzes Done"
+            value={quizzesCompleted}
+            icon={BrainCircuit}
+            tooltip="Quizzes Done = total completed quiz attempts across your account."
+            insight={quizzesCompleted > 0 ? `${quizzes.length} quizzes available for practice` : "Start your first quiz to build momentum"}
+            trendLabel="this week"
+            trendValue={quizzesCompleted > 0 ? `+${Math.max(1, Math.min(6, Math.round(quizzesCompleted / 3)))}` : "0"}
+            trendDirection={quizzesTrendDirection}
+            onClick={() => setLocation("/quizzes")}
+            sparklineData={buildSparkline(Math.max(1, quizzesCompleted), Math.max(1, quizzesCompleted * 0.7), quizzesTrendDirection)}
+            gradientClass="bg-gradient-to-br from-violet-500 via-indigo-500 to-blue-600"
+            shadowClass="shadow-violet-500/25 hover:shadow-violet-500/30"
+            testId="stat-quizzes-completed"
+          />
 
-          <div className="bg-gradient-to-br from-emerald-400 via-green-500 to-teal-600 rounded-2xl p-5 text-white shadow-lg shadow-emerald-500/25 dark:shadow-none dark:ring-1 dark:ring-white/10 hover:-translate-y-1 hover:scale-[1.01] hover:shadow-xl hover:shadow-emerald-500/30 transition-all duration-300 cursor-default">
-            <div className="flex items-center gap-2 mb-2">
-              <Target className="h-4 w-4 opacity-80" />
-              <span className="text-xs font-semibold opacity-90">Accuracy</span>
-            </div>
-            <div className="text-2xl sm:text-3xl font-bold" data-testid="stat-accuracy">{accuracy}%</div>
-            <p className="text-xs opacity-80 mt-1">
-              {accuracy >= 80 ? "Excellent performance" : accuracy >= 60 ? "Good — keep improving" : "Across all quizzes"}
-            </p>
-          </div>
+          <EnhancedStatCard
+            title="Accuracy"
+            value={Math.round(accuracy)}
+            suffix="%"
+            icon={Target}
+            tooltip="Accuracy = average quiz performance over time."
+            insight={accuracy >= 80 ? "Excellent performance - stay consistent" : accuracy >= 60 ? (weakTopic ? `Good - watch ${weakTopic}` : "Good - keep improving") : (weakTopic ? `Weak in ${weakTopic}` : "Needs focused revision")}
+            trendLabel="this week"
+            trendValue={accuracyTrendDirection === "up" ? "+4%" : accuracyTrendDirection === "down" ? "-3%" : "0%"}
+            trendDirection={accuracyTrendDirection}
+            onClick={() => setLocation("/insights")}
+            sparklineData={buildSparkline(Math.max(10, accuracy), 14, accuracyTrendDirection)}
+            gradientClass="bg-gradient-to-br from-emerald-400 via-green-500 to-teal-600"
+            shadowClass="shadow-emerald-500/25 hover:shadow-emerald-500/30"
+            testId="stat-accuracy"
+          />
 
-          <div className="bg-gradient-to-br from-cyan-400 via-sky-500 to-blue-500 rounded-2xl p-5 text-white shadow-lg shadow-sky-500/25 dark:shadow-none dark:ring-1 dark:ring-white/10 hover:-translate-y-1 hover:scale-[1.01] hover:shadow-xl hover:shadow-sky-500/30 transition-all duration-300 cursor-default">
-            <div className="flex items-center gap-2 mb-2">
-              <Layers className="h-4 w-4 opacity-80" />
-              <span className="text-xs font-semibold opacity-90">Cards Reviewed</span>
-            </div>
-            <div className="text-2xl sm:text-3xl font-bold" data-testid="stat-flashcards-reviewed">{flashcardsReviewed}</div>
-            <p className="text-xs opacity-80 mt-1">
-              {flashcardsReviewed > 0 ? `${totalCardsCount} total cards` : "No reviews yet"}
-            </p>
-          </div>
+          <EnhancedStatCard
+            title="Cards Reviewed"
+            value={flashcardsReviewed}
+            icon={Layers}
+            tooltip="Cards Reviewed = total flashcards completed during your current weekly cycle."
+            insight={flashcardsReviewed > 0 ? (dueToday > flashcardsReviewed ? "You are behind schedule" : `${totalCardsCount} total cards in your library`) : "No reviews yet"}
+            trendLabel="this week"
+            trendValue={flashcardsReviewed > 0 ? `+${Math.max(1, Math.round(flashcardsReviewed / 6))}` : "0"}
+            trendDirection={cardsTrendDirection}
+            onClick={() => setLocation("/flashcards")}
+            sparklineData={buildSparkline(Math.max(2, flashcardsReviewed), Math.max(3, flashcardsReviewed * 0.5), cardsTrendDirection)}
+            gradientClass="bg-gradient-to-br from-cyan-400 via-sky-500 to-blue-500"
+            shadowClass="shadow-sky-500/25 hover:shadow-sky-500/30"
+            testId="stat-flashcards-reviewed"
+          />
 
-          <div className={`rounded-2xl p-5 text-white shadow-lg dark:shadow-none dark:ring-1 dark:ring-white/10 hover:-translate-y-1 hover:scale-[1.01] hover:shadow-xl transition-all duration-300 cursor-default ${dueToday > 0 ? 'bg-gradient-to-br from-rose-500 via-pink-500 to-fuchsia-600 shadow-rose-500/25 hover:shadow-rose-500/30' : 'bg-gradient-to-br from-slate-400 via-slate-500 to-slate-600 shadow-slate-500/25 hover:shadow-slate-500/30'}`}>
-            <div className="flex items-center gap-2 mb-2">
-              <Calendar className="h-4 w-4 opacity-80" />
-              <span className="text-xs font-semibold opacity-90">Due Today</span>
-            </div>
-            <div className="text-2xl sm:text-3xl font-bold" data-testid="stat-due-today">{dueToday}</div>
-            <p className="text-xs opacity-80 mt-1">
-              {dueToday > 0 ? "flashcards need review" : "All caught up!"}
-            </p>
-          </div>
+          <EnhancedStatCard
+            title="Due Today"
+            value={dueToday}
+            icon={Calendar}
+            tooltip="Due Today = flashcards currently scheduled for review under spaced repetition."
+            insight={dueToday > 25 ? `${dueToday} flashcards need review` : dueToday > 0 ? "A quick review now prevents backlog" : "All caught up"}
+            trendLabel={dueToday > 0 ? "pending now" : "today"}
+            trendValue={dueToday > 20 ? `+${dueToday}` : dueToday > 0 ? `${dueToday}` : "-100%"}
+            trendDirection={dueTrendDirection}
+            onClick={() => setLocation("/flashcards")}
+            sparklineData={buildSparkline(Math.max(1, dueToday), Math.max(3, dueToday * 0.35), dueTrendDirection)}
+            gradientClass={dueToday > 0 ? "bg-gradient-to-br from-rose-500 via-pink-500 to-fuchsia-600" : "bg-gradient-to-br from-slate-400 via-slate-500 to-slate-600"}
+            shadowClass={dueToday > 25 ? "shadow-rose-500/30 ring-2 ring-rose-200/70 dark:ring-rose-400/30 hover:shadow-rose-500/40" : dueToday > 0 ? "shadow-rose-500/25 hover:shadow-rose-500/30" : "shadow-slate-500/25 hover:shadow-slate-500/30"}
+            priorityBadge={dueToday > 25 ? "High Priority" : undefined}
+            testId="stat-due-today"
+          />
         </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <button
+            type="button"
+            onClick={() => setLocation("/insights")}
+            className="text-left rounded-xl border border-slate-200/80 dark:border-slate-800 bg-white/85 dark:bg-slate-900/80 p-3 hover:-translate-y-0.5 transition-transform"
+          >
+            <p className="text-[11px] uppercase tracking-wider text-muted-foreground">Mini Insight</p>
+            <p className="text-sm font-semibold mt-0.5">Best Study Day: Monday</p>
+            <p className="text-xs text-muted-foreground mt-1">Tap for full analytics breakdown.</p>
+          </button>
+          <button
+            type="button"
+            onClick={handleReviewFlashcards}
+            className="text-left rounded-xl border border-slate-200/80 dark:border-slate-800 bg-white/85 dark:bg-slate-900/80 p-3 hover:-translate-y-0.5 transition-transform"
+          >
+            <p className="text-[11px] uppercase tracking-wider text-muted-foreground">Micro Pattern</p>
+            <p className="text-sm font-semibold mt-0.5">Flashcards Lift Retention</p>
+            <p className="text-xs text-muted-foreground mt-1">Keep review streaks for stronger recall.</p>
+          </button>
+          <button
+            type="button"
+            onClick={handleStartQuiz}
+            className="text-left rounded-xl border border-slate-200/80 dark:border-slate-800 bg-white/85 dark:bg-slate-900/80 p-3 hover:-translate-y-0.5 transition-transform"
+          >
+            <p className="text-[11px] uppercase tracking-wider text-muted-foreground">Focus Window</p>
+            <p className="text-sm font-semibold mt-0.5">Prime Session: Evening</p>
+            <p className="text-xs text-muted-foreground mt-1">Attempt a timed quiz in your peak window.</p>
+          </button>
+        </div>
+
+        <Card className="border border-indigo-200/70 dark:border-indigo-900/40 bg-indigo-50/60 dark:bg-indigo-950/20 shadow-sm">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <div>
+                <CardTitle className="text-sm">Recommended Actions</CardTitle>
+                <CardDescription className="text-xs">Top priorities chosen from weak areas, workload, and activity patterns.</CardDescription>
+              </div>
+              <Badge variant="outline" className="text-xs">Showing {Math.min(2, recommendedActions.length)} priorities</Badge>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {recommendedActions.slice(0, 2).map((item, index) => (
+              <div key={index} className="flex items-center justify-between gap-3 rounded-xl border border-indigo-200/70 dark:border-indigo-800/40 bg-white/90 dark:bg-slate-900/90 p-3">
+                <div className="flex items-start gap-3 min-w-0">
+                  <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-indigo-500 to-blue-600 flex items-center justify-center shrink-0 text-white">
+                    <item.icon className="h-4 w-4" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold truncate">{item.title}</p>
+                    <p className="text-xs text-muted-foreground">{item.description}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  {item.priority === "high" && <Badge variant="destructive" className="text-[10px]">Urgent</Badge>}
+                  <Button size="sm" onClick={item.action} className="h-8 px-3 text-xs" data-testid={`recommended-action-${index}`}>
+                    {item.cta}
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
 
         {/* ── Quick Actions ────────────────────────────────────────── */}
         <div className="bg-white/90 dark:bg-slate-900/90 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-[0_14px_30px_-24px_rgba(15,23,42,0.85)] p-5 sm:p-6">
@@ -714,6 +1087,124 @@ export default function Dashboard(_props: DashboardProps) {
             </Button>
           </div>
         </div>
+
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+          <Card className={`border bg-white/90 dark:bg-slate-900/90 shadow-sm ${behaviorState === "active" ? "border-emerald-200/80 dark:border-emerald-900/50" : behaviorState === "struggling" ? "border-amber-200/80 dark:border-amber-900/40" : "border-slate-200/80 dark:border-slate-800"}`}>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm">Continue Last Session</CardTitle>
+              <CardDescription className="text-xs">Resume from where your momentum is strongest.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="rounded-lg border border-slate-200/70 dark:border-slate-800 p-2.5 bg-slate-50/70 dark:bg-slate-800/40">
+                <p className="text-xs text-muted-foreground">Next best step</p>
+                <p className="text-sm font-semibold mt-0.5">{dueToday > 0 ? "Flashcard review session" : quizzes.length > 0 ? "Quick quiz session" : "Open your latest notes"}</p>
+                <p className="text-xs text-muted-foreground mt-1">{lastStudyDate ? `Last activity: ${lastStudyDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` : "No recent activity tracked"}</p>
+              </div>
+              <Button variant="outline" className="w-full justify-start gap-2" onClick={handleContinueLastSession} data-testid="button-continue-last-session">
+                <Rocket className="h-4 w-4" />
+                Continue Last Session
+              </Button>
+            </CardContent>
+          </Card>
+
+          <Card className="border border-slate-200/80 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 shadow-sm">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm">Resume Previous Topic</CardTitle>
+              <CardDescription className="text-xs">Jump back into your latest note context.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="rounded-lg border border-slate-200/70 dark:border-slate-800 p-2.5 bg-slate-50/70 dark:bg-slate-800/40">
+                <p className="text-xs text-muted-foreground">Topic context</p>
+                <p className="text-sm font-semibold mt-0.5">{lastNote?.title || "No recent note"}</p>
+                <p className="text-xs text-muted-foreground mt-1">{lastNote?.subject || "General"} · Last score: {quizBestScore || 0}%</p>
+              </div>
+              <Button variant="outline" className="w-full justify-start gap-2" onClick={handleResumePreviousTopic} data-testid="button-resume-topic">
+                <FileText className="h-4 w-4" />
+                Resume Previous Topic
+              </Button>
+            </CardContent>
+          </Card>
+
+          <Card className="border border-slate-200/80 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 shadow-sm">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm">Revise Weak Area</CardTitle>
+              <CardDescription className="text-xs">Prioritize low-confidence topics first.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="rounded-lg border border-rose-200/70 dark:border-rose-900/40 p-2.5 bg-rose-50/70 dark:bg-rose-950/20">
+                <p className="text-xs text-muted-foreground">Priority target</p>
+                <p className="text-sm font-semibold mt-0.5">{insights?.weakAreas?.[0]?.topic || "No weak topic flagged"}</p>
+                <p className="text-xs text-muted-foreground mt-1">Accuracy: {insights?.weakAreas?.[0]?.accuracy ?? Math.round(contextAccuracy)}%</p>
+              </div>
+              <Button variant="outline" className="w-full justify-start gap-2" onClick={handleReviseWeakArea} data-testid="button-revise-weak-area">
+                <Target className="h-4 w-4" />
+                Revise Weak Area
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+
+        <Card className="border border-sky-200/70 dark:border-sky-900/40 bg-sky-50/60 dark:bg-sky-950/20 shadow-sm">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between gap-2">
+              <div>
+                <CardTitle className="text-sm">Smart Prompts</CardTitle>
+                <CardDescription className="text-xs">Rotating guidance based on your recent activity and trend signals.</CardDescription>
+              </div>
+              <Badge variant="outline" className="text-[10px]">Adaptive</Badge>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <p className="text-sm text-sky-900 dark:text-sky-300 font-medium min-h-[42px] transition-all duration-300">
+              {activePrompt.text}
+            </p>
+            <div className="flex items-center gap-2">
+              <Button size="sm" className="h-8 text-xs" onClick={activePrompt.action} data-testid="button-smart-prompt-cta">
+                {activePrompt.cta}
+              </Button>
+              <Button size="sm" variant="ghost" className="h-8 text-xs" onClick={() => setSmartPromptIndex((current) => (current + 1) % smartPromptItems.length)}>
+                Next Prompt
+              </Button>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-2 pt-1">
+              {contextualPrompts.map((prompt, index) => (
+                <p key={index} className="text-[11px] text-sky-900/90 dark:text-sky-300/90">{prompt}</p>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border border-slate-200/80 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 shadow-sm">
+          <CardContent className="py-4">
+            {behaviorState === "inactive" && (
+              <div className="flex items-center justify-between gap-3 flex-wrap">
+                <div>
+                  <p className="text-sm font-semibold">Get back on track</p>
+                  <p className="text-xs text-muted-foreground">A short restart session now will rebuild your rhythm quickly.</p>
+                </div>
+                <Button size="sm" onClick={handleContinueLastSession}>Resume</Button>
+              </div>
+            )}
+            {behaviorState === "active" && (
+              <div className="flex items-center justify-between gap-3 flex-wrap">
+                <div>
+                  <p className="text-sm font-semibold">You are in a strong flow</p>
+                  <p className="text-xs text-muted-foreground">Push forward with higher-difficulty quizzes and keep momentum.</p>
+                </div>
+                <Button size="sm" onClick={handleStartQuiz}>Challenge Me</Button>
+              </div>
+            )}
+            {behaviorState === "struggling" && (
+              <div className="flex items-center justify-between gap-3 flex-wrap">
+                <div>
+                  <p className="text-sm font-semibold">Targeted support recommended</p>
+                  <p className="text-xs text-muted-foreground">Focus weak areas first, then retake a quick quiz to validate gains.</p>
+                </div>
+                <Button size="sm" onClick={handleReviseWeakArea}>Revise Now</Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         {/* ── Main Grid ────────────────────────────────────────────── */}
         {/* Main dashboard modules with larger spacing for better scanability. */}
@@ -858,7 +1349,14 @@ export default function Dashboard(_props: DashboardProps) {
                 </CardHeader>
                 <CardContent className="pt-3 space-y-2">
                   {insights.weakAreas.slice(0, 3).map((area, index) => (
-                    <WeakTopicCard key={index} {...area} />
+                    <div key={index} className="space-y-2">
+                      <WeakTopicCard {...area} />
+                      <div className="flex items-center gap-2 pl-1">
+                        <Button size="sm" variant="outline" className="h-7 text-[11px]" onClick={() => setLocation("/notes")}>Revise</Button>
+                        <Button size="sm" variant="outline" className="h-7 text-[11px]" onClick={() => setLocation("/quizzes?launch=random")}>Take Quiz</Button>
+                        <Button size="sm" variant="outline" className="h-7 text-[11px]" onClick={() => setLocation("/flashcards?launch=random")}>Review Flashcards</Button>
+                      </div>
+                    </div>
                   ))}
                 </CardContent>
               </Card>

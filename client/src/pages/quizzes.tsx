@@ -183,7 +183,7 @@ A JSX tree representing the component view for the current state.
 */
 export default function Quizzes() {
   const reducedMotion = useReducedMotion();
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
   const [view, setView] = useState<ViewType>("list");
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<string>("");
@@ -195,6 +195,7 @@ export default function Quizzes() {
   const [feedbackExplanation, setFeedbackExplanation] = useState<string>("");
   const [answerError, setAnswerError] = useState<string | null>(null);
   const [selectedQuizId, setSelectedQuizId] = useState<string | null>(null);
+  const [retryIncorrectQuestionIds, setRetryIncorrectQuestionIds] = useState<string[]>([]);
   const [activeQuestions, setActiveQuestions] = useState<Question[]>([]);
   const [currentAttempt, setCurrentAttempt] = useState<QuizAttempt | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -367,12 +368,21 @@ export default function Quizzes() {
 
   useEffect(() => {
     if (selectedQuizData?.questions && view === "taking") {
-      setActiveQuestions(selectedQuizData.questions);
+      const filteredQuestions = retryIncorrectQuestionIds.length > 0
+        ? selectedQuizData.questions.filter((question) => retryIncorrectQuestionIds.includes(question.id))
+        : selectedQuizData.questions;
+
+      setActiveQuestions(filteredQuestions.length > 0 ? filteredQuestions : selectedQuizData.questions);
+
+      if (retryIncorrectQuestionIds.length > 0 && filteredQuestions.length === 0) {
+        setRetryIncorrectQuestionIds([]);
+      }
+
       if (selectedQuizData.timeLimit) {
         setTimeLeft(selectedQuizData.timeLimit * 60);
       }
     }
-  }, [selectedQuizData, view]);
+  }, [selectedQuizData, view, retryIncorrectQuestionIds]);
 
   useEffect(() => {
     if (view === "taking" && timeLeft > 0) {
@@ -1181,6 +1191,14 @@ const formatTime = (seconds: number) => {
       ? adaptiveAnswers.filter(a => a.correct).length 
       : userAnswers.filter(a => a.correct).length;
     const score = Math.round((correctAnswers / totalQuestions) * 100);
+    const incorrectQuestionEntries = activeQuestions
+      .map((question, index) => ({
+        id: question.id,
+        label: `Question ${index + 1}`,
+        question: question.question,
+        correct: !!userAnswers[index]?.correct,
+      }))
+      .filter((entry) => !entry.correct);
     
     let scoreColor = "from-red-500 to-red-600";
     let scoreLabel = "Keep Trying!";
@@ -1259,7 +1277,7 @@ const formatTime = (seconds: number) => {
                   const isCorrect = userAnswer?.correct;
 
                   return (
-                    <div key={question.id} className={`border-2 rounded-xl p-4 space-y-3 ${isCorrect ? 'border-green-400 bg-success/10 dark:bg-success/20' : 'border-red-400 bg-red-50 dark:bg-red-950/30'}`}>
+                    <div id={`review-question-${question.id}`} key={question.id} className={`border-2 rounded-xl p-4 space-y-3 ${isCorrect ? 'border-green-400 bg-success/10 dark:bg-success/20' : 'border-red-400 bg-red-50 dark:bg-red-950/30'}`}>
                       <div className="flex items-start gap-3">
                         {isCorrect ? (
                           <CheckCircle2 className="h-6 w-6 text-success shrink-0 mt-0.5" />
@@ -1286,6 +1304,95 @@ const formatTime = (seconds: number) => {
               </CardContent>
             </Card>
           )}
+
+          {incorrectQuestionEntries.length > 0 && (
+            <Card className="border-2 border-amber-300/60 dark:border-amber-800/60">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <AlertCircle className="h-5 w-5 text-amber-500" />
+                  Weak Areas (Clickable)
+                </CardTitle>
+                <CardDescription>Needs Improvement (&lt;70%): revisit these questions first.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {incorrectQuestionEntries.slice(0, 6).map((entry) => (
+                  <button
+                    key={entry.id}
+                    onClick={() => {
+                      const node = document.getElementById(`review-question-${entry.id}`);
+                      node?.scrollIntoView({ behavior: "smooth", block: "center" });
+                    }}
+                    className="w-full text-left p-3 rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50/60 dark:bg-amber-950/20 hover:bg-amber-100/70 dark:hover:bg-amber-950/40 transition-colors"
+                    data-testid={`button-weak-area-${entry.id}`}
+                  >
+                    <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">{entry.label}</p>
+                    <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{entry.question}</p>
+                  </button>
+                ))}
+              </CardContent>
+            </Card>
+          )}
+
+          <Card className="border border-slate-200 dark:border-slate-700 shadow-sm">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg">What should you do next?</CardTitle>
+              <CardDescription>Keep momentum by moving directly into revision.</CardDescription>
+            </CardHeader>
+            <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <Button
+                variant="outline"
+                className="justify-start gap-2"
+                onClick={() => {
+                  const firstIncorrectId = incorrectQuestionEntries[0]?.id;
+                  if (firstIncorrectId) {
+                    const node = document.getElementById(`review-question-${firstIncorrectId}`);
+                    node?.scrollIntoView({ behavior: "smooth", block: "center" });
+                  }
+                }}
+                data-testid="button-review-mistakes"
+              >
+                <AlertCircle className="h-4 w-4" />
+                Review Mistakes
+              </Button>
+
+              <Button
+                variant="outline"
+                className="justify-start gap-2"
+                onClick={() => {
+                  if (!selectedQuizId || incorrectQuestionEntries.length === 0) {
+                    return;
+                  }
+                  setRetryIncorrectQuestionIds(incorrectQuestionEntries.map((entry) => entry.id));
+                  void startQuiz(selectedQuizId);
+                }}
+                disabled={!selectedQuizId || incorrectQuestionEntries.length === 0}
+                data-testid="button-retry-incorrect"
+              >
+                <RotateCw className="h-4 w-4" />
+                Retry Incorrect Questions
+              </Button>
+
+              <Button
+                variant="outline"
+                className="justify-start gap-2"
+                onClick={() => setLocation("/flashcards")}
+                data-testid="button-generate-flashcards-weak"
+              >
+                <Layers className="h-4 w-4" />
+                Generate Flashcards from Weak Areas
+              </Button>
+
+              <Button
+                variant="outline"
+                className="justify-start gap-2"
+                onClick={() => setLocation("/notes")}
+                data-testid="button-revise-related-notes"
+              >
+                <FileText className="h-4 w-4" />
+                Revise Related Notes
+              </Button>
+            </CardContent>
+          </Card>
 
           <div className="flex gap-3">
             <Button

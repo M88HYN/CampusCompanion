@@ -220,7 +220,7 @@ A JSX tree representing the component view for the current state.
 export default function Flashcards() {
   const reducedMotion = useReducedMotion();
   const [view, setView] = useState<ViewState>("decks");
-    const [location] = useLocation();
+    const [location, setLocation] = useLocation();
   const [flipped, setFlipped] = useState(false);
   const [currentCard, setCurrentCard] = useState(0);
   const [selectedDeckId, setSelectedDeckId] = useState<string>("");
@@ -1153,6 +1153,14 @@ const handleKeyDown = (e: KeyboardEvent) => {
             </CardContent>
           </Card>
 
+          <Card className="border border-emerald-200 dark:border-emerald-800 bg-emerald-50/60 dark:bg-emerald-950/20">
+            <CardContent className="pt-4">
+              <p className="text-sm font-medium text-emerald-800 dark:text-emerald-300">
+                Reinforcement prompt: your correct rate is {sessionSummary.summary.accuracy}%. {sessionSummary.summary.accuracy < 70 ? "Retry hard cards now for faster gains." : "Great consistency - lock this in with a quick quiz."}
+              </p>
+            </CardContent>
+          </Card>
+
           <div className="flex flex-wrap gap-3 justify-center">
             <Button 
               onClick={() => startSmartStudy("struggling")}
@@ -1160,7 +1168,7 @@ const handleKeyDown = (e: KeyboardEvent) => {
               data-testid="button-review-weak"
             >
               <RotateCw className="h-4 w-4 mr-2" />
-              Review Weak Cards
+              Retry Hard Cards
             </Button>
             <Button 
               onClick={() => startSmartStudy("smart")}
@@ -1169,6 +1177,22 @@ const handleKeyDown = (e: KeyboardEvent) => {
             >
               <Play className="h-4 w-4 mr-2" />
               Continue Studying
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => setLocation("/quizzes?launch=random")}
+              data-testid="button-quick-quiz"
+            >
+              <Brain className="h-4 w-4 mr-2" />
+              Take a Quick Quiz
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => setLocation("/notes")}
+              data-testid="button-return-notes"
+            >
+              <BookOpen className="h-4 w-4 mr-2" />
+              Return to Notes
             </Button>
             <Button 
               variant="outline"
