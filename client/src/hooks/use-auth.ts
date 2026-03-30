@@ -136,6 +136,7 @@ const createUserFromDecoded = (decoded: JWTPayload): User => ({
     firstName: decoded.firstName || null,
     lastName: decoded.lastName || null,
     profileImageUrl: null,
+    isVerified: true,
     createdAt: Date.now(),
     updatedAt: Date.now(),
   });

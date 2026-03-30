@@ -24,8 +24,11 @@ allowing safe evolution of features without cross-module side effects.
 
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import { randomUUID } from "crypto";
+import { randomUUID, randomBytes } from "crypto";
 import { storage } from "./auth-storage";
+import { db } from "./db";
+import { verificationCodes, users } from "@shared/schema";
+import { eq, and } from "drizzle-orm";
 
 const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key-change-this-in-production-use-strong-random-string";
 const JWT_EXPIRY = "7d";
@@ -369,4 +372,119 @@ export async function findOrCreateOAuthUser(
 
   await storage.createUser(user);
   return user;
+}
+
+/*
+----------------------------------------------------------
+Function: generateVerificationCode
+
+Purpose:
+Generate a unique 6-digit verification code and store it in the database
+with an expiration time.
+
+Returns:
+A 6-digit code as a string.
+----------------------------------------------------------
+*/
+export async function generateVerificationCode(userId: string): Promise<string> {
+  // Generate a 6-digit code
+  const code = Math.floor(100000 + Math.random() * 900000).toString();
+  
+  // Code expires in 15 minutes
+  const expiresAt = Date.now() + 15 * 60 * 1000;
+  
+  try {
+    await db.insert(verificationCodes).values({
+      id: randomUUID(),
+      userId,
+      code,
+      createdAt: Math.floor(Date.now() / 1000),
+      expiresAt: Math.floor(expiresAt / 1000),
+    });
+  } catch (error) {
+    console.error("Error storing verification code:", error);
+  }
+  
+  return code;
+}
+
+/*
+----------------------------------------------------------
+Function: verifyEmailCode
+
+Purpose:
+Verify that the provided code matches an active code for the user
+and mark the user as verified.
+
+Returns:
+True if verification succeeded, false otherwise.
+----------------------------------------------------------
+*/
+export async function verifyEmailCode(userId: string, code: string): Promise<boolean> {
+  try {
+    // Find valid verification code
+    const result = await db
+      .select()
+      .from(verificationCodes)
+      .where(
+        and(
+          eq(verificationCodes.userId, userId),
+          eq(verificationCodes.code, code)
+        )
+      );
+
+    if (!result || result.length === 0) {
+      console.error("Verification code not found for user:", userId);
+      return false;
+    }
+
+    const verCode = result[0];
+    const now = Math.floor(Date.now() / 1000);
+
+    // Check if code is expired
+    if (verCode.expiresAt < now) {
+      console.error("Verification code expired for user:", userId);
+      return false;
+    }
+
+    // Mark user as verified
+    await db
+      .update(users)
+      .set({ isVerified: true, updatedAt: now })
+      .where(eq(users.id, userId));
+
+    // Delete the used code
+    await db
+      .delete(verificationCodes)
+      .where(eq(verificationCodes.id, verCode.id));
+
+    console.log("User verified successfully:", userId);
+    return true;
+  } catch (error) {
+    console.error("Error verifying email code:", error);
+    return false;
+  }
+}
+
+/*
+----------------------------------------------------------
+Function: resendVerificationCode
+
+Purpose:
+Generate a new verification code for a user (invalidating old ones).
+
+Returns:
+New 6-digit code as a string.
+----------------------------------------------------------
+*/
+export async function resendVerificationCode(userId: string): Promise<string> {
+  try {
+    // Delete old codes for this user
+    await db.delete(verificationCodes).where(eq(verificationCodes.userId, userId));
+  } catch (error) {
+    console.error("Error clearing old verification codes:", error);
+  }
+
+  // Generate new code
+  return generateVerificationCode(userId);
 }

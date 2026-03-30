@@ -27,8 +27,8 @@ import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
 // Import and re-export auth models (users, sessions tables and types)
-import { users, sessions, type User, type UpsertUser } from "./models/auth";
-export { users, sessions, type User, type UpsertUser };
+import { users, sessions, verificationCodes, type User, type UpsertUser, type VerificationCode } from "./models/auth";
+export { users, sessions, verificationCodes, type User, type UpsertUser, type VerificationCode };
 
 // ==================== NOTES ====================
 
