@@ -30,10 +30,10 @@ function getTransporter(): nodemailer.Transporter {
     return transporter;
   }
 
-  // In development, log emails to console instead of sending
-  if (process.env.NODE_ENV !== "production" || !EMAIL_USER || !EMAIL_PASSWORD) {
+  // Fallback transporter for local SMTP capture when credentials are missing.
+  if (!EMAIL_USER || !EMAIL_PASSWORD) {
     console.warn(
-      "[EMAIL] Running in development mode. Verification codes will be logged to console."
+      "[EMAIL] EMAIL_USER/EMAIL_PASSWORD not configured. Falling back to local SMTP logger on localhost:1025."
     );
     transporter = nodemailer.createTransport({
       host: "localhost",
@@ -69,37 +69,33 @@ export interface VerificationEmailParams {
 export async function sendVerificationEmail({
   email,
   code,
-  expiresInMinutes = 15,
+  expiresInMinutes = 10,
 }: VerificationEmailParams): Promise<boolean> {
   try {
-    // Log the code in development
-    if (process.env.NODE_ENV !== "production" || !EMAIL_USER) {
+    // Keep OTP visible in logs when real email is not configured.
+    if (!EMAIL_USER || !EMAIL_PASSWORD) {
       console.log(
         `[VERIFICATION EMAIL] Code for ${email}: ${code} (expires in ${expiresInMinutes} minutes)`
       );
     }
 
-    // Only attempt to send if production credentials are configured
-    if (process.env.NODE_ENV === "production" && EMAIL_USER && EMAIL_PASSWORD) {
-      const transporter = getTransporter();
+    const transporter = getTransporter();
 
-      const mailOptions = {
-        from: `StudyMate <${EMAIL_USER}>`,
-        to: email,
-        subject: "Verify Your StudyMate Account",
-        html: generateVerificationEmailHTML(code, expiresInMinutes),
-        text: generateVerificationEmailText(code, expiresInMinutes),
-      };
+    const mailOptions = {
+      from: EMAIL_USER ? `StudyMate <${EMAIL_USER}>` : "StudyMate <no-reply@local>",
+      to: email,
+      subject: "Verify your account",
+      html: generateVerificationEmailHTML(code, expiresInMinutes),
+      text: generateVerificationEmailText(code, expiresInMinutes),
+    };
 
-      await transporter.sendMail(mailOptions);
-      console.log(`[EMAIL] Verification code sent to ${email}`);
-    }
+    await transporter.sendMail(mailOptions);
+    console.log(`[EMAIL] Verification code processed for ${email}`);
 
     return true;
   } catch (error) {
     console.error(`[EMAIL ERROR] Failed to send verification email to ${email}:`, error);
-    // In development, we still consider this a success since we logged it
-    return process.env.NODE_ENV !== "production";
+    return false;
   }
 }
 
@@ -125,17 +121,17 @@ function generateVerificationEmailHTML(code: string, expiresInMinutes: number): 
       <body>
         <div class="container">
           <div class="header">
-            <h1>Welcome to StudyMate</h1>
-            <p>Verify Your Email Address</p>
+            <h1>Verify your account</h1>
+            <p>Use this one-time verification code</p>
           </div>
           <div class="content">
             <p>Hello,</p>
-            <p>Thank you for creating your StudyMate account! To get started, please verify your email address using the code below:</p>
+            <p>Your verification code is:</p>
             <div class="code-box">
               <div class="code">${code}</div>
               <div class="expires">This code expires in ${expiresInMinutes} minutes</div>
             </div>
-            <p>Enter this code on the verification page to activate your account.</p>
+            <p>Enter this code on the verification page to complete your account setup.</p>
             <p>If you didn't create this account, you can safely ignore this email.</p>
             <div class="footer">
               <p>&copy; 2026 StudyMate. All rights reserved.</p>
@@ -150,17 +146,13 @@ function generateVerificationEmailHTML(code: string, expiresInMinutes: number): 
 
 function generateVerificationEmailText(code: string, expiresInMinutes: number): string {
   return `
-Welcome to StudyMate
+Verify your account
 
-Verify Your Email Address
-
-Thank you for creating your StudyMate account! To get started, please use the code below to verify your email:
-
-${code}
+Your verification code is: ${code}
 
 This code expires in ${expiresInMinutes} minutes.
 
-Enter this code on the verification page to activate your account.
+Enter this code on the verification page to complete your account setup.
 
 If you didn't create this account, you can safely ignore this email.
 

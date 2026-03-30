@@ -405,6 +405,17 @@ const handleSubmit = async (e: React.FormEvent) => {
 
         if (!response.ok) {
           const data = await response.json();
+
+          if (data?.requiresVerification && data?.userId && data?.email) {
+            setVerificationUserId(data.userId);
+            setVerificationEmail(data.email);
+            setVerificationCode("");
+            setVerificationError(data.message || "Please verify your email before logging in");
+            setIsVerifying(true);
+            setLoading(false);
+            return;
+          }
+
           throw new Error(data.message || "Authentication failed");
         }
 
@@ -554,11 +565,11 @@ const handleVerifyEmail = async (e: React.FormEvent) => {
     setVerificationError("");
 
     try {
-      const response = await fetch("/api/auth/verify-email", {
+      const response = await fetch("/api/auth/verify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          userId: verificationUserId,
+          email: verificationEmail,
           code: verificationCode,
         }),
       });
@@ -860,7 +871,7 @@ const handleGithubLogin = () => {
 
       {/* Right Panel - Auth Form */}
       <motion.div 
-        className="flex-1 flex items-center justify-center p-4 sm:p-8 bg-gradient-to-br from-slate-50 via-white to-blue-50/30 dark:from-slate-900 dark:via-slate-950 dark:to-blue-950/20 relative overflow-hidden"
+        className="flex-1 flex items-center justify-center p-4 sm:p-8 bg-gradient-to-br from-sky-50 via-white to-cyan-50/40 dark:from-slate-900 dark:via-slate-900 dark:to-slate-800/90 relative overflow-hidden"
         initial={false}
       >
         {/* Decorative blur elements */}
@@ -886,7 +897,7 @@ const handleGithubLogin = () => {
           }}
           className="w-full max-w-md relative z-10"
         >
-          <Card className="border-0 shadow-2xl bg-white/80 backdrop-blur-2xl dark:bg-slate-900/80 overflow-hidden">
+          <Card className="border border-slate-200/70 shadow-2xl bg-white/92 backdrop-blur-2xl dark:border-slate-700/70 dark:bg-slate-900/78 overflow-hidden">
             {/* Gradient top border */}
             <div className="h-1 bg-gradient-to-r from-teal-400 via-cyan-500 to-blue-600" />
 
@@ -930,7 +941,7 @@ const handleGithubLogin = () => {
                 <CardTitle className="text-3xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 dark:from-white dark:to-slate-200 bg-clip-text text-transparent">
                   {isVerifying ? "Verify Email" : (isLogin ? "Welcome Back" : "Create Account")}
                 </CardTitle>
-                <CardDescription className="text-base mt-2">
+                <CardDescription className="text-base mt-2 text-slate-600 dark:text-slate-300">
                   {isVerifying ? `Enter the 6-digit code sent to ${verificationEmail}` : (isLogin ? "Sign in to your account" : "Sign up to get started")}
                 </CardDescription>
               </motion.div>
@@ -978,13 +989,32 @@ const handleGithubLogin = () => {
                         <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
                           Verification Code
                         </label>
-                        <div className="flex gap-2 justify-center">
+                        <div
+                          className="flex gap-2 justify-center"
+                          onPaste={(e) => {
+                            const pastedText = e.clipboardData.getData("text");
+                            const digits = pastedText.replace(/\D/g, "").slice(0, 6);
+                            if (!digits) {
+                              return;
+                            }
+
+                            e.preventDefault();
+                            setVerificationCode(digits);
+
+                            const focusIndex = Math.min(digits.length, 5);
+                            const input = document.querySelector(
+                              `input[data-verification-index="${focusIndex}"]`
+                            ) as HTMLInputElement | null;
+                            input?.focus();
+                          }}
+                        >
                           {Array.from({ length: 6 }).map((_, index) => (
                             <motion.input
                               key={index}
                               type="text"
                               inputMode="numeric"
                               maxLength={1}
+                              autoFocus={index === 0}
                               value={verificationCode[index] || ""}
                               onChange={(e) => {
                                 const value = e.target.value;
@@ -1127,7 +1157,7 @@ const handleGithubLogin = () => {
                               value={signInPassword}
                               onChange={(e) => setSignInPassword(e.target.value)}
                               required
-                              className="h-12 pl-10 rounded-lg border-slate-200 dark:border-slate-700 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 transition-all"
+                              className="h-12 pl-10 rounded-lg border-slate-200 bg-white/95 text-slate-900 dark:border-slate-700 dark:bg-slate-800/85 dark:text-slate-100 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 transition-all"
                             />
                           </div>
                           <Button
@@ -1155,7 +1185,7 @@ const handleGithubLogin = () => {
                               placeholder="Username"
                               value={signUpUsername}
                               onChange={(e) => setSignUpUsername(e.target.value)}
-                              className="h-12 pl-10 rounded-lg border-slate-200 dark:border-slate-700 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 transition-all"
+                              className="h-12 pl-10 rounded-lg border-slate-200 bg-white/95 text-slate-900 dark:border-slate-700 dark:bg-slate-800/85 dark:text-slate-100 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 transition-all"
                               required
                             />
                           </div>
@@ -1165,7 +1195,7 @@ const handleGithubLogin = () => {
                               placeholder="First Name"
                               value={signUpFirstName}
                               onChange={(e) => setSignUpFirstName(e.target.value)}
-                              className="h-12 rounded-lg border-slate-200 dark:border-slate-700 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 transition-all"
+                              className="h-12 rounded-lg border-slate-200 bg-white/95 text-slate-900 dark:border-slate-700 dark:bg-slate-800/85 dark:text-slate-100 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 transition-all"
                               required
                             />
                             <Input
@@ -1173,7 +1203,7 @@ const handleGithubLogin = () => {
                               placeholder="Last Name"
                               value={signUpLastName}
                               onChange={(e) => setSignUpLastName(e.target.value)}
-                              className="h-12 rounded-lg border-slate-200 dark:border-slate-700 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 transition-all"
+                              className="h-12 rounded-lg border-slate-200 bg-white/95 text-slate-900 dark:border-slate-700 dark:bg-slate-800/85 dark:text-slate-100 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 transition-all"
                               required
                             />
                           </div>
@@ -1185,7 +1215,7 @@ const handleGithubLogin = () => {
                               value={signUpEmail}
                               onChange={(e) => setSignUpEmail(e.target.value)}
                               required
-                              className="h-12 pl-10 rounded-lg border-slate-200 dark:border-slate-700 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 transition-all"
+                              className="h-12 pl-10 rounded-lg border-slate-200 bg-white/95 text-slate-900 dark:border-slate-700 dark:bg-slate-800/85 dark:text-slate-100 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 transition-all"
                             />
                           </div>
                           <div className="relative">
@@ -1196,7 +1226,7 @@ const handleGithubLogin = () => {
                               value={signUpPassword}
                               onChange={(e) => setSignUpPassword(e.target.value)}
                               required
-                              className="h-12 pl-10 rounded-lg border-slate-200 dark:border-slate-700 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 transition-all"
+                              className="h-12 pl-10 rounded-lg border-slate-200 bg-white/95 text-slate-900 dark:border-slate-700 dark:bg-slate-800/85 dark:text-slate-100 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 transition-all"
                             />
                           </div>
 
@@ -1428,11 +1458,12 @@ const handleGithubLogin = () => {
                     >
                       <Button 
                         type="button" 
+                        variant="outline"
                         onClick={handleGoogleLogin}
                         disabled={loading}
-                        className="w-full h-12 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-semibold transition-all"
+                        className="w-full h-12 rounded-lg border-slate-200 bg-white text-slate-900 shadow-sm hover:bg-slate-50 dark:border-slate-300 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100 font-semibold transition-all"
                       >
-                        <svg className="w-5 h-5 mr-3" viewBox="0 0 24 24">
+                        <svg className="w-6 h-6 mr-3 shrink-0" viewBox="0 0 24 24">
                           <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
                           <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
                           <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
@@ -1452,11 +1483,12 @@ const handleGithubLogin = () => {
                     >
                       <Button 
                         type="button" 
+                        variant="outline"
                         onClick={handleGithubLogin}
                         disabled={loading}
-                        className="w-full h-12 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-semibold transition-all"
+                        className="w-full h-12 rounded-lg border-slate-200 bg-white text-slate-900 shadow-sm hover:bg-slate-50 dark:border-slate-300 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100 font-semibold transition-all"
                       >
-                        <svg className="w-5 h-5 mr-3" viewBox="0 0 24 24" fill="currentColor">
+                        <svg className="w-6 h-6 mr-3 shrink-0" viewBox="0 0 24 24" fill="currentColor">
                           <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v 3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
                         </svg>
                         GitHub

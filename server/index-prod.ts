@@ -29,6 +29,7 @@ import { type Server } from "node:http";
 import express, { type Express } from "express";
 import runApp from "./app";
 import { createUser, findUserByEmail, findUserByUsername } from "./auth";
+import { storage as authStorage } from "./auth-storage";
 import { storage } from "./storage";
 import { seedComputerScienceData } from "./seed-computer-science";
 import { seedCompletedQuizzes } from "./seed-completed-quizzes";
@@ -72,8 +73,16 @@ export async function serveStatic(app: Express, _server: Server) {
       let demoUser = existingByUsername || existingByEmail;
 
       if (!demoUser) {
-        demoUser = await createUser(demoEmail, demoPassword, "Demo", "User", demoUsername);
+        demoUser = await createUser(demoEmail, demoPassword, "Demo", "User", demoUsername, true);
         console.log("[PROD AUTH] Created demo account: demo-user / demo-user");
+      }
+
+      if (demoUser && !demoUser.isVerified) {
+        demoUser = {
+          ...demoUser,
+          isVerified: true,
+        };
+        await authStorage.updateUser(demoUser);
       }
 
       if (demoUser && enableDemoSeed) {

@@ -473,6 +473,25 @@ sqlite.exec(`
     )
   `);
 
+  // Create verification_codes table for OTP email verification
+  sqlite.exec(`
+    CREATE TABLE IF NOT EXISTS verification_codes (
+      id VARCHAR PRIMARY KEY,
+      user_id VARCHAR NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      code TEXT NOT NULL,
+      created_at INTEGER NOT NULL,
+      expires_at INTEGER NOT NULL
+    )
+  `);
+
+  sqlite.exec(`
+    CREATE INDEX IF NOT EXISTS verification_codes_user_id_idx ON verification_codes(user_id)
+  `);
+
+  sqlite.exec(`
+    CREATE INDEX IF NOT EXISTS verification_codes_code_idx ON verification_codes(code)
+  `);
+
   // Add isPinned column to notes table if it doesn't exist
   try {
     sqlite.exec(`

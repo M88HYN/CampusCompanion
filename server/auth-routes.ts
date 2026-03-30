@@ -61,6 +61,16 @@ const registerSchema = z.object({
   lastName: z.string().optional(),
 });
 
+const verifySchema = z.object({
+  email: z.string().email(),
+  code: z.string().regex(/^\d{6}$/, "Verification code must be 6 digits"),
+});
+
+const resendSchema = z.object({
+  userId: z.string().min(1, "userId is required"),
+  email: z.string().email(),
+});
+
 // OAuth Configuration
 const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
 const SUPABASE_URL = (process.env.SUPABASE_URL || "").replace(/\/$/, "");
@@ -300,7 +310,7 @@ export function registerAuthRoutes(app: Express) {
       // Return response indicating email needs verification
       res.json({
         success: true,
-        message: "Account created. Please verify your email to continue.",
+        message: "Verification code sent to email",
         requiresVerification: true,
         userId: user.id,
         email: user.email,
@@ -429,11 +439,7 @@ export function registerAuthRoutes(app: Express) {
   // Verify email code (email + code compatibility endpoint)
   app.post("/api/auth/verify", async (req: any, res: Response) => {
     try {
-      const { email, code } = req.body;
-
-      if (!email || !code) {
-        return res.status(400).json({ message: "Missing email or code" });
-      }
+      const { email, code } = verifySchema.parse(req.body);
 
       const verified = await verifyEmailCodeByEmail(email, code);
       if (!verified) {
@@ -454,6 +460,9 @@ export function registerAuthRoutes(app: Express) {
         },
       });
     } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: error.errors[0].message });
+      }
       console.error("Email verification error:", error);
       res.status(500).json({ message: "Verification failed" });
     }
@@ -462,12 +471,7 @@ export function registerAuthRoutes(app: Express) {
   // Resend verification code
   app.post("/api/auth/resend-code", async (req: any, res: Response) => {
     try {
-      const { userId, email } = req.body;
-
-      if (!userId || !email) {
-        return res.status(400).json({ message: "Missing userId or email" });
-      }
-
+      const { userId, email } = resendSchema.parse(req.body);
       const normalizedEmail = String(email).trim().toLowerCase();
       const now = Date.now();
       const previousSentAt = resendTracker.get(normalizedEmail) ?? 0;
@@ -485,6 +489,10 @@ export function registerAuthRoutes(app: Express) {
         return res.status(404).json({ message: "User not found" });
       }
 
+      if (user.isVerified) {
+        return res.status(400).json({ message: "Email is already verified" });
+      }
+
       const code = await resendVerificationCode(userId);
       await sendVerificationEmail({
         email,
@@ -498,6 +506,9 @@ export function registerAuthRoutes(app: Express) {
         message: "Verification code sent",
       });
     } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: error.errors[0].message });
+      }
       console.error("Resend code error:", error);
       res.status(500).json({ message: "Failed to resend code" });
     }

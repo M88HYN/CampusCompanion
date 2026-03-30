@@ -67,7 +67,7 @@ const setup = async (_app: Express, _server: Server) => {
     let demoUser = existingByUsername || existingByEmail;
 
     if (!demoUser) {
-      demoUser = await createUser(demoEmail, demoPassword, "Demo", "User", demoUsername);
+      demoUser = await createUser(demoEmail, demoPassword, "Demo", "User", demoUsername, true);
       console.log("[DEV AUTH] Created demo account: demo-user / demo-user");
     } else {
       const passwordHash = await hashPassword(demoPassword);
@@ -76,6 +76,7 @@ const setup = async (_app: Express, _server: Server) => {
         username: demoUsername,
         email: demoEmail,
         password: passwordHash,
+        isVerified: true,
         firstName: "Demo",
         lastName: "User",
       });
