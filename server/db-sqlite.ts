@@ -28,6 +28,8 @@ import { drizzle, type BetterSQLite3Database } from "drizzle-orm/better-sqlite3"
 import fs from "fs";
 import path from "path";
 
+const projectRoot = path.resolve(import.meta.dirname, "..");
+
 // No schema import needed - tables are created manually via SQL
 type EmptySchema = Record<string, never>;
 
@@ -89,7 +91,7 @@ function resolveDatabasePath(): string {
   const databaseUrl = process.env.DATABASE_URL?.trim();
 
   if (!databaseUrl || databaseUrl.length === 0) {
-    const dataDir = path.resolve(process.cwd(), "data");
+    const dataDir = path.resolve(projectRoot, "data");
     fs.mkdirSync(dataDir, { recursive: true });
     return path.join(dataDir, "campus-companion.sqlite");
   }
@@ -110,7 +112,7 @@ function resolveDatabasePath(): string {
 
     const absolutePath = path.isAbsolute(configuredPath)
       ? configuredPath
-      : path.resolve(process.cwd(), configuredPath);
+      : path.resolve(projectRoot, configuredPath);
 
     fs.mkdirSync(path.dirname(absolutePath), { recursive: true });
     return absolutePath;
@@ -200,6 +202,7 @@ function createTables() {
       first_name TEXT,
       last_name TEXT,
       profile_image_url TEXT,
+        is_verified INTEGER NOT NULL DEFAULT 0,
       created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
     )
@@ -481,8 +484,17 @@ sqlite.exec(`
       console.warn("Warning adding is_pinned column:", error.message);
     }
   }
+  ensureAuthSchemaCompatibility();
 
   console.log("Database tables created successfully");
+}
+
+function ensureAuthSchemaCompatibility() {
+  try {
+    sqlite.exec(`ALTER TABLE users ADD COLUMN is_verified INTEGER NOT NULL DEFAULT 0`);
+  } catch {
+    // Column already exists on newer databases.
+  }
 }
 
 /*

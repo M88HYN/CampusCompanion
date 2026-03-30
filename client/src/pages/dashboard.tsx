@@ -23,13 +23,14 @@ allowing safe evolution of features without cross-module side effects.
 */
 
 import { useState, useEffect } from "react";
-import { 
-  BookOpen, BrainCircuit, GraduationCap, Sparkles, Clock, TrendingUp, 
+import {
+  BookOpen, BrainCircuit, Sparkles, Clock,
   Flame, Target, Calendar, Edit2, Save, X, Lightbulb, AlertTriangle,
-  Zap, ChevronRight, Play, CheckCircle2, ArrowRight, Award, BarChart3,
-  Timer, Brain, Rocket, Layers, FileText, Activity
+  Zap, ChevronRight, CheckCircle2, Award,
+  Timer, Rocket, Layers, FileText, Activity, Plus,
+  PlayCircle, CreditCard, ArrowUpRight
 } from "lucide-react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -104,40 +105,9 @@ interface DashboardProps {
   userRole?: UserRole;
 }
 
-/*
-----------------------------------------------------------
-Component: ActionCard
-
-Purpose:
-Renders a focused UI unit and orchestrates state, hooks, and user interactions for the surrounding workflow.
-
-Parameters:
-- title: Input consumed by this routine during execution
-- description: Input consumed by this routine during execution
-- reason: Input consumed by this routine during execution
-- timeEstimate: Input consumed by this routine during execution
-- priority: Input consumed by this routine during execution
-- Icon: Input consumed by this routine during execution
-- href: Input consumed by this routine during execution
-- gradient: Input consumed by this routine during execution
-- testId: Input consumed by this routine during execution
-
-Process:
-1. Initializes local state and framework hooks required for rendering
-2. Derives view data from props, query state, and computed conditions
-3. Applies conditional rendering to keep the interface robust for empty/loading/error states
-4. Binds event handlers and side effects to synchronize UI with backend/application state
-
-Why Validation is Important:
-State guards and defensive rendering prevent runtime errors, preserve UX continuity, and improve accessibility during asynchronous updates.
-
-Returns:
-A JSX tree representing the component view for the current state.
-----------------------------------------------------------
-*/
-function ActionCard({ 
-  title, 
-  description, 
+function ActionCard({
+  title,
+  description,
   reason,
   timeEstimate,
   priority,
@@ -156,93 +126,42 @@ function ActionCard({
   gradient: string;
   testId: string;
 }) {
-  const priorityColors = {
-    high: 'bg-rose-500',
-    medium: 'bg-amber-500',
-    low: 'bg-sky-500'
+  const priorityConfig = {
+    high: { bar: 'bg-rose-500', badge: 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:text-rose-400 dark:border-rose-800' },
+    medium: { bar: 'bg-amber-500', badge: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-800' },
+    low: { bar: 'bg-sky-500', badge: 'bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-950/40 dark:text-sky-400 dark:border-sky-800' },
   };
 
   return (
     <Link href={href}>
-      <Card className="hover-elevate cursor-pointer transition-all border border-slate-100 shadow-md shadow-slate-200/50 dark:shadow-none dark:border-slate-800 overflow-hidden h-full bg-card" data-testid={testId}>
-        <div className={`h-1.5 ${priorityColors[priority]}`} />
-        <CardContent className="p-4">
-          <div className="flex gap-4 flex-wrap">
-            <div className={`w-12 h-12 rounded-xl ${gradient} flex items-center justify-center shrink-0`}>
-              <Icon className="h-6 w-6 text-white" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-start justify-between gap-2">
-                <h3 className="font-semibold text-sm">{title}</h3>
-                <div className="flex items-center gap-1 text-xs text-muted-foreground shrink-0">
-                  <Timer className="h-3 w-3" />
-                  {timeEstimate}
-                </div>
-              </div>
-              <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{description}</p>
-              <div className="flex items-center gap-2 mt-2">
-                <Badge variant="secondary" className="text-xs font-normal">
-                  {reason}
-                </Badge>
-              </div>
-            </div>
+      <div
+        className="group flex items-center gap-4 p-4 rounded-xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-pointer"
+        data-testid={testId}
+      >
+        <div className={`w-11 h-11 rounded-xl ${gradient} flex items-center justify-center shrink-0 shadow-sm`}>
+          <Icon className="h-5 w-5 text-white" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-start justify-between gap-2 mb-0.5">
+            <p className="font-semibold text-sm text-foreground">{title}</p>
+            <span className="flex items-center gap-1 text-xs text-muted-foreground shrink-0">
+              <Timer className="h-3 w-3" />
+              {timeEstimate}
+            </span>
           </div>
-        </CardContent>
-      </Card>
+          <p className="text-xs text-muted-foreground line-clamp-1">{description}</p>
+          <span className={`inline-block mt-1.5 text-xs px-2 py-0.5 rounded-full border font-medium ${priorityConfig[priority].badge}`}>
+            {reason}
+          </span>
+        </div>
+        <ArrowUpRight className="h-4 w-4 text-muted-foreground shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
+      </div>
     </Link>
   );
 }
 
-/*
-----------------------------------------------------------
-Component: WeakTopicCard
-
-Purpose:
-Renders a focused UI unit and orchestrates state, hooks, and user interactions for the surrounding workflow.
-
-Parameters:
-- topic: Input consumed by this routine during execution
-- accuracy: Input consumed by this routine during execution
-- suggestion: Input consumed by this routine during execution
-
-Process:
-1. Initializes local state and framework hooks required for rendering
-2. Derives view data from props, query state, and computed conditions
-3. Applies conditional rendering to keep the interface robust for empty/loading/error states
-4. Binds event handlers and side effects to synchronize UI with backend/application state
-
-Why Validation is Important:
-State guards and defensive rendering prevent runtime errors, preserve UX continuity, and improve accessibility during asynchronous updates.
-
-Returns:
-A JSX tree representing the component view for the current state.
-----------------------------------------------------------
-*/
 function WeakTopicCard({ topic, accuracy, suggestion }: { topic: string; accuracy: number; suggestion: string }) {
-    /*
-  ----------------------------------------------------------
-  Function: getUrgencyColor
-
-  Purpose:
-  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
-
-  Parameters:
-  - acc: Input consumed by this routine during execution
-
-  Process:
-  1. Accepts and normalizes inputs before core processing
-  2. Applies relevant guards/validation to prevent invalid transitions
-  3. Executes primary logic path and handles expected edge conditions
-  4. Returns a deterministic output for the caller layer
-
-  Why Validation is Important:
-  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
-
-  Returns:
-  A value/promise representing the outcome of the executed logic path.
-  ----------------------------------------------------------
-  */
-const getUrgencyColor = (acc: number) => {
+  const getUrgencyColor = (acc: number) => {
     if (acc < 50) return 'border-l-rose-500 bg-rose-50 dark:bg-rose-950/20';
     if (acc < 70) return 'border-l-amber-500 bg-amber-50 dark:bg-amber-950/20';
     return 'border-l-sky-500 bg-sky-50 dark:bg-sky-950/20';
@@ -250,10 +169,10 @@ const getUrgencyColor = (acc: number) => {
 
   return (
     <div className={`p-3 rounded-lg border-l-4 ${getUrgencyColor(accuracy)}`} data-testid={`weak-topic-${topic.toLowerCase().replace(/\s+/g, '-')}`}>
-      <div className="flex items-center justify-between gap-2 mb-2">
+      <div className="flex items-center justify-between gap-2 mb-1">
         <span className="font-medium text-sm">{topic}</span>
         <Badge variant={accuracy < 50 ? "destructive" : "secondary"} className="text-xs shrink-0">
-          {accuracy}% accuracy
+          {accuracy}%
         </Badge>
       </div>
       <p className="text-xs text-muted-foreground">{suggestion}</p>
@@ -261,35 +180,8 @@ const getUrgencyColor = (acc: number) => {
   );
 }
 
-/*
-----------------------------------------------------------
-Component: QuickWinCard
-
-Purpose:
-Renders a focused UI unit and orchestrates state, hooks, and user interactions for the surrounding workflow.
-
-Parameters:
-- title: Input consumed by this routine during execution
-- description: Input consumed by this routine during execution
-- href: Input consumed by this routine during execution
-- Icon: Input consumed by this routine during execution
-- action: Input consumed by this routine during execution
-
-Process:
-1. Initializes local state and framework hooks required for rendering
-2. Derives view data from props, query state, and computed conditions
-3. Applies conditional rendering to keep the interface robust for empty/loading/error states
-4. Binds event handlers and side effects to synchronize UI with backend/application state
-
-Why Validation is Important:
-State guards and defensive rendering prevent runtime errors, preserve UX continuity, and improve accessibility during asynchronous updates.
-
-Returns:
-A JSX tree representing the component view for the current state.
-----------------------------------------------------------
-*/
-function QuickWinCard({ title, description, href, icon: Icon, action }: { 
-  title: string; 
+function QuickWinCard({ title, description, href, icon: Icon, action }: {
+  title: string;
   description: string;
   href: string;
   icon: React.ElementType;
@@ -297,7 +189,7 @@ function QuickWinCard({ title, description, href, icon: Icon, action }: {
 }) {
   return (
     <Link href={href}>
-      <div className="flex items-center gap-3 flex-wrap p-3 rounded-lg bg-emerald-50 dark:bg-emerald-950/20 hover-elevate cursor-pointer border border-emerald-200 dark:border-emerald-800" data-testid={`quick-win-${title.toLowerCase().replace(/\s+/g, '-')}`}>
+      <div className="group flex items-center gap-3 p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/20 hover:bg-emerald-100 dark:hover:bg-emerald-950/40 cursor-pointer border border-emerald-200 dark:border-emerald-800 transition-colors" data-testid={`quick-win-${title.toLowerCase().replace(/\s+/g, '-')}`}>
         <div className="w-9 h-9 rounded-lg bg-emerald-500 flex items-center justify-center shrink-0">
           <Icon className="h-4 w-4 text-white" />
         </div>
@@ -305,7 +197,7 @@ function QuickWinCard({ title, description, href, icon: Icon, action }: {
           <p className="font-medium text-sm">{title}</p>
           <p className="text-xs text-muted-foreground">{description}</p>
         </div>
-        <Badge variant="outline" className="shrink-0 text-emerald-600 border-emerald-300 dark:border-emerald-700">
+        <Badge variant="outline" className="shrink-0 text-emerald-600 border-emerald-300 dark:border-emerald-700 text-xs">
           {action}
         </Badge>
       </div>
@@ -313,36 +205,13 @@ function QuickWinCard({ title, description, href, icon: Icon, action }: {
   );
 }
 
-/*
-----------------------------------------------------------
-Component: Dashboard
-
-Purpose:
-Renders a focused UI unit and orchestrates state, hooks, and user interactions for the surrounding workflow.
-
-Parameters:
-- userRole: Input consumed by this routine during execution
-
-Process:
-1. Initializes local state and framework hooks required for rendering
-2. Derives view data from props, query state, and computed conditions
-3. Applies conditional rendering to keep the interface robust for empty/loading/error states
-4. Binds event handlers and side effects to synchronize UI with backend/application state
-
-Why Validation is Important:
-State guards and defensive rendering prevent runtime errors, preserve UX continuity, and improve accessibility during asynchronous updates.
-
-Returns:
-A JSX tree representing the component view for the current state.
-----------------------------------------------------------
-*/
-export default function Dashboard({ userRole = "student" }: DashboardProps) {
+export default function Dashboard(_props: DashboardProps) {
   const { user } = useAuth();
+  const [, setLocation] = useLocation();
   const [userName, setUserName] = useState("");
   const [isEditingName, setIsEditingName] = useState(false);
   const [tempName, setTempName] = useState(userName);
 
-  // Initialize userName from user profile
   useEffect(() => {
     if (user?.firstName) {
       setUserName(user.firstName);
@@ -357,7 +226,6 @@ export default function Dashboard({ userRole = "student" }: DashboardProps) {
     }
   }, [user]);
 
-  // Fetch real metrics from backend
   const { data: metrics, isLoading: isLoadingMetrics } = useQuery<DashboardMetrics>({
     queryKey: ['/api/dashboard/metrics'],
     queryFn: async () => {
@@ -365,21 +233,23 @@ export default function Dashboard({ userRole = "student" }: DashboardProps) {
       return res.json();
     },
     enabled: !!user,
-    retry: 1,
+    retry: 2,
+    staleTime: 0,
+    refetchOnMount: true,
   });
 
-  // Fetch due flashcards for immediate review
-  const { data: dueCards = [], isError: dueCardsError } = useQuery<DueCard[]>({
+  const { data: dueCards = [] } = useQuery<DueCard[]>({
     queryKey: ['/api/dashboard/due-flashcards'],
     queryFn: async () => {
       const res = await apiRequest("GET", "/api/dashboard/due-flashcards");
       return res.json();
     },
     enabled: !!user,
-    retry: 1,
+    retry: 2,
+    staleTime: 0,
+    refetchOnMount: true,
   });
 
-  // Fetch lowest scoring quiz for retake recommendation
   const { data: lowestQuiz } = useQuery({
     queryKey: ['/api/dashboard/lowest-quiz'],
     queryFn: async () => {
@@ -387,86 +257,91 @@ export default function Dashboard({ userRole = "student" }: DashboardProps) {
       return res.json();
     },
     enabled: !!user,
-    retry: 1,
+    retry: 2,
+    staleTime: 0,
+    refetchOnMount: true,
   });
 
-  // Fetch recent notes
-  const { data: recentNotes = [], isError: notesError } = useQuery<Note[]>({
+  const { data: recentNotes = [] } = useQuery<Note[]>({
     queryKey: ['/api/dashboard/recent-notes'],
     queryFn: async () => {
       const res = await apiRequest("GET", "/api/dashboard/recent-notes");
       return res.json();
     },
     enabled: !!user,
-    retry: 1,
+    retry: 2,
+    staleTime: 0,
+    refetchOnMount: true,
   });
 
-  // Keep the existing queries for deck/quiz counts
-  const { data: decks = [], isError: decksError } = useQuery<Deck[]>({
+  const { data: decks = [], isLoading: isLoadingDecks } = useQuery<Deck[]>({
     queryKey: ['/api/decks'],
     queryFn: async () => {
       const res = await apiRequest("GET", "/api/decks");
       return res.json();
     },
     enabled: !!user,
-    retry: 1,
+    retry: 2,
+    staleTime: 0,
+    refetchOnMount: true,
   });
 
-  const { data: quizzes = [], isError: quizzesError } = useQuery<Quiz[]>({
+  const { data: quizzes = [], isLoading: isLoadingQuizzes } = useQuery<Quiz[]>({
     queryKey: ['/api/quizzes'],
     queryFn: async () => {
       const res = await apiRequest("GET", "/api/quizzes");
       return res.json();
     },
     enabled: !!user,
-    retry: 1,
+    retry: 2,
+    staleTime: 0,
+    refetchOnMount: true,
   });
 
-  const { data: notes = [] } = useQuery<Note[]>({
+  const { data: notes = [], isLoading: isLoadingNotes } = useQuery<Note[]>({
     queryKey: ['/api/notes'],
     queryFn: async () => {
       const res = await apiRequest("GET", "/api/notes");
       return res.json();
     },
     enabled: !!user,
-    retry: 1,
+    retry: 2,
+    staleTime: 0,
+    refetchOnMount: true,
   });
 
-  // Still fetch insights for weak areas and strengths
-  const { data: insights, isLoading: isLoadingInsights } = useQuery<LearningInsights>({
+  // insights loads independently — don't block page render on it
+  const { data: insights } = useQuery<LearningInsights>({
     queryKey: ['/api/learning-insights'],
     queryFn: async () => {
       const res = await apiRequest("GET", "/api/learning-insights");
       return res.json();
     },
     enabled: !!user,
-    retry: 1,
+    retry: 2,
+    staleTime: 0,
+    refetchOnMount: true,
   });
 
-  // Calculate total cards across all decks for the feature card
   const totalCardsCount = decks.reduce((sum: number, d: any) => sum + (d.cards || 0), 0);
   const masteredCardsCount = decks.reduce((sum: number, d: any) => sum + (d.mastered || 0), 0);
-  const quizBestScore = quizzes.length > 0 
-    ? Math.max(...quizzes.map((q: any) => q.bestScore || 0))
-    : 0;
+  const quizBestScore = quizzes.length > 0 ? Math.max(...quizzes.map((q: any) => q.bestScore || 0)) : 0;
 
   const features = [
     {
       title: "Notes",
-      description: notes.length > 0 ? `${notes.length} notes across subjects` : "Start writing notes",
+      description: notes.length > 0 ? `${notes.length} notes` : "Start writing",
       icon: FileText,
       bgGradient: "bg-gradient-to-br from-sky-400 via-blue-500 to-indigo-600",
       href: "/notes",
-      count: notes.length,
-      subtitle: notes.length > 0 ? "with rich content & AI tools" : "Organize your study materials",
+      subtitle: notes.length > 0 ? "Rich content & AI tools" : "Organise study materials",
     },
     {
       title: "Quizzes",
-      description: quizzes.length > 0 ? `${quizzes.length} quizzes available` : "Create your first quiz",
-      icon: Activity,
+      description: quizzes.length > 0 ? `${quizzes.length} quizzes` : "Create a quiz",
+      icon: BrainCircuit,
       bgGradient: "bg-gradient-to-br from-fuchsia-500 via-pink-500 to-rose-500",
       href: "/quizzes",
-      count: quizzes.length,
       subtitle: quizBestScore > 0 ? `Best score: ${quizBestScore}%` : "Test your knowledge",
     },
     {
@@ -475,108 +350,45 @@ export default function Dashboard({ userRole = "student" }: DashboardProps) {
       icon: Layers,
       bgGradient: "bg-gradient-to-br from-emerald-400 via-green-500 to-teal-600",
       href: "/flashcards",
-      count: decks.length,
       urgent: dueCards.length > 0,
-      subtitle: dueCards.length > 0 ? `${dueCards.length} cards due now` : "Spaced repetition learning",
+      subtitle: dueCards.length > 0 ? `${dueCards.length} cards due now` : "Spaced repetition",
     },
     {
       title: "Insight Scout",
-      description: "AI-powered insight support",
-      icon: Rocket,
+      description: "AI-powered support",
+      icon: Sparkles,
       bgGradient: "bg-gradient-to-br from-amber-400 via-orange-500 to-red-500",
       href: "/research",
-      subtitle: "Ask anything, get explanations",
+      subtitle: "Ask anything",
     },
     {
       title: "Revision Aids",
       description: "Spaced review queue",
-      icon: Brain,
+      icon: Zap,
       bgGradient: "bg-gradient-to-br from-yellow-400 via-lime-500 to-green-500",
       href: "/revision",
       subtitle: "Focus on weak areas",
     },
   ];
 
-    /*
-  ----------------------------------------------------------
-  Function: handleSaveName
-
-  Purpose:
-  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
-
-  Parameters:
-  - None: Operates using closure/module state only
-
-  Process:
-  1. Accepts and normalizes inputs before core processing
-  2. Applies relevant guards/validation to prevent invalid transitions
-  3. Executes primary logic path and handles expected edge conditions
-  4. Returns a deterministic output for the caller layer
-
-  Why Validation is Important:
-  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
-
-  Returns:
-  A value/promise representing the outcome of the executed logic path.
-  ----------------------------------------------------------
-  */
-const handleSaveName = () => {
+  const handleSaveName = () => {
     setUserName(tempName);
     setIsEditingName(false);
   };
 
-    /*
-  ----------------------------------------------------------
-  Function: handleCancelName
-
-  Purpose:
-  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
-
-  Parameters:
-  - None: Operates using closure/module state only
-
-  Process:
-  1. Accepts and normalizes inputs before core processing
-  2. Applies relevant guards/validation to prevent invalid transitions
-  3. Executes primary logic path and handles expected edge conditions
-  4. Returns a deterministic output for the caller layer
-
-  Why Validation is Important:
-  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
-
-  Returns:
-  A value/promise representing the outcome of the executed logic path.
-  ----------------------------------------------------------
-  */
-const handleCancelName = () => {
+  const handleCancelName = () => {
     setTempName(userName);
     setIsEditingName(false);
   };
 
-    /*
-  ----------------------------------------------------------
-  Function: generateStudyNowActions
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return "Good morning";
+    if (hour < 17) return "Good afternoon";
+    return "Good evening";
+  };
 
-  Purpose:
-  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
-
-  Parameters:
-  - None: Operates using closure/module state only
-
-  Process:
-  1. Accepts and normalizes inputs before core processing
-  2. Applies relevant guards/validation to prevent invalid transitions
-  3. Executes primary logic path and handles expected edge conditions
-  4. Returns a deterministic output for the caller layer
-
-  Why Validation is Important:
-  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
-
-  Returns:
-  A value/promise representing the outcome of the executed logic path.
-  ----------------------------------------------------------
-  */
-const generateStudyNowActions = () => {
+  const generateStudyNowActions = () => {
     const actions: Array<{
       title: string;
       description: string;
@@ -588,7 +400,6 @@ const generateStudyNowActions = () => {
       gradient: string;
     }> = [];
 
-    // 1. Due flashcards
     if (dueCards.length > 0) {
       actions.push({
         title: `Review ${dueCards.length} Flashcard${dueCards.length > 1 ? 's' : ''}`,
@@ -602,7 +413,6 @@ const generateStudyNowActions = () => {
       });
     }
 
-    // 2. Retake lowest scoring quiz
     if (lowestQuiz && lowestQuiz.bestScore < 70) {
       actions.push({
         title: `Retake: ${lowestQuiz.title}`,
@@ -616,7 +426,6 @@ const generateStudyNowActions = () => {
       });
     }
 
-    // 3. Weak areas from insights
     if (insights?.weakAreas && insights.weakAreas.length > 0) {
       const weakest = insights.weakAreas[0];
       actions.push({
@@ -631,7 +440,6 @@ const generateStudyNowActions = () => {
       });
     }
 
-    // 4. Additional recommendations
     if (insights?.recommendations) {
       insights.recommendations.slice(0, 1).forEach(rec => {
         const iconMap: Record<string, React.ElementType> = {
@@ -649,7 +457,7 @@ const generateStudyNowActions = () => {
           priority: rec.priority,
           icon: iconMap[rec.type] || Lightbulb,
           href: rec.type === 'flashcards' ? '/flashcards' : '/quizzes',
-          gradient: rec.priority === 'high' 
+          gradient: rec.priority === 'high'
             ? "bg-gradient-to-br from-rose-400 to-red-500"
             : "bg-gradient-to-br from-amber-400 to-orange-500"
         });
@@ -672,30 +480,7 @@ const generateStudyNowActions = () => {
     return actions.slice(0, 4);
   };
 
-    /*
-  ----------------------------------------------------------
-  Function: generateQuickWins
-
-  Purpose:
-  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
-
-  Parameters:
-  - None: Operates using closure/module state only
-
-  Process:
-  1. Accepts and normalizes inputs before core processing
-  2. Applies relevant guards/validation to prevent invalid transitions
-  3. Executes primary logic path and handles expected edge conditions
-  4. Returns a deterministic output for the caller layer
-
-  Why Validation is Important:
-  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
-
-  Returns:
-  A value/promise representing the outcome of the executed logic path.
-  ----------------------------------------------------------
-  */
-const generateQuickWins = () => {
+  const generateQuickWins = () => {
     const wins: Array<{
       title: string;
       description: string;
@@ -704,7 +489,6 @@ const generateQuickWins = () => {
       action: string;
     }> = [];
 
-    // Small number of due cards
     if (dueCards.length > 0 && dueCards.length <= 5) {
       wins.push({
         title: `${dueCards.length} quick cards`,
@@ -715,7 +499,6 @@ const generateQuickWins = () => {
       });
     }
 
-    // Master area reinforcement
     if (insights?.strengths && insights.strengths.length > 0) {
       wins.push({
         title: `Master: ${insights.strengths[0].topic}`,
@@ -726,7 +509,6 @@ const generateQuickWins = () => {
       });
     }
 
-    // Recent notes review
     if (recentNotes.length > 0) {
       const mostRecent = recentNotes[0];
       wins.push({
@@ -738,7 +520,6 @@ const generateQuickWins = () => {
       });
     }
 
-    // Pomodoro session
     wins.push({
       title: "Quick Pomodoro",
       description: "25 min focused study session",
@@ -753,191 +534,197 @@ const generateQuickWins = () => {
   const studyActions = generateStudyNowActions();
   const quickWins = generateQuickWins();
 
-  if (isLoadingInsights || isLoadingMetrics) {
+  if (isLoadingMetrics || isLoadingDecks || isLoadingQuizzes || isLoadingNotes) {
     return (
-      <div className="flex-1 overflow-auto bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/20 dark:bg-slate-950 dark:from-slate-950 dark:via-slate-950 dark:to-slate-950">
-        <div className="max-w-7xl mx-auto p-3 sm:p-6 space-y-4 sm:space-y-6">
-          <Skeleton className="h-12 w-64" />
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            {[1,2,3,4].map(i => <Skeleton key={i} className="h-28" />)}
+      <div className="flex-1 overflow-auto bg-slate-50 dark:bg-slate-950">
+        <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
+          <Skeleton className="h-16 w-80" />
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-28 rounded-2xl" />)}
           </div>
-          <Skeleton className="h-64" />
+          <Skeleton className="h-12 w-full rounded-2xl" />
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2 space-y-3">
+              {[1, 2, 3].map(i => <Skeleton key={i} className="h-20 rounded-xl" />)}
+            </div>
+            <div className="space-y-4">
+              <Skeleton className="h-40 rounded-xl" />
+              <Skeleton className="h-40 rounded-xl" />
+            </div>
+          </div>
         </div>
       </div>
     );
   }
 
+  const accuracy = metrics?.accuracy ?? insights?.overview?.overallAccuracy ?? 0;
+  // quizzesCompleted: sum attempt counts from quizzes list as primary source (always loaded)
+  const quizzesCompleted = quizzes.reduce((sum: number, q: any) => sum + (q.attemptCount || 0), 0)
+    || insights?.overview?.quizzesTaken || 0;
+  // flashcardsReviewed: use metrics (fast query) as primary, insights as fallback
+  const flashcardsReviewed = metrics?.itemsReviewedThisWeek ?? insights?.overview?.cardsReviewed ?? 0;
+  const dueToday = metrics?.dueToday ?? dueCards.length;
+
   return (
-    <div className="flex-1 overflow-auto bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/20 dark:bg-slate-950 dark:from-slate-950 dark:via-slate-950 dark:to-slate-950">
-      <div className="max-w-7xl mx-auto p-3 sm:p-6 space-y-4 sm:space-y-6">
-        <div className="flex items-center justify-between flex-wrap gap-3 sm:gap-4">
+    <div className="flex-1 overflow-auto bg-slate-50 dark:bg-slate-950">
+      <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
+
+        {/* ── Welcome Header ──────────────────────────────────────── */}
+        <div className="flex items-start justify-between gap-4 flex-wrap">
           <div className="flex-1 min-w-0">
-            {isEditingName ? (
-              <div className="flex items-center gap-3 flex-wrap mb-2">
-                <Input
-                  value={tempName}
-                  onChange={(e) => setTempName(e.target.value)}
-                  className="max-w-xs text-2xl font-bold"
-                  data-testid="input-edit-name"
-                  autoFocus
-                />
-                <Button size="sm" variant="ghost" onClick={handleSaveName} data-testid="button-save-name">
-                  <Save className="h-4 w-4" />
-                </Button>
-                <Button size="sm" variant="ghost" onClick={handleCancelName} data-testid="button-cancel-name">
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-            ) : (
-              <div className="flex items-center gap-3 flex-wrap mb-2">
-                <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-slate-900 via-blue-900 to-indigo-900 dark:from-white dark:via-white dark:to-white bg-clip-text text-transparent">Welcome back, {userName}!</h1>
-                <Button size="sm" variant="ghost" onClick={() => setIsEditingName(true)} data-testid="button-edit-name">
-                  <Edit2 className="h-4 w-4" />
-                </Button>
-              </div>
-            )}
-            <p className="text-muted-foreground text-sm">
-              Your personal learning command centre. Here's what matters most today.
+            <div className="flex items-center gap-2 flex-wrap mb-1">
+              {isEditingName ? (
+                <>
+                  <Input
+                    value={tempName}
+                    onChange={(e) => setTempName(e.target.value)}
+                    className="max-w-[200px] h-9 text-xl font-bold"
+                    data-testid="input-edit-name"
+                    autoFocus
+                  />
+                  <Button size="icon" variant="ghost" className="h-8 w-8" onClick={handleSaveName} data-testid="button-save-name">
+                    <Save className="h-4 w-4" />
+                  </Button>
+                  <Button size="icon" variant="ghost" className="h-8 w-8" onClick={handleCancelName} data-testid="button-cancel-name">
+                    <X className="h-4 w-4" />
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground">
+                    {getGreeting()}, {userName}!
+                  </h1>
+                  <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-foreground" onClick={() => setIsEditingName(true)} data-testid="button-edit-name">
+                    <Edit2 className="h-3.5 w-3.5" />
+                  </Button>
+                </>
+              )}
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Your personal learning command centre — here's what matters most today.
             </p>
           </div>
           {insights?.overview?.currentStreak && insights.overview.currentStreak > 0 && (
-            <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-lg shadow-orange-500/30">
-              <Flame className="h-5 w-5" />
-              <span className="font-bold">{insights.overview.currentStreak} day streak</span>
+            <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-lg shadow-orange-500/25 text-sm font-semibold shrink-0">
+              <Flame className="h-4 w-4" />
+              {insights.overview.currentStreak} day streak
             </div>
           )}
         </div>
 
+        {/* ── Summary Cards ───────────────────────────────────────── */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
-          <div className="bg-gradient-to-br from-cyan-400 via-blue-500 to-indigo-600 rounded-xl p-3 sm:p-4 text-white shadow-lg shadow-blue-500/25 dark:shadow-none dark:ring-1 dark:ring-white/10">
-            <div className="flex items-center gap-2 mb-1 sm:mb-2">
-              <Calendar className="h-4 w-4 opacity-80" />
-              <span className="text-xs font-semibold opacity-90">Due Today</span>
+          <div className="bg-gradient-to-br from-violet-500 via-indigo-500 to-blue-600 rounded-xl p-4 text-white shadow-lg shadow-violet-500/25 dark:shadow-none dark:ring-1 dark:ring-white/10 hover:-translate-y-1 hover:shadow-xl hover:shadow-violet-500/30 transition-all duration-200 cursor-default">
+            <div className="flex items-center gap-2 mb-2">
+              <BrainCircuit className="h-4 w-4 opacity-80" />
+              <span className="text-xs font-semibold opacity-90">Quizzes Done</span>
             </div>
-            <div className="text-2xl sm:text-3xl font-bold" data-testid="stat-due-today">
-              {metrics?.dueToday ?? dueCards.length}
-            </div>
+            <div className="text-2xl sm:text-3xl font-bold" data-testid="stat-quizzes-completed">{quizzesCompleted}</div>
             <p className="text-xs opacity-80 mt-1">
-              {(metrics?.dueToday ?? dueCards.length) > 0 
-                ? `flashcards need review` 
-                : "all caught up!"}
+              {quizzesCompleted > 0 ? `${quizzes.length} available` : "Start your first quiz"}
             </p>
           </div>
 
-          <div className="bg-gradient-to-br from-emerald-400 via-green-500 to-teal-600 rounded-xl p-4 text-white shadow-lg shadow-emerald-500/25 dark:shadow-none dark:ring-1 dark:ring-white/10">
-            <div className="flex items-center gap-2 mb-1 sm:mb-2">
+          <div className="bg-gradient-to-br from-emerald-400 via-green-500 to-teal-600 rounded-xl p-4 text-white shadow-lg shadow-emerald-500/25 dark:shadow-none dark:ring-1 dark:ring-white/10 hover:-translate-y-1 hover:shadow-xl hover:shadow-emerald-500/30 transition-all duration-200 cursor-default">
+            <div className="flex items-center gap-2 mb-2">
               <Target className="h-4 w-4 opacity-80" />
               <span className="text-xs font-semibold opacity-90">Accuracy</span>
             </div>
-            <div className="text-2xl sm:text-3xl font-bold" data-testid="stat-accuracy">
-              {metrics?.accuracy ?? insights?.overview?.overallAccuracy ?? 0}%
-            </div>
+            <div className="text-2xl sm:text-3xl font-bold" data-testid="stat-accuracy">{accuracy}%</div>
             <p className="text-xs opacity-80 mt-1">
-              {(metrics?.accuracy ?? 0) >= 80 ? "excellent performance" 
-                : (metrics?.accuracy ?? 0) >= 60 ? "good, keep improving" 
-                : "across all quizzes"}
+              {accuracy >= 80 ? "Excellent performance" : accuracy >= 60 ? "Good — keep improving" : "Across all quizzes"}
             </p>
           </div>
 
-          <div className="bg-gradient-to-br from-fuchsia-500 via-pink-500 to-rose-500 rounded-xl p-4 text-white shadow-lg shadow-pink-500/25 dark:shadow-none dark:ring-1 dark:ring-white/10">
-            <div className="flex items-center gap-2 mb-1 sm:mb-2">
-              <Clock className="h-4 w-4 opacity-80" />
-              <span className="text-xs font-semibold opacity-90">This Week</span>
+          <div className="bg-gradient-to-br from-cyan-400 via-sky-500 to-blue-500 rounded-xl p-4 text-white shadow-lg shadow-sky-500/25 dark:shadow-none dark:ring-1 dark:ring-white/10 hover:-translate-y-1 hover:shadow-xl hover:shadow-sky-500/30 transition-all duration-200 cursor-default">
+            <div className="flex items-center gap-2 mb-2">
+              <Layers className="h-4 w-4 opacity-80" />
+              <span className="text-xs font-semibold opacity-90">Cards Reviewed</span>
             </div>
-            <div className="text-2xl sm:text-3xl font-bold" data-testid="stat-week-time">
-              {metrics?.weeklyStudyTime ? `${Math.floor(metrics.weeklyStudyTime / 60)}h ${metrics.weeklyStudyTime % 60}m` : "0h"}
-            </div>
+            <div className="text-2xl sm:text-3xl font-bold" data-testid="stat-flashcards-reviewed">{flashcardsReviewed}</div>
             <p className="text-xs opacity-80 mt-1">
-              {(metrics?.weeklyStudyTime ?? 0) > 120 ? "great dedication!" 
-                : (metrics?.weeklyStudyTime ?? 0) > 0 ? "total study time" 
-                : "start studying today"}
+              {flashcardsReviewed > 0 ? `${totalCardsCount} total cards` : "No reviews yet"}
             </p>
           </div>
 
-          <div className="bg-gradient-to-br from-amber-400 via-orange-500 to-red-500 rounded-xl p-4 text-white shadow-lg shadow-orange-500/25 dark:shadow-none dark:ring-1 dark:ring-white/10">
-            <div className="flex items-center gap-2 mb-1 sm:mb-2">
-              <BarChart3 className="h-4 w-4 opacity-80" />
-              <span className="text-xs font-semibold opacity-90">Items Reviewed</span>
+          <div className={`rounded-xl p-4 text-white shadow-lg dark:shadow-none dark:ring-1 dark:ring-white/10 hover:-translate-y-1 hover:shadow-xl transition-all duration-200 cursor-default ${dueToday > 0 ? 'bg-gradient-to-br from-rose-500 via-pink-500 to-fuchsia-600 shadow-rose-500/25 hover:shadow-rose-500/30' : 'bg-gradient-to-br from-slate-400 via-slate-500 to-slate-600 shadow-slate-500/25 hover:shadow-slate-500/30'}`}>
+            <div className="flex items-center gap-2 mb-2">
+              <Calendar className="h-4 w-4 opacity-80" />
+              <span className="text-xs font-semibold opacity-90">Due Today</span>
             </div>
-            <div className="text-2xl sm:text-3xl font-bold" data-testid="stat-items-reviewed">
-              {metrics?.itemsReviewedThisWeek ?? 0}
-            </div>
+            <div className="text-2xl sm:text-3xl font-bold" data-testid="stat-due-today">{dueToday}</div>
             <p className="text-xs opacity-80 mt-1">
-              {(metrics?.itemsReviewedThisWeek ?? 0) > 50 ? "impressive volume!" 
-                : (metrics?.itemsReviewedThisWeek ?? 0) > 0 ? "questions this week" 
-                : "no reviews yet"}
+              {dueToday > 0 ? "flashcards need review" : "All caught up!"}
             </p>
           </div>
         </div>
 
-        {/* Your Library at a Glance */}
-        <Card className="border border-white/60 shadow-lg shadow-blue-500/5 dark:shadow-none dark:border-slate-800 bg-white/80 backdrop-blur-sm dark:bg-slate-900">
-          <CardContent className="p-4">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-sky-400 to-blue-600 shadow-md shadow-blue-500/30 flex items-center justify-center shrink-0">
-                  <FileText className="h-5 w-5 text-white" />
-                </div>
-                <div>
-                  <p className="text-xl font-bold text-foreground">{notes.length}</p>
-                  <p className="text-xs text-muted-foreground">Notes</p>
-                </div>
-              </div>
+        {/* ── Quick Actions ────────────────────────────────────────── */}
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm p-4">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Quick Actions</p>
+          <div className="flex flex-wrap gap-3">
+            <Button
+              variant="outline"
+              onClick={() => setLocation("/notes")}
+              className="gap-2 rounded-xl border-sky-200 dark:border-sky-800 text-sky-700 dark:text-sky-400 hover:bg-sky-50 dark:hover:bg-sky-950/40 hover:border-sky-300 dark:hover:border-sky-700 hover:shadow-sm transition-all"
+            >
+              <Plus className="h-4 w-4" />
+              Create Note
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => setLocation("/quizzes")}
+              className="gap-2 rounded-xl border-violet-200 dark:border-violet-800 text-violet-700 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-950/40 hover:border-violet-300 dark:hover:border-violet-700 hover:shadow-sm transition-all"
+            >
+              <PlayCircle className="h-4 w-4" />
+              Start Quiz
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => setLocation("/flashcards")}
+              className="gap-2 rounded-xl border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 hover:border-emerald-300 dark:hover:border-emerald-700 hover:shadow-sm transition-all"
+            >
+              <CreditCard className="h-4 w-4" />
+              Review Flashcards
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => setLocation("/research")}
+              className="gap-2 rounded-xl border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/40 hover:border-amber-300 dark:hover:border-amber-700 hover:shadow-sm transition-all"
+            >
+              <Sparkles className="h-4 w-4" />
+              Insight Scout
+            </Button>
+          </div>
+        </div>
 
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-emerald-400 to-teal-600 shadow-md shadow-emerald-500/30 flex items-center justify-center shrink-0">
-                  <Layers className="h-5 w-5 text-white" />
-                </div>
-                <div>
-                  <p className="text-xl font-bold text-foreground">{totalCardsCount}</p>
-                  <p className="text-xs text-muted-foreground">Flashcards</p>
-                </div>
-              </div>
+        {/* ── Main Grid ────────────────────────────────────────────── */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-fuchsia-500 to-rose-500 shadow-md shadow-pink-500/30 flex items-center justify-center shrink-0">
-                  <BrainCircuit className="h-5 w-5 text-white" />
-                </div>
-                <div>
-                  <p className="text-xl font-bold text-foreground">{quizzes.length}</p>
-                  <p className="text-xs text-muted-foreground">Quizzes</p>
-                </div>
-              </div>
-
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs text-muted-foreground">Flashcard Mastery</span>
-                  <span className="text-xs font-bold text-foreground">{totalCardsCount > 0 ? Math.round((masteredCardsCount / totalCardsCount) * 100) : 0}%</span>
-                </div>
-                <Progress value={totalCardsCount > 0 ? (masteredCardsCount / totalCardsCount) * 100 : 0} className="h-2" />
-                <p className="text-xs text-muted-foreground mt-1">{masteredCardsCount} of {totalCardsCount} cards mastered</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+          {/* Left column — 2/3 width */}
           <div className="lg:col-span-2 space-y-6">
-            <Card className="border border-white/60 shadow-lg shadow-teal-500/5 dark:shadow-none dark:border-slate-800 bg-white/80 backdrop-blur-sm dark:bg-slate-900">
-              <CardHeader className="pb-3">
+
+            {/* Continue Where You Left Off */}
+            <Card className="border border-slate-200/80 dark:border-slate-800 shadow-sm bg-white dark:bg-slate-900">
+              <CardHeader className="pb-3 border-b border-slate-100 dark:border-slate-800">
                 <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-primary to-brand-accent shadow-md shadow-teal-500/30 flex items-center justify-center">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-primary to-brand-accent shadow-sm flex items-center justify-center">
                       <Rocket className="h-4 w-4 text-white" />
                     </div>
                     <div>
-                      <CardTitle className="text-lg">Study Now</CardTitle>
-                      <CardDescription>Prioritized tasks for maximum impact</CardDescription>
+                      <CardTitle className="text-base font-semibold">Continue Where You Left Off</CardTitle>
+                      <CardDescription className="text-xs">Prioritised tasks for maximum impact</CardDescription>
                     </div>
                   </div>
                   <Link href="/insights">
-                    <Button variant="ghost" size="sm" className="text-xs gap-1">
+                    <Button variant="ghost" size="sm" className="text-xs gap-1 text-muted-foreground hover:text-foreground">
                       View Insights <ChevronRight className="h-3 w-3" />
                     </Button>
                   </Link>
                 </div>
               </CardHeader>
-              <CardContent className="space-y-3">
+              <CardContent className="pt-4 space-y-2">
                 {studyActions.length > 0 ? (
                   studyActions.map((action, index) => (
                     <ActionCard
@@ -947,20 +734,21 @@ const generateQuickWins = () => {
                     />
                   ))
                 ) : (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <CheckCircle2 className="h-12 w-12 mx-auto mb-3 text-emerald-500" />
-                    <p className="font-medium">All caught up!</p>
-                    <p className="text-sm">No urgent tasks right now. Great work!</p>
+                  <div className="text-center py-10 text-muted-foreground">
+                    <CheckCircle2 className="h-10 w-10 mx-auto mb-3 text-emerald-500" />
+                    <p className="font-semibold text-sm">All caught up!</p>
+                    <p className="text-xs mt-1">No urgent tasks right now — great work!</p>
                   </div>
                 )}
               </CardContent>
             </Card>
 
+            {/* Feature Tiles */}
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
               {features.map((feature) => (
                 <Link href={feature.href} key={feature.title}>
                   <Card
-                    className={`hover-elevate cursor-pointer transition-all relative border-0 ${feature.bgGradient} text-white overflow-hidden h-full shadow-lg shadow-slate-300/50 dark:shadow-none`}
+                    className={`hover:-translate-y-1 hover:shadow-lg cursor-pointer transition-all duration-200 relative border-0 ${feature.bgGradient} text-white overflow-hidden h-full shadow-md shadow-slate-300/50 dark:shadow-none`}
                     data-testid={`card-${feature.title.toLowerCase().replace(/\s+/g, '-')}`}
                   >
                     {feature.urgent && (
@@ -982,59 +770,52 @@ const generateQuickWins = () => {
                 </Link>
               ))}
             </div>
+
+            {/* Flashcard Mastery Bar */}
+            {totalCardsCount > 0 && (
+              <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200/80 dark:border-slate-800 shadow-sm p-4 flex items-center gap-4">
+                <div className="flex-1">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="text-xs font-semibold text-muted-foreground">Flashcard Mastery</span>
+                    <span className="text-xs font-bold text-foreground">{Math.round((masteredCardsCount / totalCardsCount) * 100)}%</span>
+                  </div>
+                  <Progress value={(masteredCardsCount / totalCardsCount) * 100} className="h-2" />
+                </div>
+                <span className="text-xs text-muted-foreground shrink-0">{masteredCardsCount} / {totalCardsCount} mastered</span>
+              </div>
+            )}
           </div>
 
-          <div className="space-y-6">
-            {insights?.weakAreas && insights.weakAreas.length > 0 && (
-              <Card className="border border-rose-100 shadow-lg shadow-rose-500/5 dark:shadow-none dark:border-slate-800 bg-white/80 backdrop-blur-sm dark:bg-slate-900">
-                <CardHeader className="pb-3">
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-rose-500 to-pink-600 shadow-md shadow-rose-500/30 flex items-center justify-center">
-                      <AlertTriangle className="h-4 w-4 text-white" />
-                    </div>
-                    <div>
-                      <CardTitle className="text-lg">Weak Topics</CardTitle>
-                      <CardDescription>Areas needing attention</CardDescription>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  {insights.weakAreas.slice(0, 3).map((area, index) => (
-                    <WeakTopicCard key={index} {...area} />
-                  ))}
-                </CardContent>
-              </Card>
-            )}
+          {/* Right sidebar — 1/3 width */}
+          <div className="space-y-5">
 
+            {/* Recent Notes */}
             {recentNotes.length > 0 && (
-              <Card className="border border-blue-100 shadow-lg shadow-blue-500/5 dark:shadow-none dark:border-slate-800 bg-white/80 backdrop-blur-sm dark:bg-slate-900">
-                <CardHeader className="pb-3">
+              <Card className="border border-slate-200/80 dark:border-slate-800 shadow-sm bg-white dark:bg-slate-900">
+                <CardHeader className="pb-2 border-b border-slate-100 dark:border-slate-800">
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-sky-500 to-blue-600 shadow-md shadow-blue-500/30 flex items-center justify-center">
-                        <FileText className="h-4 w-4 text-white" />
+                      <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-sky-500 to-blue-600 flex items-center justify-center">
+                        <FileText className="h-3.5 w-3.5 text-white" />
                       </div>
-                      <div>
-                        <CardTitle className="text-lg">Recent Notes</CardTitle>
-                        <CardDescription>Your latest study material</CardDescription>
-                      </div>
+                      <CardTitle className="text-sm font-semibold">Recent Notes</CardTitle>
                     </div>
                     <Link href="/notes">
-                      <Button variant="ghost" size="sm" className="text-xs gap-1">
-                        All Notes <ChevronRight className="h-3 w-3" />
+                      <Button variant="ghost" size="sm" className="h-7 text-xs gap-1 text-muted-foreground hover:text-foreground px-2">
+                        All <ChevronRight className="h-3 w-3" />
                       </Button>
                     </Link>
                   </div>
                 </CardHeader>
-                <CardContent className="space-y-2">
+                <CardContent className="pt-3 space-y-1">
                   {recentNotes.slice(0, 4).map((note) => (
                     <Link href={`/notes/${note.id}`} key={note.id}>
-                      <div className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-muted/50 cursor-pointer transition-colors">
+                      <div className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer transition-colors group">
                         <div className="w-8 h-8 rounded-md bg-sky-100 dark:bg-sky-950/40 flex items-center justify-center shrink-0">
-                          <BookOpen className="h-4 w-4 text-sky-600 dark:text-sky-400" />
+                          <BookOpen className="h-3.5 w-3.5 text-sky-600 dark:text-sky-400" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium truncate">{note.title}</p>
+                          <p className="text-sm font-medium truncate group-hover:text-sky-600 dark:group-hover:text-sky-400 transition-colors">{note.title}</p>
                           <p className="text-xs text-muted-foreground">
                             {note.subject || "General"} &middot; {new Date(note.updatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                           </p>
@@ -1046,44 +827,59 @@ const generateQuickWins = () => {
               </Card>
             )}
 
-            <Card className="border border-emerald-100 shadow-lg shadow-emerald-500/5 dark:shadow-none dark:border-slate-800 bg-white/80 backdrop-blur-sm dark:bg-slate-900">
-              <CardHeader className="pb-3">
+            {/* Weak Topics */}
+            {insights?.weakAreas && insights.weakAreas.length > 0 && (
+              <Card className="border border-rose-100 dark:border-slate-800 shadow-sm bg-white dark:bg-slate-900">
+                <CardHeader className="pb-2 border-b border-rose-50 dark:border-slate-800">
+                  <div className="flex items-center gap-2">
+                    <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-rose-500 to-pink-600 flex items-center justify-center">
+                      <AlertTriangle className="h-3.5 w-3.5 text-white" />
+                    </div>
+                    <CardTitle className="text-sm font-semibold">Needs Attention</CardTitle>
+                  </div>
+                </CardHeader>
+                <CardContent className="pt-3 space-y-2">
+                  {insights.weakAreas.slice(0, 3).map((area, index) => (
+                    <WeakTopicCard key={index} {...area} />
+                  ))}
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Quick Wins */}
+            <Card className="border border-emerald-100 dark:border-slate-800 shadow-sm bg-white dark:bg-slate-900">
+              <CardHeader className="pb-2 border-b border-emerald-50 dark:border-slate-800">
                 <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 shadow-md shadow-emerald-500/30 flex items-center justify-center">
-                    <Zap className="h-4 w-4 text-white" />
+                  <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center">
+                    <Zap className="h-3.5 w-3.5 text-white" />
                   </div>
-                  <div>
-                    <CardTitle className="text-lg">Quick Wins</CardTitle>
-                    <CardDescription>Build momentum fast</CardDescription>
-                  </div>
+                  <CardTitle className="text-sm font-semibold">Quick Wins</CardTitle>
                 </div>
               </CardHeader>
-              <CardContent className="space-y-3">
+              <CardContent className="pt-3 space-y-2">
                 {quickWins.map((win, index) => (
                   <QuickWinCard key={index} {...win} />
                 ))}
               </CardContent>
             </Card>
 
+            {/* Strengths */}
             {insights?.strengths && insights.strengths.length > 0 && (
-              <Card className="border border-violet-200/60 shadow-lg shadow-violet-500/5 dark:shadow-none dark:border-slate-800 bg-gradient-to-br from-violet-50 to-indigo-50 dark:from-violet-950/40 dark:to-indigo-950/40">
-                <CardHeader className="pb-3">
+              <Card className="border border-violet-100 dark:border-slate-800 shadow-sm bg-gradient-to-br from-violet-50 to-indigo-50 dark:from-violet-950/20 dark:to-indigo-950/20 dark:bg-slate-900">
+                <CardHeader className="pb-2 border-b border-violet-100/60 dark:border-slate-800">
                   <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-indigo-600 shadow-md shadow-violet-500/30 flex items-center justify-center">
-                      <Award className="h-4 w-4 text-white" />
+                    <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center">
+                      <Award className="h-3.5 w-3.5 text-white" />
                     </div>
-                    <div>
-                      <CardTitle className="text-lg">Your Strengths</CardTitle>
-                      <CardDescription>Topics you've mastered</CardDescription>
-                    </div>
+                    <CardTitle className="text-sm font-semibold">Your Strengths</CardTitle>
                   </div>
                 </CardHeader>
-                <CardContent className="space-y-2">
+                <CardContent className="pt-3 space-y-2">
                   {insights.strengths.slice(0, 3).map((strength, index) => (
-                    <div key={index} className="flex items-center justify-between gap-2 p-2 rounded-lg bg-white/60 dark:bg-slate-800/70">
-                      <div className="flex items-center gap-2 flex-wrap">
+                    <div key={index} className="flex items-center justify-between gap-2 p-2.5 rounded-lg bg-white/70 dark:bg-slate-800/60">
+                      <div className="flex items-center gap-2 min-w-0">
                         <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
-                        <span className="text-sm font-medium">{strength.topic}</span>
+                        <span className="text-sm font-medium truncate">{strength.topic}</span>
                       </div>
                       <Badge variant="secondary" className="text-xs text-emerald-600 dark:text-emerald-400 shrink-0">
                         {strength.accuracy}%
@@ -1093,6 +889,7 @@ const generateQuickWins = () => {
                 </CardContent>
               </Card>
             )}
+
           </div>
         </div>
       </div>

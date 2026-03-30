@@ -246,7 +246,16 @@ A value/promise representing the outcome of the executed logic path.
 */
 export function registerAuthRoutes(app: Express) {
   app.get("/api/auth/demo-status", async (_req: any, res: Response) => {
-    return res.json({ enabled: false });
+    const isDevelopment = process.env.NODE_ENV === "development";
+    return res.json({
+      enabled: isDevelopment,
+      credentials: isDevelopment
+        ? {
+            emailOrUsername: "demo-user",
+            password: "demo-user",
+          }
+        : undefined,
+    });
   });
 
   // Register route

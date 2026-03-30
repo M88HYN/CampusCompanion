@@ -39,6 +39,7 @@ import {
 } from "lucide-react";
 import { useLocation } from "wouter";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
+import { queryClient } from "@/lib/queryClient";
 
 /*
 ----------------------------------------------------------
@@ -392,24 +393,41 @@ const handleSubmit = async (e: React.FormEvent) => {
     setError("");
 
     try {
-      const endpoint = isLogin ? "/api/auth/login" : "/api/auth/register";
-      const body = isLogin
-        ? {
+      if (isLogin) {
+        const response = await fetch("/api/auth/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
             emailOrUsername: signInEmailOrUsername,
             password: signInPassword,
-          }
-        : {
-            username: signUpUsername,
-            email: signUpEmail,
-            password: signUpPassword,
-            firstName: signUpFirstName,
-            lastName: signUpLastName,
-          };
+          }),
+        });
 
-      const response = await fetch(endpoint, {
+        if (!response.ok) {
+          const data = await response.json();
+          throw new Error(data.message || "Authentication failed");
+        }
+
+        const data = await response.json();
+        queryClient.clear();
+        localStorage.setItem("token", data.token);
+        window.dispatchEvent(new CustomEvent("auth-update"));
+        setTimeout(() => {
+          setLocation("/dashboard");
+        }, 300);
+        return;
+      }
+
+      const response = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
+        body: JSON.stringify({
+          username: signUpUsername,
+          email: signUpEmail,
+          password: signUpPassword,
+          firstName: signUpFirstName,
+          lastName: signUpLastName,
+        }),
       });
 
       if (!response.ok) {
@@ -467,6 +485,40 @@ const handleSubmit = async (e: React.FormEvent) => {
     }
   };
 
+  const handleDemoLogin = async () => {
+    setSignInEmailOrUsername("demo-user");
+    setSignInPassword("demo-user");
+    setLoading(true);
+    setError("");
+
+    try {
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          emailOrUsername: "demo-user",
+          password: "demo-user",
+        }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.message || "Demo login failed");
+      }
+
+      const data = await response.json();
+      queryClient.clear();
+      localStorage.setItem("token", data.token);
+      window.dispatchEvent(new CustomEvent("auth-update"));
+      setTimeout(() => {
+        setLocation("/dashboard");
+      }, 300);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Demo login failed");
+      setLoading(false);
+    }
+  };
+
     /*
   ----------------------------------------------------------
   Function: handleVerifyEmail
@@ -519,6 +571,7 @@ const handleVerifyEmail = async (e: React.FormEvent) => {
       const data = await response.json();
       
       // Store token
+      queryClient.clear();
       localStorage.setItem("token", data.token);
 
       try {
@@ -1077,6 +1130,15 @@ const handleGithubLogin = () => {
                               className="h-12 pl-10 rounded-lg border-slate-200 dark:border-slate-700 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 transition-all"
                             />
                           </div>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            disabled={loading}
+                            onClick={handleDemoLogin}
+                            className="h-11 w-full rounded-lg border-teal-300 text-teal-700 hover:bg-teal-50 hover:text-teal-800 dark:border-teal-800 dark:text-teal-300 dark:hover:bg-teal-950/30"
+                          >
+                            Use Demo Account (demo-user)
+                          </Button>
                         </motion.div>
                       ) : (
                         <motion.div

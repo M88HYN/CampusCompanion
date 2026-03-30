@@ -232,22 +232,22 @@ A JSX tree representing the component view for the current state.
 */
 export function ActivityCard({ activities }: ActivityCardProps) {
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Recent Activity</CardTitle>
+    <Card className="rounded-3xl border border-slate-200/80 bg-white/90 shadow-[0_10px_30px_-14px_rgba(15,23,42,0.24)] backdrop-blur-sm dark:border-slate-800/80 dark:bg-slate-950/65 dark:shadow-[0_12px_30px_-14px_rgba(0,0,0,0.75)]">
+      <CardHeader className="pb-4">
+        <CardTitle className="text-lg">Recent Activity</CardTitle>
         <CardDescription>Your last {activities.length} completed quizzes</CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="space-y-4">
         {activities && activities.length > 0 ? (
           <div className="space-y-3">
             {activities.map((activity, idx) => (
               <div
                 key={idx}
-                className="flex items-center justify-between p-3 border rounded-lg hover:bg-accent transition-colors"
+                className="group flex items-center justify-between rounded-2xl border border-slate-200/80 bg-white/85 p-4 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md dark:border-slate-800/80 dark:bg-slate-900/70"
               >
                 <div className="flex-1">
-                  <p className="font-medium">{activity.quizTitle}</p>
-                  <div className="flex items-center gap-2 mt-1">
+                  <p className="font-semibold text-foreground">{activity.quizTitle}</p>
+                  <div className="mt-1.5 flex items-center gap-2">
                     <Badge variant="outline" className="text-xs">
                       {activity.topic}
                     </Badge>
@@ -257,11 +257,11 @@ export function ActivityCard({ activities }: ActivityCardProps) {
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="text-lg font-bold">{activity.score}/{activity.maxScore}</p>
+                  <p className="text-lg font-bold text-foreground">{activity.score}/{activity.maxScore}</p>
                   <Badge
                     variant={activity.accuracy >= 70 ? "default" : "destructive"}
                     className={
-                      activity.accuracy >= 70 ? "bg-green-600 text-xs" : "text-xs"
+                      activity.accuracy >= 70 ? "bg-emerald-600 text-xs text-white" : "text-xs"
                     }
                   >
                     {activity.accuracy}%

@@ -24,6 +24,7 @@ allowing safe evolution of features without cross-module side effects.
 
 import { useEffect, useState, useCallback } from "react";
 import type { User } from "@shared/models/auth";
+import { queryClient } from "@/lib/queryClient";
 
 interface JWTPayload {
   userId: string;
@@ -389,6 +390,7 @@ const handleAuthUpdate = () => {
   ----------------------------------------------------------
   */
 const logout = () => {
+  queryClient.clear();
     localStorage.removeItem("token");
     setUser(null);
     window.location.href = "/";
