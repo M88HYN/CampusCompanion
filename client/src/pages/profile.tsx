@@ -38,7 +38,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { BarChart3, Cog, Loader2, Mail, Shield, User } from "lucide-react";
+import { BarChart3, CheckCircle2, Cog, Loader2, Mail, Shield, User } from "lucide-react";
 
 interface ProfileTweakSettings {
   phone: string;
@@ -153,94 +153,172 @@ export default function Profile() {
   ];
   const completedCount = completenessChecks.filter(Boolean).length;
   const completenessPercent = Math.round((completedCount / completenessChecks.length) * 100);
+  const missingSignals = completenessChecks.length - completedCount;
+  const saveDisabled =
+    isDemoReadOnly ||
+    isLoadingSettings ||
+    saveMutation.isPending ||
+    !hasChanges;
 
   return (
-    <div className="p-6 md:p-8 max-w-5xl mx-auto space-y-6">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-foreground">Profile</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            View your account identity and jump to account management tools.
-          </p>
+    <div className="route-transition mx-auto w-full max-w-6xl space-y-8 px-4 py-5 sm:px-6 sm:py-7 md:px-8 md:py-9">
+      <div className="rounded-3xl border border-border/70 bg-card/85 p-5 shadow-[0_16px_32px_-24px_hsl(var(--foreground)/0.9)] backdrop-blur-sm sm:p-6">
+        <div className="flex items-start justify-between gap-4">
+          <div className="space-y-2">
+            <h1 className="text-2xl font-bold tracking-tight text-foreground md:text-3xl">Profile</h1>
+            <p className="max-w-2xl text-sm text-muted-foreground">
+              Keep your profile details current, control privacy preferences, and quickly access key account tools from one place.
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            {isDemoReadOnly ? <Badge variant="secondary">Demo Read-Only</Badge> : <Badge className="bg-emerald-600 text-white">Live Account</Badge>}
+            {hasChanges ? <Badge variant="outline" className="border-amber-300 text-amber-700 dark:border-amber-800 dark:text-amber-300">Unsaved changes</Badge> : null}
+          </div>
         </div>
-        {isDemoReadOnly ? <Badge variant="secondary">Demo Read-Only</Badge> : null}
       </div>
 
-      <Card className="border border-border">
+      <Card className="border border-border/70">
         <CardContent className="p-6">
-          <div className="flex flex-col sm:flex-row sm:items-center gap-5">
-            <Avatar className="h-20 w-20 border border-border">
-              <AvatarFallback className="text-xl bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200">
-                {initials}
-              </AvatarFallback>
-            </Avatar>
-            <div className="space-y-1">
-              <h2 className="text-xl font-semibold text-foreground">{fullName}</h2>
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Mail className="h-4 w-4" />
-                <span>{user?.email || "No email available"}</span>
+          <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex items-center gap-4 sm:gap-5">
+              <Avatar className="h-20 w-20 border border-border shadow-sm sm:h-24 sm:w-24">
+                <AvatarFallback className="text-xl bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200">
+                  {initials}
+                </AvatarFallback>
+              </Avatar>
+              <div className="space-y-1.5">
+                <h2 className="text-xl font-semibold text-foreground sm:text-2xl">{fullName}</h2>
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Mail className="h-4 w-4" />
+                  <span>{user?.email || "No email available"}</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <User className="h-4 w-4" />
+                  <span>User ID: {user?.id || "Unknown"}</span>
+                </div>
               </div>
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <User className="h-4 w-4" />
-                <span>User ID: {user?.id || "Unknown"}</span>
+            </div>
+
+            <div className="grid w-full max-w-md grid-cols-2 gap-3">
+              <div className="rounded-xl border border-border/70 bg-muted/35 px-3 py-2.5">
+                <p className="text-xs uppercase tracking-wide text-muted-foreground">Profile health</p>
+                <p className="mt-1 text-lg font-semibold text-foreground">{completenessPercent}%</p>
+              </div>
+              <div className="rounded-xl border border-border/70 bg-muted/35 px-3 py-2.5">
+                <p className="text-xs uppercase tracking-wide text-muted-foreground">Status</p>
+                <p className="mt-1 text-lg font-semibold text-foreground">{isDemoReadOnly ? "Read-only" : "Editable"}</p>
+              </div>
+              <div className="col-span-2 rounded-xl border border-border/70 bg-muted/35 px-3 py-2.5">
+                <p className="text-xs uppercase tracking-wide text-muted-foreground">Completion summary</p>
+                <p className="mt-1 text-sm font-medium text-foreground">
+                  Completed {completedCount} of {completenessChecks.length} profile signals
+                  {missingSignals > 0 ? ` (${missingSignals} remaining)` : ""}.
+                </p>
               </div>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]">
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Shield className="h-5 w-5 text-teal-600 dark:text-teal-400" />
-              Account Controls
+              Account Tools
             </CardTitle>
-            <CardDescription>Manage profile details, preferences, and security settings.</CardDescription>
+            <CardDescription>
+              Jump to the places you are most likely to use when managing your account and learning preferences.
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
-            <Button asChild className="w-full justify-start" variant="outline">
+            <Button asChild className="w-full justify-between rounded-xl" variant="outline">
               <Link href="/settings">
-                <Cog className="h-4 w-4 mr-2" />
-                Open Settings
+                <span className="flex items-center">
+                  <Cog className="mr-2 h-4 w-4" />
+                  Open Settings
+                </span>
+                <span className="text-xs text-muted-foreground">Manage app preferences</span>
               </Link>
             </Button>
-            <Button asChild className="w-full justify-start" variant="outline">
+            <Button asChild className="w-full justify-between rounded-xl" variant="outline">
               <Link href="/insights">
-                <BarChart3 className="h-4 w-4 mr-2" />
-                View Learning Insights
+                <span className="flex items-center">
+                  <BarChart3 className="mr-2 h-4 w-4" />
+                  View Learning Insights
+                </span>
+                <span className="text-xs text-muted-foreground">Track progress trends</span>
               </Link>
             </Button>
+
+            <div className="rounded-xl border border-border/70 bg-muted/35 p-3.5">
+              <div className="mb-2 flex items-center justify-between">
+                <p className="text-sm font-medium text-foreground">Profile completeness</p>
+                <Badge variant="secondary">{completenessPercent}%</Badge>
+              </div>
+              <Progress value={completenessPercent} className="h-2" />
+              <p className="mt-2 text-xs text-muted-foreground">
+                This score reflects profile basics, contact details, and sharing preferences.
+              </p>
+            </div>
+
+            <div className="rounded-xl border border-border/70 bg-card/70 p-3.5 text-sm">
+              <div className="mb-2 flex items-center gap-2 text-foreground">
+                <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                <p className="font-medium">Account snapshot</p>
+              </div>
+              <div className="space-y-2 text-muted-foreground">
+                <div className="flex items-center justify-between gap-4">
+                  <span>Display name</span>
+                  <span className="font-medium text-foreground text-right">{fullName}</span>
+                </div>
+                <Separator />
+                <div className="flex items-center justify-between gap-4">
+                  <span>Email</span>
+                  <span className="font-medium text-foreground text-right break-all">{user?.email || "-"}</span>
+                </div>
+                <Separator />
+                <div className="flex items-center justify-between gap-4">
+                  <span>Mode</span>
+                  <span className="font-medium text-foreground text-right">
+                    {isDemoReadOnly ? "Read-only demo" : "Authenticated"}
+                  </span>
+                </div>
+              </div>
+            </div>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
             <CardTitle>Quick Tweaks</CardTitle>
-            <CardDescription>Tune profile visibility and contact details without leaving this page.</CardDescription>
+            <CardDescription>
+              Edit your contact and visibility preferences here. Save when you are ready.
+            </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4 text-sm">
-            <div className="rounded-lg border border-border p-3 space-y-2">
-              <div className="flex items-center justify-between">
-                <p className="text-sm font-medium text-foreground">Profile completeness</p>
-                <Badge variant="secondary">{completenessPercent}%</Badge>
+          <CardContent className="space-y-5 text-sm">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="profile-phone">Phone</Label>
+                <Input
+                  id="profile-phone"
+                  value={formData.phone}
+                  onChange={(event) => setFormData((prev) => ({ ...prev, phone: event.target.value }))}
+                  placeholder="Optional phone number"
+                  disabled={isDemoReadOnly || isLoadingSettings || saveMutation.isPending}
+                  data-testid="input-profile-phone"
+                />
               </div>
-              <Progress value={completenessPercent} className="h-2" />
-              <p className="text-xs text-muted-foreground">
-                Completed {completedCount} of {completenessChecks.length} profile signals.
-              </p>
-            </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="profile-phone">Phone</Label>
-              <Input
-                id="profile-phone"
-                value={formData.phone}
-                onChange={(event) => setFormData((prev) => ({ ...prev, phone: event.target.value }))}
-                placeholder="Optional phone number"
-                disabled={isDemoReadOnly || isLoadingSettings || saveMutation.isPending}
-                data-testid="input-profile-phone"
-              />
+              <div className="rounded-xl border border-border/70 bg-muted/35 px-3.5 py-3">
+                <p className="text-xs uppercase tracking-wide text-muted-foreground">Editing status</p>
+                <p className="mt-1 text-sm font-medium text-foreground">
+                  {isLoadingSettings ? "Loading settings..." : hasChanges ? "You have unsaved changes" : "All changes saved"}
+                </p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {isDemoReadOnly ? "Demo mode prevents changes from being stored." : "Use Save tweaks to apply updates."}
+                </p>
+              </div>
             </div>
 
             <div className="space-y-2">
@@ -255,7 +333,9 @@ export default function Profile() {
               />
             </div>
 
-            <div className="rounded-lg border border-border p-3 space-y-3">
+            <div className="rounded-xl border border-border/70 p-3.5 space-y-3">
+              <p className="text-sm font-medium text-foreground">Privacy preferences</p>
+
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <p className="font-medium text-foreground">Public profile visibility</p>
@@ -285,21 +365,16 @@ export default function Profile() {
               </div>
             </div>
 
-            <div className="flex gap-2">
+            <div className="flex flex-col gap-2 pt-1 sm:flex-row">
               <Button
                 className="flex-1"
-                disabled={
-                  isDemoReadOnly ||
-                  isLoadingSettings ||
-                  saveMutation.isPending ||
-                  !hasChanges
-                }
+                disabled={saveDisabled}
                 onClick={() => saveMutation.mutate(formData)}
                 data-testid="button-save-profile-tweaks"
               >
                 {saveMutation.isPending ? (
                   <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Saving
                   </>
                 ) : (
@@ -316,23 +391,11 @@ export default function Profile() {
               </Button>
             </div>
 
-            <Separator />
-            <div className="flex items-center justify-between">
-              <span className="text-muted-foreground">Display name</span>
-              <span className="font-medium text-foreground">{fullName}</span>
-            </div>
-            <Separator />
-            <div className="flex items-center justify-between">
-              <span className="text-muted-foreground">Email</span>
-              <span className="font-medium text-foreground">{user?.email || "-"}</span>
-            </div>
-            <Separator />
-            <div className="flex items-center justify-between">
-              <span className="text-muted-foreground">Mode</span>
-              <span className="font-medium text-foreground">
-                {isDemoReadOnly ? "Read-only demo" : "Authenticated"}
-              </span>
-            </div>
+            {isDemoReadOnly ? (
+              <p className="text-xs text-muted-foreground">
+                You are currently using a demo account, so updates can be previewed but are not persisted.
+              </p>
+            ) : null}
           </CardContent>
         </Card>
       </div>

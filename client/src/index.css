@@ -51,7 +51,7 @@
   --hero-gradient-start: 223 64% 40%;
   --hero-gradient-mid: 223 64% 35%;
   --hero-gradient-end: 191 96% 42%;
-  --font-sans: Inter, system-ui, -apple-system, sans-serif;
+  --font-sans: Manrope, "Segoe UI", "Helvetica Neue", sans-serif;
   --font-serif: Georgia, serif;
   --font-mono: JetBrains Mono, monospace;
   --radius: .75rem;
@@ -350,5 +350,69 @@
   .border.active-elevate-2:not(.no-active-interaction-elevate)::after,
   .border.hover-elevate:not(.no-hover-interaction-elevate)::after {
     inset: -1px;
+  }
+}
+
+@layer base {
+  :root {
+    --motion-micro: 150ms;
+    --motion-standard: 230ms;
+    --motion-emphasis: 320ms;
+    --motion-ease-standard: cubic-bezier(0.22, 1, 0.36, 1);
+    --motion-ease-emphasis: cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  /* Unified timing/easing across interactive surfaces */
+  [data-slot],
+  [data-state],
+  .card,
+  [role="tab"],
+  [role="menuitem"],
+  [role="button"],
+  [role="dialog"],
+  [role="tooltip"],
+  [role="status"] {
+    transition-timing-function: var(--motion-ease-standard);
+  }
+
+  .empty-state,
+  .error-state,
+  .success-state {
+    animation: state-fade-soft var(--motion-standard) var(--motion-ease-standard);
+  }
+}
+
+@layer utilities {
+  .interactive-link {
+    transition:
+      color var(--motion-standard) var(--motion-ease-standard),
+      opacity var(--motion-standard) var(--motion-ease-standard),
+      transform var(--motion-standard) var(--motion-ease-standard);
+  }
+
+  .interactive-link:hover {
+    transform: translateY(-1px);
+  }
+
+  .interactive-field {
+    transition:
+      border-color var(--motion-standard) var(--motion-ease-standard),
+      box-shadow var(--motion-standard) var(--motion-ease-standard),
+      background-color var(--motion-standard) var(--motion-ease-standard);
+  }
+
+  .interactive-card {
+    transition:
+      transform var(--motion-standard) var(--motion-ease-standard),
+      box-shadow var(--motion-standard) var(--motion-ease-standard),
+      border-color var(--motion-standard) var(--motion-ease-standard);
+  }
+
+  .interactive-card:hover {
+    transform: translateY(-2px) scale(1.006);
+  }
+
+  .interactive-card:active {
+    transform: translateY(0) scale(0.994);
   }
 }

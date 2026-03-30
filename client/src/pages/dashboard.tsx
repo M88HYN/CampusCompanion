@@ -536,8 +536,8 @@ export default function Dashboard(_props: DashboardProps) {
 
   if (isLoadingMetrics || isLoadingDecks || isLoadingQuizzes || isLoadingNotes) {
     return (
-      <div className="flex-1 overflow-auto bg-slate-50 dark:bg-slate-950">
-        <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
+      <div className="flex-1 overflow-auto rounded-3xl border border-border/60 bg-gradient-to-b from-slate-50 via-cyan-50/50 to-slate-100/60 dark:from-slate-950 dark:via-slate-950 dark:to-slate-900">
+        <div className="mx-auto max-w-[1400px] px-4 py-5 sm:px-6 sm:py-7 lg:px-8 lg:py-9 space-y-7">
           <Skeleton className="h-16 w-80" />
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-28 rounded-2xl" />)}
@@ -566,11 +566,12 @@ export default function Dashboard(_props: DashboardProps) {
   const dueToday = metrics?.dueToday ?? dueCards.length;
 
   return (
-    <div className="flex-1 overflow-auto bg-slate-50 dark:bg-slate-950">
-      <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
+    // Route-level visual wrapper for smoother page entrance and premium surface depth.
+    <div className="route-transition flex-1 overflow-auto rounded-3xl border border-border/60 bg-gradient-to-b from-slate-50 via-cyan-50/45 to-slate-100/60 dark:from-slate-950 dark:via-slate-950 dark:to-slate-900">
+      <div className="mx-auto max-w-[1400px] px-4 py-5 sm:px-6 sm:py-7 lg:px-8 lg:py-9 space-y-8 md:space-y-9">
 
         {/* ── Welcome Header ──────────────────────────────────────── */}
-        <div className="flex items-start justify-between gap-4 flex-wrap">
+        <div className="flex items-start justify-between gap-4 flex-wrap rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white/85 dark:bg-slate-900/85 shadow-[0_14px_26px_-22px_rgba(15,23,42,0.7)] p-5 sm:p-6">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap mb-1">
               {isEditingName ? (
@@ -613,8 +614,8 @@ export default function Dashboard(_props: DashboardProps) {
         </div>
 
         {/* ── Summary Cards ───────────────────────────────────────── */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
-          <div className="bg-gradient-to-br from-violet-500 via-indigo-500 to-blue-600 rounded-xl p-4 text-white shadow-lg shadow-violet-500/25 dark:shadow-none dark:ring-1 dark:ring-white/10 hover:-translate-y-1 hover:shadow-xl hover:shadow-violet-500/30 transition-all duration-200 cursor-default">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-5">
+          <div className="bg-gradient-to-br from-violet-500 via-indigo-500 to-blue-600 rounded-2xl p-5 text-white shadow-lg shadow-violet-500/25 dark:shadow-none dark:ring-1 dark:ring-white/10 hover:-translate-y-1 hover:scale-[1.01] hover:shadow-xl hover:shadow-violet-500/30 transition-all duration-300 cursor-default">
             <div className="flex items-center gap-2 mb-2">
               <BrainCircuit className="h-4 w-4 opacity-80" />
               <span className="text-xs font-semibold opacity-90">Quizzes Done</span>
@@ -625,7 +626,7 @@ export default function Dashboard(_props: DashboardProps) {
             </p>
           </div>
 
-          <div className="bg-gradient-to-br from-emerald-400 via-green-500 to-teal-600 rounded-xl p-4 text-white shadow-lg shadow-emerald-500/25 dark:shadow-none dark:ring-1 dark:ring-white/10 hover:-translate-y-1 hover:shadow-xl hover:shadow-emerald-500/30 transition-all duration-200 cursor-default">
+          <div className="bg-gradient-to-br from-emerald-400 via-green-500 to-teal-600 rounded-2xl p-5 text-white shadow-lg shadow-emerald-500/25 dark:shadow-none dark:ring-1 dark:ring-white/10 hover:-translate-y-1 hover:scale-[1.01] hover:shadow-xl hover:shadow-emerald-500/30 transition-all duration-300 cursor-default">
             <div className="flex items-center gap-2 mb-2">
               <Target className="h-4 w-4 opacity-80" />
               <span className="text-xs font-semibold opacity-90">Accuracy</span>
@@ -636,7 +637,7 @@ export default function Dashboard(_props: DashboardProps) {
             </p>
           </div>
 
-          <div className="bg-gradient-to-br from-cyan-400 via-sky-500 to-blue-500 rounded-xl p-4 text-white shadow-lg shadow-sky-500/25 dark:shadow-none dark:ring-1 dark:ring-white/10 hover:-translate-y-1 hover:shadow-xl hover:shadow-sky-500/30 transition-all duration-200 cursor-default">
+          <div className="bg-gradient-to-br from-cyan-400 via-sky-500 to-blue-500 rounded-2xl p-5 text-white shadow-lg shadow-sky-500/25 dark:shadow-none dark:ring-1 dark:ring-white/10 hover:-translate-y-1 hover:scale-[1.01] hover:shadow-xl hover:shadow-sky-500/30 transition-all duration-300 cursor-default">
             <div className="flex items-center gap-2 mb-2">
               <Layers className="h-4 w-4 opacity-80" />
               <span className="text-xs font-semibold opacity-90">Cards Reviewed</span>
@@ -647,7 +648,7 @@ export default function Dashboard(_props: DashboardProps) {
             </p>
           </div>
 
-          <div className={`rounded-xl p-4 text-white shadow-lg dark:shadow-none dark:ring-1 dark:ring-white/10 hover:-translate-y-1 hover:shadow-xl transition-all duration-200 cursor-default ${dueToday > 0 ? 'bg-gradient-to-br from-rose-500 via-pink-500 to-fuchsia-600 shadow-rose-500/25 hover:shadow-rose-500/30' : 'bg-gradient-to-br from-slate-400 via-slate-500 to-slate-600 shadow-slate-500/25 hover:shadow-slate-500/30'}`}>
+          <div className={`rounded-2xl p-5 text-white shadow-lg dark:shadow-none dark:ring-1 dark:ring-white/10 hover:-translate-y-1 hover:scale-[1.01] hover:shadow-xl transition-all duration-300 cursor-default ${dueToday > 0 ? 'bg-gradient-to-br from-rose-500 via-pink-500 to-fuchsia-600 shadow-rose-500/25 hover:shadow-rose-500/30' : 'bg-gradient-to-br from-slate-400 via-slate-500 to-slate-600 shadow-slate-500/25 hover:shadow-slate-500/30'}`}>
             <div className="flex items-center gap-2 mb-2">
               <Calendar className="h-4 w-4 opacity-80" />
               <span className="text-xs font-semibold opacity-90">Due Today</span>
@@ -660,9 +661,9 @@ export default function Dashboard(_props: DashboardProps) {
         </div>
 
         {/* ── Quick Actions ────────────────────────────────────────── */}
-        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm p-4">
+        <div className="bg-white/90 dark:bg-slate-900/90 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-[0_14px_30px_-24px_rgba(15,23,42,0.85)] p-5 sm:p-6">
           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Quick Actions</p>
-          <div className="flex flex-wrap gap-3">
+          <div className="flex flex-wrap gap-3.5">
             <Button
               variant="outline"
               onClick={() => setLocation("/notes")}
@@ -699,10 +700,11 @@ export default function Dashboard(_props: DashboardProps) {
         </div>
 
         {/* ── Main Grid ────────────────────────────────────────────── */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Main dashboard modules with larger spacing for better scanability. */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-7">
 
           {/* Left column — 2/3 width */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="lg:col-span-2 space-y-7">
 
             {/* Continue Where You Left Off */}
             <Card className="border border-slate-200/80 dark:border-slate-800 shadow-sm bg-white dark:bg-slate-900">
@@ -744,11 +746,11 @@ export default function Dashboard(_props: DashboardProps) {
             </Card>
 
             {/* Feature Tiles */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3.5">
               {features.map((feature) => (
                 <Link href={feature.href} key={feature.title}>
                   <Card
-                    className={`hover:-translate-y-1 hover:shadow-lg cursor-pointer transition-all duration-200 relative border-0 ${feature.bgGradient} text-white overflow-hidden h-full shadow-md shadow-slate-300/50 dark:shadow-none`}
+                    className={`hover:-translate-y-1 hover:scale-[1.015] hover:shadow-lg cursor-pointer transition-all duration-300 relative border-0 ${feature.bgGradient} text-white overflow-hidden h-full shadow-md shadow-slate-300/50 dark:shadow-none`}
                     data-testid={`card-${feature.title.toLowerCase().replace(/\s+/g, '-')}`}
                   >
                     {feature.urgent && (
@@ -787,7 +789,7 @@ export default function Dashboard(_props: DashboardProps) {
           </div>
 
           {/* Right sidebar — 1/3 width */}
-          <div className="space-y-5">
+          <div className="space-y-6">
 
             {/* Recent Notes */}
             {recentNotes.length > 0 && (

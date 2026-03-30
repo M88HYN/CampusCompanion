@@ -151,10 +151,14 @@ function MainLayout({
     <SidebarProvider style={style as React.CSSProperties}>
       <div className="flex min-h-svh w-full overflow-hidden bg-app-gradient">
         <AppNavigation user={user} onLogout={onLogout} />
-        <div className="flex min-w-0 flex-1 flex-col overflow-hidden bg-gradient-to-b from-background/80 via-background/70 to-secondary/10 backdrop-blur-[1px]">
+        <div className="flex min-w-0 flex-1 flex-col overflow-hidden bg-gradient-to-b from-background/85 via-background/70 to-secondary/10 backdrop-blur-[2px]">
           <AppTopbar user={user} onLogout={onLogout} />
-          <main id="app-main-scroll" className="min-w-0 flex-1 overflow-y-auto overflow-x-hidden bg-gradient-to-b from-transparent via-background/10 to-secondary/10">
-            <AppRouter />
+          {/* Adds consistent viewport breathing room without changing route/page logic. */}
+          <main id="app-main-scroll" className="min-w-0 flex-1 overflow-y-auto overflow-x-hidden bg-gradient-to-b from-transparent via-background/10 to-secondary/10 px-2 pb-3 pt-2 sm:px-3 sm:pb-4 sm:pt-3 md:px-4 md:pb-5 md:pt-4">
+            {/* Keeps content at a readable dashboard width on large displays. */}
+            <div className="mx-auto w-full max-w-[1600px]">
+              <AppRouter />
+            </div>
           </main>
         </div>
       </div>

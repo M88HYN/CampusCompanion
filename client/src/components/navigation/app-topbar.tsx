@@ -438,13 +438,14 @@ const handleSearchSubmit = (event: React.FormEvent) => {
 
   return (
     <header
-      className={`sticky top-0 z-30 px-2.5 py-3 sm:px-4 md:px-6 transition-all duration-200 ease-in-out ${
+      className={`sticky top-0 z-30 px-3 py-3 sm:px-4 md:px-6 lg:px-8 transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
         isScrolled
-          ? "border-b border-primary/70 bg-gradient-to-r from-primary via-brand-primary to-secondary text-primary-foreground backdrop-blur-xl shadow-md"
-          : "border-b border-primary/60 bg-gradient-to-r from-primary via-brand-primary to-secondary text-primary-foreground backdrop-blur"
+          ? "border-b border-white/30 bg-gradient-to-r from-primary/95 via-brand-primary/95 to-secondary/95 text-primary-foreground backdrop-blur-xl shadow-[0_14px_34px_-22px_rgba(2,6,23,0.55)]"
+          : "border-b border-white/20 bg-gradient-to-r from-primary/90 via-brand-primary/90 to-secondary/90 text-primary-foreground backdrop-blur-lg"
       }`}
     >
-      <div className="flex items-center gap-2 md:gap-4">
+      {/* Centers header content with consistent shell width across pages. */}
+      <div className="mx-auto flex w-full max-w-[1600px] items-center gap-2 md:gap-4">
         <div className="flex min-w-0 items-center gap-2 md:gap-3 md:min-w-[220px]">
           <SidebarTrigger
             className="button-priority-transition"
@@ -460,12 +461,13 @@ const handleSearchSubmit = (event: React.FormEvent) => {
         </div>
 
         <div className="hidden flex-1 md:flex md:justify-center">
+          {/* Keeps search interaction visually elevated while preserving existing handlers. */}
           <form onSubmit={handleSearchSubmit} className="relative w-full max-w-xl">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-foreground/70" />
+            <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-foreground/65" />
             <Input
               aria-label="Search and navigate"
               placeholder={t("topbar.searchPlaceholder", "Search decks, cards, notes, quiz history...")}
-              className="h-10 pl-9"
+              className="h-11 rounded-xl border-white/35 bg-white/88 pl-10 text-foreground shadow-[0_10px_24px_-20px_rgba(2,6,23,0.95)] placeholder:text-foreground/65 focus-visible:border-white/70 focus-visible:ring-white/40 focus-visible:shadow-[0_0_0_4px_rgba(255,255,255,0.22)]"
               value={searchQuery}
               onChange={(event) => {
                 setSearchQuery(event.target.value);
@@ -479,7 +481,7 @@ const handleSearchSubmit = (event: React.FormEvent) => {
 
             {isSearchOpen && groupedFilteredTargets.length > 0 ? (
               <div
-                className="search-dropdown-transition absolute z-40 mt-2 w-full rounded-xl border border-border bg-card shadow-md"
+                className="search-dropdown-transition absolute z-40 mt-2 w-full rounded-2xl border border-border/80 bg-card/95 shadow-[0_18px_30px_-22px_rgba(15,23,42,0.95)] backdrop-blur-sm"
                 role="listbox"
                 aria-label="Search results"
               >

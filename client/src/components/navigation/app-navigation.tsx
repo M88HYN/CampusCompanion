@@ -26,6 +26,8 @@ import {
   Activity,
   BookOpen,
   BrainCircuit,
+  ChevronLeft,
+  ChevronRight,
   FileText,
   FlaskConical,
   Gauge,
@@ -93,7 +95,7 @@ A JSX tree representing the component view for the current state.
 export function AppNavigation({ user, onLogout }: AppNavigationProps) {
   const { t } = useAppLanguage();
   const [location, setLocation] = useLocation();
-  const { state, isMobile, setOpenMobile } = useSidebar();
+  const { state, isMobile, setOpenMobile, toggleSidebar } = useSidebar();
   const isCollapsed = state === "collapsed" && !isMobile;
 
   const handleNavigate = () => {
@@ -219,26 +221,41 @@ export function AppNavigation({ user, onLogout }: AppNavigationProps) {
     "U";
 
   return (
-    <Sidebar collapsible="icon" aria-label="Primary sidebar navigation" className="border-r border-border/80 bg-surface-gradient">
-      <SidebarHeader className="px-4 py-4 border-b border-border/70 bg-gradient-to-r from-background to-muted/40">
-        <div className="flex items-center gap-3">
-          <StudyMateLogo />
-          <div
-            className={`min-w-0 transition-all duration-300 ease-out ${isCollapsed ? "max-w-0 -translate-x-1 opacity-0" : "max-w-[160px] translate-x-0 opacity-100"}`}
-          >
-            <p className="text-base font-semibold text-foreground">StudyMate</p>
+    <Sidebar collapsible="icon" aria-label="Primary sidebar navigation" className="border-r border-border/75 bg-surface-gradient shadow-[0_0_36px_-28px_hsl(var(--foreground)/0.8)]">
+      <SidebarHeader className="px-4 py-4 border-b border-border/70 bg-gradient-to-r from-background/95 to-muted/35 backdrop-blur-sm">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <StudyMateLogo />
+            <div
+              className={`min-w-0 transition-all duration-300 ease-out ${isCollapsed ? "max-w-0 -translate-x-1 opacity-0" : "max-w-[160px] translate-x-0 opacity-100"}`}
+            >
+              <p className="text-base font-semibold text-foreground">StudyMate</p>
+            </div>
           </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={toggleSidebar}
+            className="ml-auto h-8 w-8 shrink-0 rounded-lg border border-transparent hover:bg-accent/45 hover:border-border/70"
+            aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+          >
+            {isCollapsed ? (
+              <ChevronRight className="h-4 w-4" />
+            ) : (
+              <ChevronLeft className="h-4 w-4" />
+            )}
+          </Button>
         </div>
       </SidebarHeader>
 
-      <SidebarContent className="px-2 py-3">
+      <SidebarContent className="px-2 py-4">
         {sections.map((section) => (
-          <SidebarGroup key={section.heading} className="px-2 py-2">
+          <SidebarGroup key={section.heading} className="px-2 py-2.5">
             <SidebarGroupLabel className={`px-2 text-[11px] font-semibold tracking-[0.14em] text-muted-foreground/90 transition-all duration-300 ease-out ${isCollapsed ? "max-h-0 -translate-y-1 overflow-hidden py-0 opacity-0" : "max-h-7 translate-y-0 opacity-100"}`}>
               {section.heading}
             </SidebarGroupLabel>
             <SidebarGroupContent>
-              <ul className="space-y-1" aria-label={section.heading}>
+              <ul className="space-y-1.5" aria-label={section.heading}>
                 {section.items.map((item) => (
                   <NavItem
                     key={item.href}
@@ -258,7 +275,7 @@ export function AppNavigation({ user, onLogout }: AppNavigationProps) {
         ))}
       </SidebarContent>
 
-      <SidebarFooter className="px-4 py-4 border-t border-border/70 space-y-3 bg-gradient-to-r from-background to-muted/40">
+      <SidebarFooter className="px-4 py-4 border-t border-border/70 space-y-3 bg-gradient-to-r from-background/95 to-muted/35 backdrop-blur-sm">
         <div className={`flex items-center gap-3 ${isCollapsed ? "justify-center" : ""}`}>
           <Avatar className="h-9 w-9 border border-border">
             <AvatarFallback className="bg-gradient-to-br from-primary to-secondary text-white">
@@ -276,7 +293,7 @@ export function AppNavigation({ user, onLogout }: AppNavigationProps) {
         <Button
           onClick={onLogout}
           variant="outline"
-          className={`w-full transition-all duration-300 ease-out hover:-translate-y-[1px] hover:shadow-sm ${isCollapsed ? "justify-center px-2" : "justify-start"}`}
+          className={`w-full rounded-xl transition-all duration-300 ease-out hover:-translate-y-[1px] hover:shadow-sm ${isCollapsed ? "justify-center px-2" : "justify-start"}`}
           aria-label="Log out"
         >
           {t("common.logout", "Log out")}
