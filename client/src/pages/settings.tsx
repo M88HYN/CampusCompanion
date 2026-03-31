@@ -43,6 +43,8 @@ import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
 import { useAppLanguage } from "@/lib/app-language";
+import { useTheme } from "@/components/theme-provider";
+import { usePersonalization } from "@/hooks/use-personalization";
 
 type SettingsTab = "account" | "privacy" | "notifications" | "security" | "insight-scout";
 type LocaleCode = "en" | "es" | "fr" | "de" | "zh";
@@ -372,6 +374,8 @@ A JSX tree representing the component view for the current state.
 */
 export default function Settings() {
   const { setLanguage: setAppLanguage } = useAppLanguage();
+  const { setTheme } = useTheme();
+  const { preferences: personalization, updatePreferences, togglePreferredSubject } = usePersonalization();
   const [location, setLocation] = useLocation();
   const [activeTab, setActiveTab] = useState<SettingsTab>("account");
   const [showPassword, setShowPassword] = useState(false);
@@ -410,6 +414,15 @@ export default function Settings() {
   const activeLocale: LocaleCode = (["en", "es", "fr", "de", "zh"].includes(formData.language)
     ? formData.language
     : "en") as LocaleCode;
+  const personalizationSubjects = [
+    "Algorithms",
+    "Databases",
+    "Operating Systems",
+    "Networks",
+    "Programming",
+    "Math",
+    "Science",
+  ];
 
     /*
   ----------------------------------------------------------
@@ -1236,6 +1249,111 @@ const handleSaveLocalAnswer = async () => {
                           {updateMutation.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
                           {updateMutation.isPending ? "Saving..." : t("saveChanges")}
                         </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="border border-border shadow-sm">
+                    <CardHeader className="bg-gradient-to-r from-brand-primary/10 to-brand-accent/10 dark:from-purple-900 dark:to-violet-900">
+                      <CardTitle>Personalization</CardTitle>
+                      <CardDescription>Tailor your learning flow for goals, subjects, and adaptive prompts.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="pt-6 space-y-6">
+                      <div className="space-y-2">
+                        <Label className="font-semibold">Theme Preference</Label>
+                        <Select
+                          value={personalization.preferredTheme}
+                          onValueChange={(value: "light" | "dark") => {
+                            updatePreferences({ preferredTheme: value });
+                            setTheme(value);
+                          }}
+                        >
+                          <SelectTrigger className="border-2 border-brand-primary/30 dark:border-purple-800" data-testid="select-personal-theme">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="light">Light</SelectItem>
+                            <SelectItem value="dark">Dark</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="daily-goal" className="font-semibold">Daily Study Goal (minutes)</Label>
+                        <Input
+                          id="daily-goal"
+                          type="number"
+                          min={15}
+                          max={600}
+                          value={personalization.dailyStudyGoalMinutes}
+                          onChange={(event) => {
+                            const next = Number(event.target.value || 60);
+                            updatePreferences({ dailyStudyGoalMinutes: Math.min(600, Math.max(15, next)) });
+                          }}
+                          className="border-2 border-brand-primary/30 dark:border-purple-800"
+                          data-testid="input-personal-daily-goal"
+                        />
+                      </div>
+
+                      <div className="space-y-3">
+                        <Label className="font-semibold">Preferred Subjects</Label>
+                        <div className="flex flex-wrap gap-2">
+                          {personalizationSubjects.map((subject) => {
+                            const selected = personalization.preferredSubjects.includes(subject);
+                            return (
+                              <Badge
+                                key={subject}
+                                variant={selected ? "default" : "outline"}
+                                className={`cursor-pointer ${selected ? "bg-brand-primary text-white" : ""}`}
+                                onClick={() => togglePreferredSubject(subject)}
+                              >
+                                {subject}
+                              </Badge>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between p-4 border-2 border-border rounded-lg">
+                          <div>
+                            <p className="font-semibold">Adaptive Study Prompts</p>
+                            <p className="text-sm text-muted-foreground">Show dynamic nudges based on your behavior and progress.</p>
+                          </div>
+                          <Switch
+                            checked={personalization.studyPromptsEnabled}
+                            onCheckedChange={(checked) => updatePreferences({ studyPromptsEnabled: checked })}
+                            data-testid="switch-personal-prompts"
+                          />
+                        </div>
+                        <div className="flex items-center justify-between p-4 border-2 border-border rounded-lg">
+                          <div>
+                            <p className="font-semibold">Learning Reminders</p>
+                            <p className="text-sm text-muted-foreground">Enable contextual reminders for study continuity.</p>
+                          </div>
+                          <Switch
+                            checked={personalization.remindersEnabled}
+                            onCheckedChange={(checked) => updatePreferences({ remindersEnabled: checked })}
+                            data-testid="switch-personal-reminders"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label className="font-semibold">Focus Style</Label>
+                        <Select
+                          value={personalization.focusStyle}
+                          onValueChange={(value: "balanced" | "quiz-first" | "flashcard-first") => updatePreferences({ focusStyle: value })}
+                        >
+                          <SelectTrigger className="border-2 border-brand-primary/30 dark:border-purple-800" data-testid="select-personal-focus-style">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="balanced">Balanced</SelectItem>
+                            <SelectItem value="quiz-first">Quiz First</SelectItem>
+                            <SelectItem value="flashcard-first">Flashcard First</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </div>
                     </CardContent>
                   </Card>

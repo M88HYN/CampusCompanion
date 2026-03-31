@@ -56,6 +56,7 @@ import { DifficultyBadge } from "@/components/ui/difficulty-badge";
 import { ProgressRing } from "@/components/ui/progress-ring";
 import { getStaggerContainerVariants, getStaggerItemVariants } from "@/lib/animations";
 import type { Deck, Card as FlashCard } from "@shared/schema";
+import { usePersonalization } from "@/hooks/use-personalization";
 
 /**
  * ═══════════════════════════════════════════════════════════════════════════
@@ -240,6 +241,7 @@ export default function Flashcards() {
   const [sessionSummary, setSessionSummary] = useState<SessionSummary | null>(null);
   const [selectedSubject, setSelectedSubject] = useState<string>("All Subjects");
   const [flashcardTabActive, setFlashcardTabActive] = useState("decks");
+  const { preferences } = usePersonalization();
 
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -867,6 +869,14 @@ const getSubjectColor = (subject?: string | null) => {
   // Extract unique subjects from decks
   const availableSubjects = ["All Subjects", ...Array.from(new Set(decks.map(d => d.subject || "General").filter(Boolean)))].sort();
 
+  useEffect(() => {
+    if (selectedSubject !== "All Subjects") return;
+    const preferred = preferences.preferredSubjects.find((subject) => availableSubjects.includes(subject));
+    if (preferred) {
+      setSelectedSubject(preferred);
+    }
+  }, [availableSubjects, preferences.preferredSubjects, selectedSubject]);
+
   const filteredDecks = useMemo(() => {
     return decks.filter(deck => {
       // Subject filter
@@ -1487,6 +1497,11 @@ const handleKeyDown = (e: KeyboardEvent) => {
       recommendedMode === "due-only" ? "Start Due Session" :
       recommendedMode === "new-only" ? "Start New Session" :
       "Start Smart Session";
+    const personalFlashcardMessage = preferences.focusStyle === "flashcard-first"
+      ? "Flashcard-first mode is active. Prioritize retention before quizzes."
+      : preferences.preferredSubjects.length > 0
+        ? `Recommended deck focus: ${preferences.preferredSubjects[0]}.`
+        : "Use smart sessions to balance due, struggling, and new cards automatically.";
     
     return (
       <div className="flex-1 overflow-auto bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 dark:from-emerald-950 dark:via-teal-950 dark:to-cyan-950">
@@ -1501,6 +1516,19 @@ const handleKeyDown = (e: KeyboardEvent) => {
               <Brain className="h-12 w-12 sm:h-16 sm:w-16 opacity-50 hidden sm:block" />
             </div>
           </div>
+
+          <Card className="border border-emerald-200/80 dark:border-emerald-900/40 bg-emerald-50/70 dark:bg-emerald-950/20 shadow-sm">
+            <CardContent className="pt-4 flex items-center justify-between gap-3 flex-wrap">
+              <div>
+                <p className="text-sm font-semibold text-emerald-900 dark:text-emerald-200">Personalized Flashcard Guidance</p>
+                <p className="text-xs text-emerald-800/90 dark:text-emerald-300">{personalFlashcardMessage}</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button size="sm" variant="outline" className="text-xs" onClick={() => setSelectedSubject("All Subjects")}>All Subjects</Button>
+                <Button size="sm" className="text-xs" onClick={() => startSmartStudy(recommendedMode)} data-testid="button-personal-start-flashcards">Start Recommended</Button>
+              </div>
+            </CardContent>
+          </Card>
 
           {/* Tabs for Decks and Analytics */}
           <Tabs value={flashcardTabActive} onValueChange={setFlashcardTabActive} className="w-full">

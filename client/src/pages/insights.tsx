@@ -39,6 +39,7 @@ import {
   BarChart, Bar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar,
   AreaChart, Area
 } from "recharts";
+import { usePersonalization } from "@/hooks/use-personalization";
 
 interface LearningInsights {
   overview: {
@@ -388,6 +389,7 @@ A JSX tree representing the component view for the current state.
 */
 export default function Insights() {
   const [, setLocation] = useLocation();
+  const { preferences } = usePersonalization();
   const { data: insights, isLoading } = useQuery<LearningInsights>({
     queryKey: ['/api/learning-insights'],
   });
@@ -448,6 +450,15 @@ export default function Insights() {
   const accuracyDelta = insights?.accuracyTrends && insights.accuracyTrends.length > 1
     ? Math.round((insights.accuracyTrends[insights.accuracyTrends.length - 1]?.quizAccuracy || 0) - (insights.accuracyTrends[0]?.quizAccuracy || 0))
     : 0;
+  const bestStudyDay = weeklyProgressData.reduce((best, current) =>
+    current.minutes > best.minutes ? current : best
+  , weeklyProgressData[0] || { day: "Mon", minutes: 0, items: 0 });
+  const bestStudyHour = (insights?.studyPatterns || []).reduce((best, current) =>
+    current.sessions > best.sessions ? current : best
+  , (insights?.studyPatterns || [])[0] || { hour: 20, sessions: 0, avgAccuracy: 0 });
+  const preferredSubjectMessage = preferences.preferredSubjects.length > 0
+    ? `Preferred subject focus: ${preferences.preferredSubjects[0]}.`
+    : "Set a preferred subject in settings for sharper recommendations.";
 
     /*
   ----------------------------------------------------------
@@ -503,6 +514,21 @@ const formatStudyTime = (minutes: number) => {
                 ? `Smart prompt: You improved by ${accuracyDelta}% this week - lock it in with a challenge quiz.`
                 : "Smart prompt: Try testing yourself after reviewing notes to strengthen retention."}
             </p>
+          </CardContent>
+        </Card>
+
+        <Card className="border border-violet-200/80 dark:border-violet-900/40 bg-violet-50/70 dark:bg-violet-950/20 shadow-sm">
+          <CardContent className="pt-4 flex items-center justify-between gap-3 flex-wrap">
+            <div className="space-y-1">
+              <p className="text-sm font-semibold text-violet-900 dark:text-violet-200">Personalized Analytics Snapshot</p>
+              <p className="text-xs text-violet-800/90 dark:text-violet-300">
+                Best study day: {bestStudyDay.day}. Peak hour: {bestStudyHour.hour}:00. {preferredSubjectMessage}
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button size="sm" variant="outline" className="text-xs" onClick={() => setLocation("/settings?tab=account")}>Adjust Preferences</Button>
+              <Button size="sm" className="text-xs" onClick={() => setLocation("/quizzes?launch=random")}>Take Quiz</Button>
+            </div>
           </CardContent>
         </Card>
 

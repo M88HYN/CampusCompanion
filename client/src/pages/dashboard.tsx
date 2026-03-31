@@ -28,7 +28,8 @@ import {
   Flame, Target, Calendar, Edit2, Save, X, Lightbulb, AlertTriangle,
   Zap, ChevronRight, CheckCircle2, Award,
   Timer, Rocket, Layers, FileText, Activity, Plus,
-  PlayCircle, CreditCard, ArrowUpRight, TrendingUp, TrendingDown, Minus, RefreshCw
+  PlayCircle, CreditCard, ArrowUpRight, TrendingUp, TrendingDown, Minus, RefreshCw,
+  Bookmark, BookmarkCheck
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -42,6 +43,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { apiRequest } from "@/lib/queryClient";
 import { Line, LineChart, ResponsiveContainer } from "recharts";
+import { usePersonalization } from "@/hooks/use-personalization";
 
 interface DashboardMetrics {
   dueToday: number;
@@ -350,6 +352,7 @@ function QuickWinCard({ title, description, href, icon: Icon, action }: {
 
 export default function Dashboard(_props: DashboardProps) {
   const { user } = useAuth();
+  const { preferences, toggleBookmarkedNote } = usePersonalization();
   const [, setLocation] = useLocation();
   const [userName, setUserName] = useState("");
   const [isEditingName, setIsEditingName] = useState(false);
@@ -722,6 +725,10 @@ export default function Dashboard(_props: DashboardProps) {
 
   const contextDue = metrics?.dueToday ?? dueCards.length;
   const contextAccuracy = metrics?.accuracy ?? insights?.overview?.overallAccuracy ?? 0;
+  const dailyGoalMinutes = preferences.dailyStudyGoalMinutes || 60;
+  const weeklyGoalMinutes = dailyGoalMinutes * 7;
+  const weeklyStudyMinutes = metrics?.weeklyStudyTime ?? insights?.overview?.totalStudyTime ?? 0;
+  const goalProgress = weeklyGoalMinutes > 0 ? Math.min(100, Math.round((weeklyStudyMinutes / weeklyGoalMinutes) * 100)) : 0;
   const lastNote = recentNotes[0];
   const lastStudyDate = lastNote ? new Date(lastNote.updatedAt) : null;
   const inactivityDays = lastStudyDate
@@ -762,6 +769,26 @@ export default function Dashboard(_props: DashboardProps) {
       priority: "medium",
       icon: RefreshCw,
       action: handleContinueLastSession,
+    });
+  }
+  if (goalProgress < 70) {
+    recommendedActions.push({
+      title: `Reach your ${dailyGoalMinutes} min/day goal`,
+      description: `${goalProgress}% of this week's target completed. A focused session closes the gap quickly.`,
+      cta: "Start Now",
+      priority: goalProgress < 40 ? "high" : "medium",
+      icon: Clock,
+      action: preferences.focusStyle === "quiz-first" ? handleStartQuiz : handleReviewFlashcards,
+    });
+  }
+  if (preferences.preferredSubjects.length > 0) {
+    recommendedActions.push({
+      title: `Prioritise ${preferences.preferredSubjects[0]}`,
+      description: "Your preferred subject has not been revisited recently. Keep continuity for better retention.",
+      cta: "Resume",
+      priority: "low",
+      icon: BookOpen,
+      action: () => setLocation("/notes"),
     });
   }
   if (recommendedActions.length === 0) {
@@ -814,6 +841,7 @@ export default function Dashboard(_props: DashboardProps) {
     contextDue > 0 ? `You have ${contextDue} cards due today - a short review now prevents backlog.` : "You are caught up today. Use this time for a challenge quiz.",
     recentNotes.length === 0 ? "You haven't studied this topic recently. Create or revisit a note to restart momentum." : "Try testing yourself after reviewing notes to improve retention.",
     contextAccuracy >= 70 ? "You improved this week - keep the streak alive with one focused session." : "Accuracy is below target. Revise weak areas before taking the next full quiz.",
+    goalProgress >= 100 ? `Great consistency - you hit your ${dailyGoalMinutes} min/day goal this week.` : `Study goal progress: ${goalProgress}% of ${weeklyGoalMinutes} weekly minutes.`,
   ];
   const studyActions = generateStudyNowActions();
   const quickWins = generateQuickWins();
@@ -897,7 +925,7 @@ export default function Dashboard(_props: DashboardProps) {
               ) : (
                 <>
                   <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground">
-                    {getGreeting()}, {userName}!
+                    {getGreeting()}, {userName} 👋
                   </h1>
                   <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-foreground" onClick={() => setIsEditingName(true)} data-testid="button-edit-name">
                     <Edit2 className="h-3.5 w-3.5" />
@@ -1015,6 +1043,22 @@ export default function Dashboard(_props: DashboardProps) {
             <p className="text-xs text-muted-foreground mt-1">Attempt a timed quiz in your peak window.</p>
           </button>
         </div>
+
+        <Card className="border border-slate-200/80 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 shadow-sm">
+          <CardContent className="py-4">
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <div>
+                <p className="text-sm font-semibold">Personal Goal Progress</p>
+                <p className="text-xs text-muted-foreground">
+                  {weeklyStudyMinutes} / {weeklyGoalMinutes} minutes this week ({goalProgress}%)
+                </p>
+              </div>
+              <div className="w-full md:w-64">
+                <Progress value={goalProgress} className="h-2" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         <Card className="border border-indigo-200/70 dark:border-indigo-900/40 bg-indigo-50/60 dark:bg-indigo-950/20 shadow-sm">
           <CardHeader className="pb-3">
@@ -1144,6 +1188,7 @@ export default function Dashboard(_props: DashboardProps) {
           </Card>
         </div>
 
+        {preferences.studyPromptsEnabled && (
         <Card className="border border-sky-200/70 dark:border-sky-900/40 bg-sky-50/60 dark:bg-sky-950/20 shadow-sm">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between gap-2">
@@ -1173,6 +1218,7 @@ export default function Dashboard(_props: DashboardProps) {
             </div>
           </CardContent>
         </Card>
+        )}
 
         <Card className="border border-slate-200/80 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 shadow-sm">
           <CardContent className="py-4">
@@ -1329,6 +1375,19 @@ export default function Dashboard(_props: DashboardProps) {
                             {note.subject || "General"} &middot; {new Date(note.updatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                           </p>
                         </div>
+                        <span
+                          className="inline-flex h-7 w-7 items-center justify-center rounded-md hover:bg-slate-100 dark:hover:bg-slate-700"
+                          onClick={(event) => {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            toggleBookmarkedNote(note.id);
+                          }}
+                          data-testid={`bookmark-note-${note.id}`}
+                        >
+                          {preferences.bookmarkedNoteIds.includes(note.id)
+                            ? <BookmarkCheck className="h-4 w-4 text-amber-500" />
+                            : <Bookmark className="h-4 w-4 text-muted-foreground" />}
+                        </span>
                       </div>
                     </Link>
                   ))}

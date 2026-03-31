@@ -59,6 +59,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { getStaggerContainerVariants, getStaggerItemVariants } from "@/lib/animations";
+import { usePersonalization } from "@/hooks/use-personalization";
 
 type QuizMode = "practice" | "exam" | "adaptive";
 type ViewType = "list" | "taking" | "results" | "create" | "analytics" | "adaptive" | "review";
@@ -225,6 +226,7 @@ export default function Quizzes() {
   const startTimeRef = useRef<number>(Date.now());
   const randomLaunchHandledRef = useRef(false);
   const { toast } = useToast();
+  const { preferences } = usePersonalization();
 
   useEffect(() => {
     const tab = new URL(window.location.href).searchParams.get("tab");
@@ -295,6 +297,14 @@ export default function Quizzes() {
   
   // Extract unique subjects from quizzes
   const availableSubjects = ["All Subjects", ...Array.from(new Set(allQuizzes.map(q => q.subject || "General").filter(Boolean)))].sort();
+
+  useEffect(() => {
+    if (selectedSubject !== "All Subjects") return;
+    const preferred = preferences.preferredSubjects.find((subject) => availableSubjects.includes(subject));
+    if (preferred) {
+      setSelectedSubject(preferred);
+    }
+  }, [availableSubjects, preferences.preferredSubjects, selectedSubject]);
   
   // Filter quizzes based on selected subject and search query
   const quizzes = allQuizzes.filter(quiz => {
@@ -305,6 +315,11 @@ export default function Quizzes() {
       (quiz.subject && quiz.subject.toLowerCase().includes(searchQuery.toLowerCase()));
     return matchesSubject && matchesSearch;
   });
+  const personalQuizMessage = preferences.focusStyle === "quiz-first"
+    ? "Quiz-first mode is active. Start with targeted assessments before revision."
+    : preferences.preferredSubjects.length > 0
+      ? `Recommended focus: ${preferences.preferredSubjects[0]}.`
+      : "Use topic filters to tailor quizzes to your current study goals.";
 
   const { data: selectedQuizData, isLoading: isLoadingQuiz } = useQuery<{
     id: string;
@@ -2296,6 +2311,19 @@ const formatTime = (seconds: number) => {
             </Button>
           </div>
         </div>
+
+        <Card className="border border-violet-200/80 dark:border-violet-900/40 bg-violet-50/70 dark:bg-violet-950/20 shadow-sm">
+          <CardContent className="pt-4 flex items-center justify-between gap-3 flex-wrap">
+            <div>
+              <p className="text-sm font-semibold text-violet-900 dark:text-violet-200">Personalized Quiz Guidance</p>
+              <p className="text-xs text-violet-800/90 dark:text-violet-300">{personalQuizMessage}</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button size="sm" variant="outline" className="text-xs" onClick={() => setSelectedSubject("All Subjects")}>All Subjects</Button>
+              <Button size="sm" className="text-xs" onClick={() => setLocation("/quizzes?launch=random")} data-testid="button-personal-start-quiz">Start Recommended</Button>
+            </div>
+          </CardContent>
+        </Card>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-3 mb-4 sm:mb-6">
