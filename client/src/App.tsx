@@ -1,26 +1,4 @@
-/*
-==========================================================
-File: client/src/App.tsx
-
-Module: Frontend Experience
-
-Purpose:
-Defines responsibilities specific to this unit while preserving
-clear boundaries with adjacent modules in CampusCompanion.
-
-Architectural Layer:
-Shared Domain Layer
-
-System Interaction:
-- Consumes API endpoints via query/mutation utilities and renders user-facing interfaces
-- Collaborates with shared types to preserve frontend-backend contract integrity
-
-Design Rationale:
-A dedicated file-level boundary supports maintainability,
-traceability, and scalability by keeping concerns local and
-allowing safe evolution of features without cross-module side effects.
-==========================================================
-*/
+// Keeps the main app shell, routing, and auth gating in one place.
 
 import { Switch, Route, useLocation, Redirect } from "wouter";
 import React from "react";
@@ -52,29 +30,7 @@ import { getPageVariants } from "@/lib/animations";
 
 console.log("[App.tsx] Module loading");
 
-/*
-----------------------------------------------------------
-Component: AppRouter
-
-Purpose:
-Renders a focused UI unit and orchestrates state, hooks, and user interactions for the surrounding workflow.
-
-Parameters:
-- None: Operates using closure/module state only
-
-Process:
-1. Initializes local state and framework hooks required for rendering
-2. Derives view data from props, query state, and computed conditions
-3. Applies conditional rendering to keep the interface robust for empty/loading/error states
-4. Binds event handlers and side effects to synchronize UI with backend/application state
-
-Why Validation is Important:
-State guards and defensive rendering prevent runtime errors, preserve UX continuity, and improve accessibility during asynchronous updates.
-
-Returns:
-A JSX tree representing the component view for the current state.
-----------------------------------------------------------
-*/
+// Handles route changes and the page transition animation.
 function AppRouter() {
   const [location] = useLocation();
   const reducedMotion = useReducedMotion();
@@ -111,30 +67,7 @@ function AppRouter() {
   );
 }
 
-/*
-----------------------------------------------------------
-Component: MainLayout
-
-Purpose:
-Renders a focused UI unit and orchestrates state, hooks, and user interactions for the surrounding workflow.
-
-Parameters:
-- user: Input consumed by this routine during execution
-- onLogout: Input consumed by this routine during execution
-
-Process:
-1. Initializes local state and framework hooks required for rendering
-2. Derives view data from props, query state, and computed conditions
-3. Applies conditional rendering to keep the interface robust for empty/loading/error states
-4. Binds event handlers and side effects to synchronize UI with backend/application state
-
-Why Validation is Important:
-State guards and defensive rendering prevent runtime errors, preserve UX continuity, and improve accessibility during asynchronous updates.
-
-Returns:
-A JSX tree representing the component view for the current state.
-----------------------------------------------------------
-*/
+// Lays out the sidebar, top bar, and main content area.
 function MainLayout({
   user,
   onLogout,
@@ -166,29 +99,7 @@ function MainLayout({
   );
 }
 
-/*
-----------------------------------------------------------
-Component: AuthenticatedApp
-
-Purpose:
-Renders a focused UI unit and orchestrates state, hooks, and user interactions for the surrounding workflow.
-
-Parameters:
-- None: Operates using closure/module state only
-
-Process:
-1. Initializes local state and framework hooks required for rendering
-2. Derives view data from props, query state, and computed conditions
-3. Applies conditional rendering to keep the interface robust for empty/loading/error states
-4. Binds event handlers and side effects to synchronize UI with backend/application state
-
-Why Validation is Important:
-State guards and defensive rendering prevent runtime errors, preserve UX continuity, and improve accessibility during asynchronous updates.
-
-Returns:
-A JSX tree representing the component view for the current state.
-----------------------------------------------------------
-*/
+// Chooses between the public pages and the logged-in app.
 function AuthenticatedApp() {
   const { user, isLoading, isAuthenticated, logout } = useAuth();
   const [location] = useLocation();
@@ -199,29 +110,7 @@ function AuthenticatedApp() {
   if (isLoading) {
     return location === "/login" ? (
       <div className="w-full min-h-screen bg-app-gradient">
-        <Login />
-      </div>
-    ) : location === "/" ? (
-      <Landing />
-    ) : (
-      <Redirect to="/" />
-    );
-  }
-
-  // Not authenticated - allow public landing and login pages
-  if (!isAuthenticated) {
-    console.log("[AuthenticatedApp] User not authenticated, showing public entry");
-
-    if (location === "/") {
-      return <Landing />;
-    }
-
-    if (location === "/login") {
-      return (
-        <div className="w-full min-h-screen bg-app-gradient">
-          <Login />
-        </div>
-      );
+        // Wraps the whole app in the providers it needs.
     }
 
     return <Redirect to="/" />;

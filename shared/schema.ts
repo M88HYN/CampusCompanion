@@ -1,36 +1,14 @@
-/*
-==========================================================
-File: shared/schema.ts
-
-Module: Persistence and Data Modeling
-
-Purpose:
-Defines responsibilities specific to this unit while preserving
-clear boundaries with adjacent modules in CampusCompanion.
-
-Architectural Layer:
-Data Access Layer
-
-System Interaction:
-- Defines shared contracts and schema primitives consumed by both frontend and backend
-- Provides type-safe boundaries that reduce coupling and integration defects
-
-Design Rationale:
-A dedicated file-level boundary supports maintainability,
-traceability, and scalability by keeping concerns local and
-allowing safe evolution of features without cross-module side effects.
-==========================================================
-*/
+// Defines the database tables and shared types used across the app.
 
 import { sql } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-// Import and re-export auth models (users, sessions tables and types)
+// Re-export the auth tables so both sides of the app can use them.
 import { users, sessions, verificationCodes, type User, type UpsertUser, type VerificationCode } from "./models/auth";
 export { users, sessions, verificationCodes, type User, type UpsertUser, type VerificationCode };
 
-// ==================== NOTES ====================
+// Notes and note blocks.
 
 import { sqliteTable, text, integer, index, real } from "drizzle-orm/sqlite-core";
 
@@ -61,7 +39,7 @@ export const notes = sqliteTable("notes", {
   subjectIdx: index("notes_subject_idx").on(table.subject),
 }));
 
-// Smart note types for learning categorization
+// Simple tags for note grouping.
 export const noteTypeEnum = ["concept", "definition", "process", "example", "exam_tip", "general"] as const;
 export type NoteType = typeof noteTypeEnum[number];
 
@@ -112,7 +90,7 @@ export type InsertNote = z.infer<typeof insertNoteSchema>;
 export type NoteBlock = typeof noteBlocks.$inferSelect;
 export type InsertNoteBlock = z.infer<typeof insertNoteBlockSchema>;
 
-// ==================== INSIGHT SCOUT: CONVERSATIONS ====================
+// Research chat tables.
 
 /*
 Table: researchConversations (conversations)
@@ -178,7 +156,7 @@ export type InsertResearchConversation = z.infer<typeof insertResearchConversati
 export type ResearchMessage = typeof researchMessages.$inferSelect;
 export type InsertResearchMessage = z.infer<typeof insertResearchMessageSchema>;
 
-// ==================== FLASHCARDS ====================
+// Flashcard tables.
 
 /*
 Table: decks (decks)

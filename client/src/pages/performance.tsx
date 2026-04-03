@@ -103,29 +103,7 @@ function CollapsibleCard({
   hint,
   expanded,
   onToggle,
-  onHide,
-  children,
-  className = "",
-  titleClassName = "",
-  headerRight,
-}: {
-  title: React.ReactNode;
-  description?: string;
-  hint?: string;
-  expanded: boolean;
-  onToggle: () => void;
-  onHide?: () => void;
-  children: React.ReactNode;
-  className?: string;
-  titleClassName?: string;
-  headerRight?: React.ReactNode;
-}) {
-  return (
-    <Card className={className}>
-      <CardHeader
-        className="cursor-pointer select-none group/header"
-        onClick={onToggle}
-      >
+  // Performance page for progress charts and study insights.
         <div className="flex items-start justify-between gap-2">
           <CardTitle className={`flex items-center gap-2 ${titleClassName}`}>
             {title}

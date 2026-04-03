@@ -1,26 +1,4 @@
-/*
-==========================================================
-File: server/auth-routes.ts
-
-Module: Authentication and Access Control
-
-Purpose:
-Defines responsibilities specific to this unit while preserving
-clear boundaries with adjacent modules in CampusCompanion.
-
-Architectural Layer:
-Application Layer (Business and Interaction Logic)
-
-System Interaction:
-- Receives HTTP requests and coordinates validation, authorization, and business workflows
-- Interacts with storage/database adapters and shared schemas for consistent persistence
-
-Design Rationale:
-A dedicated file-level boundary supports maintainability,
-traceability, and scalability by keeping concerns local and
-allowing safe evolution of features without cross-module side effects.
-==========================================================
-*/
+// Handles sign-in, sign-up, and token-based auth flows.
 
 import type { Express, Request, Response, NextFunction } from "express";
 import { z } from "zod";
@@ -71,7 +49,7 @@ const resendSchema = z.object({
   email: z.string().email(),
 });
 
-// OAuth Configuration
+// Supabase login settings.
 const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
 const SUPABASE_URL = (process.env.SUPABASE_URL || "").replace(/\/$/, "");
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || "";
@@ -171,31 +149,7 @@ function getSupabaseAuthorizeUrl(provider: "google" | "github"): string {
   return `${SUPABASE_URL}/auth/v1/authorize?${params}`;
 }
 
-/*
-----------------------------------------------------------
-Function: authMiddleware
-
-Purpose:
-Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
-
-Parameters:
-- req: Input consumed by this routine during execution
-- res: Input consumed by this routine during execution
-- next: Input consumed by this routine during execution
-
-Process:
-1. Accepts and normalizes inputs before core processing
-2. Applies relevant guards/validation to prevent invalid transitions
-3. Executes primary logic path and handles expected edge conditions
-4. Returns a deterministic output for the caller layer
-
-Why Validation is Important:
-Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
-
-Returns:
-A value/promise representing the outcome of the executed logic path.
-----------------------------------------------------------
-*/
+// Checks the token and blocks requests that are not signed in.
 export async function authMiddleware(req: any, res: Response, next: NextFunction) {
   const token = req.headers.authorization?.split(" ")[1] || req.cookies?.token;
 

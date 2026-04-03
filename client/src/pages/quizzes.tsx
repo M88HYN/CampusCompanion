@@ -52,29 +52,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { getStaggerContainerVariants, getStaggerItemVariants } from "@/lib/animations";
-import { usePersonalization } from "@/hooks/use-personalization";
-
-type QuizMode = "practice" | "exam" | "adaptive";
-type ViewType = "list" | "taking" | "results" | "create" | "analytics" | "adaptive" | "review";
-
-interface Quiz {
-  id: string;
-  title: string;
-  subject?: string | null;
-  description?: string | null;
-  mode: string;
-  timeLimit?: number | null;
-  passingScore?: number | null;
-  questionCount: number;
-  attemptCount: number;
-  bestScore?: number | null;
+  // Quizzes page for building, taking, and reviewing tests.
 }
 
 interface QuizOption {

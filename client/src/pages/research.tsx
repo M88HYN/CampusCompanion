@@ -342,29 +342,7 @@ function ExpandableSection({ title, icon: Icon, content, defaultOpen = false }: 
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen}>
       <CollapsibleTrigger asChild>
-        <button
-          className="flex items-center gap-2 w-full text-left px-3 py-2.5 rounded-lg hover:bg-amber-50/60 dark:hover:bg-amber-900/20 transition-colors group focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500"
-          aria-expanded={isOpen}
-        >
-          {isOpen ? (
-            <ChevronDown className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
-          ) : (
-            <ChevronRight className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
-          )}
-          <Icon className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0" />
-          <span className="text-sm font-semibold text-muted-foreground group-hover:text-amber-800 dark:group-hover:text-amber-300 transition-colors">
-            {title}
-          </span>
-        </button>
-      </CollapsibleTrigger>
-      <CollapsibleContent>
-        <div className="px-3 pb-3 pl-10">
-          <div className="prose prose-sm dark:prose-invert max-w-none prose-headings:font-semibold prose-headings:text-foreground prose-p:text-slate-600 prose-p:dark:text-slate-400 prose-strong:text-foreground prose-code:bg-slate-100 prose-code:dark:bg-slate-700 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-amber-700 prose-code:dark:text-amber-400 prose-pre:bg-slate-50 prose-pre:dark:bg-slate-800 prose-li:text-slate-600 prose-li:dark:text-slate-400 prose-ul:my-1.5 prose-ol:my-1.5 prose-li:my-0.5">
-            <ReactMarkdown>{content}</ReactMarkdown>
-          </div>
-        </div>
-      </CollapsibleContent>
-    </Collapsible>
+        // Research page for asking questions and saving conversation threads.
   );
 }
 

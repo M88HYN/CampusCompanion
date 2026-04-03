@@ -1,26 +1,4 @@
-/*
-==========================================================
-File: server/app.ts
-
-Module: Frontend Experience
-
-Purpose:
-Defines responsibilities specific to this unit while preserving
-clear boundaries with adjacent modules in CampusCompanion.
-
-Architectural Layer:
-API Routing and Service Layer
-
-System Interaction:
-- Receives HTTP requests and coordinates validation, authorization, and business workflows
-- Interacts with storage/database adapters and shared schemas for consistent persistence
-
-Design Rationale:
-A dedicated file-level boundary supports maintainability,
-traceability, and scalability by keeping concerns local and
-allowing safe evolution of features without cross-module side effects.
-==========================================================
-*/
+// Sets up the Express app, logging, and shared middleware.
 
 import { type Server } from "node:http";
 
@@ -33,30 +11,7 @@ import express, {
 
 import { registerRoutes } from "./routes";
 
-/*
-----------------------------------------------------------
-Function: log
-
-Purpose:
-Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
-
-Parameters:
-- message: Input consumed by this routine during execution
-- source: Input consumed by this routine during execution
-
-Process:
-1. Accepts and normalizes inputs before core processing
-2. Applies relevant guards/validation to prevent invalid transitions
-3. Executes primary logic path and handles expected edge conditions
-4. Returns a deterministic output for the caller layer
-
-Why Validation is Important:
-Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
-
-Returns:
-A value/promise representing the outcome of the executed logic path.
-----------------------------------------------------------
-*/
+// Logs messages with a simple timestamp and source tag.
 export function log(message: string, source = "express") {
   const formattedTime = new Date().toLocaleTimeString("en-US", {
     hour: "numeric",
@@ -76,7 +31,7 @@ declare module 'http' {
   }
 }
 
-// CORS configuration for local dev (allows vite dev server on 5173 to reach backend on 3000)
+// Lets the local Vite app talk to the API during development.
 app.use((req, res, next) => {
   res.header("Access-Control-Allow-Origin", req.headers.origin || "*");
   res.header("Access-Control-Allow-Credentials", "true");
@@ -96,7 +51,7 @@ app.use(express.json({
 }));
 app.use(express.urlencoded({ extended: false }));
 
-// Request logging middleware
+// Prints a short request log for API calls.
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
