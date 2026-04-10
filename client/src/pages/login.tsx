@@ -383,17 +383,6 @@ const handleSubmit = async (e: React.FormEvent) => {
 
         if (!response.ok) {
           const data = await response.json();
-
-          if (data?.requiresVerification && data?.userId && data?.email) {
-            setVerificationUserId(data.userId);
-            setVerificationEmail(data.email);
-            setVerificationCode("");
-            setVerificationError(data.message || "Please verify your email before logging in");
-            setIsVerifying(true);
-            setLoading(false);
-            return;
-          }
-
           throw new Error(data.message || "Authentication failed");
         }
 
@@ -426,39 +415,32 @@ const handleSubmit = async (e: React.FormEvent) => {
 
       const data = await response.json();
       
-      // Check if email verification is required
-      if (!isLogin && data.requiresVerification) {
-        setVerificationUserId(data.userId);
-        setVerificationEmail(data.email);
-        setVerificationCode("");
-        setVerificationError("");
-        setIsVerifying(true);
-        setLoading(false);
-        return;
-      }
-      
       // Store token
+      queryClient.clear();
       localStorage.setItem("token", data.token);
 
       if (!isLogin) {
-        try {
-          await runOnboardingSetup(data.token);
-          localStorage.setItem(
-            "studymate-onboarding",
-            JSON.stringify({
-              subjects: selectedSubjects,
-              sampleDecks: wantsSampleDecks,
-              sampleQuizzes: wantsSampleQuizzes,
-              sampleFlashcards: wantsSampleFlashcards,
-              starterDeckCount,
-              starterFlashcardsPerDeck,
-              starterQuizCount,
-              starterQuestionsPerQuiz,
-            }),
-          );
-        } catch (setupError) {
-          console.warn("[onboarding] starter content setup failed", setupError);
-        }
+        // Run starter-content setup in the background so signup feels instant.
+        void (async () => {
+          try {
+            await runOnboardingSetup(data.token);
+            localStorage.setItem(
+              "studymate-onboarding",
+              JSON.stringify({
+                subjects: selectedSubjects,
+                sampleDecks: wantsSampleDecks,
+                sampleQuizzes: wantsSampleQuizzes,
+                sampleFlashcards: wantsSampleFlashcards,
+                starterDeckCount,
+                starterFlashcardsPerDeck,
+                starterQuizCount,
+                starterQuestionsPerQuiz,
+              }),
+            );
+          } catch (setupError) {
+            console.warn("[onboarding] starter content setup failed", setupError);
+          }
+        })();
       }
       
       // Trigger auth update event
@@ -1386,7 +1368,7 @@ const handleGithubLogin = () => {
                           disabled={loading || isModeTransitioning} 
                           className="w-full h-12 rounded-lg bg-gradient-to-r from-teal-500 via-cyan-500 to-blue-600 text-white font-bold text-base hover:shadow-2xl hover:shadow-teal-500/30 transition-all disabled:opacity-50 disabled:hover:shadow-none"
                         >
-                          {loading ? "Loading..." : (isLogin ? "Sign In" : "Sign Up")}
+                          {loading ? (isLogin ? "Signing in..." : "Creating account...") : (isLogin ? "Sign In" : "Sign Up")}
                         </Button>
                       </motion.div>
                     </form>

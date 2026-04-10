@@ -72,7 +72,7 @@ export interface ButtonProps
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant, size, asChild = false, ...props }, ref) => {
+  ({ className, variant, size, asChild = false, type, ...props }, ref) => {
     const prefersReducedMotion = useReducedMotion()
 
     if (asChild) {
@@ -87,6 +87,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 
     return (
       <motion.button
+        type={type ?? "button"}
         className={cn(buttonVariants({ variant, size, className }))}
         ref={ref}
         whileTap={prefersReducedMotion ? undefined : { scale: 0.985, y: 0.5 }}

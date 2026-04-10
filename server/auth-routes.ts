@@ -246,28 +246,21 @@ export function registerAuthRoutes(app: Express) {
         return res.status(400).json({ message: "Email already registered" });
       }
 
-      // Create user account (marked as unverified)
-      const user = await createUser(data.email, data.password, data.firstName, data.lastName, data.username);
+      // Create user account and mark as verified to skip OTP flow.
+      const user = await createUser(data.email, data.password, data.firstName, data.lastName, data.username, true);
+      const token = generateToken(user);
 
-      // Generate and send verification code
-      const verificationCode = await generateVerificationCode(user.id);
-      const emailSent = await sendVerificationEmail({
-        email: data.email,
-        code: verificationCode,
-        expiresInMinutes: 10,
-      });
-
-      if (!emailSent) {
-        console.warn("Failed to send verification email, but account was created");
-      }
-
-      // Return response indicating email needs verification
       res.json({
         success: true,
-        message: "Verification code sent to email",
-        requiresVerification: true,
-        userId: user.id,
-        email: user.email,
+        message: "Account created successfully",
+        token,
+        user: {
+          id: user.id,
+          username: user.username,
+          email: user.email,
+          firstName: user.firstName,
+          lastName: user.lastName,
+        },
       });
     } catch (error: any) {
       console.error("Register error:", error);
@@ -297,15 +290,6 @@ export function registerAuthRoutes(app: Express) {
       const valid = await comparePasswords(data.password, user.password);
       if (!valid) {
         return res.status(401).json({ message: "Invalid credentials" });
-      }
-
-      if (!user.isVerified) {
-        return res.status(403).json({
-          message: "Please verify your email before logging in",
-          requiresVerification: true,
-          userId: user.id,
-          email: user.email,
-        });
       }
 
       const isDemoUser = user.username === "demo-user" || user.email === "demo@studymate.local";
