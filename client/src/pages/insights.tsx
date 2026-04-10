@@ -1,4 +1,4 @@
-/*
+﻿/*
 ==========================================================
 File: client/src/pages/insights.tsx
 
@@ -219,7 +219,29 @@ const getBadgeColor = (acc: number) => {
           <span className="font-medium text-sm text-foreground">{topic}</span>
           <Badge variant="outline" className="text-xs">
             {totalQuestions} questions
-          // Insights page for AI summaries and learning feedback.
+          </Badge>
+        </div>
+        <div className="flex items-center gap-2">
+          <Badge className={`text-xs border-0 ${getBadgeColor(accuracy)}`}>{accuracy}%</Badge>
+          {improvement !== 0 && (
+            <span className={`flex items-center text-xs font-medium ${improvement > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+              {improvement > 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+              {Math.abs(improvement)}%
+            </span>
+          )}
+        </div>
+      </div>
+      <div className="h-2.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+        <div className={`h-full ${getColor(accuracy)} rounded-full transition-all shadow-sm`} style={{ width: `${accuracy}%` }} />
+      </div>
+    </div>
+  );
+}
+
+/*
+----------------------------------------------------------
+Component: RecommendationCard
+
 Purpose:
 Renders a focused UI unit and orchestrates state, hooks, and user interactions for the surrounding workflow.
 

@@ -1,4 +1,4 @@
-/*
+﻿/*
 ==========================================================
 File: client/src/pages/flashcards.tsx
 
@@ -33,7 +33,29 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  // Flashcards page for review sessions and spaced repetition.
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { motion, useReducedMotion } from "framer-motion";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import { useLocation } from "wouter";
+import { useSoundEffect, useConfetti, useKeyboardShortcuts } from "@/hooks/use-ui-effects";
+import { DifficultyBadge } from "@/components/ui/difficulty-badge";
+import { ProgressRing } from "@/components/ui/progress-ring";
+import { getStaggerContainerVariants, getStaggerItemVariants } from "@/lib/animations";
+import type { Deck, Card as FlashCard } from "@shared/schema";
 import { usePersonalization } from "@/hooks/use-personalization";
 
 /**

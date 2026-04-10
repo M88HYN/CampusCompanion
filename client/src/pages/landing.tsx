@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,7 +7,29 @@ import { useState, useEffect } from "react";
 import {
   Brain,
   BookOpen,
-  // Landing page for first-time visitors and logged-out users.
+  Rocket,
+  Sparkles,
+  Target,
+  Clock,
+  ArrowRight,
+  ChevronRight,
+} from "lucide-react";
+import { useLocation } from "wouter";
+import {
+  motion,
+  AnimatePresence,
+  useReducedMotion,
+  useScroll,
+  useTransform,
+} from "framer-motion";
+import { useRef } from "react";
+
+const features = [
+  {
+    icon: Brain,
+    title: "Smart Flashcards",
+    description: "Adaptive spaced repetition to help you remember more in less time.",
+    color: "bg-blue-100",
     iconColor: "text-blue-600",
   },
   {

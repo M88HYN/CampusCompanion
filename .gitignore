@@ -23,3 +23,6 @@ replit.md
 # IDE
 .vscode/
 .idea/
+
+# Local app data
+data/*.sqlite
