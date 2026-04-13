@@ -22,13 +22,7 @@ allowing safe evolution of features without cross-module side effects.
 ==========================================================
 */
 
-/**
- * Dashboard Analytics Module
- * 
- * Provides real-time, data-driven metrics for the dashboard.
- * All data comes from actual database records, no mock values.
- * Uses raw SQL for SQLite compatibility (integer timestamps).
- */
+/** Dashboard analytics built from live database records. */
 
 import { db } from "./db";
 import { sql } from "drizzle-orm";
@@ -70,9 +64,7 @@ interface RecentNote {
 }
 
 export class DashboardAnalytics {
-  /**
-   * Get dashboard metrics - all real data from database
-   */
+  /** Get dashboard metrics from the database. */
     /*
   ----------------------------------------------------------
   Function: getDashboardMetrics
@@ -104,7 +96,7 @@ static async getDashboardMetrics(userId: string): Promise<DashboardMetrics> {
       const endOfTodayTs = endOfToday.getTime();
       const weekAgoTs = now - 7 * 24 * 60 * 60 * 1000;
 
-      // 1. Due today - cards belonging to user's decks, due by end of today
+      // 1. Due today - cards from the user's decks that are due by day end.
       const dueResult: any[] = db.all(sql`
         SELECT COUNT(*) as count FROM cards c
         INNER JOIN decks d ON c.deck_id = d.id
@@ -112,7 +104,7 @@ static async getDashboardMetrics(userId: string): Promise<DashboardMetrics> {
       `);
       const dueToday = dueResult[0]?.count || 0;
 
-      // 2. Quiz accuracy from all responses
+      // 2. Quiz accuracy from all responses.
       const accuracyResult: any[] = db.all(sql`
         SELECT 
           COUNT(*) as total,
@@ -125,7 +117,7 @@ static async getDashboardMetrics(userId: string): Promise<DashboardMetrics> {
       const correct = accuracyResult[0]?.correct || 0;
       const accuracy = total > 0 ? Math.round((correct / total) * 100) : 0;
 
-      // 3. Weekly study time from study_sessions
+      // 3. Weekly study time from study_sessions.
       const studyTimeResult: any[] = db.all(sql`
         SELECT COALESCE(SUM(duration_minutes), 0) as totalMinutes
         FROM study_sessions
@@ -133,7 +125,7 @@ static async getDashboardMetrics(userId: string): Promise<DashboardMetrics> {
       `);
       const weeklyStudyTime = studyTimeResult[0]?.totalMinutes || 0;
 
-      // 4. Items reviewed this week (quiz responses + card reviews)
+      // 4. Items reviewed this week from quiz responses and card reviews.
       const weekResponsesResult: any[] = db.all(sql`
         SELECT COUNT(*) as count
         FROM quiz_responses qr

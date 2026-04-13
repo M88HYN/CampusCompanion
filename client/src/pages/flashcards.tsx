@@ -58,82 +58,7 @@ import { getStaggerContainerVariants, getStaggerItemVariants } from "@/lib/anima
 import type { Deck, Card as FlashCard } from "@shared/schema";
 import { usePersonalization } from "@/hooks/use-personalization";
 
-/**
- * ═══════════════════════════════════════════════════════════════════════════
- * FLASHCARDS ANALYTICS - KEYBOARD-DRIVEN UPDATES ARCHITECTURE
- * ═══════════════════════════════════════════════════════════════════════════
- * 
- * OVERVIEW:
- * All keyboard actions in flashcard study sessions generate identical analytics
- * events as their UI button equivalents. This ensures data consistency across
- * all input methods (keyboard, mouse, touch).
- *
- * KEYBOARD SHORTCUTS & ANALYTICS MAPPING:
- * ┌─────────────────┬─────────────────────────────────────────────────────┐
- * │ Keyboard Input  │ Analytics Action                                    │
- * ├─────────────────┼─────────────────────────────────────────────────────┤
- * │ Space/Enter     │ Flip card (engagement tracking, no SM-2 update)     │
- * │ 1 key           │ Rate quality 1 (incorrect/forgot) - SM-2 updates    │
- * │ 2 key           │ Rate quality 2 (hard) - SM-2 updates                │
- * │ 3 key           │ Rate quality 3 (good) - SM-2 updates                │
- * │ 4 key           │ Rate quality 5 (easy) - SM-2 updates                │
- * │ Escape          │ End session - finalizes all analytics via summary    │
- * │ R (optional)    │ Restart session (future enhancement)                │
- * └─────────────────┴─────────────────────────────────────────────────────┘
- *
- * ANALYTICS FLOW FOR KEYBOARD RATINGS (1-4 keys):
- * ────────────────────────────────────────────────
- * 1. Keyboard event listener detects keypress (e.g., "1", "2", "3", "4")
- * 2. Calls handleReview(quality) with corresponding quality value (1, 2, 3, or 5)
- * 3. handleReview() executes (identical logic for keyboard & mouse):
- *    a. Validates card state and user auth
- *    b. Invokes reviewCardMutation (POST /api/cards/:id/review)
- *    c. Updates local session state (sessionResponses, sessionCardIds)
- *    d. Triggers sound feedback (same as UI buttons)
- *    e. Advances to next card or finalizes session
- * 4. Server receives mutation:
- *    a. Applies SM-2 spaced repetition algorithm
- *    b. Creates cardReviews record (analytics database entry)
- *    c. Updates card's easeFactor, interval, status, nextReviewDate
- *    d. Returns updated card metadata
- * 5. Client query cache invalidates → analytics display updates automatically
- * 6. SESSION END:
- *    a. User presses Escape or completes session
- *    b. Session-summary mutation invoked with all cardIds and responses
- *    c. Server calculates session analytics (accuracy, weak/strong concepts, etc.)
- *    d. Client displays session summary with complete analytics
- *
- * NO DUPLICATE ANALYTICS:
- * ───────────────────────
- * ✅ Each rating generates exactly ONE SM-2 review event (via cardReviews table)
- * ✅ Session state tracks arrays (sessionCardIds, sessionResponses):
- *    - Prevents double-counting by storing only reviewed cards
- *    - Used once at session end for summary calculation
- * ✅ Keyboard handler checks reviewCardMutation.isPending:
- *    - Prevents multiple mutations on rapid keypresses
- *    - Guard condition prevents queuing duplicate requests
- *
- * ANALYTICS PANE INTEGRATION:
- * ────────────────────────────
- * The session stats are displayed via:
- * 1. Real-time session counter (cards reviewed so far)
- * 2. Session-summary view (post-session detailed analytics)
- * 3. Insights page (aggregated learning analytics over time)
- *
- * All three sources update identically whether input is keyboard or mouse
- * because all use the same underlying mutation and state management.
- *
- * TESTING KEYBOARD VS MOUSE PARITY:
- * ──────────────────────────────────
- * Both should produce identical analytics for:
- * ✅ Card difficulty ratings (quality 1-5)
- * ✅ SM-2 algorithm updates (ease factor, interval, status)
- * ✅ Session accuracy calculations
- * ✅ Weak/strong concept identification
- * ✅ Time-on-card metrics
- * ✅ Recommendation generation
- * ═══════════════════════════════════════════════════════════════════════════
- */
+// Flashcards keep keyboard and mouse review in sync.
 
 interface DeckWithStats extends Deck {
   cards: number;
@@ -275,7 +200,7 @@ export default function Flashcards() {
     difficultyProfile: "balanced",
   });
 
-  // Get smart queue data BEFORE useEffect hooks that reference it
+  // Load the smart queue before the effects that use it.
   const { data: smartQueue, refetch: refetchSmartQueue } = useQuery<SmartQueueResponse>({
     queryKey: ["/api/cards/smart-queue", studyMode, smartQueueDeckId, studyPreferences.sessionSize],
     queryFn: async () => {
@@ -286,7 +211,7 @@ export default function Flashcards() {
       if (smartQueueDeckId) {
         params.append("deckId", smartQueueDeckId);
       }
-      // Use apiRequest to include auth token in headers
+      // Use apiRequest so the auth token goes in the headers.
       const res = await apiRequest("GET", `/api/cards/smart-queue?${params}`);
       return (await res.json()) as SmartQueueResponse;
     },
@@ -300,7 +225,7 @@ export default function Flashcards() {
       const res = await apiRequest("GET", "/api/decks");
       const data = await res.json();
       
-      // DEFENSIVE: Deduplicate by ID
+      // Deduplicate by ID so the deck list stays tidy.
       const seenIds = new Set<string>();
       const uniqueDecks = data.filter((deck: DeckWithStats) => {
         if (seenIds.has(deck.id)) {
@@ -311,14 +236,14 @@ export default function Flashcards() {
         return true;
       });
       
-      // VALIDATION: Check count constraints (increased to 15 for multi-subject support)
+      // Check the count limits for multi-subject decks.
       if (uniqueDecks.length > 15) {
         console.warn(`[FLASHCARDS] ⚠️  WARNING: ${uniqueDecks.length} decks found (max 15 expected)`);
       } else if (uniqueDecks.length < 10 && uniqueDecks.length > 0) {
         console.warn(`[FLASHCARDS] ⚠️  WARNING: Only ${uniqueDecks.length} decks found (10-15 expected for multi-subject)`);
       }
       
-      // Validate each deck has 10-30 cards
+      // Make sure each deck has 10-30 cards.
       uniqueDecks.forEach((deck: DeckWithStats) => {
         if (deck.cards < 10 || deck.cards > 30) {
           console.warn(`[FLASHCARDS] ⚠️  WARNING: Deck "${deck.title}" has ${deck.cards} cards (10-30 expected)`);
@@ -377,7 +302,7 @@ export default function Flashcards() {
     cardElement.scrollIntoView({ behavior: "smooth", block: "center" });
   }, [focusedCardId, selectedDeck, view]);
 
-  // Real stats from backend
+  // Use live stats from the backend.
   const { data: flashcardStats } = useQuery({
     queryKey: ["/api/flashcards/stats"],
     queryFn: async () => {

@@ -1,4 +1,4 @@
-// Login page for signing in or creating an account.
+// Sign-in page with a simple path for new and returning users.
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
@@ -19,29 +19,7 @@ import { useLocation } from "wouter";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { queryClient } from "@/lib/queryClient";
 
-/*
-----------------------------------------------------------
-Component: Login
-
-Purpose:
-Renders a focused UI unit and orchestrates state, hooks, and user interactions for the surrounding workflow.
-
-Parameters:
-- None: Operates using closure/module state only
-
-Process:
-1. Initializes local state and framework hooks required for rendering
-2. Derives view data from props, query state, and computed conditions
-3. Applies conditional rendering to keep the interface robust for empty/loading/error states
-4. Binds event handlers and side effects to synchronize UI with backend/application state
-
-Why Validation is Important:
-State guards and defensive rendering prevent runtime errors, preserve UX continuity, and improve accessibility during asynchronous updates.
-
-Returns:
-A JSX tree representing the component view for the current state.
-----------------------------------------------------------
-*/
+// Handles sign-in, sign-up, and verification on one screen.
 export default function Login() {
   console.log("[login.tsx] Login page rendering");
   const [location, setLocation] = useLocation();

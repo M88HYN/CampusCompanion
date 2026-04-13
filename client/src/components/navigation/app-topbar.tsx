@@ -1,26 +1,4 @@
-/*
-==========================================================
-File: client/src/components/navigation/app-topbar.tsx
-
-Module: Frontend Experience
-
-Purpose:
-Defines responsibilities specific to this unit while preserving
-clear boundaries with adjacent modules in CampusCompanion.
-
-Architectural Layer:
-Presentation Layer (Frontend UI)
-
-System Interaction:
-- Consumes API endpoints via query/mutation utilities and renders user-facing interfaces
-- Collaborates with shared types to preserve frontend-backend contract integrity
-
-Design Rationale:
-A dedicated file-level boundary supports maintainability,
-traceability, and scalability by keeping concerns local and
-allowing safe evolution of features without cross-module side effects.
-==========================================================
-*/
+/* Top bar for search, quick jumps, and account controls. */
 
 import { Bell, Menu, Search, Settings, User } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -107,30 +85,7 @@ interface FlashcardStats {
   mastered: number;
 }
 
-/*
-----------------------------------------------------------
-Component: AppTopbar
-
-Purpose:
-Renders a focused UI unit and orchestrates state, hooks, and user interactions for the surrounding workflow.
-
-Parameters:
-- user: Input consumed by this routine during execution
-- onLogout: Input consumed by this routine during execution
-
-Process:
-1. Initializes local state and framework hooks required for rendering
-2. Derives view data from props, query state, and computed conditions
-3. Applies conditional rendering to keep the interface robust for empty/loading/error states
-4. Binds event handlers and side effects to synchronize UI with backend/application state
-
-Why Validation is Important:
-State guards and defensive rendering prevent runtime errors, preserve UX continuity, and improve accessibility during asynchronous updates.
-
-Returns:
-A JSX tree representing the component view for the current state.
-----------------------------------------------------------
-*/
+// Builds the top bar and keeps the quick search responsive.
 export function AppTopbar({ user, onLogout }: AppTopbarProps) {
   const { t } = useAppLanguage();
   const queryClient = useQueryClient();
@@ -213,30 +168,8 @@ export function AppTopbar({ user, onLogout }: AppTopbarProps) {
     const scrollContainer = document.getElementById("app-main-scroll");
     if (!scrollContainer) return;
 
-        /*
-    ----------------------------------------------------------
-    Function: handleScroll
-
-    Purpose:
-    Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
-
-    Parameters:
-    - None: Operates using closure/module state only
-
-    Process:
-    1. Accepts and normalizes inputs before core processing
-    2. Applies relevant guards/validation to prevent invalid transitions
-    3. Executes primary logic path and handles expected edge conditions
-    4. Returns a deterministic output for the caller layer
-
-    Why Validation is Important:
-    Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
-
-    Returns:
-    A value/promise representing the outcome of the executed logic path.
-    ----------------------------------------------------------
-    */
-const handleScroll = () => {
+      // Switch the bar styling once the page starts to scroll.
+      const handleScroll = () => {
       setIsScrolled(scrollContainer.scrollTop > 8);
     };
 
@@ -257,30 +190,8 @@ const handleScroll = () => {
     },
   });
 
-    /*
-  ----------------------------------------------------------
-  Function: handleNotificationsToggle
-
-  Purpose:
-  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
-
-  Parameters:
-  - enabled: Input consumed by this routine during execution
-
-  Process:
-  1. Accepts and normalizes inputs before core processing
-  2. Applies relevant guards/validation to prevent invalid transitions
-  3. Executes primary logic path and handles expected edge conditions
-  4. Returns a deterministic output for the caller layer
-
-  Why Validation is Important:
-  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
-
-  Returns:
-  A value/promise representing the outcome of the executed logic path.
-  ----------------------------------------------------------
-  */
-const handleNotificationsToggle = (enabled: boolean) => {
+    // Saves the reminder toggle back to settings.
+    const handleNotificationsToggle = (enabled: boolean) => {
     setNotificationsEnabled(enabled);
     updateNotificationsMutation.mutate(enabled);
   };
@@ -350,60 +261,16 @@ const handleNotificationsToggle = (enabled: boolean) => {
     }))
     .filter((group) => group.items.length > 0);
 
-    /*
-  ----------------------------------------------------------
-  Function: handleSearchNavigate
-
-  Purpose:
-  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
-
-  Parameters:
-  - target: Input consumed by this routine during execution
-
-  Process:
-  1. Accepts and normalizes inputs before core processing
-  2. Applies relevant guards/validation to prevent invalid transitions
-  3. Executes primary logic path and handles expected edge conditions
-  4. Returns a deterministic output for the caller layer
-
-  Why Validation is Important:
-  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
-
-  Returns:
-  A value/promise representing the outcome of the executed logic path.
-  ----------------------------------------------------------
-  */
-const handleSearchNavigate = (target: SearchTarget) => {
+    // Jumps to the selected search result and closes the panel.
+    const handleSearchNavigate = (target: SearchTarget) => {
     setLocation(target.path);
     setSearchQuery("");
     setIsSearchOpen(false);
   setIsMobileSearchOpen(false);
   };
 
-    /*
-  ----------------------------------------------------------
-  Function: handleSearchSubmit
-
-  Purpose:
-  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
-
-  Parameters:
-  - event: Input consumed by this routine during execution
-
-  Process:
-  1. Accepts and normalizes inputs before core processing
-  2. Applies relevant guards/validation to prevent invalid transitions
-  3. Executes primary logic path and handles expected edge conditions
-  4. Returns a deterministic output for the caller layer
-
-  Why Validation is Important:
-  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
-
-  Returns:
-  A value/promise representing the outcome of the executed logic path.
-  ----------------------------------------------------------
-  */
-const handleSearchSubmit = (event: React.FormEvent) => {
+    // Submits the current search and opens the first match.
+    const handleSearchSubmit = (event: React.FormEvent) => {
     event.preventDefault();
     if (filteredTargets.length > 0) {
       handleSearchNavigate(filteredTargets[0]);
@@ -444,7 +311,7 @@ const handleSearchSubmit = (event: React.FormEvent) => {
           : "border-b border-white/20 bg-gradient-to-r from-primary/90 via-brand-primary/90 to-secondary/90 text-primary-foreground backdrop-blur-lg"
       }`}
     >
-      {/* Centers header content with consistent shell width across pages. */}
+      {/* Keeps the header centred within the page shell. */}
       <div className="mx-auto flex w-full max-w-[1600px] items-center gap-2 md:gap-4">
         <div className="flex min-w-0 items-center gap-2 md:gap-3 md:min-w-[220px]">
           <SidebarTrigger
@@ -461,7 +328,7 @@ const handleSearchSubmit = (event: React.FormEvent) => {
         </div>
 
         <div className="hidden flex-1 md:flex md:justify-center">
-          {/* Keeps search interaction visually elevated while preserving existing handlers. */}
+          {/* Gives search a clearer, lifted look without changing the behaviour. */}
           <form onSubmit={handleSearchSubmit} className="relative w-full max-w-xl">
             <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-foreground/65" />
             <Input

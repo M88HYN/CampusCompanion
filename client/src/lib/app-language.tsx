@@ -1,26 +1,4 @@
-/*
-==========================================================
-File: client/src/lib/app-language.tsx
-
-Module: Frontend Experience
-
-Purpose:
-Defines responsibilities specific to this unit while preserving
-clear boundaries with adjacent modules in CampusCompanion.
-
-Architectural Layer:
-Application Layer (Business and Interaction Logic)
-
-System Interaction:
-- Consumes API endpoints via query/mutation utilities and renders user-facing interfaces
-- Collaborates with shared types to preserve frontend-backend contract integrity
-
-Design Rationale:
-A dedicated file-level boundary supports maintainability,
-traceability, and scalability by keeping concerns local and
-allowing safe evolution of features without cross-module side effects.
-==========================================================
-*/
+/* Language helper for translating UI text and saved labels. */
 
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 
@@ -498,56 +476,12 @@ type AppLanguageContextValue = {
 
 const AppLanguageContext = createContext<AppLanguageContextValue | undefined>(undefined);
 
-/*
-----------------------------------------------------------
-Function: isAppLanguage
-
-Purpose:
-Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
-
-Parameters:
-- value: Input consumed by this routine during execution
-
-Process:
-1. Accepts and normalizes inputs before core processing
-2. Applies relevant guards/validation to prevent invalid transitions
-3. Executes primary logic path and handles expected edge conditions
-4. Returns a deterministic output for the caller layer
-
-Why Validation is Important:
-Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
-
-Returns:
-A value/promise representing the outcome of the executed logic path.
-----------------------------------------------------------
-*/
+// Checks whether a stored language code is supported.
 function isAppLanguage(value: string): value is AppLanguage {
   return ["en", "es", "fr", "de", "zh"].includes(value);
 }
 
-/*
-----------------------------------------------------------
-Component: AppLanguageProvider
-
-Purpose:
-Renders a focused UI unit and orchestrates state, hooks, and user interactions for the surrounding workflow.
-
-Parameters:
-- children: Input consumed by this routine during execution
-
-Process:
-1. Initializes local state and framework hooks required for rendering
-2. Derives view data from props, query state, and computed conditions
-3. Applies conditional rendering to keep the interface robust for empty/loading/error states
-4. Binds event handlers and side effects to synchronize UI with backend/application state
-
-Why Validation is Important:
-State guards and defensive rendering prevent runtime errors, preserve UX continuity, and improve accessibility during asynchronous updates.
-
-Returns:
-A JSX tree representing the component view for the current state.
-----------------------------------------------------------
-*/
+// Provides the active language and keeps translations in sync.
 export function AppLanguageProvider({ children }: { children: React.ReactNode }) {
   const [language, setLanguageState] = useState<AppLanguage>(() => {
     const stored = localStorage.getItem(LANGUAGE_STORAGE_KEY);
@@ -555,30 +489,8 @@ export function AppLanguageProvider({ children }: { children: React.ReactNode })
     return "en";
   });
 
-    /*
-  ----------------------------------------------------------
-  Function: setLanguage
-
-  Purpose:
-  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
-
-  Parameters:
-  - nextLanguage: Input consumed by this routine during execution
-
-  Process:
-  1. Accepts and normalizes inputs before core processing
-  2. Applies relevant guards/validation to prevent invalid transitions
-  3. Executes primary logic path and handles expected edge conditions
-  4. Returns a deterministic output for the caller layer
-
-  Why Validation is Important:
-  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
-
-  Returns:
-  A value/promise representing the outcome of the executed logic path.
-  ----------------------------------------------------------
-  */
-const setLanguage = (nextLanguage: AppLanguage) => {
+    // Updates the active language.
+    const setLanguage = (nextLanguage: AppLanguage) => {
     setLanguageState(nextLanguage);
   };
 
@@ -625,29 +537,7 @@ const setLanguage = (nextLanguage: AppLanguage) => {
   return <AppLanguageContext.Provider value={value}>{children}</AppLanguageContext.Provider>;
 }
 
-/*
-----------------------------------------------------------
-Function: useAppLanguage
-
-Purpose:
-Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
-
-Parameters:
-- None: Operates using closure/module state only
-
-Process:
-1. Accepts and normalizes inputs before core processing
-2. Applies relevant guards/validation to prevent invalid transitions
-3. Executes primary logic path and handles expected edge conditions
-4. Returns a deterministic output for the caller layer
-
-Why Validation is Important:
-Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
-
-Returns:
-A value/promise representing the outcome of the executed logic path.
-----------------------------------------------------------
-*/
+// Returns the active language helper.
 export function useAppLanguage() {
   const context = useContext(AppLanguageContext);
   if (!context) {

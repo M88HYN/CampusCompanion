@@ -1,4 +1,4 @@
-// Sets up the Express app, logging, and shared middleware.
+// Express app setup, logging, and shared middleware.
 
 import { type Server } from "node:http";
 
@@ -11,7 +11,7 @@ import express, {
 
 import { registerRoutes } from "./routes";
 
-// Logs messages with a simple timestamp and source tag.
+// Prints log lines with a timestamp and source tag.
 export function log(message: string, source = "express") {
   const formattedTime = new Date().toLocaleTimeString("en-US", {
     hour: "numeric",
@@ -31,7 +31,7 @@ declare module 'http' {
   }
 }
 
-// Lets the local Vite app talk to the API during development.
+// Lets the local Vite app talk to the API in development.
 app.use((req, res, next) => {
   res.header("Access-Control-Allow-Origin", req.headers.origin || "*");
   res.header("Access-Control-Allow-Credentials", "true");
@@ -51,7 +51,7 @@ app.use(express.json({
 }));
 app.use(express.urlencoded({ extended: false }));
 
-// Prints a short request log for API calls.
+// Prints a short log line for each API request.
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
@@ -82,7 +82,7 @@ app.use((req, res, next) => {
   next();
 });
 
-// Health check endpoint - always works
+// Health check endpoint that should always respond.
 app.get("/api/health", (_req: Request, res: Response) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() });
 });
@@ -115,15 +115,15 @@ export default async function runApp(
 ) {
   const server = await registerRoutes(app);
 
-  // Run environment-specific setup (e.g., static serving in production)
+  // Run environment-specific setup, such as static serving in production.
   await setup(app, server);
 
-  // 404 handler for API routes only
+  // 404 handler for API routes only.
   app.use("/api", (_req: Request, res: Response) => {
     res.status(404).json({ message: "Not Found" });
   });
 
-  // Global error handler - MUST be last middleware
+  // Global error handler, kept as the last middleware.
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
@@ -141,13 +141,13 @@ export default async function runApp(
     });
   });
 
-  // Handle unhandled promise rejections
+  // Handle unhandled promise rejections.
   process.on('unhandledRejection', (reason, promise) => {
     log(`Unhandled Rejection at: ${promise}, reason: ${reason}`, "express");
     console.error('Unhandled Rejection:', reason);
   });
 
-  // Handle uncaught exceptions
+  // Handle uncaught exceptions.
   process.on('uncaughtException', (error) => {
     log(`Uncaught Exception: ${error.message}`, "express");
     console.error('Uncaught Exception:', error);
@@ -156,7 +156,7 @@ export default async function runApp(
   const host = '0.0.0.0';
   const PORT = Number(process.env.PORT) || 3000;
 
-  // FAIL-FAST: If port is occupied, crash immediately with clear error
+  // Fail fast if the port is already in use.
   server.on('error', (error: any) => {
     if (error.code === 'EADDRINUSE') {
       console.error(`\n❌ FATAL ERROR: Port ${PORT} is already in use!`);
@@ -172,7 +172,7 @@ export default async function runApp(
     }
   });
 
-  // Start server on FIXED PORT ONLY
+  // Start the server on the fixed port only.
   server.listen(PORT, host, () => {
     log(`✅ Backend API server ready at http://${host}:${PORT}`);
     if (process.env.NODE_ENV === 'development') {

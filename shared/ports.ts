@@ -22,18 +22,7 @@ allowing safe evolution of features without cross-module side effects.
 ==========================================================
 */
 
-/**
- * CENTRALIZED PORT CONFIGURATION
- * 
- * Single source of truth for all service ports.
- * DO NOT define ports anywhere else in the codebase.
- * 
- * NON-NEGOTIABLE RULES:
- * - Ports are fixed and explicit
- * - No auto-incrementing ports
- * - No silent fallbacks
- * - App must crash if a port is occupied
- */
+/** Fixed port values shared by the app and server. */
 
 export const PORTS = {
   FRONTEND: 5173,

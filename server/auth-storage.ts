@@ -27,7 +27,7 @@ import { db } from "./db";
 import { users } from "@shared/schema";
 import { eq } from "drizzle-orm";
 
-// In-memory storage for demo (but also sync with database)
+// In-memory auth store that still syncs with the database.
 const userCache = new Map<string, AuthUser>();
 
 export const storage = {
@@ -57,7 +57,7 @@ export const storage = {
 async createUser(user: AuthUser): Promise<void> {
     userCache.set(user.id, user);
     
-    // Also create in database for foreign key consistency
+    // Also create the user in the database for foreign key consistency.
     try {
       await db.insert(users).values({
         id: user.id,
@@ -72,7 +72,7 @@ async createUser(user: AuthUser): Promise<void> {
         updatedAt: Date.now(),
       });
     } catch (error) {
-      // User might already exist
+      // The user might already exist.
       console.log("User already exists in database or error:", error instanceof Error ? error.message : error);
     }
   },
@@ -103,7 +103,7 @@ async createUser(user: AuthUser): Promise<void> {
 async updateUser(user: AuthUser): Promise<void> {
     userCache.set(user.id, user);
     
-    // Also update in database
+    // Also update the database copy.
     try {
       await db.update(users)
         .set({
@@ -150,7 +150,7 @@ async findUserById(userId: string): Promise<AuthUser | null> {
       return cached;
     }
 
-    // Fallback: hydrate from database so auth remains valid after server restarts.
+    // Hydrate from the database so auth still works after restarts.
     try {
       const rows = await db.select().from(users).where(eq(users.id, userId));
       if (rows.length > 0) {
@@ -203,7 +203,7 @@ async findUserByEmail(email: string): Promise<AuthUser | null> {
         return user;
       }
     }
-    // Fallback: check database (user may have been created by seed scripts)
+    // Check the database in case a seed script created the user.
     try {
       const rows = await db.select().from(users).where(eq(users.email, email));
       if (rows.length > 0) {
@@ -253,7 +253,7 @@ async findUserByUsername(username: string): Promise<AuthUser | null> {
         return user;
       }
     }
-    // Fallback: check database (user may have been created by seed scripts)
+    // Check the database in case a seed script created the user.
     try {
       const rows = await db.select().from(users).where(eq(users.username, username));
       if (rows.length > 0) {

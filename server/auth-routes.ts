@@ -1,4 +1,4 @@
-// Handles sign-in, sign-up, and token-based auth flows.
+// Auth routes for sign-up, sign-in, verification, and OAuth.
 
 import type { Express, Request, Response, NextFunction } from "express";
 import { z } from "zod";
@@ -225,14 +225,14 @@ export function registerAuthRoutes(app: Express) {
     });
   });
 
-  // Register route
+  // Register route.
   app.post("/api/auth/register", async (req: any, res: Response) => {
     try {
       console.log("Register request body:", req.body);
       const data = registerSchema.parse(req.body);
       console.log("Parsed register data:", data);
 
-      // Check if username already exists (only if provided)
+      // Check whether the username is already taken, if one was provided.
       if (data.username) {
         const existingUsername = await findUserByUsername(data.username);
         if (existingUsername) {
@@ -240,13 +240,13 @@ export function registerAuthRoutes(app: Express) {
         }
       }
 
-      // Check if email already exists
+      // Check whether the email is already in use.
       const existingEmail = await findUserByEmail(data.email);
       if (existingEmail) {
         return res.status(400).json({ message: "Email already registered" });
       }
 
-      // Create user account and mark as verified to skip OTP flow.
+      // Create the account and mark it verified to skip the OTP step.
       const user = await createUser(data.email, data.password, data.firstName, data.lastName, data.username, true);
       const token = generateToken(user);
 
@@ -272,12 +272,12 @@ export function registerAuthRoutes(app: Express) {
     }
   });
 
-  // Login route
+  // Login route.
   app.post("/api/auth/login", async (req: any, res: Response) => {
     try {
       const data = loginSchema.parse(req.body);
 
-      // Try to find user by email or username
+      // Try to find the user by email or username.
       let user = await findUserByEmail(data.emailOrUsername);
       if (!user) {
         user = await findUserByUsername(data.emailOrUsername);
@@ -335,7 +335,7 @@ export function registerAuthRoutes(app: Express) {
     }
   });
 
-  // Verify email code
+  // Verify email code.
   app.post("/api/auth/verify-email", async (req: any, res: Response) => {
     try {
       const { userId, code } = req.body;
@@ -349,7 +349,7 @@ export function registerAuthRoutes(app: Express) {
         return res.status(400).json({ message: "Invalid or expired verification code" });
       }
 
-      // User is now verified, generate token
+      // The user is now verified, so generate a token.
       const user = await findUserById(userId);
       if (!user) {
         return res.status(404).json({ message: "User not found" });
@@ -374,7 +374,7 @@ export function registerAuthRoutes(app: Express) {
     }
   });
 
-  // Verify email code (email + code compatibility endpoint)
+  // Verify email code using the email plus code endpoint.
   app.post("/api/auth/verify", async (req: any, res: Response) => {
     try {
       const { email, code } = verifySchema.parse(req.body);
@@ -406,7 +406,7 @@ export function registerAuthRoutes(app: Express) {
     }
   });
 
-  // Resend verification code
+  // Resend verification code.
   app.post("/api/auth/resend-code", async (req: any, res: Response) => {
     try {
       const { userId, email } = resendSchema.parse(req.body);
@@ -452,7 +452,7 @@ export function registerAuthRoutes(app: Express) {
     }
   });
 
-  // Get current user
+  // Get the current user.
   app.get("/api/auth/me", authMiddleware, async (req: any, res: Response) => {
     try {
       const user = await findUserById(req.user.userId);
@@ -493,12 +493,12 @@ export function registerAuthRoutes(app: Express) {
     }
   });
 
-  // Logout (client-side handled, but endpoint for completeness)
+  // Logout endpoint, kept for completeness.
   app.post("/api/auth/logout", (req: any, res: Response) => {
     res.json({ message: "Logged out" });
   });
 
-  // Google OAuth - Initiate
+  // Start Google OAuth.
   app.get("/api/auth/google", (req: any, res: Response) => {
     if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
       return res.status(500).json({ message: "Supabase OAuth not configured" });
@@ -506,7 +506,7 @@ export function registerAuthRoutes(app: Express) {
     res.redirect(getSupabaseAuthorizeUrl("google"));
   });
 
-  // GitHub OAuth - Initiate
+  // Start GitHub OAuth.
   app.get("/api/auth/github", (req: any, res: Response) => {
     if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
       return res.status(500).json({ message: "Supabase OAuth not configured" });

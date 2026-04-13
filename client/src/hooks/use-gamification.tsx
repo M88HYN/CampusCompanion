@@ -1,26 +1,4 @@
-/*
-==========================================================
-File: client/src/hooks/use-gamification.tsx
-
-Module: Core Platform
-
-Purpose:
-Defines responsibilities specific to this unit while preserving
-clear boundaries with adjacent modules in CampusCompanion.
-
-Architectural Layer:
-Application Layer (Business and Interaction Logic)
-
-System Interaction:
-- Consumes API endpoints via query/mutation utilities and renders user-facing interfaces
-- Collaborates with shared types to preserve frontend-backend contract integrity
-
-Design Rationale:
-A dedicated file-level boundary supports maintainability,
-traceability, and scalability by keeping concerns local and
-allowing safe evolution of features without cross-module side effects.
-==========================================================
-*/
+/* Tracks XP, streaks, and level progress for the study widgets. */
 
 import { useState, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
@@ -34,29 +12,7 @@ interface GamificationState {
   level: number;
 }
 
-/*
-----------------------------------------------------------
-Function: useGameification
-
-Purpose:
-Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
-
-Parameters:
-- None: Operates using closure/module state only
-
-Process:
-1. Accepts and normalizes inputs before core processing
-2. Applies relevant guards/validation to prevent invalid transitions
-3. Executes primary logic path and handles expected edge conditions
-4. Returns a deterministic output for the caller layer
-
-Why Validation is Important:
-Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
-
-Returns:
-A value/promise representing the outcome of the executed logic path.
-----------------------------------------------------------
-*/
+// Loads saved progression and exposes the XP helpers.
 export function useGameification() {
   const [gameState, setGameState] = useState<GamificationState>(() => {
     const saved = localStorage.getItem("gamification");
@@ -69,31 +25,8 @@ export function useGameification() {
     localStorage.setItem("gamification", JSON.stringify(gameState));
   }, [gameState]);
 
-    /*
-  ----------------------------------------------------------
-  Function: addXP
-
-  Purpose:
-  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
-
-  Parameters:
-  - amount: Input consumed by this routine during execution
-  - continued: Input consumed by this routine during execution
-
-  Process:
-  1. Accepts and normalizes inputs before core processing
-  2. Applies relevant guards/validation to prevent invalid transitions
-  3. Executes primary logic path and handles expected edge conditions
-  4. Returns a deterministic output for the caller layer
-
-  Why Validation is Important:
-  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
-
-  Returns:
-  A value/promise representing the outcome of the executed logic path.
-  ----------------------------------------------------------
-  */
-const addXP = (amount: number, continued: boolean = true) => {
+    // Adds XP and nudges the streak forward when appropriate.
+    const addXP = (amount: number, continued: boolean = true) => {
     setGameState((prev) => {
       const newXp = prev.xp + amount;
       const xpPerLevel = 100;
@@ -109,57 +42,13 @@ const addXP = (amount: number, continued: boolean = true) => {
     });
   };
 
-    /*
-  ----------------------------------------------------------
-  Function: resetStreak
-
-  Purpose:
-  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
-
-  Parameters:
-  - None: Operates using closure/module state only
-
-  Process:
-  1. Accepts and normalizes inputs before core processing
-  2. Applies relevant guards/validation to prevent invalid transitions
-  3. Executes primary logic path and handles expected edge conditions
-  4. Returns a deterministic output for the caller layer
-
-  Why Validation is Important:
-  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
-
-  Returns:
-  A value/promise representing the outcome of the executed logic path.
-  ----------------------------------------------------------
-  */
-const resetStreak = () => {
+    // Clears the current streak without touching XP.
+    const resetStreak = () => {
     setGameState((prev) => ({ ...prev, streak: 0 }));
   };
 
-    /*
-  ----------------------------------------------------------
-  Function: getXpReward
-
-  Purpose:
-  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
-
-  Parameters:
-  - quality: Input consumed by this routine during execution
-
-  Process:
-  1. Accepts and normalizes inputs before core processing
-  2. Applies relevant guards/validation to prevent invalid transitions
-  3. Executes primary logic path and handles expected edge conditions
-  4. Returns a deterministic output for the caller layer
-
-  Why Validation is Important:
-  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
-
-  Returns:
-  A value/promise representing the outcome of the executed logic path.
-  ----------------------------------------------------------
-  */
-const getXpReward = (quality: number): number => {
+    // Maps review quality to a simple XP reward.
+    const getXpReward = (quality: number): number => {
     if (quality >= 4) return 50; // Easy
     if (quality === 3) return 30; // Good
     if (quality === 2) return 15; // Hard
@@ -212,7 +101,7 @@ export function GamificationDisplay({
 
   return (
     <div className="space-y-4">
-      {/* Level Badge */}
+      {/* Shows the current level first. */}
       <div className="flex items-center gap-3">
         <div className="relative inline-flex">
           <div className="absolute inset-0 bg-gradient-to-r from-amber-400 to-orange-500 rounded-full blur opacity-75"></div>
@@ -226,7 +115,7 @@ export function GamificationDisplay({
           </div>
         </div>
 
-        {/* XP Bar */}
+        {/* Tracks progress towards the next level. */}
         <div className="flex-1">
           <div className="flex items-center justify-between mb-1">
             <span className="text-sm font-semibold text-muted-foreground">
@@ -240,7 +129,7 @@ export function GamificationDisplay({
         </div>
       </div>
 
-      {/* Streak Counter */}
+      {/* Displays the streak when one is active. */}
       {streak > 0 && (
         <div className="flex items-center gap-2 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800">
           <Flame className="h-5 w-5 text-amber-500 animate-pulse" />
@@ -250,7 +139,7 @@ export function GamificationDisplay({
         </div>
       )}
 
-      {/* Total XP */}
+      {/* Shows the total XP tally. */}
       {totalXp > 0 && (
         <div className="text-center text-sm text-muted-foreground">
           <Sparkles className="h-4 w-4 inline mr-1" />

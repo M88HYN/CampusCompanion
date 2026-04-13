@@ -1,4 +1,4 @@
-// Pomodoro page for timed study sessions and breaks.
+// Pomodoro page for timed focus blocks and proper breaks.
 
 import { useState, useEffect, useRef } from "react";
 import {
@@ -65,7 +65,7 @@ export default function Pomodoro() {
   const { toast } = useToast();
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  // Timer settings
+  // Timer settings.
   const [workDuration, setWorkDuration] = useState<number>(25); // minutes
   const [breakDuration, setBreakDuration] = useState<number>(5); // minutes
   const [isWorkSession, setIsWorkSession] = useState<boolean>(true);
@@ -74,7 +74,7 @@ export default function Pomodoro() {
   const [showSettings, setShowSettings] = useState<boolean>(false);
   const [soundEnabled, setSoundEnabled] = useState<boolean>(true);
 
-  // Stats
+  // Session stats.
   const [stats, setStats] = useState<PomodoroStats>({
     sessionsCompleted: 0,
     breaksTaken: 0,
@@ -82,7 +82,7 @@ export default function Pomodoro() {
     currentStreak: 0,
   });
 
-  // Timer interval
+  // Timer interval.
   useEffect(() => {
     let interval: NodeJS.Timeout;
 
@@ -90,7 +90,7 @@ export default function Pomodoro() {
       interval = setInterval(() => {
         setTimeRemaining((prev) => {
           if (prev <= 1) {
-            // Timer completed
+            // Timer finished.
             handleTimerComplete();
             return 0;
           }
@@ -130,7 +130,7 @@ const handleTimerComplete = () => {
     playSound();
 
     if (isWorkSession) {
-      // Work session completed
+      // Work session finished.
       setStats((prev) => ({
         ...prev,
         sessionsCompleted: prev.sessionsCompleted + 1,
@@ -141,11 +141,11 @@ const handleTimerComplete = () => {
         title: "Great work! 🎉",
         description: "Time for a break. You earned it!",
       });
-      // Switch to break
+      // Switch to a break.
       setIsWorkSession(false);
       setTimeRemaining(breakDuration * 60);
     } else {
-      // Break completed
+      // Break finished.
       setStats((prev) => ({
         ...prev,
         breaksTaken: prev.breaksTaken + 1,
@@ -154,7 +154,7 @@ const handleTimerComplete = () => {
         title: "Break over! 💪",
         description: "Ready for another focus session?",
       });
-      // Switch to work
+      // Switch back to work.
       setIsWorkSession(true);
       setTimeRemaining(workDuration * 60);
     }
@@ -186,7 +186,7 @@ const handleTimerComplete = () => {
 const playSound = () => {
     if (soundEnabled && audioRef.current) {
       audioRef.current.play().catch(() => {
-        // Browser prevented autoplay, ignore
+        // The browser blocked autoplay, so ignore it.
       });
     }
   };
@@ -287,13 +287,13 @@ const handleApplySettings = (newWork: number, newBreak: number) => {
   const seconds = timeRemaining % 60;
   const displayTime = `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
 
-  // Calculate progress (0-1)
+  // Calculate progress (0-1).
   const totalSeconds = isWorkSession
     ? workDuration * 60
     : breakDuration * 60;
   const progress = (totalSeconds - timeRemaining) / totalSeconds;
 
-  // Determine colors based on session type and progress
+  // Pick colours from the current session and progress.
     /*
   ----------------------------------------------------------
   Function: getGradient
@@ -319,10 +319,10 @@ const handleApplySettings = (newWork: number, newBreak: number) => {
   */
 const getGradient = () => {
     if (isWorkSession) {
-      // Work session: blue to purple gradient
+      // Work session uses a blue-to-purple gradient.
       return "from-blue-400 to-purple-500";
     } else {
-      // Break session: green to teal gradient
+      // Break session uses a green-to-teal gradient.
       return "from-emerald-400 to-teal-500";
     }
   };
@@ -746,7 +746,7 @@ function SettingsDialog({
   );
 }
 
-// Add Badge component
+// Small badge helper for the timer UI.
 /*
 ----------------------------------------------------------
 Component: Badge

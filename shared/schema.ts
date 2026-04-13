@@ -1,10 +1,10 @@
-// Defines the database tables and shared types used across the app.
+// Shared database schema and types for the app.
 
 import { sql } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-// Re-export the auth tables so both sides of the app can use them.
+// Re-export the auth tables for both sides of the app.
 import { users, sessions, verificationCodes, type User, type UpsertUser, type VerificationCode } from "./models/auth";
 export { users, sessions, verificationCodes, type User, type UpsertUser, type VerificationCode };
 
@@ -62,13 +62,13 @@ export const noteBlocks = sqliteTable("note_blocks", {
   type: text("type").notNull(), // "paragraph", "heading", "code", "list", "markdown"
   content: text("content").notNull(),
   order: integer("order").notNull(),
-  // Smart learning type
+  // Smart learning type.
   noteType: text("note_type").default("general"), // "concept", "definition", "process", "example", "exam_tip", "general"
-  // Exam prompt annotations
+  // Exam prompt annotations.
   isExamContent: integer("is_exam_content", { mode: "boolean" }).default(false),
   examPrompt: text("exam_prompt"), // "SAQ", "MCQ", "Essay", etc.
   examMarks: integer("exam_marks"), // Number of marks for this content
-  // Key terms for recall mode (comma-separated)
+  // Key terms for recall mode, stored as a comma-separated list.
   keyTerms: text("key_terms"),
 }, (table) => ({
   noteIdIdx: index("note_blocks_note_id_idx").on(table.noteId),
@@ -280,7 +280,7 @@ export type InsertCard = z.infer<typeof insertCardSchema>;
 export type CardReview = typeof cardReviews.$inferSelect;
 export type InsertCardReview = z.infer<typeof insertCardReviewSchema>;
 
-// ==================== QUIZZES ====================
+// Quiz tables.
 
 /*
 Table: quizzes (quizzes)
@@ -337,9 +337,9 @@ export const quizQuestions = sqliteTable("quiz_questions", {
   order: integer("order").notNull(),
   tags: text("tags"), // JSON string array
   estimatedTime: integer("estimated_time"), // seconds
-  // For SAQ/LAQ
+  // For SAQ and LAQ.
   correctAnswer: text("correct_answer"),
-  // Integration
+  // Integration.
   sourceNoteBlockId: text("source_note_block_id"),
 }, (table) => ({
   quizIdIdx: index("quiz_questions_quiz_id_idx").on(table.quizId),
@@ -420,9 +420,9 @@ export const quizResponses = sqliteTable("quiz_responses", {
   id: text("id").primaryKey(),
   attemptId: text("attempt_id").notNull(),
   questionId: text("question_id").notNull(),
-  // For MCQ
+  // For MCQ.
   selectedOptionId: text("selected_option_id"),
-  // For SAQ/LAQ
+  // For SAQ and LAQ.
   textAnswer: text("text_answer"),
   isCorrect: integer("is_correct"), // 0=false, 1=true, null=not graded
   marksAwarded: integer("marks_awarded"),
@@ -437,7 +437,7 @@ export const quizResponses = sqliteTable("quiz_responses", {
   questionIdIdx: index("quiz_responses_question_id_idx").on(table.questionId),
 }));
 
-// User question stats for adaptive engine and spaced repetition
+// User question stats for the adaptive engine and spaced repetition.
 /*
 Table: userQuestionStats (user_question_stats)
 
@@ -460,7 +460,7 @@ export const userQuestionStats = sqliteTable("user_question_stats", {
   averageResponseTime: real("average_response_time"), // seconds
   lastAnsweredAt: integer("last_answered_at"),
   streak: integer("streak").notNull().default(0), // consecutive correct answers
-  // Spaced repetition fields (SM-2 algorithm)
+  // Spaced repetition fields for the SM-2 algorithm.
   easeFactor: real("ease_factor").notNull().default(2.5),
   interval: integer("interval").notNull().default(0), // days
   repetitions: integer("repetitions").notNull().default(0),
@@ -520,7 +520,7 @@ export type InsertQuizResponse = z.infer<typeof insertQuizResponseSchema>;
 export type UserQuestionStats = typeof userQuestionStats.$inferSelect;
 export type InsertUserQuestionStats = z.infer<typeof insertUserQuestionStatsSchema>;
 
-// ==================== GAMIFICATION: ACHIEVEMENTS & BADGES ====================
+// Gamification: achievements and badges.
 
 /*
 Table: achievements (achievements)
@@ -589,7 +589,7 @@ export type InsertAchievement = z.infer<typeof insertAchievementSchema>;
 export type UserAchievement = typeof userAchievements.$inferSelect;
 export type InsertUserAchievement = z.infer<typeof insertUserAchievementSchema>;
 
-// ==================== PROGRESS & ANALYTICS ====================
+// Progress and analytics.
 
 /*
 Table: studyStreaks (study_streaks)
@@ -703,7 +703,7 @@ export type InsertStudySession = z.infer<typeof insertStudySessionSchema>;
 export type LearningGoal = typeof learningGoals.$inferSelect;
 export type InsertLearningGoal = z.infer<typeof insertLearningGoalSchema>;
 
-// ==================== INSIGHT SCOUT: SAVED RESOURCES ====================
+// Insight Scout saved resources.
 
 /*
 Table: savedResources (saved_resources)
@@ -777,7 +777,7 @@ export type InsertSavedResource = z.infer<typeof insertSavedResourceSchema>;
 export type SearchHistory = typeof searchHistory.$inferSelect;
 export type InsertSearchHistory = z.infer<typeof insertSearchHistorySchema>;
 
-// ==================== USER PREFERENCES ====================
+// User preferences.
 
 /*
 Table: userPreferences (user_preferences)
@@ -795,22 +795,22 @@ A table-per-aggregate strategy improves maintainability, reduces data redundancy
 export const userPreferences = sqliteTable("user_preferences", {
   id: text("id").primaryKey(),
   userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }).unique(),
-  // Account settings
+  // Account settings.
   phone: text("phone"),
   bio: text("bio"),
   language: text("language").notNull().default("en"),
   timezone: text("timezone").notNull().default("america/new_york"),
-  // Privacy settings
+  // Privacy settings.
   profileVisibility: integer("profile_visibility", { mode: "boolean" }).notNull().default(true),
   showStudyActivity: integer("show_study_activity", { mode: "boolean" }).notNull().default(true),
   shareQuizResults: integer("share_quiz_results", { mode: "boolean" }).notNull().default(true),
-  // Notification settings
+  // Notification settings.
   quizReminders: integer("quiz_reminders", { mode: "boolean" }).notNull().default(true),
   flashcardReminders: integer("flashcard_reminders", { mode: "boolean" }).notNull().default(true),
   weeklyDigest: integer("weekly_digest", { mode: "boolean" }).notNull().default(true),
   newFeatures: integer("new_features", { mode: "boolean" }).notNull().default(false),
   marketing: integer("marketing", { mode: "boolean" }).notNull().default(false),
-  // Insight Scout settings
+  // Insight Scout settings.
   aiModel: text("ai_model").notNull().default("gpt-4"),
   searchDepth: text("search_depth").notNull().default("comprehensive"),
   citationFormat: text("citation_format").notNull().default("apa"),
@@ -825,7 +825,7 @@ export const userPreferences = sqliteTable("user_preferences", {
   academicDatabases: integer("academic_databases", { mode: "boolean" }).notNull().default(true),
   enhancedAnalysis: integer("enhanced_analysis", { mode: "boolean" }).notNull().default(true),
   multiLanguageSupport: integer("multi_language_support", { mode: "boolean" }).notNull().default(false),
-  // Timestamps
+  // Timestamps.
   createdAt: integer("created_at").notNull(),
   updatedAt: integer("updated_at").notNull(),
 }, (table) => ({
@@ -841,5 +841,5 @@ export const insertUserPreferencesSchema = createInsertSchema(userPreferences).o
 export type UserPreferences = typeof userPreferences.$inferSelect;
 export type InsertUserPreferences = z.infer<typeof insertUserPreferencesSchema>;
 
-// Re-export chat models
+// Re-export the chat models.
 export * from "./models/chat";

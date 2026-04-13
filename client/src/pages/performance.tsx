@@ -1,26 +1,4 @@
-﻿/*
-==========================================================
-File: client/src/pages/performance.tsx
-
-Module: Analytics and Learning Intelligence
-
-Purpose:
-Defines responsibilities specific to this unit while preserving
-clear boundaries with adjacent modules in CampusCompanion.
-
-Architectural Layer:
-Presentation Layer (Frontend UI)
-
-System Interaction:
-- Consumes API endpoints via query/mutation utilities and renders user-facing interfaces
-- Collaborates with shared types to preserve frontend-backend contract integrity
-
-Design Rationale:
-A dedicated file-level boundary supports maintainability,
-traceability, and scalability by keeping concerns local and
-allowing safe evolution of features without cross-module side effects.
-==========================================================
-*/
+﻿/* Performance page for quiz analytics and study signals. */
 
 import { useMemo, useState, useCallback } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -38,7 +16,7 @@ import {
   Maximize2, X, Eye,
 } from "lucide-react";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// Types used by the performance page.
 
 type SectionKey =
   | "weeklyProgress"
@@ -79,7 +57,7 @@ const DEFAULT_SECTIONS: SectionsConfig = {
   metricGuide:         { visible: false, expanded: true },
 };
 
-// ─── Small helpers ─────────────────────────────────────────────────────────────
+// Small helpers for the performance cards.
 
 function InfoHint({ text }: { text: string }) {
   return (
@@ -94,8 +72,7 @@ function InfoHint({ text }: { text: string }) {
   );
 }
 
-// ─── CollapsibleCard ───────────────────────────────────────────────────────────
-// Wraps a Card so the header is always visible; content folds with CSS transition.
+// A card shell that keeps the header visible while the body folds away.
 
 function CollapsibleCard({
   title,
@@ -161,7 +138,7 @@ function CollapsibleCard({
   );
 }
 
-// ─── PremiumKpiCard ────────────────────────────────────────────────────────────
+// Styled KPI card for the main headline numbers.
 
 function PremiumKpiCard({
   title, value, subtitle, trend, icon, tone,
@@ -213,7 +190,7 @@ function PremiumKpiCard({
   );
 }
 
-// ─── Main component ────────────────────────────────────────────────────────────
+// Main performance view.
 
 export default function Performance() {
   const [sections, setSections] = useState<SectionsConfig>(DEFAULT_SECTIONS);

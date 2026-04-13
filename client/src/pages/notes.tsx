@@ -1,4 +1,4 @@
-// Notes page for editing, organising, and revising study material.
+// Notes page for writing, tidying, and reviewing study material.
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { marked } from "marked";
@@ -112,29 +112,7 @@ interface NoteWithBlocks extends Note {
   blocks?: { id: string; type: string; content: string; order: number }[];
 }
 
-/*
-----------------------------------------------------------
-Component: MarkdownPreview
-
-Purpose:
-Renders a focused UI unit and orchestrates state, hooks, and user interactions for the surrounding workflow.
-
-Parameters:
-- content: Input consumed by this routine during execution
-
-Process:
-1. Initializes local state and framework hooks required for rendering
-2. Derives view data from props, query state, and computed conditions
-3. Applies conditional rendering to keep the interface robust for empty/loading/error states
-4. Binds event handlers and side effects to synchronize UI with backend/application state
-
-Why Validation is Important:
-State guards and defensive rendering prevent runtime errors, preserve UX continuity, and improve accessibility during asynchronous updates.
-
-Returns:
-A JSX tree representing the component view for the current state.
-----------------------------------------------------------
-*/
+// Renders Markdown before showing it in the side panel.
 function MarkdownPreview({ content }: { content: string }) {
   const html = marked(content, {
     breaks: true,
@@ -160,34 +138,7 @@ function MarkdownPreview({ content }: { content: string }) {
   );
 }
 
-/*
-----------------------------------------------------------
-Component: FormatButton
-
-Purpose:
-Renders a focused UI unit and orchestrates state, hooks, and user interactions for the surrounding workflow.
-
-Parameters:
-- Icon: Input consumed by this routine during execution
-- label: Input consumed by this routine during execution
-- shortcut: Input consumed by this routine during execution
-- onClick: Input consumed by this routine during execution
-- active: Input consumed by this routine during execution
-- disabled: Input consumed by this routine during execution
-
-Process:
-1. Initializes local state and framework hooks required for rendering
-2. Derives view data from props, query state, and computed conditions
-3. Applies conditional rendering to keep the interface robust for empty/loading/error states
-4. Binds event handlers and side effects to synchronize UI with backend/application state
-
-Why Validation is Important:
-State guards and defensive rendering prevent runtime errors, preserve UX continuity, and improve accessibility during asynchronous updates.
-
-Returns:
-A JSX tree representing the component view for the current state.
-----------------------------------------------------------
-*/
+// Small toolbar button for note formatting actions.
 function FormatButton({ 
   icon: Icon, 
   label, 
@@ -224,29 +175,7 @@ function FormatButton({
   );
 }
 
-/*
-----------------------------------------------------------
-Component: Notes
-
-Purpose:
-Renders a focused UI unit and orchestrates state, hooks, and user interactions for the surrounding workflow.
-
-Parameters:
-- None: Operates using closure/module state only
-
-Process:
-1. Initializes local state and framework hooks required for rendering
-2. Derives view data from props, query state, and computed conditions
-3. Applies conditional rendering to keep the interface robust for empty/loading/error states
-4. Binds event handlers and side effects to synchronize UI with backend/application state
-
-Why Validation is Important:
-State guards and defensive rendering prevent runtime errors, preserve UX continuity, and improve accessibility during asynchronous updates.
-
-Returns:
-A JSX tree representing the component view for the current state.
-----------------------------------------------------------
-*/
+// Main notes workspace with editor, tools, and AI help.
 export default function Notes() {
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
   const [noteTitle, setNoteTitle] = useState("");

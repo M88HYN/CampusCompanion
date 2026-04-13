@@ -110,7 +110,7 @@ function FloatingBlobs() {
 
   return (
     <>
-      {/* Blob 1 - Blue, top-left */}
+      {/* Blue glow in the top-left corner. */}
       <motion.div
         className="absolute -top-20 -left-40 w-96 h-96 bg-blue-500 rounded-full blur-[80px] opacity-7 pointer-events-none z-0"
         style={{ willChange: "transform" }}
@@ -133,7 +133,7 @@ function FloatingBlobs() {
         }
       />
 
-      {/* Blob 2 - Purple, bottom-right of hero */}
+      {/* Purple glow sitting behind the hero. */}
       <motion.div
         className="absolute top-96 right-40 w-80 h-80 bg-purple-500 rounded-full blur-[60px] opacity-6 pointer-events-none z-0"
         style={{ willChange: "transform" }}
@@ -156,7 +156,7 @@ function FloatingBlobs() {
         }
       />
 
-      {/* Blob 3 - Teal, right side */}
+      {/* Teal glow along the right edge. */}
       <motion.div
         className="absolute top-64 right-0 w-64 h-64 bg-cyan-500 rounded-full blur-[70px] opacity-5 pointer-events-none z-0"
         style={{ willChange: "transform" }}
@@ -282,7 +282,7 @@ function MobileHero({
 
   return (
     <div className="space-y-6 md:hidden">
-      {/* Badge */}
+      {/* Intro badge. */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -296,7 +296,7 @@ function MobileHero({
         </Badge>
       </motion.div>
 
-      {/* Heading */}
+      {/* Main headline. */}
       <div className="space-y-2">
         {["Build unstoppable momentum with", "your complete study workspace"].map(
           (line, idx) => (
@@ -327,7 +327,7 @@ function MobileHero({
         )}
       </div>
 
-      {/* Subheading */}
+      {/* Supporting copy. */}
       <motion.p
         className="text-base text-muted-foreground"
         initial={{ opacity: 0 }}
@@ -342,7 +342,7 @@ function MobileHero({
         revision workflows, and insight-driven study sessions.
       </motion.p>
 
-      {/* CTA Buttons */}
+      {/* Primary action buttons. */}
       <motion.div
         className="flex flex-col gap-3 pt-2"
         initial={{ opacity: 0, y: 16 }}
@@ -385,7 +385,7 @@ function MobileHero({
         </Button>
       </motion.div>
 
-      {/* Tag lines */}
+      {/* Short feature line. */}
       <motion.div
         className="flex flex-wrap gap-3 pt-2"
         initial={{ opacity: 0 }}
@@ -427,7 +427,7 @@ function DesktopHero({
 
   return (
     <div className="hidden md:block space-y-6">
-      {/* Badge */}
+      {/* Results badge. */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -441,7 +441,7 @@ function DesktopHero({
         </Badge>
       </motion.div>
 
-      {/* Heading - Multiple lines with stagger */}
+      {/* Staggered proof headline. */}
       <div className="space-y-2">
         <motion.h1
           className="text-5xl font-bold tracking-tight text-foreground"
@@ -481,7 +481,7 @@ function DesktopHero({
         </div>
       </div>
 
-      {/* Subheading */}
+      {/* Proof copy. */}
       <motion.p
         className="max-w-xl text-lg text-muted-foreground"
         initial={{ opacity: 0 }}
@@ -496,7 +496,7 @@ function DesktopHero({
         revision workflows, and insight-driven study sessions.
       </motion.p>
 
-      {/* CTA Buttons */}
+      {/* Evidence actions. */}
       <motion.div
         className="flex flex-wrap items-center gap-3 pt-4"
         initial={{ opacity: 0, y: 16 }}
@@ -551,7 +551,7 @@ function DesktopHero({
         </Button>
       </motion.div>
 
-      {/* Tag lines */}
+      {/* Supporting evidence line. */}
       <motion.div
         className="flex flex-wrap items-center gap-3 pt-2"
         initial={{ opacity: 0 }}
@@ -602,7 +602,7 @@ function FeatureCard({
       }}
       className="group relative rounded-2xl border border-gray-200 bg-white p-4 md:p-5 shadow-sm hover:shadow-md transition-shadow duration-200 cursor-pointer overflow-hidden focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
     >
-      {/* Left border accent */}
+      {/* Accent stripe. */}
       {!isTopStat && !reducedMotion && (
         <motion.div
           className="absolute left-0 top-0 w-1 bg-blue-500"
@@ -675,7 +675,7 @@ export default function Landing() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Adjust animation durations on mobile
+  // Trim the motion a touch on smaller screens.
   const responsive = {
     badge: reducedMotion ? 0 : { duration: 0.34, delay: 0 },
     heading: reducedMotion ? 0 : { duration: 0.34, delay: 0.08 },
@@ -691,7 +691,7 @@ export default function Landing() {
       ref={containerRef}
       className="relative min-h-screen bg-gradient-to-b from-blue-50 via-white to-white overflow-hidden"
     >
-      {/* SVG dot pattern background - hero section only */}
+      {/* Hero dot pattern background. */}
       <svg
         className="absolute inset-0 h-full w-full hidden md:block"
         style={{
@@ -707,17 +707,17 @@ export default function Landing() {
         }}
       />
 
-      {/* Floating blobs */}
+      {/* Background glow shapes. */}
       <FloatingBlobs />
 
-      {/* Navbar */}
+      {/* Top navigation. */}
       <NavBar isScrolled={isScrolled} />
 
-      {/* Main content */}
+      {/* Main page content. */}
       <div className="relative z-10 pt-24 md:pt-28">
         <section className="mx-auto max-w-6xl px-4 md:px-6 py-8 md:py-16 lg:py-24">
           <div className="grid gap-8 md:gap-12 lg:grid-cols-[1.1fr_0.9fr] lg:items-start">
-            {/* Left side - Hero content */}
+            {/* Hero copy block. */}
             <div>
               <DesktopHero
                 reducedMotion={!!reducedMotion}
@@ -731,7 +731,7 @@ export default function Landing() {
               />
             </div>
 
-            {/* Right side - Feature grid */}
+            {/* Feature grid. */}
             <motion.div
               className="space-y-3"
               initial={{ opacity: 0, x: 40 }}
@@ -747,7 +747,7 @@ export default function Landing() {
                   Your study stack in one place
                 </h2>
 
-                {/* Top stats - 2 columns */}
+                {/* Two-column stats row. */}
                 <div className="grid grid-cols-2 gap-3 mb-4">
                   <motion.div
                     variants={containerVariants}
@@ -773,7 +773,7 @@ export default function Landing() {
                   </motion.div>
                 </div>
 
-                {/* Feature rows with stagger */}
+                {/* Staggered feature rows. */}
                 <motion.div
                   className="space-y-3"
                   variants={containerVariants}

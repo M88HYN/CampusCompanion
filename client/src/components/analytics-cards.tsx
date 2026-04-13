@@ -1,40 +1,13 @@
-/*
-==========================================================
-File: client/src/components/analytics-cards.tsx
+/* Shared analytics cards for the dashboard and quiz views. */
 
-Module: Flashcards and Spaced Repetition
-
-Purpose:
-Defines responsibilities specific to this unit while preserving
-clear boundaries with adjacent modules in CampusCompanion.
-
-Architectural Layer:
-Presentation Layer (Frontend UI)
-
-System Interaction:
-- Consumes API endpoints via query/mutation utilities and renders user-facing interfaces
-- Collaborates with shared types to preserve frontend-backend contract integrity
-
-Design Rationale:
-A dedicated file-level boundary supports maintainability,
-traceability, and scalability by keeping concerns local and
-allowing safe evolution of features without cross-module side effects.
-==========================================================
-*/
-
-/**
- * Analytics Card Components
- * Reusable UI components for analytics display
- */
+/** Analytics card helpers used across the app. */
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { TopicPerformance, RecentActivity, AnalyticsSummary } from "@/lib/analytics-utils";
 import { Trophy, Target, Clock, Star, TrendingUp, TrendingDown } from "lucide-react";
 
-/**
- * Analytics Summary Card
- */
+/** Compact summary card for the main analytics figures. */
 interface AnalyticsStatCardProps {
   icon: React.ReactNode;
   title: string;
@@ -46,36 +19,7 @@ interface AnalyticsStatCardProps {
   borderColor: string;
 }
 
-/*
-----------------------------------------------------------
-Component: AnalyticsStatCard
-
-Purpose:
-Renders a focused UI unit and orchestrates state, hooks, and user interactions for the surrounding workflow.
-
-Parameters:
-- icon: Input consumed by this routine during execution
-- title: Input consumed by this routine during execution
-- value: Input consumed by this routine during execution
-- subtitle: Input consumed by this routine during execution
-- iconBgColor: Input consumed by this routine during execution
-- iconColor: Input consumed by this routine during execution
-- textColor: Input consumed by this routine during execution
-- borderColor: Input consumed by this routine during execution
-
-Process:
-1. Initializes local state and framework hooks required for rendering
-2. Derives view data from props, query state, and computed conditions
-3. Applies conditional rendering to keep the interface robust for empty/loading/error states
-4. Binds event handlers and side effects to synchronize UI with backend/application state
-
-Why Validation is Important:
-State guards and defensive rendering prevent runtime errors, preserve UX continuity, and improve accessibility during asynchronous updates.
-
-Returns:
-A JSX tree representing the component view for the current state.
-----------------------------------------------------------
-*/
+// Renders one headline metric with a small amount of context.
 export function AnalyticsStatCard({
   icon,
   title,
@@ -101,9 +45,7 @@ export function AnalyticsStatCard({
   );
 }
 
-/**
- * Performance Insight Card (Strengths / Areas to Improve)
- */
+/** Shows the strongest and weakest topics at a glance. */
 interface InsightCardProps {
   title: string;
   subtitle: string;
@@ -117,38 +59,7 @@ interface InsightCardProps {
   emptyMessage?: string;
 }
 
-/*
-----------------------------------------------------------
-Component: InsightCard
-
-Purpose:
-Renders a focused UI unit and orchestrates state, hooks, and user interactions for the surrounding workflow.
-
-Parameters:
-- title: Input consumed by this routine during execution
-- subtitle: Input consumed by this routine during execution
-- icon: Input consumed by this routine during execution
-- items: Input consumed by this routine during execution
-- borderColor: Input consumed by this routine during execution
-- accentColor: Input consumed by this routine during execution
-- itemBgColor: Input consumed by this routine during execution
-- titleColor: Input consumed by this routine during execution
-- badgeColor: Input consumed by this routine during execution
-- emptyMessage: Input consumed by this routine during execution
-
-Process:
-1. Initializes local state and framework hooks required for rendering
-2. Derives view data from props, query state, and computed conditions
-3. Applies conditional rendering to keep the interface robust for empty/loading/error states
-4. Binds event handlers and side effects to synchronize UI with backend/application state
-
-Why Validation is Important:
-State guards and defensive rendering prevent runtime errors, preserve UX continuity, and improve accessibility during asynchronous updates.
-
-Returns:
-A JSX tree representing the component view for the current state.
-----------------------------------------------------------
-*/
+// Lists the strongest or weakest topics without much fuss.
 export function InsightCard({
   title,
   subtitle,
@@ -200,36 +111,12 @@ export function InsightCard({
   );
 }
 
-/**
- * Recent Activity Card
- */
+/** Recent quiz activity in a tidy list. */
 interface ActivityCardProps {
   activities: RecentActivity[];
 }
 
-/*
-----------------------------------------------------------
-Component: ActivityCard
-
-Purpose:
-Renders a focused UI unit and orchestrates state, hooks, and user interactions for the surrounding workflow.
-
-Parameters:
-- activities: Input consumed by this routine during execution
-
-Process:
-1. Initializes local state and framework hooks required for rendering
-2. Derives view data from props, query state, and computed conditions
-3. Applies conditional rendering to keep the interface robust for empty/loading/error states
-4. Binds event handlers and side effects to synchronize UI with backend/application state
-
-Why Validation is Important:
-State guards and defensive rendering prevent runtime errors, preserve UX continuity, and improve accessibility during asynchronous updates.
-
-Returns:
-A JSX tree representing the component view for the current state.
-----------------------------------------------------------
-*/
+// Shows the latest quiz attempts in a compact feed.
 export function ActivityCard({ activities }: ActivityCardProps) {
   return (
     <Card className="rounded-3xl border border-slate-200/80 bg-white/90 shadow-[0_10px_30px_-14px_rgba(15,23,42,0.24)] backdrop-blur-sm dark:border-slate-800/80 dark:bg-slate-950/65 dark:shadow-[0_12px_30px_-14px_rgba(0,0,0,0.75)]">

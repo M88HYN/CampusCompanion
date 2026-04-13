@@ -30,7 +30,7 @@ import path from "path";
 
 const projectRoot = path.resolve(import.meta.dirname, "..");
 
-// No schema import needed - tables are created manually via SQL
+// No schema import is needed because the tables are created manually.
 type EmptySchema = Record<string, never>;
 
 let db: BetterSQLite3Database<EmptySchema>;
@@ -66,10 +66,10 @@ export function initializeDatabase(): BetterSQLite3Database<EmptySchema> {
 
   sqlite = new (Database as any)(dbPath);
   
-  // Enable foreign keys
+  // Enable foreign keys.
   sqlite.pragma("foreign_keys = ON");
 
-  // Initialize drizzle without schema since we create tables manually
+  // Initialise Drizzle without a schema because the tables are manual.
   db = drizzle({
     client: sqlite,
   });
@@ -147,7 +147,7 @@ A value/promise representing the outcome of the executed logic path.
 ----------------------------------------------------------
 */
 function dropTables() {
-  // Drop all tables in reverse order of dependencies
+  // Drop all tables in reverse dependency order.
   const tables = [
     'card_reviews', 'cards', 'decks',
     'quiz_responses', 'quiz_attempts', 'quiz_options', 'quiz_questions', 'quizzes',
@@ -161,7 +161,7 @@ function dropTables() {
     try {
       sqlite.exec(`DROP TABLE IF EXISTS ${table}`);
     } catch (e) {
-      // Ignore errors for non-existent tables
+      // Ignore errors for tables that are not there.
     }
   }
   sqlite.exec('PRAGMA foreign_keys = ON');
@@ -192,7 +192,7 @@ A value/promise representing the outcome of the executed logic path.
 ----------------------------------------------------------
 */
 function createTables() {
-  // Create users table
+  // Create the users table.
   sqlite.exec(`
     CREATE TABLE IF NOT EXISTS users (
       id VARCHAR PRIMARY KEY,
@@ -208,7 +208,7 @@ function createTables() {
     )
   `);
 
-// Create notes table - Drizzle-compatible
+// Create the notes table in a Drizzle-friendly shape.
 sqlite.exec(`
   CREATE TABLE IF NOT EXISTS notes (
     id TEXT PRIMARY KEY,
@@ -223,7 +223,7 @@ sqlite.exec(`
 `);
 
 
-  // Create note_blocks table
+  // Create the note_blocks table.
   sqlite.exec(`
     CREATE TABLE IF NOT EXISTS note_blocks (
       id VARCHAR PRIMARY KEY,
@@ -239,7 +239,7 @@ sqlite.exec(`
     )
   `);
 
-  // Create decks table
+  // Create the decks table.
   sqlite.exec(`
     CREATE TABLE IF NOT EXISTS decks (
       id VARCHAR PRIMARY KEY,
@@ -253,7 +253,7 @@ sqlite.exec(`
     )
   `);
 
-  // Create cards table
+  // Create the cards table.
   sqlite.exec(`
     CREATE TABLE IF NOT EXISTS cards (
       id VARCHAR PRIMARY KEY,
@@ -280,7 +280,7 @@ sqlite.exec(`
 
 
   
-  // Create card_reviews table
+  // Create the card_reviews table.
   sqlite.exec(`
     CREATE TABLE IF NOT EXISTS card_reviews (
       id VARCHAR PRIMARY KEY,
@@ -295,7 +295,7 @@ sqlite.exec(`
     )
   `);
 
-  // Create quizzes table
+  // Create the quizzes table.
   sqlite.exec(`
     CREATE TABLE IF NOT EXISTS quizzes (
       id VARCHAR PRIMARY KEY,
@@ -313,7 +313,7 @@ sqlite.exec(`
     )
   `);
 
-  // Create quiz_questions table
+  // Create the quiz_questions table.
   sqlite.exec(`
     CREATE TABLE IF NOT EXISTS quiz_questions (
       id VARCHAR PRIMARY KEY,
@@ -332,7 +332,7 @@ sqlite.exec(`
     )
   `);
 
-  // Create quiz_options table
+  // Create the quiz_options table.
   sqlite.exec(`
     CREATE TABLE IF NOT EXISTS quiz_options (
       id VARCHAR PRIMARY KEY,
@@ -343,7 +343,7 @@ sqlite.exec(`
     )
   `);
 
-  // Create quiz_attempts table
+  // Create the quiz_attempts table.
   sqlite.exec(`
     CREATE TABLE IF NOT EXISTS quiz_attempts (
       id VARCHAR PRIMARY KEY,
@@ -363,7 +363,7 @@ sqlite.exec(`
     )
   `);
 
-  // Create quiz_responses table
+  // Create the quiz_responses table.
   sqlite.exec(`
     CREATE TABLE IF NOT EXISTS quiz_responses (
       id VARCHAR PRIMARY KEY,
@@ -382,7 +382,7 @@ sqlite.exec(`
     )
   `);
 
-  // Create user_question_stats table
+  // Create the user_question_stats table.
   sqlite.exec(`
     CREATE TABLE IF NOT EXISTS user_question_stats (
       id VARCHAR PRIMARY KEY,
@@ -400,7 +400,7 @@ sqlite.exec(`
     )
   `);
 
-  // Create user_preferences table
+  // Create the user_preferences table.
   sqlite.exec(`
     CREATE TABLE IF NOT EXISTS user_preferences (
       id VARCHAR PRIMARY KEY,
@@ -436,7 +436,7 @@ sqlite.exec(`
     )
   `);
 
-  // Create conversations table
+  // Create the conversations table.
   sqlite.exec(`
     CREATE TABLE IF NOT EXISTS conversations (
       id VARCHAR PRIMARY KEY,
@@ -447,7 +447,7 @@ sqlite.exec(`
     )
   `);
 
-  // Create study_sessions table for dashboard metrics
+  // Create the study_sessions table for dashboard metrics.
   sqlite.exec(`
     CREATE TABLE IF NOT EXISTS study_sessions (
       id VARCHAR PRIMARY KEY,
@@ -462,7 +462,7 @@ sqlite.exec(`
     )
   `);
 
-  // Create messages table
+  // Create the messages table.
   sqlite.exec(`
     CREATE TABLE IF NOT EXISTS messages (
       id VARCHAR PRIMARY KEY,
@@ -473,7 +473,7 @@ sqlite.exec(`
     )
   `);
 
-  // Create verification_codes table for OTP email verification
+  // Create the verification_codes table for OTP verification.
   sqlite.exec(`
     CREATE TABLE IF NOT EXISTS verification_codes (
       id VARCHAR PRIMARY KEY,
@@ -492,13 +492,13 @@ sqlite.exec(`
     CREATE INDEX IF NOT EXISTS verification_codes_code_idx ON verification_codes(code)
   `);
 
-  // Add isPinned column to notes table if it doesn't exist
+  // Add the isPinned column to notes if it is missing.
   try {
     sqlite.exec(`
       ALTER TABLE notes ADD COLUMN is_pinned BOOLEAN DEFAULT 0
     `);
   } catch (error: any) {
-    // Column already exists, ignore error
+    // The column already exists, so ignore the error.
     if (!error.message.includes("duplicate column")) {
       console.warn("Warning adding is_pinned column:", error.message);
     }
@@ -512,7 +512,7 @@ function ensureAuthSchemaCompatibility() {
   try {
     sqlite.exec(`ALTER TABLE users ADD COLUMN is_verified INTEGER NOT NULL DEFAULT 0`);
   } catch {
-    // Column already exists on newer databases.
+    // The column already exists on newer databases.
   }
 }
 

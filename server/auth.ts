@@ -230,7 +230,7 @@ export async function createUser(
     provider: "local",
   };
 
-  // Store user (implement in your storage layer)
+  // Store the user in the backing store.
   await storage.createUser(user);
   return user;
 }
@@ -353,7 +353,7 @@ export async function findOrCreateOAuthUser(
   const existing = await findUserByEmail(email);
   
   if (existing) {
-    // Update provider ID if not already set
+    // Update the provider ID if it has not been set yet.
     if (provider === "google" && !existing.googleId) {
       existing.googleId = providerId;
       await storage.updateUser(existing);
@@ -396,10 +396,10 @@ A 6-digit code as a string.
 ----------------------------------------------------------
 */
 export async function generateVerificationCode(userId: string): Promise<string> {
-  // Generate a cryptographically secure 6-digit code
+  // Generate a cryptographically secure 6-digit code.
   const code = randomInt(100000, 1000000).toString();
   
-  // Code expires in 10 minutes
+  // Code expires in 10 minutes.
   const expiresAt = Date.now() + 10 * 60 * 1000;
   
   try {
@@ -431,7 +431,7 @@ True if verification succeeded, false otherwise.
 */
 export async function verifyEmailCode(userId: string, code: string): Promise<boolean> {
   try {
-    // Find valid verification code
+    // Find a valid verification code.
     const result = await db
       .select()
       .from(verificationCodes)
@@ -450,19 +450,19 @@ export async function verifyEmailCode(userId: string, code: string): Promise<boo
     const verCode = result[0];
     const now = Math.floor(Date.now() / 1000);
 
-    // Check if code is expired
+    // Check whether the code has expired.
     if (verCode.expiresAt < now) {
       console.error("Verification code expired for user:", userId);
       return false;
     }
 
-    // Mark user as verified
+    // Mark the user as verified.
     await db
       .update(users)
       .set({ isVerified: true, updatedAt: now })
       .where(eq(users.id, userId));
 
-    // Delete the used code
+    // Delete the used code.
     await db
       .delete(verificationCodes)
       .where(eq(verificationCodes.id, verCode.id));
@@ -488,13 +488,13 @@ New 6-digit code as a string.
 */
 export async function resendVerificationCode(userId: string): Promise<string> {
   try {
-    // Delete old codes for this user
+    // Delete old codes for this user.
     await db.delete(verificationCodes).where(eq(verificationCodes.userId, userId));
   } catch (error) {
     console.error("Error clearing old verification codes:", error);
   }
 
-  // Generate new code
+  // Generate a new code.
   return generateVerificationCode(userId);
 }
 

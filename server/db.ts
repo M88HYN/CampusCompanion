@@ -25,7 +25,7 @@ allowing safe evolution of features without cross-module side effects.
 import "dotenv/config";
 import { initializeDatabase, getDatabase, closeDatabase } from "./db-sqlite";
 
-// Initialize database on first import
+// Initialises the database on first import.
 let dbInstance: any = null;
 
 /*
@@ -58,7 +58,7 @@ function initDb() {
   return dbInstance;
 }
 
-// Export database instance - initialized immediately
+// Export the database instance, initialised immediately.
 const database = initDb();
 export const db = database;
 

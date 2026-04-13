@@ -1,26 +1,4 @@
-/*
-==========================================================
-File: client/src/pages/research.tsx
-
-Module: Insight Scout and Research
-
-Purpose:
-Defines responsibilities specific to this unit while preserving
-clear boundaries with adjacent modules in CampusCompanion.
-
-Architectural Layer:
-Presentation Layer (Frontend UI)
-
-System Interaction:
-- Consumes API endpoints via query/mutation utilities and renders user-facing interfaces
-- Collaborates with shared types to preserve frontend-backend contract integrity
-
-Design Rationale:
-A dedicated file-level boundary supports maintainability,
-traceability, and scalability by keeping concerns local and
-allowing safe evolution of features without cross-module side effects.
-==========================================================
-*/
+/* Research page for questions, answers, and source-backed notes. */
 
 import { useState, useRef, useEffect } from "react";
 import {
@@ -47,7 +25,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { useIsMobile } from "@/hooks/use-mobile";
 import type { Deck, Quiz } from "@shared/schema";
 
-// ─── Types ───────────────────────────────────────────────────────────────────
+// Types for the research workspace.
 
 type StudyIntent = "exam_prep" | "deep_understanding" | "assignment_writing" | "revision_recall" | "quick_clarification";
 type SearchDepth = "quick" | "balanced" | "comprehensive";
@@ -94,7 +72,7 @@ interface ResearchConversationDetail {
   messages: ResearchConversationMessage[];
 }
 
-// ─── Constants ───────────────────────────────────────────────────────────────
+// Prompt presets for quick starts.
 
 const STUDY_INTENTS: { value: StudyIntent; label: string; icon: React.ElementType; description: string }[] = [
   { value: "exam_prep", label: "Exam Prep", icon: Target, description: "Key points, mark schemes, exam-ready" },
@@ -154,7 +132,7 @@ const PRACTICE_PROMPTS: Array<{
   },
 ];
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
+// Helper functions for the answer cards.
 
 // Turns a query into a short, readable title.
 function generateTitle(query: string): string {
@@ -163,7 +141,7 @@ function generateTitle(query: string): string {
   return title.length > 60 ? title.substring(0, 57) + "..." : title;
 }
 
-// Pulls a few useful sections out of the markdown response.
+// Pulls the key parts out of the markdown response.
 function parseInsightSections(content: string) {
   const sections = {
     keyInsight: "",
@@ -203,7 +181,7 @@ const extractSection = (aliases: readonly string[]) => {
   sections.commonMistakes = extractSection(headingAliases.commonMistakes);
   sections.examRelevance = extractSection(headingAliases.examRelevance);
 
-  // If no structured sections found, put everything in explanation
+  // If nothing is structured, keep the full answer in one place.
   if (!sections.keyInsight && !sections.explanation) {
     const firstLine = content.split("\n").find(l => l.trim().length > 0) || "";
     sections.keyInsight = firstLine.replace(/^#+\s*/, "").replace(/\*\*/g, "").substring(0, 200);
@@ -213,9 +191,9 @@ const extractSection = (aliases: readonly string[]) => {
   return sections;
 }
 
-// ─── Sub-components ──────────────────────────────────────────────────────────
+// Sub-components for the research cards.
 
-// Shows or hides one section of the insight card.
+// Shows or hides one section of the answer card.
 function ExpandableSection({ title, icon: Icon, content, defaultOpen = false }: {
   title: string;
   icon: React.ElementType;
@@ -285,7 +263,7 @@ function ConfidenceCheck({ confidence, onSelect }: {
   );
 }
 
-// Renders one saved insight and its actions.
+// Renders one saved answer and its actions.
 function InsightCardComponent({
   card,
   onSaveToNotes,
@@ -425,7 +403,7 @@ function InsightCardComponent({
   );
 }
 
-// ─── Main Component ──────────────────────────────────────────────────────────
+// Main research workspace.
 
 // Main research page.
 export default function Research() {
@@ -483,7 +461,7 @@ export default function Research() {
     }
   }, [isMobile]);
 
-  // ── Mutations ────────────────────────────────────────────────────────
+  // Mutations for the research workspace.
 
   const saveToNotesMutation = useMutation({
     mutationFn: async (data: { title: string; content: string }) => {
@@ -589,7 +567,7 @@ export default function Research() {
     },
   });
 
-  // ── Handlers ─────────────────────────────────────────────────────────
+  // Handlers for the current answer and saved notes.
 
   useEffect(() => {
     if (!conversationDetail || !currentConversationId) return;
@@ -624,7 +602,7 @@ export default function Research() {
 const getConversationTitle = (query: string) =>
     query.replace(/\s+/g, " ").trim().slice(0, 72) || "New Conversation";
 
-  // Copies an insight to the clipboard.
+  // Copies the current answer to the clipboard.
 const handleCopy = async (content: string, id: string) => {
     try {
       await navigator.clipboard.writeText(content);

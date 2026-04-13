@@ -1,4 +1,4 @@
-// Dashboard page for study progress, quick actions, and learning stats.
+// Dashboard page for daily study progress, shortcuts, and quick reads.
 
 import { useState, useEffect } from "react";
 import {
