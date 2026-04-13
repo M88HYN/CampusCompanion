@@ -1,4 +1,9 @@
-﻿/* Performance page for quiz analytics and study signals. */
+﻿/*
+  Performance page
+  This page gives a focused view of quiz and study performance.
+  It combines KPI cards, trend sections, and hidden/expanded panels,
+  so users can inspect detail without losing the big picture.
+*/
 
 import { useMemo, useState, useCallback } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -190,7 +195,7 @@ function PremiumKpiCard({
   );
 }
 
-// Main performance view.
+// Main performance view with section controls and trend summaries.
 
 export default function Performance() {
   const [sections, setSections] = useState<SectionsConfig>(DEFAULT_SECTIONS);

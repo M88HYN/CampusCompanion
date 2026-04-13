@@ -1,4 +1,9 @@
-﻿/* Quiz page for practice, review, and analytics. */
+﻿/*
+  Quizzes page
+  This page handles quiz creation, attempts, review, and analytics.
+  It supports timed sessions, adaptive practice, and spaced review,
+  so students can test knowledge and track progress in one flow.
+*/
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, useReducedMotion } from "framer-motion";
@@ -137,7 +142,7 @@ const quizFormSchema = z.object({
 
 type QuizFormValues = z.infer<typeof quizFormSchema>;
 
-// Main quiz workspace with practice, review, and analytics.
+// Main quiz workspace covering attempts, creation, and analytics.
 export default function Quizzes() {
   const reducedMotion = useReducedMotion();
   const [location, setLocation] = useLocation();

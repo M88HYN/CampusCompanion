@@ -1,4 +1,9 @@
-// Notes page for writing, tidying, and reviewing study material.
+/*
+  Notes page
+  This page is the writing workspace for study notes.
+  It supports markdown editing, note organisation, and quick actions
+  to turn note content into flashcards or quiz items.
+*/
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { marked } from "marked";
@@ -175,7 +180,7 @@ function FormatButton({
   );
 }
 
-// Main notes workspace with editor, tools, and AI help.
+// Main notes workspace with editor, organiser, and AI support.
 export default function Notes() {
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
   const [noteTitle, setNoteTitle] = useState("");

@@ -1,4 +1,9 @@
-// Settings page for preferences, themes, and account controls.
+/*
+  Settings page
+  This page controls account, privacy, notification, and AI preferences.
+  It keeps related settings grouped by tabs so users can update things
+  quickly without digging through different screens.
+*/
 
 import { useState, useEffect, useMemo } from "react";
 import { User, Mail, Lock, Bell, Eye, EyeOff, Save, LogOut, Shield, Globe, Sparkles, Zap, Loader2, RotateCcw } from "lucide-react";
@@ -327,29 +332,7 @@ const DEFAULT_INSIGHT_SCOUT = {
   multiLanguageSupport: false,
 };
 
-/*
-----------------------------------------------------------
-Component: Settings
-
-Purpose:
-Renders a focused UI unit and orchestrates state, hooks, and user interactions for the surrounding workflow.
-
-Parameters:
-- None: Operates using closure/module state only
-
-Process:
-1. Initializes local state and framework hooks required for rendering
-2. Derives view data from props, query state, and computed conditions
-3. Applies conditional rendering to keep the interface robust for empty/loading/error states
-4. Binds event handlers and side effects to synchronize UI with backend/application state
-
-Why Validation is Important:
-State guards and defensive rendering prevent runtime errors, preserve UX continuity, and improve accessibility during asynchronous updates.
-
-Returns:
-A JSX tree representing the component view for the current state.
-----------------------------------------------------------
-*/
+// Main settings view with tabbed account and preference controls.
 export default function Settings() {
   const { setLanguage: setAppLanguage } = useAppLanguage();
   const { setTheme } = useTheme();

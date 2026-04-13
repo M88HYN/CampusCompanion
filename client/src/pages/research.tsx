@@ -1,4 +1,9 @@
-/* Research page for questions, answers, and source-backed notes. */
+/*
+  Research page
+  This page is the question-and-answer workspace for deeper study.
+  It stores conversation history, structures AI responses into sections,
+  and lets users turn answers into notes, flashcards, or quizzes.
+*/
 
 import { useState, useRef, useEffect } from "react";
 import {
@@ -134,14 +139,14 @@ const PRACTICE_PROMPTS: Array<{
 
 // Helper functions for the answer cards.
 
-// Turns a query into a short, readable title.
+// Turns a long query into a short card title.
 function generateTitle(query: string): string {
   const cleaned = query.replace(/^(explain|summarize|compare|analyze|show|how|what|why|when|where|describe|discuss)\s+(this\s+)?(concept|topic)?:?\s*/i, "").trim();
   const title = cleaned.charAt(0).toUpperCase() + cleaned.slice(1);
   return title.length > 60 ? title.substring(0, 57) + "..." : title;
 }
 
-// Pulls the key parts out of the markdown response.
+// Pulls key sections out of markdown so cards are easier to scan.
 function parseInsightSections(content: string) {
   const sections = {
     keyInsight: "",

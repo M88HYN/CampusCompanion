@@ -1,5 +1,12 @@
 ﻿"use client";
 
+/*
+  Landing page
+  This page introduces CampusCompanion and shows the main value quickly.
+  It uses lightweight animation and clear calls to action,
+  guiding users to sign in or create an account.
+*/
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -105,6 +112,7 @@ const slideInRight = (delay = 0, reducedMotion: boolean = false) => ({
   },
 });
 
+// Decorative background shapes for depth in the hero section.
 function FloatingBlobs() {
   const reducedMotion = useReducedMotion();
 
@@ -182,6 +190,7 @@ function FloatingBlobs() {
   );
 }
 
+// Small count-up effect for the headline stat.
 function StatCounter() {
   const [count, setCount] = useState(0);
   const reducedMotion = useReducedMotion();
@@ -202,6 +211,7 @@ function StatCounter() {
   return <span>{count}</span>;
 }
 
+// Top navigation that tightens styling once the user scrolls.
 function NavBar({ isScrolled }: { isScrolled: boolean }) {
   const [, setLocation] = useLocation();
   const [isNavigating, setIsNavigating] = useState(false);

@@ -1,4 +1,9 @@
-// Sign-in page with a simple path for new and returning users.
+/*
+  Login page
+  This page handles sign in, sign up, and email verification.
+  It also supports onboarding choices so new users can start
+  with sample decks, quizzes, and flashcards.
+*/
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
@@ -57,6 +62,7 @@ export default function Login() {
   const [resendDisabledAt, setResendDisabledAt] = useState(0);
   const [timeRemaining, setTimeRemaining] = useState(0);
 
+  // Returns to the landing page with a short transition.
   const navigateHome = () => {
     if (isNavigating) return;
     setIsNavigating(true);
@@ -65,6 +71,7 @@ export default function Login() {
     }, 220);
   };
 
+  // Switches between login and sign-up modes.
   const handleModeChange = (nextModeIsLogin: boolean) => {
     if (isModeTransitioning || nextModeIsLogin === isLogin) return;
 

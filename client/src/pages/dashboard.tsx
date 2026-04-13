@@ -1,4 +1,9 @@
-// Dashboard page for daily study progress, shortcuts, and quick reads.
+/*
+  Dashboard page
+  This page is the student's daily command centre.
+  It pulls key learning metrics, due work, and suggested next actions,
+  then shows them in quick cards so the user can decide what to do next.
+*/
 
 import { useState, useEffect } from "react";
 import {
@@ -102,6 +107,7 @@ type SmartPromptItem = {
   action: () => void;
 };
 
+// Smoothly animates stat values so dashboard changes feel less abrupt.
 function CountUpValue({ value, suffix = "", testId }: { value: number; suffix?: string; testId?: string }) {
   const [displayValue, setDisplayValue] = useState(value);
 
@@ -144,6 +150,7 @@ interface EnhancedStatCardProps {
   testId: string;
 }
 
+// Reusable stat card used across dashboard highlights.
 function EnhancedStatCard({
   title,
   value,
@@ -228,6 +235,7 @@ function EnhancedStatCard({
   );
 }
 
+// Action card for recommended next steps from dashboard insights.
 function ActionCard({
   title,
   description,

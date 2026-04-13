@@ -1,4 +1,9 @@
-﻿/* Profile page for account details and quick settings. */
+﻿/*
+  Profile page
+  This page shows account details and quick profile settings.
+  It lets users update small personal fields and privacy toggles,
+  while giving a simple snapshot of profile completion.
+*/
 
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "wouter";
@@ -25,7 +30,7 @@ interface ProfileTweakSettings {
   showStudyActivity: boolean;
 }
 
-// Main profile view with account and privacy controls.
+// Main profile view with account details and privacy controls.
 export default function Profile() {
   const { user, isDemoReadOnly } = useAuth();
   const { toast } = useToast();

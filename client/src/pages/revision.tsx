@@ -1,4 +1,9 @@
-// Revision page for focused review before an assessment.
+/*
+  Revision page
+  This page blends short focus timers with task planning and spaced review.
+  It is aimed at exam prep sessions where learners need structure,
+  quick prompts, and visible progress in one place.
+*/
 
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useLocation } from "wouter";
@@ -52,7 +57,7 @@ const motivationalTips = [
 
 
 
-// Revision page for focused review and short study blocks.
+// Main revision workspace with timers, tasks, and review queue.
 export default function Revision() {
   const [selectedPreset, setSelectedPreset] = useState(0);
   const [timeLeft, setTimeLeft] = useState(timerPresets[0].minutes * 60);
@@ -196,29 +201,7 @@ const handlePresetChange = (index: number) => {
 
 
 
-    /*
-  ----------------------------------------------------------
-  Function: handleAddTask
-
-  Purpose:
-  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
-
-  Parameters:
-  - None: Operates using closure/module state only
-
-  Process:
-  1. Accepts and normalizes inputs before core processing
-  2. Applies relevant guards/validation to prevent invalid transitions
-  3. Executes primary logic path and handles expected edge conditions
-  4. Returns a deterministic output for the caller layer
-
-  Why Validation is Important:
-  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
-
-  Returns:
-  A value/promise representing the outcome of the executed logic path.
-  ----------------------------------------------------------
-  */
+  // Adds a new task to the board if the input is not empty.
 const handleAddTask = () => {
     if (newTask.trim()) {
       setTasks([...tasks, { id: String(Date.now()), title: newTask, status: "todo", priority: "medium" }]);
@@ -226,57 +209,12 @@ const handleAddTask = () => {
     }
   };
 
-    /*
-  ----------------------------------------------------------
-  Function: handleDeleteTask
-
-  Purpose:
-  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
-
-  Parameters:
-  - id: Input consumed by this routine during execution
-
-  Process:
-  1. Accepts and normalizes inputs before core processing
-  2. Applies relevant guards/validation to prevent invalid transitions
-  3. Executes primary logic path and handles expected edge conditions
-  4. Returns a deterministic output for the caller layer
-
-  Why Validation is Important:
-  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
-
-  Returns:
-  A value/promise representing the outcome of the executed logic path.
-  ----------------------------------------------------------
-  */
+  // Removes a task from the board.
 const handleDeleteTask = (id: string) => {
     setTasks(tasks.filter((t) => t.id !== id));
   };
 
-    /*
-  ----------------------------------------------------------
-  Function: handleChangeStatus
-
-  Purpose:
-  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
-
-  Parameters:
-  - id: Input consumed by this routine during execution
-  - status: Input consumed by this routine during execution
-
-  Process:
-  1. Accepts and normalizes inputs before core processing
-  2. Applies relevant guards/validation to prevent invalid transitions
-  3. Executes primary logic path and handles expected edge conditions
-  4. Returns a deterministic output for the caller layer
-
-  Why Validation is Important:
-  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
-
-  Returns:
-  A value/promise representing the outcome of the executed logic path.
-  ----------------------------------------------------------
-  */
+  // Moves a task between todo, in-progress, and done.
 const handleChangeStatus = (id: string, status: "todo" | "in-progress" | "done") => {
     setTasks(tasks.map((t) => (t.id === id ? { ...t, status } : t)));
   };
@@ -306,29 +244,7 @@ const handleChangeStatus = (id: string, status: "todo" | "in-progress" | "done")
     { day: "6 days ago", reps: Math.min(12, Math.max(1, doneTasks.length + 1)) },
   ];
 
-    /*
-  ----------------------------------------------------------
-  Function: getPriorityColor
-
-  Purpose:
-  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
-
-  Parameters:
-  - priority: Input consumed by this routine during execution
-
-  Process:
-  1. Accepts and normalizes inputs before core processing
-  2. Applies relevant guards/validation to prevent invalid transitions
-  3. Executes primary logic path and handles expected edge conditions
-  4. Returns a deterministic output for the caller layer
-
-  Why Validation is Important:
-  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
-
-  Returns:
-  A value/promise representing the outcome of the executed logic path.
-  ----------------------------------------------------------
-  */
+  // Chooses a border colour for each task priority.
 const getPriorityColor = (priority?: string) => {
     switch (priority) {
       case "high": return "border-l-red-500";

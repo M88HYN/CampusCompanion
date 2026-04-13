@@ -1,4 +1,9 @@
-// Pomodoro page for timed focus blocks and proper breaks.
+/*
+  Pomodoro page
+  This page runs a focus timer with work and break cycles.
+  It tracks basic session stats and lets users adjust durations,
+  helping them keep a steady revision rhythm.
+*/
 
 import { useState, useEffect, useRef } from "react";
 import {
@@ -38,29 +43,7 @@ interface PomodoroStats {
 const SOUND_URL =
   "data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAAB9AAACABAAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj==";
 
-/*
-----------------------------------------------------------
-Component: Pomodoro
-
-Purpose:
-Renders a focused UI unit and orchestrates state, hooks, and user interactions for the surrounding workflow.
-
-Parameters:
-- None: Operates using closure/module state only
-
-Process:
-1. Initializes local state and framework hooks required for rendering
-2. Derives view data from props, query state, and computed conditions
-3. Applies conditional rendering to keep the interface robust for empty/loading/error states
-4. Binds event handlers and side effects to synchronize UI with backend/application state
-
-Why Validation is Important:
-State guards and defensive rendering prevent runtime errors, preserve UX continuity, and improve accessibility during asynchronous updates.
-
-Returns:
-A JSX tree representing the component view for the current state.
-----------------------------------------------------------
-*/
+// Main timer view for work/break cycles and session stats.
 export default function Pomodoro() {
   const { toast } = useToast();
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -102,29 +85,7 @@ export default function Pomodoro() {
     return () => clearInterval(interval);
   }, [isRunning, timeRemaining]);
 
-    /*
-  ----------------------------------------------------------
-  Function: handleTimerComplete
-
-  Purpose:
-  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
-
-  Parameters:
-  - None: Operates using closure/module state only
-
-  Process:
-  1. Accepts and normalizes inputs before core processing
-  2. Applies relevant guards/validation to prevent invalid transitions
-  3. Executes primary logic path and handles expected edge conditions
-  4. Returns a deterministic output for the caller layer
-
-  Why Validation is Important:
-  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
-
-  Returns:
-  A value/promise representing the outcome of the executed logic path.
-  ----------------------------------------------------------
-  */
+  // Runs when a timer reaches zero and switches session mode.
 const handleTimerComplete = () => {
     setIsRunning(false);
     playSound();
@@ -160,29 +121,7 @@ const handleTimerComplete = () => {
     }
   };
 
-    /*
-  ----------------------------------------------------------
-  Function: playSound
-
-  Purpose:
-  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
-
-  Parameters:
-  - None: Operates using closure/module state only
-
-  Process:
-  1. Accepts and normalizes inputs before core processing
-  2. Applies relevant guards/validation to prevent invalid transitions
-  3. Executes primary logic path and handles expected edge conditions
-  4. Returns a deterministic output for the caller layer
-
-  Why Validation is Important:
-  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
-
-  Returns:
-  A value/promise representing the outcome of the executed logic path.
-  ----------------------------------------------------------
-  */
+  // Plays the completion sound if sound is enabled.
 const playSound = () => {
     if (soundEnabled && audioRef.current) {
       audioRef.current.play().catch(() => {
@@ -191,85 +130,18 @@ const playSound = () => {
     }
   };
 
-    /*
-  ----------------------------------------------------------
-  Function: handlePlayPause
-
-  Purpose:
-  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
-
-  Parameters:
-  - None: Operates using closure/module state only
-
-  Process:
-  1. Accepts and normalizes inputs before core processing
-  2. Applies relevant guards/validation to prevent invalid transitions
-  3. Executes primary logic path and handles expected edge conditions
-  4. Returns a deterministic output for the caller layer
-
-  Why Validation is Important:
-  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
-
-  Returns:
-  A value/promise representing the outcome of the executed logic path.
-  ----------------------------------------------------------
-  */
+  // Toggles timer running state.
 const handlePlayPause = () => {
     setIsRunning(!isRunning);
   };
 
-    /*
-  ----------------------------------------------------------
-  Function: handleReset
-
-  Purpose:
-  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
-
-  Parameters:
-  - None: Operates using closure/module state only
-
-  Process:
-  1. Accepts and normalizes inputs before core processing
-  2. Applies relevant guards/validation to prevent invalid transitions
-  3. Executes primary logic path and handles expected edge conditions
-  4. Returns a deterministic output for the caller layer
-
-  Why Validation is Important:
-  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
-
-  Returns:
-  A value/promise representing the outcome of the executed logic path.
-  ----------------------------------------------------------
-  */
+  // Resets the clock for the current session type.
 const handleReset = () => {
     setIsRunning(false);
     setTimeRemaining(isWorkSession ? workDuration * 60 : breakDuration * 60);
   };
 
-    /*
-  ----------------------------------------------------------
-  Function: handleApplySettings
-
-  Purpose:
-  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
-
-  Parameters:
-  - newWork: Input consumed by this routine during execution
-  - newBreak: Input consumed by this routine during execution
-
-  Process:
-  1. Accepts and normalizes inputs before core processing
-  2. Applies relevant guards/validation to prevent invalid transitions
-  3. Executes primary logic path and handles expected edge conditions
-  4. Returns a deterministic output for the caller layer
-
-  Why Validation is Important:
-  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
-
-  Returns:
-  A value/promise representing the outcome of the executed logic path.
-  ----------------------------------------------------------
-  */
+  // Applies new timer lengths and restarts from a work session.
 const handleApplySettings = (newWork: number, newBreak: number) => {
     setWorkDuration(newWork);
     setBreakDuration(newBreak);
@@ -294,29 +166,7 @@ const handleApplySettings = (newWork: number, newBreak: number) => {
   const progress = (totalSeconds - timeRemaining) / totalSeconds;
 
   // Pick colours from the current session and progress.
-    /*
-  ----------------------------------------------------------
-  Function: getGradient
-
-  Purpose:
-  Encapsulates a discrete unit of logic to keep behavior reusable, testable, and easy to reason about.
-
-  Parameters:
-  - None: Operates using closure/module state only
-
-  Process:
-  1. Accepts and normalizes inputs before core processing
-  2. Applies relevant guards/validation to prevent invalid transitions
-  3. Executes primary logic path and handles expected edge conditions
-  4. Returns a deterministic output for the caller layer
-
-  Why Validation is Important:
-  Input and boundary checks protect data integrity, reduce fault propagation, and enforce predictable system behavior.
-
-  Returns:
-  A value/promise representing the outcome of the executed logic path.
-  ----------------------------------------------------------
-  */
+  // Picks timer ring colours based on work or break mode.
 const getGradient = () => {
     if (isWorkSession) {
       // Work session uses a blue-to-purple gradient.
