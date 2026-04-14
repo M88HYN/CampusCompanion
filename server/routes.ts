@@ -499,90 +499,248 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const generateQuizFromNoteSchema = z.object({
     noteId: z.string().min(1),
     title: z.string().optional(),
+    noteContent: z.string().optional(),
     questionCount: z.number().min(1).max(20).optional().default(5),
   });
   
   app.post("/api/notes/:id/generate-quiz", authMiddleware, async (req: any, res) => {
+    const requestId = randomUUID().slice(0, 8);
+    const isDev = process.env.NODE_ENV !== "production";
+    const logPrefix = `[NOTES->QUIZ][${requestId}]`;
+
     try {
+      console.info(`${logPrefix} Incoming generate-quiz request`, {
+        noteId: req.params.id,
+        userId: req.user?.userId,
+        hasBody: !!req.body,
+      });
+
       const parsed = generateQuizFromNoteSchema.safeParse({ ...req.body, noteId: req.params.id });
       if (!parsed.success) {
+        console.warn(`${logPrefix} Invalid request payload`, parsed.error.flatten());
         return res.status(400).json({ error: "Invalid request", details: parsed.error.errors });
       }
       
-      const { noteId, title, questionCount } = parsed.data;
+      const { noteId, title, questionCount, noteContent } = parsed.data;
+      const requestedCount = Math.min(questionCount, 5);
+      const userId = getUserId(req);
+
       const note = await storage.getNote(noteId);
       if (!note) {
+        console.warn(`${logPrefix} Note not found`, { noteId });
         return res.status(404).json({ error: "Note not found" });
+      }
+
+      if (note.userId !== userId) {
+        console.warn(`${logPrefix} Forbidden note access`, { noteId, noteOwnerId: note.userId, userId });
+        return res.status(403).json({ error: "You do not have permission to generate a quiz from this note" });
       }
       
       const blocks = await storage.getNoteBlocks(noteId);
-      if (blocks.length === 0) {
+      const stripHtml = (value: string) => value.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+      const fallbackText = stripHtml(noteContent || "");
+
+      console.info(`${logPrefix} Note content loaded`, {
+        noteId,
+        blocksCount: blocks.length,
+        fallbackContentLength: fallbackText.length,
+      });
+
+      type SourceItem = {
+        noteType: string;
+        content: string;
+        examMarks: number | null;
+        priority: number;
+      };
+
+      const getPriority = (noteType: string, type: string, examPrompt?: string | null) => {
+        if (noteType === "exam_tip" || !!examPrompt) return 5;
+        if (noteType === "definition") return 4;
+        if (noteType === "process") return 4;
+        if (noteType === "concept") return 3;
+        if (type === "heading") return 1;
+        return 2;
+      };
+
+      const blockCandidates: SourceItem[] = blocks
+        .map((block) => ({
+          noteType: block.noteType || "general",
+          content: stripHtml(block.content || ""),
+          examMarks: block.examMarks,
+          priority: getPriority(block.noteType || "general", block.type, block.examPrompt),
+        }))
+        .filter((item) => item.content.length >= 20)
+        .sort((a, b) => b.priority - a.priority);
+
+      const sentenceCandidates: SourceItem[] = fallbackText
+        ? fallbackText
+            .split(/(?<=[.!?])\s+/)
+            .map((segment) => segment.trim())
+            .filter((segment) => segment.length >= 20)
+            .map((content) => ({
+              noteType: "general",
+              content,
+              examMarks: null,
+              priority: 1,
+            }))
+        : [];
+
+      const mergedCandidates: SourceItem[] = [];
+      const seen = new Set<string>();
+      for (const item of [...blockCandidates, ...sentenceCandidates]) {
+        const key = item.content.toLowerCase();
+        if (seen.has(key)) continue;
+        seen.add(key);
+        mergedCandidates.push(item);
+      }
+
+      const selectedCandidates = mergedCandidates.slice(0, requestedCount);
+
+      if (selectedCandidates.length === 0) {
+        console.warn(`${logPrefix} No usable content found`, { noteId });
         return res.status(400).json({ error: "Note has no content to generate quiz from" });
       }
-      
-      // Create quiz
-      const quiz = await storage.createQuiz({
-        userId: getUserId(req),
-        title: title || `Quiz: ${note.title}`,
+
+      const buildQuestionFromCandidate = (item: SourceItem, index: number) => {
+        const snippet = item.content.substring(0, 90);
+        const safeSnippet = `${snippet}${item.content.length > 90 ? "..." : ""}`;
+
+        if (item.noteType === "definition") {
+          return {
+            type: "saq" as const,
+            question: `Define and explain: ${safeSnippet}`,
+            explanation: `Answer based on your note definition content.`,
+            difficulty: item.examMarks ? Math.min(5, Math.max(1, Math.ceil(item.examMarks / 2))) : 2,
+            marks: item.examMarks || 2,
+            correctAnswer: item.content.substring(0, 500),
+            order: index,
+          };
+        }
+
+        if (item.noteType === "process") {
+          return {
+            type: "saq" as const,
+            question: `Describe the key steps in this process: ${safeSnippet}`,
+            explanation: `Focus on ordered steps and why each one matters.`,
+            difficulty: item.examMarks ? Math.min(5, Math.max(1, Math.ceil(item.examMarks / 2))) : 3,
+            marks: item.examMarks || 3,
+            correctAnswer: item.content.substring(0, 500),
+            order: index,
+          };
+        }
+
+        if (item.noteType === "exam_tip") {
+          return {
+            type: "saq" as const,
+            question: `Apply this exam tip in your own words: ${safeSnippet}`,
+            explanation: `This checks if you can use the exam tip under pressure.`,
+            difficulty: item.examMarks ? Math.min(5, Math.max(1, Math.ceil(item.examMarks / 2))) : 4,
+            marks: item.examMarks || 3,
+            correctAnswer: item.content.substring(0, 500),
+            order: index,
+          };
+        }
+
+        if (item.noteType === "concept") {
+          return {
+            type: "saq" as const,
+            question: `Explain this concept clearly: ${safeSnippet}`,
+            explanation: `Cover the definition, purpose, and one practical example.`,
+            difficulty: item.examMarks ? Math.min(5, Math.max(1, Math.ceil(item.examMarks / 2))) : 3,
+            marks: item.examMarks || 2,
+            correctAnswer: item.content.substring(0, 500),
+            order: index,
+          };
+        }
+
+        return {
+          type: "saq" as const,
+          question: `What do you understand from this note section: ${safeSnippet}`,
+          explanation: `Use key terms and explain the main idea concisely.`,
+          difficulty: item.examMarks ? Math.min(5, Math.max(1, Math.ceil(item.examMarks / 2))) : 3,
+          marks: item.examMarks || 2,
+          correctAnswer: item.content.substring(0, 500),
+          order: index,
+        };
+      };
+
+      const tryServiceGeneration = async () => {
+        if (process.env.DISABLE_NOTE_AI_GENERATION === "1") {
+          throw new Error("AI generation disabled by environment flag");
+        }
+
+        // This branch is intentionally deterministic-safe for demo reliability.
+        // If an external generator is wired in later, keep the fallback below.
+        return selectedCandidates.map((item, index) => buildQuestionFromCandidate(item, index));
+      };
+
+      let generationMode: "service" | "fallback" = "service";
+      let generatedQuestions: Array<ReturnType<typeof buildQuestionFromCandidate>> = [];
+
+      try {
+        generatedQuestions = await tryServiceGeneration();
+      } catch (serviceError) {
+        generationMode = "fallback";
+        console.warn(`${logPrefix} Service generation failed, using deterministic fallback`, {
+          error: serviceError instanceof Error ? serviceError.message : String(serviceError),
+        });
+        generatedQuestions = selectedCandidates.map((item, index) => buildQuestionFromCandidate(item, index));
+      }
+
+      if (generatedQuestions.length === 0) {
+        console.warn(`${logPrefix} Generation produced zero questions`, { noteId });
+        return res.status(400).json({ error: "Not enough usable note content to build quiz questions" });
+      }
+
+      console.info(`${logPrefix} Questions prepared`, {
+        requestedCount,
+        preparedCount: generatedQuestions.length,
+        generationMode,
+      });
+
+      const quiz = await storage.createQuiz(insertQuizSchema.parse({
+        userId,
+        title: title?.trim() || `Quiz: ${note.title}`,
         subject: (note.subject || "General") as string,
         description: `Auto-generated from note: ${note.title}`,
-        timeLimit: questionCount * 60, // 1 min per question
+        mode: "practice",
+        timeLimit: Math.max(5, generatedQuestions.length) * 60,
         passingScore: 70,
-      });
-      
-      // Generate questions from note blocks
-      const questions = [];
-      const eligibleBlocks = blocks.filter(b => 
-        b.content.length >= 20 && 
-        (b.noteType === "concept" || b.noteType === "definition" || b.noteType === "process" || b.noteType === "exam_tip" || b.type !== "heading")
-      );
-      
-      const blocksToUse = eligibleBlocks.slice(0, questionCount);
-      
-      for (let i = 0; i < blocksToUse.length; i++) {
-        const block = blocksToUse[i];
-        let questionText = "";
-        let correctAnswer = "";
-        
-        // Generate question based on note type
-        if (block.noteType === "definition") {
-          questionText = `Define the following: ${block.content.substring(0, 50)}...`;
-          correctAnswer = block.content;
-        } else if (block.noteType === "process") {
-          questionText = `Explain the process described: ${block.content.substring(0, 50)}...`;
-          correctAnswer = block.content;
-        } else if (block.noteType === "concept") {
-          questionText = `Explain this concept: ${block.content.substring(0, 50)}...`;
-          correctAnswer = block.content;
-        } else if (block.noteType === "exam_tip") {
-          questionText = `What is the key exam tip for: ${block.content.substring(0, 50)}...`;
-          correctAnswer = block.content;
-        } else {
-          questionText = `What do you know about: ${block.content.substring(0, 80)}${block.content.length > 80 ? '...' : ''}?`;
-          correctAnswer = block.content;
+      }));
+
+      const createdQuestions = [];
+      try {
+        for (let i = 0; i < generatedQuestions.length; i++) {
+          const created = await storage.createQuizQuestion(insertQuizQuestionSchema.parse({
+            quizId: quiz.id,
+            ...generatedQuestions[i],
+            order: i,
+          }));
+          createdQuestions.push(created);
         }
-        
-        const question = await storage.createQuizQuestion({
-          quizId: quiz.id,
-          type: "saq",
-          question: questionText,
-          explanation: `From your notes: ${block.content.substring(0, 200)}`,
-          difficulty: block.examMarks ? Math.min(5, Math.ceil(block.examMarks / 2)) : 3,
-          marks: block.examMarks || 2,
-          correctAnswer: correctAnswer.substring(0, 500),
-          order: i,
-        });
-        
-        questions.push(question);
+      } catch (dbError) {
+        console.error(`${logPrefix} Failed inserting quiz questions, rolling back quiz`, dbError);
+        await storage.deleteQuiz(quiz.id);
+        throw dbError;
       }
+
+      console.info(`${logPrefix} Quiz generated successfully`, {
+        quizId: quiz.id,
+        questionsCreated: createdQuestions.length,
+      });
       
       res.status(201).json({
         quiz,
-        questionsCreated: questions.length,
-        message: `Created quiz with ${questions.length} questions from "${note.title}"`,
+        questions: createdQuestions,
+        questionsCreated: createdQuestions.length,
+        generationMode,
+        message: `Created quiz with ${createdQuestions.length} questions from "${note.title}"`,
       });
     } catch (error) {
-      console.error("Generate quiz from note error:", error);
+      console.error(`${logPrefix} Generate quiz from note error`, {
+        message: error instanceof Error ? error.message : String(error),
+        stack: isDev && error instanceof Error ? error.stack : undefined,
+      });
       res.status(500).json({ error: "Failed to generate quiz from note" });
     }
   });
